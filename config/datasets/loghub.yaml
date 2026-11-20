@@ -1,0 +1,89 @@
+dataset:
+  id: loghub
+  version: "1"
+
+source:
+  repository: https://github.com/logpai/loghub
+  commit: dd61d0952749ee7963bde24220d1be5ede023033
+
+destination:
+  root: orchestration-ai-data/raw/loghub
+
+datasets:
+  - name: OpenStack
+    enabled: true
+    url: https://zenodo.org/records/8196385/files/OpenStack.tar.gz?download=1
+    archive: tar.gz
+    destination: openstack
+
+  - name: Linux
+    enabled: true
+    url: https://zenodo.org/records/8196385/files/Linux.tar.gz?download=1
+    archive: tar.gz
+    destination: linux
+
+  - name: HDFS_v1
+    enabled: false
+    url: https://zenodo.org/records/8196385/files/HDFS_v1.zip?download=1
+    archive: zip
+    destination: hdfs-v1
+
+  - name: Hadoop
+    enabled: false
+    url: https://zenodo.org/records/8196385/files/Hadoop.zip?download=1
+    archive: zip
+    destination: hadoop
+
+  - name: Spark
+    enabled: false
+    url: https://zenodo.org/records/8196385/files/Spark.tar.gz?download=1
+    archive: tar.gz
+    destination: spark
+
+  - name: Zookeeper
+    enabled: false
+    url: https://zenodo.org/records/8196385/files/Zookeeper.tar.gz?download=1
+    archive: tar.gz
+    destination: zookeeper
+
+  - name: BGL
+    enabled: false
+    url: https://zenodo.org/records/8196385/files/BGL.zip?download=1
+    archive: zip
+    destination: bgl
+
+  - name: HPC
+    enabled: false
+    url: https://zenodo.org/records/8196385/files/HPC.zip?download=1
+    archive: zip
+    destination: hpc
+
+  - name: Thunderbird
+    enabled: false
+    url: https://zenodo.org/records/8196385/files/Thunderbird.tar.gz?download=1
+    archive: tar.gz
+    destination: thunderbird
+
+  - name: Windows
+    enabled: false
+    url: https://zenodo.org/records/8196385/files/Windows.tar.gz?download=1
+    archive: tar.gz
+    destination: windows
+
+  - name: Apache
+    enabled: false
+    url: https://zenodo.org/records/8196385/files/Apache.tar.gz?download=1
+    archive: tar.gz
+    destination: apache
+
+  - name: OpenSSH
+    enabled: false
+    url: https://zenodo.org/records/8196385/files/SSH.tar.gz?download=1
+    archive: tar.gz
+    destination: openssh
+
+  - name: Proxifier
+    enabled: false
+    url: https://zenodo.org/records/8196385/files/Proxifier.tar.gz?download=1
+    archive: tar.gz
+    destination: proxifier

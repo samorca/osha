@@ -1,0 +1,888 @@
+{
+  "raw_directory": "/home/samorca/osha/orchestration-ai-data/raw",
+  "output_directory": "/home/samorca/osha/orchestration-ai-data/processed",
+  "discovered_files": 57,
+  "log_events": 32000,
+  "log_templates": 1770,
+  "cloud_metric_snapshots": 18947,
+  "anomaly_records": 21198,
+  "errors": [],
+  "inventory": [
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/alibaba-cluster/machine_usage_days_1_to_8_grouped_300_seconds.csv",
+      "kind": "cloud_metrics",
+      "dataset": "alibaba",
+      "rows": 2243,
+      "columns": [
+        "cpu_util_percent",
+        "mem_util_percent",
+        "net_in",
+        "net_out",
+        "disk_io_percent"
+      ],
+      "sha256": "3cbe34a882f31272cecdf9cdab27d2e91d964f9dd45c199f9f53e6d38379746a",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/azure/vm_cpu_readings_month_aggregated_cpu_mem.csv",
+      "kind": "cloud_metrics",
+      "dataset": "azure",
+      "rows": 8640,
+      "columns": [
+        "timestamp",
+        "cpu_usage",
+        "assigned_mem"
+      ],
+      "sha256": "1ab1a1e4285bcfb5d1619f084d227872d30ae1f044c230b82af398cb60fd5067",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/cloud-native-anomaly/groundtruth.csv",
+      "kind": "cloud_native_anomaly",
+      "dataset": "cloud-native-anomaly",
+      "split": "groundtruth",
+      "rows": 598,
+      "columns": [
+        "start_time",
+        "end_time",
+        "node",
+        "event",
+        "is_anomaly"
+      ],
+      "sha256": "2ab905a922035c18d2e15145eeb5d01d3ec5f84d3ae83dbc1859c24187cd8417",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/cloud-native-anomaly/test.csv",
+      "kind": "cloud_native_anomaly",
+      "dataset": "cloud-native-anomaly",
+      "split": "test",
+      "rows": 3029,
+      "columns": [
+        "timestamp",
+        "cpu-N1",
+        "cpu-N2",
+        "cpu-N3",
+        "cpu-N4",
+        "cpu-N6",
+        "cpu-N7",
+        "cpu-N8",
+        "mem_gb-N1",
+        "mem_gb-N2",
+        "mem_gb-N3",
+        "mem_gb-N4",
+        "mem_gb-N6",
+        "mem_gb-N7",
+        "mem_gb-N8",
+        "disk_io-N1",
+        "disk_io-N2",
+        "disk_io-N3",
+        "disk_io-N4",
+        "disk_io-N6",
+        "disk_io-N7",
+        "disk_io-N8",
+        "net_in-N1",
+        "net_in-N2",
+        "net_in-N3",
+        "net_in-N4",
+        "net_in-N6",
+        "net_in-N7",
+        "net_in-N8",
+        "cluster_pending_cluster",
+        "cluster_api_latency_cluster",
+        "cluster_restarts_cluster",
+        "label",
+        "event_id"
+      ],
+      "sha256": "986bd48e2b2fafb27b1cd11ae168dd8c11e0f2977267f06ae225cff707946a70",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/cloud-native-anomaly/train1.csv",
+      "kind": "cloud_native_anomaly",
+      "dataset": "cloud-native-anomaly",
+      "split": "train1",
+      "rows": 11089,
+      "columns": [
+        "timestamp",
+        "cpu-N1",
+        "cpu-N2",
+        "cpu-N3",
+        "cpu-N4",
+        "cpu-N6",
+        "cpu-N7",
+        "cpu-N8",
+        "mem_gb-N1",
+        "mem_gb-N2",
+        "mem_gb-N3",
+        "mem_gb-N4",
+        "mem_gb-N6",
+        "mem_gb-N7",
+        "mem_gb-N8",
+        "disk_io-N1",
+        "disk_io-N2",
+        "disk_io-N3",
+        "disk_io-N4",
+        "disk_io-N6",
+        "disk_io-N7",
+        "disk_io-N8",
+        "net_in-N1",
+        "net_in-N2",
+        "net_in-N3",
+        "net_in-N4",
+        "net_in-N6",
+        "net_in-N7",
+        "net_in-N8",
+        "cluster_pending_cluster",
+        "cluster_api_latency_cluster",
+        "cluster_restarts_cluster"
+      ],
+      "sha256": "ea8aad75f978c2233d96a3b892d4da871bd7bb2650d75cabb988e53462298686",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/cloud-native-anomaly/train2.csv",
+      "kind": "cloud_native_anomaly",
+      "dataset": "cloud-native-anomaly",
+      "split": "train2",
+      "rows": 6482,
+      "columns": [
+        "timestamp",
+        "cpu-N1",
+        "cpu-N2",
+        "cpu-N3",
+        "cpu-N4",
+        "cpu-N6",
+        "cpu-N7",
+        "cpu-N8",
+        "mem_gb-N1",
+        "mem_gb-N2",
+        "mem_gb-N3",
+        "mem_gb-N4",
+        "mem_gb-N6",
+        "mem_gb-N7",
+        "mem_gb-N8",
+        "disk_io-N1",
+        "disk_io-N2",
+        "disk_io-N3",
+        "disk_io-N4",
+        "disk_io-N6",
+        "disk_io-N7",
+        "disk_io-N8",
+        "net_in-N1",
+        "net_in-N2",
+        "net_in-N3",
+        "net_in-N4",
+        "net_in-N6",
+        "net_in-N7",
+        "net_in-N8",
+        "cluster_pending_cluster",
+        "cluster_api_latency_cluster",
+        "cluster_restarts_cluster"
+      ],
+      "sha256": "4a742d322d4ae7de1e2259c41b7efafd8266db7e6eb7879fb1b611a80ce6796a",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/google-cluster/instance_usage_grouped_300_seconds_month.csv",
+      "kind": "cloud_metrics",
+      "dataset": "google",
+      "rows": 8064,
+      "columns": [
+        "avg_cpu",
+        "avg_mem",
+        "avg_assigned_mem",
+        "avg_cycles_per_instruction"
+      ],
+      "sha256": "3f2a240bcbcc97fe74d3609381029c03aad97d4adf28b753d2b058cbd448d20d",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Android/Android_2k.log",
+      "kind": "raw_log",
+      "dataset": "Android",
+      "rows": 2000,
+      "size_bytes": 279076,
+      "sha256": "47641549915e662ff590291df266a45f635eedca7c5f1b41a4fa853fe5d2f409",
+      "status": "inventoried",
+      "note": "Raw log retained for future parser evaluation. Structured CSV is used for the initial corpus."
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Android/Android_2k.log_structured.csv",
+      "kind": "loghub_structured",
+      "dataset": "Android",
+      "rows": 2000,
+      "columns": [
+        "LineId",
+        "Date",
+        "Time",
+        "Pid",
+        "Tid",
+        "Level",
+        "Component",
+        "Content",
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "80d58d6c79249c9f4891fbe0c2eaeaade30f933c69b7d030af190a10d73d96e5",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Android/Android_2k.log_templates.csv",
+      "kind": "loghub_templates",
+      "dataset": "Android",
+      "rows": 166,
+      "columns": [
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "7895b72ea2c75965246446786c2c9ad33eeaf075c15c3730e67850a5969dcfba",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Apache/Apache_2k.log",
+      "kind": "raw_log",
+      "dataset": "Apache",
+      "rows": 2000,
+      "size_bytes": 171239,
+      "sha256": "c7efa3eb686e3a96bd2f8f4457b2a7887e9cf2f3649327f1b4e87af841363ce8",
+      "status": "inventoried",
+      "note": "Raw log retained for future parser evaluation. Structured CSV is used for the initial corpus."
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Apache/Apache_2k.log_structured.csv",
+      "kind": "loghub_structured",
+      "dataset": "Apache",
+      "rows": 2000,
+      "columns": [
+        "LineId",
+        "Time",
+        "Level",
+        "Content",
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "54331d12eedf513f2127f4d89f0284c8b15fddfa5471103abf9db2c73d737778",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Apache/Apache_2k.log_templates.csv",
+      "kind": "loghub_templates",
+      "dataset": "Apache",
+      "rows": 6,
+      "columns": [
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "64e4bf77bb87e6762e59df8ea7eef95ee4dd9be7f29702c767dff88ec951d11f",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/BGL/BGL_2k.log",
+      "kind": "raw_log",
+      "dataset": "BGL",
+      "rows": 2000,
+      "size_bytes": 317150,
+      "sha256": "2a819ea540909db682005c9cf948387a40729b5c2e9f19d430e29ce704825496",
+      "status": "inventoried",
+      "note": "Raw log retained for future parser evaluation. Structured CSV is used for the initial corpus."
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/BGL/BGL_2k.log_structured.csv",
+      "kind": "loghub_structured",
+      "dataset": "BGL",
+      "rows": 2000,
+      "columns": [
+        "LineId",
+        "Label",
+        "Timestamp",
+        "Date",
+        "Node",
+        "Time",
+        "NodeRepeat",
+        "Type",
+        "Component",
+        "Level",
+        "Content",
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "3fe74103c0b02a28514534e2a47257a3f770135ca61afd425bbd3b9d6a31fe26",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/BGL/BGL_2k.log_templates.csv",
+      "kind": "loghub_templates",
+      "dataset": "BGL",
+      "rows": 120,
+      "columns": [
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "fe156be23d4401ffeb57f15893127cbcdd59805b53e5195f3504cb7a3bf81f0a",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/BGL/BGL_templates.csv",
+      "kind": "loghub_templates",
+      "dataset": "BGL",
+      "rows": 377,
+      "columns": [
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "36ba136d0b2e3e7fe0efec213b3e95c7d67fbc327c4d16d54f16e120389535de",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/HDFS/HDFS_2k.log",
+      "kind": "raw_log",
+      "dataset": "HDFS",
+      "rows": 2000,
+      "size_bytes": 287848,
+      "sha256": "7c967000980c086ed55fa6544ba4f05fe66d44622795e890c68caf8bbb635035",
+      "status": "inventoried",
+      "note": "Raw log retained for future parser evaluation. Structured CSV is used for the initial corpus."
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/HDFS/HDFS_2k.log_structured.csv",
+      "kind": "loghub_structured",
+      "dataset": "HDFS",
+      "rows": 2000,
+      "columns": [
+        "LineId",
+        "Date",
+        "Time",
+        "Pid",
+        "Level",
+        "Component",
+        "Content",
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "729df59774e3dde934044028546d2a55d5e3d4370b9d12fcebbe4c087b2bf7b4",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/HDFS/HDFS_2k.log_templates.csv",
+      "kind": "loghub_templates",
+      "dataset": "HDFS",
+      "rows": 14,
+      "columns": [
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "a07307511f67c9dc1f41ae730ae60dcce8360f2c72742f0b8a3a9cf1a403d1db",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/HDFS/HDFS_templates.csv",
+      "kind": "loghub_templates",
+      "dataset": "HDFS",
+      "rows": 30,
+      "columns": [
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "757cc90a32563a3cbcde68e712cf769c1413aec652e3642503d65bba9208ac3b",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/HPC/HPC_2k.log",
+      "kind": "raw_log",
+      "dataset": "HPC",
+      "rows": 2000,
+      "size_bytes": 151178,
+      "sha256": "826e5957b461e65780a8bda5c186c2fcf90fd6c1863721ef9c1ccfa9ada86f88",
+      "status": "inventoried",
+      "note": "Raw log retained for future parser evaluation. Structured CSV is used for the initial corpus."
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/HPC/HPC_2k.log_structured.csv",
+      "kind": "loghub_structured",
+      "dataset": "HPC",
+      "rows": 2000,
+      "columns": [
+        "LineId",
+        "LogId",
+        "Node",
+        "Component",
+        "State",
+        "Time",
+        "Flag",
+        "Content",
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "0787df9cfab7e9495669548315ea8a9a51b02029c0dcfa28944707ad755a8c86",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/HPC/HPC_2k.log_templates.csv",
+      "kind": "loghub_templates",
+      "dataset": "HPC",
+      "rows": 46,
+      "columns": [
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "c6b56ad5537b91a95e88a5953f7abfd7e8b36121673a4123eff7bf3e700d6775",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Hadoop/Hadoop_2k.log",
+      "kind": "raw_log",
+      "dataset": "Hadoop",
+      "rows": 2000,
+      "size_bytes": 384948,
+      "sha256": "9ecaeb807d50d5fb5a20982ea66f1c8d32545259a51ce7456c1ab78db0509732",
+      "status": "inventoried",
+      "note": "Raw log retained for future parser evaluation. Structured CSV is used for the initial corpus."
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Hadoop/Hadoop_2k.log_structured.csv",
+      "kind": "loghub_structured",
+      "dataset": "Hadoop",
+      "rows": 2000,
+      "columns": [
+        "LineId",
+        "Date",
+        "Time",
+        "Level",
+        "Process",
+        "Component",
+        "Content",
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "e88e5bf99d7f23f482517cc79290ad75b90d914af5d6114176e8bbf0f8ae0fad",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Hadoop/Hadoop_2k.log_templates.csv",
+      "kind": "loghub_templates",
+      "dataset": "Hadoop",
+      "rows": 114,
+      "columns": [
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "89135427e38bdfc1b030b83fbb3b2790ddc1359b4b40199428c26277104bbf34",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/HealthApp/HealthApp_2k.log",
+      "kind": "raw_log",
+      "dataset": "HealthApp",
+      "rows": 2000,
+      "size_bytes": 187456,
+      "sha256": "95ec36322f5db1e6faaab764c568b67023d7d6733793106289dbf30516fc13ee",
+      "status": "inventoried",
+      "note": "Raw log retained for future parser evaluation. Structured CSV is used for the initial corpus."
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/HealthApp/HealthApp_2k.log_structured.csv",
+      "kind": "loghub_structured",
+      "dataset": "HealthApp",
+      "rows": 2000,
+      "columns": [
+        "LineId",
+        "Time",
+        "Component",
+        "Pid",
+        "Content",
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "11831c70cc8851cb74486153149ae3136453fccca708fcb6826d8dcb0edbc6cb",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/HealthApp/HealthApp_2k.log_templates.csv",
+      "kind": "loghub_templates",
+      "dataset": "HealthApp",
+      "rows": 75,
+      "columns": [
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "b81ccf746778cf8de853a68a741bcdf8cbe7c2cbb11383ac09bc41d6ea31af5a",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Linux/Linux_2k.log",
+      "kind": "raw_log",
+      "dataset": "Linux",
+      "rows": 2000,
+      "size_bytes": 216485,
+      "sha256": "b3e20bc1afe732ab1bf3ed1de4bf9c809e4194e02f7dea911d918e5342e8e173",
+      "status": "inventoried",
+      "note": "Raw log retained for future parser evaluation. Structured CSV is used for the initial corpus."
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Linux/Linux_2k.log_structured.csv",
+      "kind": "loghub_structured",
+      "dataset": "Linux",
+      "rows": 2000,
+      "columns": [
+        "LineId",
+        "Month",
+        "Date",
+        "Time",
+        "Level",
+        "Component",
+        "PID",
+        "Content",
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "7c86d7b0ecb961a25f00d9475a154df97613b9974f31ce142a146caa2017c71e",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Linux/Linux_2k.log_templates.csv",
+      "kind": "loghub_templates",
+      "dataset": "Linux",
+      "rows": 118,
+      "columns": [
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "60ed088e0aa899a467c66863c30e2ae460d7bc1def1a65bff70ec47a668df0f7",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Mac/Mac_2k.log",
+      "kind": "raw_log",
+      "dataset": "Mac",
+      "rows": 2000,
+      "size_bytes": 319414,
+      "sha256": "d9ea495488728d8c989dc942fca3324a3cc7b19b0a6f409a5fd568ad547fd931",
+      "status": "inventoried",
+      "note": "Raw log retained for future parser evaluation. Structured CSV is used for the initial corpus."
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Mac/Mac_2k.log_structured.csv",
+      "kind": "loghub_structured",
+      "dataset": "Mac",
+      "rows": 2000,
+      "columns": [
+        "LineId",
+        "Month",
+        "Date",
+        "Time",
+        "User",
+        "Component",
+        "PID",
+        "Address",
+        "Content",
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "c8d5d74e0dcd923675ee944ea592abaf0eae91ef492435330694ce5008267c8d",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Mac/Mac_2k.log_templates.csv",
+      "kind": "loghub_templates",
+      "dataset": "Mac",
+      "rows": 341,
+      "columns": [
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "5b452b7a37549cc730cdb114225a531765f8d44bf222bf2792a5a7e8690f5491",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/OpenSSH/OpenSSH_2k.log",
+      "kind": "raw_log",
+      "dataset": "OpenSSH",
+      "rows": 2000,
+      "size_bytes": 225216,
+      "sha256": "1e4912727fa88245113d41b16a0cd25ceadba7f931e1c406542885b91254264f",
+      "status": "inventoried",
+      "note": "Raw log retained for future parser evaluation. Structured CSV is used for the initial corpus."
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/OpenSSH/OpenSSH_2k.log_structured.csv",
+      "kind": "loghub_structured",
+      "dataset": "OpenSSH",
+      "rows": 2000,
+      "columns": [
+        "LineId",
+        "Date",
+        "Day",
+        "Time",
+        "Component",
+        "Pid",
+        "Content",
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "c0996a11545f4b94b435993760afa441a9e373f7bfc9e787afdb8e62f65acb4f",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/OpenSSH/OpenSSH_2k.log_templates.csv",
+      "kind": "loghub_templates",
+      "dataset": "OpenSSH",
+      "rows": 27,
+      "columns": [
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "c23fb1bb925abd0ca2b110e661f5f0a1e0f66e4783e61a502ef3486a2d84b2c7",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/OpenStack/OpenStack_2k.log",
+      "kind": "raw_log",
+      "dataset": "OpenStack",
+      "rows": 2000,
+      "size_bytes": 595119,
+      "sha256": "025a1bc64ff5b2ef4a4bda6c4ad5c5c5f18478b71cd1ad2b0676e01625629f2f",
+      "status": "inventoried",
+      "note": "Raw log retained for future parser evaluation. Structured CSV is used for the initial corpus."
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/OpenStack/OpenStack_2k.log_structured.csv",
+      "kind": "loghub_structured",
+      "dataset": "OpenStack",
+      "rows": 2000,
+      "columns": [
+        "LineId",
+        "Logrecord",
+        "Date",
+        "Time",
+        "Pid",
+        "Level",
+        "Component",
+        "ADDR",
+        "Content",
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "ecc88e7909777181824260e9bdacd1469bd24d55131d6fc14e9c8c17edc49ff0",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/OpenStack/OpenStack_2k.log_templates.csv",
+      "kind": "loghub_templates",
+      "dataset": "OpenStack",
+      "rows": 43,
+      "columns": [
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "1224f332d48f91a122696d8bc88b5d23649fd7a7361e3eb1e4e57986526aac36",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Proxifier/Proxifier_2k.log",
+      "kind": "raw_log",
+      "dataset": "Proxifier",
+      "rows": 2000,
+      "size_bytes": 236962,
+      "sha256": "94b6a9d98d76e7ad7841ed10caa463cd4e638a229b92a220a2bf1707552adbb9",
+      "status": "inventoried",
+      "note": "Raw log retained for future parser evaluation. Structured CSV is used for the initial corpus."
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Proxifier/Proxifier_2k.log_structured.csv",
+      "kind": "loghub_structured",
+      "dataset": "Proxifier",
+      "rows": 2000,
+      "columns": [
+        "LineId",
+        "Time",
+        "Program",
+        "Content",
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "5aa88821bb217d82c3a964cbe9fdb0d67f235b0538ac164ef0a87e0ced4f2715",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Proxifier/Proxifier_2k.log_templates.csv",
+      "kind": "loghub_templates",
+      "dataset": "Proxifier",
+      "rows": 8,
+      "columns": [
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "ce04a2a80ed087a0fe319e41411057bed21e6048ddbabe927253019a5edfa1a1",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Spark/Spark_2k.log",
+      "kind": "raw_log",
+      "dataset": "Spark",
+      "rows": 2000,
+      "size_bytes": 196268,
+      "sha256": "2e8b9a37fc5c238253e0b8e18a8bd5e489671def91767ae1192d28c8e1f95901",
+      "status": "inventoried",
+      "note": "Raw log retained for future parser evaluation. Structured CSV is used for the initial corpus."
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Spark/Spark_2k.log_structured.csv",
+      "kind": "loghub_structured",
+      "dataset": "Spark",
+      "rows": 2000,
+      "columns": [
+        "LineId",
+        "Date",
+        "Time",
+        "Level",
+        "Component",
+        "Content",
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "d7df75f6839b6bcf98ff020b6b0b6e2ee89d8cc53ee3d08d441bd42fd84a2cb5",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Spark/Spark_2k.log_templates.csv",
+      "kind": "loghub_templates",
+      "dataset": "Spark",
+      "rows": 36,
+      "columns": [
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "50bd23a7c0a8f53055e463ddc6cd203d65c6473c52e2d523d6870a4fd3e93cc3",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Thunderbird/Thunderbird_2k.log",
+      "kind": "raw_log",
+      "dataset": "Thunderbird",
+      "rows": 2000,
+      "size_bytes": 325192,
+      "sha256": "903bbfa61c34d4803e4adcb0d726ff2eeb9a2e11971243269a2035fa6c3bbeb0",
+      "status": "inventoried",
+      "note": "Raw log retained for future parser evaluation. Structured CSV is used for the initial corpus."
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Thunderbird/Thunderbird_2k.log_structured.csv",
+      "kind": "loghub_structured",
+      "dataset": "Thunderbird",
+      "rows": 2000,
+      "columns": [
+        "LineId",
+        "Label",
+        "Timestamp",
+        "Date",
+        "User",
+        "Month",
+        "Day",
+        "Time",
+        "Location",
+        "Component",
+        "PID",
+        "Content",
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "c62196d8a3449de765501bbf58c2093452e9d1add439053301d29fdad8a06809",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Thunderbird/Thunderbird_2k.log_templates.csv",
+      "kind": "loghub_templates",
+      "dataset": "Thunderbird",
+      "rows": 149,
+      "columns": [
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "e20e2dd64becc8d1637aee1fe004d897ca932cdfd520b46e6d0f5dd94ebdcdfe",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Windows/Windows_2k.log",
+      "kind": "raw_log",
+      "dataset": "Windows",
+      "rows": 2000,
+      "size_bytes": 285433,
+      "sha256": "372fb809464a6d6016e599e9272d7cf1e8b644f25c90c7f76f19c936362456d0",
+      "status": "inventoried",
+      "note": "Raw log retained for future parser evaluation. Structured CSV is used for the initial corpus."
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Windows/Windows_2k.log_structured.csv",
+      "kind": "loghub_structured",
+      "dataset": "Windows",
+      "rows": 2000,
+      "columns": [
+        "LineId",
+        "Date",
+        "Time",
+        "Level",
+        "Component",
+        "Content",
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "caa98dd6c1291ba0470d5c171df8514616b35669d724652bd7aa973df0dee881",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Windows/Windows_2k.log_templates.csv",
+      "kind": "loghub_templates",
+      "dataset": "Windows",
+      "rows": 50,
+      "columns": [
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "1780ccc9dc36aaabce86db9146b2f211a947a2e3f05215cc62ccb8812c88024d",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Zookeeper/Zookeeper_2k.log",
+      "kind": "raw_log",
+      "dataset": "Zookeeper",
+      "rows": 2000,
+      "size_bytes": 279891,
+      "sha256": "e40e0af5ef9eb6e4097200f260b9d1f626b3676f861a432e87977242e75543d8",
+      "status": "inventoried",
+      "note": "Raw log retained for future parser evaluation. Structured CSV is used for the initial corpus."
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Zookeeper/Zookeeper_2k.log_structured.csv",
+      "kind": "loghub_structured",
+      "dataset": "Zookeeper",
+      "rows": 2000,
+      "columns": [
+        "LineId",
+        "Date",
+        "Time",
+        "Level",
+        "Node",
+        "Component",
+        "Id",
+        "Content",
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "e4a450c67595828103cfab049d971f54eee778fdded061222ba6581bed2a210a",
+      "status": "processed"
+    },
+    {
+      "path": "/home/samorca/osha/orchestration-ai-data/raw/loghub/Zookeeper/Zookeeper_2k.log_templates.csv",
+      "kind": "loghub_templates",
+      "dataset": "Zookeeper",
+      "rows": 50,
+      "columns": [
+        "EventId",
+        "EventTemplate"
+      ],
+      "sha256": "c872fa4736247b62a2327742461e6bcbdeae9ccc36977a5c6c5c889d47d537fd",
+      "status": "processed"
+    }
+  ]
+}

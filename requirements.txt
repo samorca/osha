@@ -1,0 +1,7 @@
+psutil
+torch
+transformers
+pytest
+pytest-cov
+pandas
+pyarrow
