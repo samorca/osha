@@ -1,556 +1,1252 @@
 from __future__ import annotations
 
-import argparse
-import hashlib
+"""
+Training-corpus preparation for OSHA.
+
+Pipeline:
+
+    validated raw files
+        -> parse records
+        -> normalize
+        -> deduplicate
+        -> split
+        -> write JSONL artifacts
+
+This module prepares datasets only. It does not
+train or evaluate models.
+"""
+
 import json
-import logging
-import re
+import os
+import shutil
+import tempfile
+
 from pathlib import Path
-from typing import Any
 
-import pandas as pd
-
-
-LOGGER = logging.getLogger("osha.data.prepare")
-
-STRUCTURED_SUFFIX = "_2k.log_structured.csv"
-TEMPLATE_SUFFIXES = (
-    "_2k.log_templates.csv",
-    "_templates.csv",
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
 )
 
-METRIC_SOURCES = {
-    "alibaba-cluster": "alibaba",
-    "azure": "azure",
-    "google-cluster": "google",
-}
+from src.core.serialization import (
+    to_json_safe,
+)
 
-TEXT_COLUMNS = {
-    "Content",
-    "EventTemplate",
-    "Component",
-    "Level",
-    "Label",
-    "Pid",
-    "Date",
-    "Time",
-}
+from src.data.config import (
+    DataConfig,
+)
+
+from src.data.errors import (
+    DataNormalizationError,
+    DataPreparationError,
+    PreparedDatasetConflictError,
+    UnsupportedRecordError,
+)
+
+from src.data.manifests import (
+    resolve_dataset_file,
+)
+
+from src.data.normalize import (
+    DatasetNormalizer,
+    NormalizerRegistry,
+)
+
+from src.data.schema import (
+    DataState,
+    DatasetFile,
+    DatasetManifest,
+    DatasetRecord,
+    DatasetSplit,
+    PreparationResult,
+    SplitName,
+)
+
+from src.data.split import (
+    DatasetSplitter,
+    SplitResult,
+)
+
+from src.data.validate import (
+    DatasetValidator,
+    RecordValidator,
+    iter_dataset_records,
+)
 
 
-def sha256sum(path: Path) -> str:
-    digest = hashlib.sha256()
+# ---------------------------------------------------------------
+# Safe artifact name
+# ---------------------------------------------------------------
 
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
+def safe_artifact_name(
+    value: str,
+) -> str:
+    """
+    Convert a dataset identifier or version into
+    a bounded filesystem-safe name.
+    """
 
-    return digest.hexdigest()
+    output: List[str] = []
 
-
-def clean_value(value: Any) -> Any:
-    if pd.isna(value):
-        return None
-
-    if isinstance(value, str):
-        cleaned = re.sub(r"\s+", " ", value).strip()
-        return cleaned or None
-
-    if hasattr(value, "item"):
-        return value.item()
-
-    return value
-
-
-def write_jsonl(records: list[dict[str, Any]], path: Path) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-
-    with path.open("w", encoding="utf-8") as handle:
-        for record in records:
-            handle.write(
-                json.dumps(
-                    record,
-                    ensure_ascii=False,
-                    default=str,
-                )
-                + "\n"
+    for character in str(
+        value
+    ):
+        if (
+            character.isalnum()
+            or character
+            in {
+                "-",
+                "_",
+                ".",
+            }
+        ):
+            output.append(
+                character
             )
 
-
-def read_csv_robust(path: Path) -> pd.DataFrame:
-    attempts = [
-        {"encoding": "utf-8"},
-        {"encoding": "utf-8-sig"},
-        {"encoding": "latin-1"},
-    ]
-
-    last_error: Exception | None = None
-
-    for options in attempts:
-        try:
-            return pd.read_csv(
-                path,
-                low_memory=False,
-                on_bad_lines="skip",
-                **options,
+        else:
+            output.append(
+                "_"
             )
-        except Exception as exc:
-            last_error = exc
 
-    raise RuntimeError(
-        f"Unable to read CSV {path}: {last_error}"
+    normalized = "".join(
+        output
+    ).strip(
+        "._"
+    )
+
+    if not normalized:
+        raise DataPreparationError(
+            "Dataset identity cannot "
+            "produce a safe artifact name."
+        )
+
+    return normalized
+
+
+# ---------------------------------------------------------------
+# Prepared dataset directory
+# ---------------------------------------------------------------
+
+def prepared_dataset_directory(
+    prepared_root: str | Path,
+    manifest: DatasetManifest,
+) -> Path:
+    manifest.finalize()
+
+    return (
+        Path(
+            prepared_root
+        ).expanduser().resolve()
+        / safe_artifact_name(
+            manifest.dataset_id
+        )
+        / safe_artifact_name(
+            manifest.version
+        )
     )
 
 
-def detect_loghub_dataset(path: Path) -> str:
-    parts = list(path.parts)
+# ---------------------------------------------------------------
+# Atomic JSONL writer
+# ---------------------------------------------------------------
 
-    if "loghub" in parts:
-        index = parts.index("loghub")
+def write_jsonl(
+    path: str | Path,
+    records: Iterable[
+        DatasetRecord
+    ],
+) -> int:
+    """
+    Write canonical records as UTF-8 JSONL.
 
-        if index + 1 < len(parts):
-            return parts[index + 1]
+    Returns the number of records written.
+    """
 
-    return path.parent.name
-
-
-def normalize_loghub_structured(
-    path: Path,
-) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    dataset = detect_loghub_dataset(path)
-    frame = read_csv_robust(path)
-
-    required = {"Content", "EventId", "EventTemplate"}
-    missing = sorted(required - set(frame.columns))
-
-    if missing:
-        raise ValueError(
-            f"{path} is missing required columns: {missing}"
-        )
-
-    records: list[dict[str, Any]] = []
-
-    for _, row in frame.iterrows():
-        metadata = {}
-
-        for column in frame.columns:
-            if column in {
-                "LineId",
-                "Content",
-                "EventId",
-                "EventTemplate",
-                "Label",
-            }:
-                continue
-
-            value = clean_value(row.get(column))
-
-            if value is not None:
-                metadata[column] = value
-
-        label = clean_value(row.get("Label"))
-
-        record = {
-            "record_type": "log_event",
-            "source_family": "loghub",
-            "source_dataset": dataset,
-            "source_file": str(path),
-            "line_id": clean_value(row.get("LineId")),
-            "content": clean_value(row.get("Content")),
-            "event_id": clean_value(row.get("EventId")),
-            "event_template": clean_value(
-                row.get("EventTemplate")
-            ),
-            "label": label,
-            "metadata": metadata,
-        }
-
-        records.append(record)
-
-    report = {
-        "path": str(path),
-        "kind": "loghub_structured",
-        "dataset": dataset,
-        "rows": len(frame),
-        "columns": list(frame.columns),
-        "sha256": sha256sum(path),
-        "status": "processed",
-    }
-
-    return records, report
-
-
-def normalize_templates(
-    path: Path,
-) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    dataset = detect_loghub_dataset(path)
-    frame = read_csv_robust(path)
-
-    if "EventTemplate" not in frame.columns:
-        raise ValueError(
-            f"{path} has no EventTemplate column"
-        )
-
-    records: list[dict[str, Any]] = []
-
-    for _, row in frame.iterrows():
-        records.append(
-            {
-                "record_type": "log_template",
-                "source_family": "loghub",
-                "source_dataset": dataset,
-                "source_file": str(path),
-                "event_id": clean_value(row.get("EventId")),
-                "event_template": clean_value(
-                    row.get("EventTemplate")
-                ),
-                "occurrences": clean_value(
-                    row.get("Occurrences")
-                ),
-            }
-        )
-
-    report = {
-        "path": str(path),
-        "kind": "loghub_templates",
-        "dataset": dataset,
-        "rows": len(frame),
-        "columns": list(frame.columns),
-        "sha256": sha256sum(path),
-        "status": "processed",
-    }
-
-    return records, report
-
-
-def normalize_metric_csv(
-    path: Path,
-    provider: str,
-) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    frame = read_csv_robust(path)
-    frame = frame.dropna(how="all")
-
-    records: list[dict[str, Any]] = []
-
-    for row_index, row in frame.iterrows():
-        timestamp = None
-        metrics = {}
-        metadata = {}
-
-        for column in frame.columns:
-            value = clean_value(row.get(column))
-            lower = column.lower()
-
-            if value is None:
-                continue
-
-            if lower in {
-                "timestamp",
-                "time",
-                "datetime",
-                "date",
-            }:
-                timestamp = value
-                continue
-
-            if isinstance(value, (int, float)):
-                metrics[column] = value
-            else:
-                metadata[column] = value
-
-        records.append(
-            {
-                "record_type": "metric_snapshot",
-                "source_family": "cloud_trace",
-                "source_dataset": provider,
-                "source_file": str(path),
-                "row_id": int(row_index),
-                "timestamp": timestamp,
-                "metrics": metrics,
-                "metadata": metadata,
-            }
-        )
-
-    report = {
-        "path": str(path),
-        "kind": "cloud_metrics",
-        "dataset": provider,
-        "rows": len(frame),
-        "columns": list(frame.columns),
-        "sha256": sha256sum(path),
-        "status": "processed",
-    }
-
-    return records, report
-
-
-def normalize_anomaly_file(
-    path: Path,
-) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    frame = read_csv_robust(path)
-    frame = frame.dropna(how="all")
-
-    split_name = path.stem.lower()
-    dataset = "cloud-native-anomaly"
-    records: list[dict[str, Any]] = []
-
-    for row_index, row in frame.iterrows():
-        values = {
-            column: clean_value(row.get(column))
-            for column in frame.columns
-        }
-
-        record_type = (
-            "anomaly_groundtruth"
-            if "groundtruth" in split_name
-            else "anomaly_metric_snapshot"
-        )
-
-        records.append(
-            {
-                "record_type": record_type,
-                "source_family": "cloud_native_kpi",
-                "source_dataset": dataset,
-                "source_file": str(path),
-                "split": split_name,
-                "row_id": int(row_index),
-                "values": values,
-            }
-        )
-
-    report = {
-        "path": str(path),
-        "kind": "cloud_native_anomaly",
-        "dataset": dataset,
-        "split": split_name,
-        "rows": len(frame),
-        "columns": list(frame.columns),
-        "sha256": sha256sum(path),
-        "status": "processed",
-    }
-
-    return records, report
-
-
-def inventory_raw_log(path: Path) -> dict[str, Any]:
-    line_count = 0
-
-    with path.open(
-        "r",
-        encoding="utf-8",
-        errors="replace",
-    ) as handle:
-        for _ in handle:
-            line_count += 1
-
-    return {
-        "path": str(path),
-        "kind": "raw_log",
-        "dataset": detect_loghub_dataset(path),
-        "rows": line_count,
-        "size_bytes": path.stat().st_size,
-        "sha256": sha256sum(path),
-        "status": "inventoried",
-        "note": (
-            "Raw log retained for future parser evaluation. "
-            "Structured CSV is used for the initial corpus."
-        ),
-    }
-
-
-def process_corpus(raw_dir: Path, output_dir: Path) -> None:
-    inventory: list[dict[str, Any]] = []
-    log_events: list[dict[str, Any]] = []
-    templates: list[dict[str, Any]] = []
-    cloud_metrics: list[dict[str, Any]] = []
-    anomaly_records: list[dict[str, Any]] = []
-    errors: list[dict[str, str]] = []
-
-    files = sorted(
+    destination = Path(
         path
-        for path in raw_dir.rglob("*")
-        if path.is_file()
-        and path.suffix.lower() in {".csv", ".log"}
     )
 
-    LOGGER.info("Discovered %s input files", len(files))
+    try:
+        destination.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
 
-    for path in files:
-        relative = path.relative_to(raw_dir)
-        LOGGER.info("Processing %s", relative)
+    except OSError as exc:
+        raise DataPreparationError(
+            "Prepared-data directory "
+            "could not be created.",
+            details={
+                "error_type": (
+                    type(exc).__name__
+                ),
+            },
+        ) from exc
+
+    temporary = destination.with_name(
+        destination.name
+        + ".writing"
+    )
+
+    count = 0
+
+    try:
+        with temporary.open(
+            "w",
+            encoding="utf-8",
+            newline="\n",
+        ) as stream:
+            for record in records:
+                record.finalize()
+
+                stream.write(
+                    json.dumps(
+                        record.to_dict(),
+                        sort_keys=True,
+                        ensure_ascii=False,
+                        separators=(
+                            ",",
+                            ":",
+                        ),
+                    )
+                )
+
+                stream.write(
+                    "\n"
+                )
+
+                count += 1
+
+            stream.flush()
+
+            os.fsync(
+                stream.fileno()
+            )
+
+        temporary.replace(
+            destination
+        )
+
+    except (
+        OSError,
+        TypeError,
+        ValueError,
+    ) as exc:
+        try:
+            temporary.unlink(
+                missing_ok=True
+            )
+        except OSError:
+            pass
+
+        raise DataPreparationError(
+            "Prepared JSONL artifact "
+            "could not be written.",
+            details={
+                "error_type": (
+                    type(exc).__name__
+                ),
+            },
+        ) from exc
+
+    return count
+
+
+# ---------------------------------------------------------------
+# Rejected-record writer
+# ---------------------------------------------------------------
+
+def write_rejected_jsonl(
+    path: str | Path,
+    rejected: Iterable[
+        Dict[
+            str,
+            Any,
+        ]
+    ],
+) -> int:
+    """
+    Write bounded rejected-record metadata.
+
+    Raw exception messages are not included.
+    """
+
+    destination = Path(
+        path
+    )
+
+    destination.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    temporary = destination.with_name(
+        destination.name
+        + ".writing"
+    )
+
+    count = 0
+
+    try:
+        with temporary.open(
+            "w",
+            encoding="utf-8",
+            newline="\n",
+        ) as stream:
+            for item in rejected:
+                stream.write(
+                    json.dumps(
+                        to_json_safe(
+                            item
+                        ),
+                        sort_keys=True,
+                        ensure_ascii=False,
+                        separators=(
+                            ",",
+                            ":",
+                        ),
+                    )
+                )
+
+                stream.write(
+                    "\n"
+                )
+
+                count += 1
+
+            stream.flush()
+
+            os.fsync(
+                stream.fileno()
+            )
+
+        temporary.replace(
+            destination
+        )
+
+    except (
+        OSError,
+        TypeError,
+        ValueError,
+    ) as exc:
+        try:
+            temporary.unlink(
+                missing_ok=True
+            )
+        except OSError:
+            pass
+
+        raise DataPreparationError(
+            "Rejected-record artifact "
+            "could not be written.",
+            details={
+                "error_type": (
+                    type(exc).__name__
+                ),
+            },
+        ) from exc
+
+    return count
+
+
+# ---------------------------------------------------------------
+# Deduplication
+# ---------------------------------------------------------------
+
+def deduplicate_records(
+    records: Iterable[
+        DatasetRecord
+    ],
+) -> Tuple[
+    List[
+        DatasetRecord
+    ],
+    int,
+]:
+    """
+    Deduplicate canonical records by record_id.
+
+    The first occurrence is preserved.
+    """
+
+    output: List[
+        DatasetRecord
+    ] = []
+
+    seen = set()
+
+    duplicate_count = 0
+
+    for record in records:
+        record.finalize()
+
+        if not record.record_id:
+            raise DataPreparationError(
+                "Canonical record has no "
+                "record_id."
+            )
+
+        if record.record_id in seen:
+            duplicate_count += 1
+
+            continue
+
+        seen.add(
+            record.record_id
+        )
+
+        output.append(
+            record
+        )
+
+    return (
+        output,
+        duplicate_count,
+    )
+
+
+# ---------------------------------------------------------------
+# Corpus preparer
+# ---------------------------------------------------------------
+
+class CorpusPreparer:
+    """
+    Prepare one validated dataset version for the
+    training layer.
+
+    This implementation materializes canonical
+    records in memory before splitting. That
+    keeps splitting deterministic. A future
+    large-corpus backend can provide external
+    shuffle and partitioning through the same
+    output contracts.
+    """
+
+    def __init__(
+        self,
+        *,
+        config: Optional[
+            DataConfig
+        ] = None,
+        validator: Optional[
+            DatasetValidator
+        ] = None,
+        normalizer: Optional[
+            DatasetNormalizer
+        ] = None,
+        splitter: Optional[
+            DatasetSplitter
+        ] = None,
+        normalizers: Optional[
+            NormalizerRegistry
+        ] = None,
+    ) -> None:
+        self.config = (
+            config
+            or DataConfig()
+        )
+
+        self.config.validate()
+
+        self.validator = (
+            validator
+            or DatasetValidator(
+                config=self.config
+            )
+        )
+
+        self.normalizer = (
+            normalizer
+            or DatasetNormalizer(
+                registry=normalizers
+            )
+        )
+
+        self.splitter = (
+            splitter
+            or DatasetSplitter(
+                config=(
+                    self.config.split
+                )
+            )
+        )
+
+    # ---------------------------------------------------------
+    # Paths
+    # ---------------------------------------------------------
+
+    @property
+    def raw_directory(
+        self,
+    ) -> Path:
+        return Path(
+            self.config.
+            paths.resolved()[
+                "raw"
+            ]
+        )
+
+    @property
+    def prepared_directory(
+        self,
+    ) -> Path:
+        return Path(
+            self.config.
+            paths.resolved()[
+                "prepared"
+            ]
+        )
+
+    @property
+    def rejected_directory(
+        self,
+    ) -> Path:
+        return Path(
+            self.config.
+            paths.resolved()[
+                "rejected"
+            ]
+        )
+
+    # ---------------------------------------------------------
+    # Normalize all source files
+    # ---------------------------------------------------------
+
+    def _normalize_manifest(
+        self,
+        manifest: DatasetManifest,
+    ) -> Tuple[
+        List[
+            DatasetRecord
+        ],
+        List[
+            Dict[
+                str,
+                Any,
+            ]
+        ],
+        int,
+    ]:
+        records: List[
+            DatasetRecord
+        ] = []
+
+        rejected: List[
+            Dict[
+                str,
+                Any,
+            ]
+        ] = []
+
+        source_record_count = 0
+
+        for dataset_file in manifest.files:
+            path = resolve_dataset_file(
+                self.raw_directory,
+                dataset_file,
+            )
+
+            if (
+                not path.exists()
+                and not dataset_file.required
+            ):
+                continue
+
+            iterator = iter_dataset_records(
+                path,
+                dataset_file,
+                dataset_format=(
+                    manifest.format
+                ),
+                maximum_record_bytes=(
+                    self.config.
+                    validation.
+                    maximum_record_bytes
+                ),
+            )
+
+            for raw_record in iterator:
+                source_record_count += 1
+
+                record_number = int(
+                    raw_record[
+                        "record_number"
+                    ]
+                )
+
+                value = raw_record.get(
+                    "value"
+                )
+
+                try:
+                    record = (
+                        self.normalizer.
+                        normalize_one(
+                            value,
+                            manifest=manifest,
+                            dataset_file=(
+                                dataset_file
+                            ),
+                            record_number=(
+                                record_number
+                            ),
+                        )
+                    )
+
+                    records.append(
+                        record
+                    )
+
+                except (
+                    DataNormalizationError,
+                    UnsupportedRecordError,
+                ) as exc:
+                    rejected.append(
+                        {
+                            "dataset_id": (
+                                manifest.
+                                dataset_id
+                            ),
+                            "dataset_version": (
+                                manifest.version
+                            ),
+                            "file_id": (
+                                dataset_file.
+                                file_id
+                            ),
+                            "source_file": (
+                                dataset_file.path
+                            ),
+                            "record_number": (
+                                record_number
+                            ),
+                            "error_type": (
+                                type(exc).__name__
+                            ),
+                        }
+                    )
+
+                    if not (
+                        self.config.
+                        validation.
+                        reject_invalid_records
+                    ):
+                        raise
+
+        return (
+            records,
+            rejected,
+            source_record_count,
+        )
+
+    # ---------------------------------------------------------
+    # Write split
+    # ---------------------------------------------------------
+
+    @staticmethod
+    def _write_split(
+        staging_directory: Path,
+        *,
+        dataset_id: str,
+        split_name: str,
+        records: Iterable[
+            DatasetRecord
+        ],
+    ) -> DatasetSplit:
+        output = (
+            staging_directory
+            / (
+                split_name
+                + ".jsonl"
+            )
+        )
+
+        values = list(
+            records
+        )
+
+        write_jsonl(
+            output,
+            values,
+        )
+
+        return DatasetSplit(
+            dataset_id=(
+                dataset_id
+            ),
+            name=split_name,
+            record_ids=[
+                record.record_id
+                for record
+                in values
+                if record.record_id
+                is not None
+            ],
+            output_path=(
+                output.name
+            ),
+        ).finalize()
+
+    # ---------------------------------------------------------
+    # Write corpus metadata
+    # ---------------------------------------------------------
+
+    @staticmethod
+    def _write_metadata(
+        staging_directory: Path,
+        *,
+        manifest: DatasetManifest,
+        source_record_count: int,
+        prepared_record_count: int,
+        rejected_record_count: int,
+        duplicate_record_count: int,
+        splits: List[
+            DatasetSplit
+        ],
+    ) -> None:
+        path = (
+            staging_directory
+            / "dataset.json"
+        )
+
+        value = {
+            "dataset_id": (
+                manifest.dataset_id
+            ),
+            "name": manifest.name,
+            "version": (
+                manifest.version
+            ),
+            "format": (
+                manifest.format
+            ),
+            "purpose": (
+                manifest.purpose
+            ),
+            "source_record_count": (
+                source_record_count
+            ),
+            "prepared_record_count": (
+                prepared_record_count
+            ),
+            "rejected_record_count": (
+                rejected_record_count
+            ),
+            "duplicate_record_count": (
+                duplicate_record_count
+            ),
+            "splits": [
+                split.to_dict()
+                for split
+                in splits
+            ],
+        }
+
+        temporary = path.with_name(
+            path.name
+            + ".writing"
+        )
 
         try:
-            if path.suffix.lower() == ".log":
-                inventory.append(inventory_raw_log(path))
-                continue
-
-            filename = path.name
-
-            if filename.endswith(STRUCTURED_SUFFIX):
-                records, report = normalize_loghub_structured(
-                    path
+            temporary.write_text(
+                json.dumps(
+                    value,
+                    indent=2,
+                    sort_keys=True,
+                    ensure_ascii=False,
                 )
-                log_events.extend(records)
-                inventory.append(report)
-                continue
-
-            if filename.endswith(TEMPLATE_SUFFIXES):
-                records, report = normalize_templates(path)
-                templates.extend(records)
-                inventory.append(report)
-                continue
-
-            relative_parts = relative.parts
-
-            if (
-                relative_parts
-                and relative_parts[0] in METRIC_SOURCES
-            ):
-                provider = METRIC_SOURCES[relative_parts[0]]
-                records, report = normalize_metric_csv(
-                    path,
-                    provider,
-                )
-                cloud_metrics.extend(records)
-                inventory.append(report)
-                continue
-
-            if (
-                relative_parts
-                and relative_parts[0]
-                == "cloud-native-anomaly"
-            ):
-                records, report = normalize_anomaly_file(
-                    path
-                )
-                anomaly_records.extend(records)
-                inventory.append(report)
-                continue
-
-            inventory.append(
-                {
-                    "path": str(path),
-                    "kind": "unclassified_csv",
-                    "rows": None,
-                    "sha256": sha256sum(path),
-                    "status": "skipped",
-                }
+                + "\n",
+                encoding="utf-8",
             )
 
-        except Exception as exc:
-            LOGGER.exception("Failed to process %s", path)
-            errors.append(
-                {
-                    "path": str(path),
-                    "error": str(exc),
-                }
+            temporary.replace(
+                path
             )
 
-    write_jsonl(
-        log_events,
-        output_dir / "logs" / "events.jsonl",
-    )
-    write_jsonl(
-        templates,
-        output_dir / "logs" / "templates.jsonl",
-    )
-    write_jsonl(
-        cloud_metrics,
-        output_dir / "metrics" / "snapshots.jsonl",
-    )
-    write_jsonl(
-        anomaly_records,
-        output_dir / "anomalies" / "records.jsonl",
-    )
+        except (
+            OSError,
+            TypeError,
+            ValueError,
+        ) as exc:
+            try:
+                temporary.unlink(
+                    missing_ok=True
+                )
+            except OSError:
+                pass
 
-    output_dir.mkdir(parents=True, exist_ok=True)
+            raise DataPreparationError(
+                "Prepared dataset "
+                "metadata could not be "
+                "written.",
+                details={
+                    "error_type": (
+                        type(exc).__name__
+                    ),
+                },
+            ) from exc
 
-    report = {
-        "raw_directory": str(raw_dir),
-        "output_directory": str(output_dir),
-        "discovered_files": len(files),
-        "log_events": len(log_events),
-        "log_templates": len(templates),
-        "cloud_metric_snapshots": len(cloud_metrics),
-        "anomaly_records": len(anomaly_records),
-        "errors": errors,
-        "inventory": inventory,
-    }
+    # ---------------------------------------------------------
+    # Prepare
+    # ---------------------------------------------------------
 
-    report_path = output_dir / "preparation_report.json"
+    def prepare(
+        self,
+        manifest: DatasetManifest,
+        *,
+        record_validator: Optional[
+            RecordValidator
+        ] = None,
+    ) -> PreparationResult:
+        manifest.finalize()
 
-    with report_path.open("w", encoding="utf-8") as handle:
-        json.dump(
-            report,
-            handle,
-            indent=2,
-            ensure_ascii=False,
-            default=str,
+        if not self.config.enabled:
+            raise DataPreparationError(
+                "Data pipeline is "
+                "disabled."
+            )
+
+        if (
+            self.config.
+            preparation.
+            output_format
+            != "jsonl"
+        ):
+            raise DataPreparationError(
+                "The current corpus "
+                "writer supports JSONL "
+                "output only.",
+                details={
+                    "configured_format": (
+                        self.config.
+                        preparation.
+                        output_format
+                    ),
+                },
+            )
+
+        # -----------------------------------------------------
+        # Validate before transformation
+        # -----------------------------------------------------
+
+        validation = (
+            self.validator.
+            require_valid(
+                manifest,
+                record_validator=(
+                    record_validator
+                ),
+            )
         )
 
-    LOGGER.info("Preparation complete")
-    LOGGER.info("Log events: %s", len(log_events))
-    LOGGER.info("Templates: %s", len(templates))
-    LOGGER.info(
-        "Cloud metric snapshots: %s",
-        len(cloud_metrics),
-    )
-    LOGGER.info(
-        "Anomaly records: %s",
-        len(anomaly_records),
-    )
-    LOGGER.info("Errors: %s", len(errors))
-    LOGGER.info("Report: %s", report_path)
+        # -----------------------------------------------------
+        # Normalize
+        # -----------------------------------------------------
 
-
-def main() -> None:
-    parser = argparse.ArgumentParser(
-        description=(
-            "Validate and normalize OSHA raw datasets."
-        )
-    )
-
-    parser.add_argument(
-        "--raw-dir",
-        default="orchestration-ai-data/raw",
-        help="Directory containing raw datasets.",
-    )
-
-    parser.add_argument(
-        "--output-dir",
-        default="orchestration-ai-data/processed",
-        help="Directory for normalized outputs.",
-    )
-
-    parser.add_argument(
-        "--log-level",
-        default="INFO",
-        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
-    )
-
-    args = parser.parse_args()
-
-    logging.basicConfig(
-        level=getattr(logging, args.log_level),
-        format=(
-            "%(asctime)s | %(levelname)s | %(message)s"
-        ),
-    )
-
-    raw_dir = Path(args.raw_dir).resolve()
-    output_dir = Path(args.output_dir).resolve()
-
-    if not raw_dir.exists():
-        raise FileNotFoundError(
-            f"Raw dataset directory does not exist: {raw_dir}"
+        (
+            records,
+            rejected,
+            source_record_count,
+        ) = self._normalize_manifest(
+            manifest
         )
 
-    if raw_dir == output_dir:
-        raise ValueError(
-            "Raw and processed directories must be different."
+        if not records:
+            raise DataPreparationError(
+                "Dataset produced no "
+                "canonical records.",
+                details={
+                    "dataset_id": (
+                        manifest.dataset_id
+                    ),
+                    "rejected_count": (
+                        len(
+                            rejected
+                        )
+                    ),
+                },
+            )
+
+        # -----------------------------------------------------
+        # Deduplicate
+        # -----------------------------------------------------
+
+        duplicate_count = 0
+
+        if (
+            self.config.
+            preparation.
+            deduplicate_records
+        ):
+            (
+                records,
+                duplicate_count,
+            ) = deduplicate_records(
+                records
+            )
+
+        # -----------------------------------------------------
+        # Destination
+        # -----------------------------------------------------
+
+        destination = (
+            prepared_dataset_directory(
+                self.prepared_directory,
+                manifest,
+            )
         )
 
-    process_corpus(raw_dir, output_dir)
+        if (
+            destination.exists()
+            and not self.config.
+            preparation.
+            overwrite_existing
+        ):
+            raise (
+                PreparedDatasetConflictError(
+                    "Prepared dataset "
+                    "already exists.",
+                    details={
+                        "dataset_id": (
+                            manifest.
+                            dataset_id
+                        ),
+                        "version": (
+                            manifest.version
+                        ),
+                        "destination": (
+                            str(
+                                destination
+                            )
+                        ),
+                    },
+                )
+            )
+
+        destination.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        staging_directory = Path(
+            tempfile.mkdtemp(
+                prefix=(
+                    "."
+                    + safe_artifact_name(
+                        manifest.version
+                    )
+                    + "-"
+                ),
+                suffix=".preparing",
+                dir=str(
+                    destination.parent
+                ),
+            )
+        )
+
+        splits: List[
+            DatasetSplit
+        ] = []
+
+        try:
+            # -------------------------------------------------
+            # Split and write
+            # -------------------------------------------------
+
+            if (
+                self.config.
+                preparation.
+                create_splits
+            ):
+                split_result = (
+                    self.splitter.split(
+                        records
+                    )
+                )
+
+                splits = [
+                    self._write_split(
+                        staging_directory,
+                        dataset_id=(
+                            manifest.
+                            dataset_id
+                        ),
+                        split_name=(
+                            SplitName.
+                            TRAIN.value
+                        ),
+                        records=(
+                            split_result.train
+                        ),
+                    ),
+
+                    self._write_split(
+                        staging_directory,
+                        dataset_id=(
+                            manifest.
+                            dataset_id
+                        ),
+                        split_name=(
+                            SplitName.
+                            VALIDATION.value
+                        ),
+                        records=(
+                            split_result.
+                            validation
+                        ),
+                    ),
+
+                    self._write_split(
+                        staging_directory,
+                        dataset_id=(
+                            manifest.
+                            dataset_id
+                        ),
+                        split_name=(
+                            SplitName.
+                            TEST.value
+                        ),
+                        records=(
+                            split_result.test
+                        ),
+                    ),
+                ]
+
+            else:
+                splits = [
+                    self._write_split(
+                        staging_directory,
+                        dataset_id=(
+                            manifest.
+                            dataset_id
+                        ),
+                        split_name=(
+                            SplitName.
+                            TRAIN.value
+                        ),
+                        records=records,
+                    )
+                ]
+
+            # -------------------------------------------------
+            # Rejected metadata
+            # -------------------------------------------------
+
+            if (
+                rejected
+                and self.config.
+                preparation.
+                preserve_rejected_records
+            ):
+                write_rejected_jsonl(
+                    (
+                        staging_directory
+                        / "rejected.jsonl"
+                    ),
+                    rejected,
+                )
+
+            # -------------------------------------------------
+            # Dataset metadata
+            # -------------------------------------------------
+
+            self._write_metadata(
+                staging_directory,
+                manifest=manifest,
+                source_record_count=(
+                    source_record_count
+                ),
+                prepared_record_count=(
+                    len(
+                        records
+                    )
+                ),
+                rejected_record_count=(
+                    len(
+                        rejected
+                    )
+                ),
+                duplicate_record_count=(
+                    duplicate_count
+                ),
+                splits=splits,
+            )
+
+            # -------------------------------------------------
+            # Publish prepared directory
+            # -------------------------------------------------
+
+            if destination.exists():
+                shutil.rmtree(
+                    destination
+                )
+
+            staging_directory.replace(
+                destination
+            )
+
+        except Exception:
+            try:
+                shutil.rmtree(
+                    staging_directory,
+                    ignore_errors=True,
+                )
+            finally:
+                pass
+
+            raise
+
+        # -----------------------------------------------------
+        # Final paths
+        # -----------------------------------------------------
+
+        final_splits: List[
+            DatasetSplit
+        ] = []
+
+        for split in splits:
+            final_splits.append(
+                DatasetSplit(
+                    dataset_id=(
+                        split.dataset_id
+                    ),
+                    name=split.name,
+                    record_ids=list(
+                        split.record_ids
+                    ),
+                    output_path=str(
+                        destination
+                        / str(
+                            split.
+                            output_path
+                        )
+                    ),
+                    attributes={
+                        **split.attributes,
+                        "output_format": (
+                            "jsonl"
+                        ),
+                    },
+                ).finalize()
+            )
+
+        return PreparationResult(
+            dataset_id=(
+                manifest.dataset_id
+            ),
+            success=True,
+            state=(
+                DataState.PREPARED.value
+            ),
+            output_directory=str(
+                destination
+            ),
+            splits=final_splits,
+            source_record_count=(
+                source_record_count
+            ),
+            prepared_record_count=len(
+                records
+            ),
+            rejected_record_count=len(
+                rejected
+            ),
+            reference_ids=[
+                dataset_file.file_id
+                for dataset_file
+                in manifest.files
+                if dataset_file.file_id
+                is not None
+            ],
+            attributes={
+                "dataset_version": (
+                    manifest.version
+                ),
+                "validation_records_seen": (
+                    validation.
+                    records_seen
+                ),
+                "validation_records_valid": (
+                    validation.
+                    records_valid
+                ),
+                "duplicate_record_count": (
+                    duplicate_count
+                ),
+                "output_format": (
+                    "jsonl"
+                ),
+                "training_performed": (
+                    False
+                ),
+            },
+        ).finalize()
+
+    # ---------------------------------------------------------
+    # Summary
+    # ---------------------------------------------------------
+
+    def summary(
+        self,
+    ) -> Dict[str, Any]:
+        return {
+            "raw_directory": str(
+                self.raw_directory
+            ),
+            "prepared_directory": str(
+                self.prepared_directory
+            ),
+            "rejected_directory": str(
+                self.rejected_directory
+            ),
+            "output_format": (
+                self.config.
+                preparation.
+                output_format
+            ),
+            "deduplicate_records": (
+                self.config.
+                preparation.
+                deduplicate_records
+            ),
+            "create_splits": (
+                self.config.
+                preparation.
+                create_splits
+            ),
+            "overwrite_existing": (
+                self.config.
+                preparation.
+                overwrite_existing
+            ),
+            "preserve_rejected_records": (
+                self.config.
+                preparation.
+                preserve_rejected_records
+            ),
+            "training_performed": (
+                False
+            ),
+        }
 
 
-if __name__ == "__main__":
-    main()
+# ---------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------
+
+__all__ = [
+    "safe_artifact_name",
+    "prepared_dataset_directory",
+
+    "write_jsonl",
+    "write_rejected_jsonl",
+
+    "deduplicate_records",
+
+    "CorpusPreparer",
+]

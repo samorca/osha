@@ -1,0 +1,18 @@
+{
+  "action_id": "decision:action:9af67e8d00d4700724cfc481ca0f0479b2100ddeb17853fb57fc2350aa8f51ff",
+  "action_type": "observe_resource",
+  "environment_id": "local-dev",
+  "mode": "dry_run",
+  "decision_id": "decision:fa1bcc218c13ddcb857a048a053b5cfcc44c4bb990d8432aacf3a497518519ff",
+  "plan_id": "decision:plan:0cedd8bcf7a7bb4b0bbecef2561ea62dd6bff609818c8de7b2b0ad6dcc2f376a",
+  "incident_id": "intel:incident:e629c2eca21c62b2f16c6c09ef25fb08ccee778b62a28d62e5825fbbc5d77128",
+  "target_resource_ids": [
+    "osha:resource:fb7efc1007996520f34d4fa6df78ff0f0d87942069afbc7ea39dc7af3c84c767"
+  ],
+  "target_service_ids": [],
+  "parameters": {},
+  "risk_level": "none",
+  "risk_score": 0.15838303562028208,
+  "reversibility": "full",
+  "rollback_action_type": "stop_observation"
+}

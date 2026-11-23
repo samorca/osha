@@ -1,0 +1,65 @@
+{
+  "data": "orchestration-ai-data/processed/logs/events.jsonl",
+  "total_records": 32000,
+  "train_records": 25526,
+  "validation_records": 3239,
+  "test_records": 3235,
+  "vocabulary_size": 5615,
+  "source_classes": 16,
+  "component_classes": 354,
+  "event_classes": 1363,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 4.416209363997132,
+      "validation_loss": 1.4033103531189994,
+      "validation_source_accuracy": 0.9564680456931152,
+      "validation_component_accuracy": 0.9248942172073342,
+      "validation_event_accuracy": 0.8712565606668725,
+      "validation_component_examples": 2836
+    },
+    {
+      "epoch": 2,
+      "train_loss": 1.1017986025875972,
+      "validation_loss": 0.8305332428574854,
+      "validation_source_accuracy": 0.9749922815683854,
+      "validation_component_accuracy": 0.9569816643159379,
+      "validation_event_accuracy": 0.9376350725532572,
+      "validation_component_examples": 2836
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.6293534277413124,
+      "validation_loss": 0.6416547356730363,
+      "validation_source_accuracy": 0.9805495523309663,
+      "validation_component_accuracy": 0.9657968970380818,
+      "validation_event_accuracy": 0.9561593084285274,
+      "validation_component_examples": 2836
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.4291782742576267,
+      "validation_loss": 0.5932003342930008,
+      "validation_source_accuracy": 0.9814757641247298,
+      "validation_component_accuracy": 0.9693229901269393,
+      "validation_event_accuracy": 0.9598641556035814,
+      "validation_component_examples": 2836
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.3117222489980528,
+      "validation_loss": 0.5640076978483657,
+      "validation_source_accuracy": 0.9851806112997838,
+      "validation_component_accuracy": 0.9714386459802539,
+      "validation_event_accuracy": 0.962334053720284,
+      "validation_component_examples": 2836
+    }
+  ],
+  "test": {
+    "loss": 0.671605686546422,
+    "source_accuracy": 0.9820710973724884,
+    "component_accuracy": 0.9676041295834816,
+    "event_accuracy": 0.962596599690881,
+    "component_examples": 2809
+  }
+}

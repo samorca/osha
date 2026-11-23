@@ -1,0 +1,1159 @@
+{
+  "schema_version": "1",
+  "remediation_id": "remediation:09715c944875290445bce470e6661bc363d65dc496a6a8afbfdc00cd1230a197",
+  "status": "completed",
+  "request": {
+    "action_id": "decision:action:9af67e8d00d4700724cfc481ca0f0479b2100ddeb17853fb57fc2350aa8f51ff",
+    "action_type": "observe_resource",
+    "environment_id": "local-dev",
+    "mode": "dry_run",
+    "decision_id": "decision:fa1bcc218c13ddcb857a048a053b5cfcc44c4bb990d8432aacf3a497518519ff",
+    "plan_id": "decision:plan:0cedd8bcf7a7bb4b0bbecef2561ea62dd6bff609818c8de7b2b0ad6dcc2f376a",
+    "incident_id": "intel:incident:e629c2eca21c62b2f16c6c09ef25fb08ccee778b62a28d62e5825fbbc5d77128",
+    "target_resource_ids": [
+      "osha:resource:fb7efc1007996520f34d4fa6df78ff0f0d87942069afbc7ea39dc7af3c84c767"
+    ],
+    "target_service_ids": [],
+    "parameters": {},
+    "requested_by": null,
+    "approval_status": null,
+    "approval_ids": [],
+    "risk_level": "none",
+    "risk_score": 0.15838303562028208,
+    "reversibility": "full",
+    "rollback_action_type": "stop_observation",
+    "requested_at": "2026-11-21T19:27:16.180406+00:00",
+    "expires_at": null,
+    "attributes": {},
+    "request_id": "remediation:request:5296a06419fb088b7729b3ccec131462258429c25d18e999e8ae8d413762c9b7"
+  },
+  "validation": {
+    "status": "valid",
+    "valid": true,
+    "checks": [
+      {
+        "guardrail_id": "remediation.execution-enabled",
+        "name": "Execution authority",
+        "status": "passed",
+        "description": "Dry-run mode is safe or execution is explicitly enabled.",
+        "blocking": true,
+        "evidence": [
+          {
+            "evidence_type": "guardrail",
+            "description": "Dry-run mode is safe or execution is explicitly enabled.",
+            "score": 1.0,
+            "source_id": null,
+            "resource_ids": [],
+            "attributes": {
+              "mode": "dry_run",
+              "execution_enabled": false
+            },
+            "observed_at": "2026-11-21T19:27:16.181020+00:00"
+          }
+        ],
+        "attributes": {
+          "mode": "dry_run",
+          "execution_enabled": false
+        }
+      },
+      {
+        "guardrail_id": "remediation.environment",
+        "name": "Environment restriction",
+        "status": "passed",
+        "description": "Environment is explicitly allowed for remediation evaluation.",
+        "blocking": true,
+        "evidence": [
+          {
+            "evidence_type": "guardrail",
+            "description": "Environment is explicitly allowed for remediation evaluation.",
+            "score": 1.0,
+            "source_id": null,
+            "resource_ids": [],
+            "attributes": {
+              "environment": "local-dev"
+            },
+            "observed_at": "2026-11-21T19:27:16.181032+00:00"
+          }
+        ],
+        "attributes": {
+          "environment": "local-dev"
+        }
+      },
+      {
+        "guardrail_id": "remediation.action-type",
+        "name": "Action allowlist",
+        "status": "passed",
+        "description": "Action type is explicitly allowlisted.",
+        "blocking": true,
+        "evidence": [
+          {
+            "evidence_type": "guardrail",
+            "description": "Action type is explicitly allowlisted.",
+            "score": 1.0,
+            "source_id": null,
+            "resource_ids": [],
+            "attributes": {
+              "action_type": "observe_resource"
+            },
+            "observed_at": "2026-11-21T19:27:16.181038+00:00"
+          }
+        ],
+        "attributes": {
+          "action_type": "observe_resource"
+        }
+      },
+      {
+        "guardrail_id": "remediation.approval",
+        "name": "Approval handoff",
+        "status": "passed",
+        "description": "Dry-run mode does not require execution approval.",
+        "blocking": true,
+        "evidence": [
+          {
+            "evidence_type": "guardrail",
+            "description": "Dry-run mode does not require execution approval.",
+            "score": 1.0,
+            "source_id": null,
+            "resource_ids": [],
+            "attributes": {
+              "approval_status": null,
+              "approval_count": 0
+            },
+            "observed_at": "2026-11-21T19:27:16.181042+00:00"
+          }
+        ],
+        "attributes": {
+          "approval_status": null,
+          "approval_count": 0
+        }
+      },
+      {
+        "guardrail_id": "remediation.request-expiry",
+        "name": "Request freshness",
+        "status": "passed",
+        "description": "Dry-run request has no mandatory expiry requirement.",
+        "blocking": true,
+        "evidence": [
+          {
+            "evidence_type": "guardrail",
+            "description": "Dry-run request has no mandatory expiry requirement.",
+            "score": 1.0,
+            "source_id": null,
+            "resource_ids": [],
+            "attributes": {
+              "expires_at": null
+            },
+            "observed_at": "2026-11-21T19:27:16.181046+00:00"
+          }
+        ],
+        "attributes": {
+          "expires_at": null
+        }
+      },
+      {
+        "guardrail_id": "remediation.target-scope",
+        "name": "Target scope",
+        "status": "passed",
+        "description": "Request has explicit targets within configured limits.",
+        "blocking": true,
+        "evidence": [
+          {
+            "evidence_type": "guardrail",
+            "description": "Request has explicit targets within configured limits.",
+            "score": 1.0,
+            "source_id": null,
+            "resource_ids": [],
+            "attributes": {
+              "resource_count": 1,
+              "service_count": 0,
+              "maximum_resources": 1,
+              "maximum_services": 1
+            },
+            "observed_at": "2026-11-21T19:27:16.181050+00:00"
+          }
+        ],
+        "attributes": {
+          "resource_count": 1,
+          "service_count": 0,
+          "maximum_resources": 1,
+          "maximum_services": 1
+        }
+      },
+      {
+        "guardrail_id": "remediation.risk-limit",
+        "name": "Risk tolerance",
+        "status": "passed",
+        "description": "Action risk is within the remediation limit.",
+        "blocking": true,
+        "evidence": [
+          {
+            "evidence_type": "guardrail",
+            "description": "Action risk is within the remediation limit.",
+            "score": 1.0,
+            "source_id": null,
+            "resource_ids": [],
+            "attributes": {
+              "risk_score": 0.15838303562028208,
+              "risk_level": "none",
+              "maximum_risk_score": 0.7
+            },
+            "observed_at": "2026-11-21T19:27:16.181054+00:00"
+          }
+        ],
+        "attributes": {
+          "risk_score": 0.15838303562028208,
+          "risk_level": "none",
+          "maximum_risk_score": 0.7
+        }
+      },
+      {
+        "guardrail_id": "remediation.rollback",
+        "name": "Rollback availability",
+        "status": "passed",
+        "description": "Dry-run mode does not require an executable rollback.",
+        "blocking": true,
+        "evidence": [
+          {
+            "evidence_type": "guardrail",
+            "description": "Dry-run mode does not require an executable rollback.",
+            "score": 1.0,
+            "source_id": null,
+            "resource_ids": [],
+            "attributes": {
+              "rollback_action_type": "stop_observation"
+            },
+            "observed_at": "2026-11-21T19:27:16.181057+00:00"
+          }
+        ],
+        "attributes": {
+          "rollback_action_type": "stop_observation"
+        }
+      },
+      {
+        "guardrail_id": "remediation.parameters",
+        "name": "Parameter allowlist",
+        "status": "passed",
+        "description": "All remediation parameters are allowlisted.",
+        "blocking": true,
+        "evidence": [
+          {
+            "evidence_type": "guardrail",
+            "description": "All remediation parameters are allowlisted.",
+            "score": 1.0,
+            "source_id": null,
+            "resource_ids": [],
+            "attributes": {
+              "unknown_parameters": []
+            },
+            "observed_at": "2026-11-21T19:27:16.181062+00:00"
+          }
+        ],
+        "attributes": {
+          "unknown_parameters": []
+        }
+      },
+      {
+        "guardrail_id": "validation.action-id",
+        "name": "Action identity",
+        "status": "passed",
+        "description": "Request contains an action ID.",
+        "blocking": true,
+        "evidence": [
+          {
+            "evidence_type": "validation",
+            "description": "Request contains an action ID.",
+            "score": 1.0,
+            "source_id": null,
+            "resource_ids": [],
+            "attributes": {},
+            "observed_at": "2026-11-21T19:27:16.181077+00:00"
+          }
+        ],
+        "attributes": {}
+      },
+      {
+        "guardrail_id": "validation.decision-handoff",
+        "name": "Decision handoff",
+        "status": "passed",
+        "description": "Dry-run request may be validated without complete decision handoff metadata.",
+        "blocking": true,
+        "evidence": [
+          {
+            "evidence_type": "validation",
+            "description": "Dry-run request may be validated without complete decision handoff metadata.",
+            "score": 1.0,
+            "source_id": null,
+            "resource_ids": [],
+            "attributes": {},
+            "observed_at": "2026-11-21T19:27:16.181081+00:00"
+          }
+        ],
+        "attributes": {}
+      },
+      {
+        "guardrail_id": "validation.target-identity",
+        "name": "Target identity",
+        "status": "passed",
+        "description": "All target identifiers are non-empty.",
+        "blocking": true,
+        "evidence": [
+          {
+            "evidence_type": "validation",
+            "description": "All target identifiers are non-empty.",
+            "score": 1.0,
+            "source_id": null,
+            "resource_ids": [],
+            "attributes": {},
+            "observed_at": "2026-11-21T19:27:16.181085+00:00"
+          }
+        ],
+        "attributes": {}
+      },
+      {
+        "guardrail_id": "validation.timeout",
+        "name": "Timeout parameter",
+        "status": "passed",
+        "description": "No explicit timeout was provided.",
+        "blocking": false,
+        "evidence": [
+          {
+            "evidence_type": "validation",
+            "description": "No explicit timeout was provided.",
+            "score": 1.0,
+            "source_id": null,
+            "resource_ids": [],
+            "attributes": {},
+            "observed_at": "2026-11-21T19:27:16.181088+00:00"
+          }
+        ],
+        "attributes": {}
+      },
+      {
+        "guardrail_id": "validation.maximum-targets",
+        "name": "Maximum target parameter",
+        "status": "passed",
+        "description": "No per-action target bound was supplied.",
+        "blocking": false,
+        "evidence": [
+          {
+            "evidence_type": "validation",
+            "description": "No per-action target bound was supplied.",
+            "score": 1.0,
+            "source_id": null,
+            "resource_ids": [],
+            "attributes": {},
+            "observed_at": "2026-11-21T19:27:16.181091+00:00"
+          }
+        ],
+        "attributes": {}
+      },
+      {
+        "guardrail_id": "validation.capacity-delta",
+        "name": "Capacity parameter",
+        "status": "passed",
+        "description": "No capacity adjustment was provided.",
+        "blocking": false,
+        "evidence": [
+          {
+            "evidence_type": "validation",
+            "description": "No capacity adjustment was provided.",
+            "score": 1.0,
+            "source_id": null,
+            "resource_ids": [],
+            "attributes": {},
+            "observed_at": "2026-11-21T19:27:16.181094+00:00"
+          }
+        ],
+        "attributes": {}
+      },
+      {
+        "guardrail_id": "validation.expected_state",
+        "name": "expected_state parameter",
+        "status": "passed",
+        "description": "No expected_state parameter was supplied.",
+        "blocking": false,
+        "evidence": [
+          {
+            "evidence_type": "validation",
+            "description": "No expected_state parameter was supplied.",
+            "score": 1.0,
+            "source_id": null,
+            "resource_ids": [],
+            "attributes": {},
+            "observed_at": "2026-11-21T19:27:16.181097+00:00"
+          }
+        ],
+        "attributes": {}
+      },
+      {
+        "guardrail_id": "validation.configuration_version",
+        "name": "configuration_version parameter",
+        "status": "passed",
+        "description": "No configuration_version parameter was supplied.",
+        "blocking": false,
+        "evidence": [
+          {
+            "evidence_type": "validation",
+            "description": "No configuration_version parameter was supplied.",
+            "score": 1.0,
+            "source_id": null,
+            "resource_ids": [],
+            "attributes": {},
+            "observed_at": "2026-11-21T19:27:16.181103+00:00"
+          }
+        ],
+        "attributes": {}
+      },
+      {
+        "guardrail_id": "validation.reason",
+        "name": "reason parameter",
+        "status": "passed",
+        "description": "No reason parameter was supplied.",
+        "blocking": false,
+        "evidence": [
+          {
+            "evidence_type": "validation",
+            "description": "No reason parameter was supplied.",
+            "score": 1.0,
+            "source_id": null,
+            "resource_ids": [],
+            "attributes": {},
+            "observed_at": "2026-11-21T19:27:16.181107+00:00"
+          }
+        ],
+        "attributes": {}
+      },
+      {
+        "guardrail_id": "validation.adapter-support",
+        "name": "Adapter support",
+        "status": "passed",
+        "description": "A compatible adapter capability is available, or no adapter is required for this dry-run.",
+        "blocking": true,
+        "evidence": [
+          {
+            "evidence_type": "validation",
+            "description": "A compatible adapter capability is available, or no adapter is required for this dry-run.",
+            "score": 1.0,
+            "source_id": null,
+            "resource_ids": [],
+            "attributes": {
+              "matching_adapters": [
+                "dry-run"
+              ]
+            },
+            "observed_at": "2026-11-21T19:27:16.181114+00:00"
+          }
+        ],
+        "attributes": {
+          "matching_adapters": [
+            "dry-run"
+          ]
+        }
+      },
+      {
+        "guardrail_id": "validation.rollback-support",
+        "name": "Rollback adapter support",
+        "status": "passed",
+        "description": "Dry-run does not require executable rollback support.",
+        "blocking": true,
+        "evidence": [
+          {
+            "evidence_type": "validation",
+            "description": "Dry-run does not require executable rollback support.",
+            "score": 1.0,
+            "source_id": null,
+            "resource_ids": [],
+            "attributes": {},
+            "observed_at": "2026-11-21T19:27:16.181118+00:00"
+          }
+        ],
+        "attributes": {}
+      }
+    ],
+    "blocking_reasons": [],
+    "warnings": [],
+    "validated_at": "2026-11-21T19:27:16.181126+00:00",
+    "attributes": {
+      "request_id": "remediation:request:5296a06419fb088b7729b3ccec131462258429c25d18e999e8ae8d413762c9b7",
+      "mode": "dry_run",
+      "adapter_capability_count": 1,
+      "guardrails_allowed": true
+    }
+  },
+  "execution": {
+    "status": "dry_run",
+    "success": true,
+    "adapter_name": "dry-run",
+    "operation": "observe_resource",
+    "started_at": "2026-11-21T19:27:16.181527+00:00",
+    "finished_at": "2026-11-21T19:27:16.181529+00:00",
+    "duration_seconds": 8.899951353669167e-08,
+    "exit_code": null,
+    "stdout": null,
+    "stderr": null,
+    "changed": false,
+    "evidence": [
+      {
+        "evidence_type": "dry_run",
+        "description": "The adapter validated the requested operation without changing infrastructure.",
+        "score": 1.0,
+        "source_id": "remediation:request:5296a06419fb088b7729b3ccec131462258429c25d18e999e8ae8d413762c9b7",
+        "resource_ids": [
+          "osha:resource:fb7efc1007996520f34d4fa6df78ff0f0d87942069afbc7ea39dc7af3c84c767"
+        ],
+        "attributes": {
+          "action_type": "observe_resource",
+          "target_service_ids": []
+        },
+        "observed_at": "2026-11-21T19:27:16.181533+00:00"
+      }
+    ],
+    "attributes": {
+      "mode": "dry_run",
+      "request_id": "remediation:request:5296a06419fb088b7729b3ccec131462258429c25d18e999e8ae8d413762c9b7",
+      "parameters": {},
+      "validation": {
+        "status": "valid",
+        "valid": true,
+        "checks": [
+          {
+            "guardrail_id": "remediation.execution-enabled",
+            "name": "Execution authority",
+            "status": "passed",
+            "description": "Dry-run mode is safe or execution is explicitly enabled.",
+            "blocking": true,
+            "evidence": [
+              {
+                "evidence_type": "guardrail",
+                "description": "Dry-run mode is safe or execution is explicitly enabled.",
+                "score": 1.0,
+                "source_id": null,
+                "resource_ids": [],
+                "attributes": {
+                  "mode": "dry_run",
+                  "execution_enabled": false
+                },
+                "observed_at": "2026-11-21T19:27:16.181406+00:00"
+              }
+            ],
+            "attributes": {
+              "mode": "dry_run",
+              "execution_enabled": false
+            }
+          },
+          {
+            "guardrail_id": "remediation.environment",
+            "name": "Environment restriction",
+            "status": "passed",
+            "description": "Environment is explicitly allowed for remediation evaluation.",
+            "blocking": true,
+            "evidence": [
+              {
+                "evidence_type": "guardrail",
+                "description": "Environment is explicitly allowed for remediation evaluation.",
+                "score": 1.0,
+                "source_id": null,
+                "resource_ids": [],
+                "attributes": {
+                  "environment": "local-dev"
+                },
+                "observed_at": "2026-11-21T19:27:16.181415+00:00"
+              }
+            ],
+            "attributes": {
+              "environment": "local-dev"
+            }
+          },
+          {
+            "guardrail_id": "remediation.action-type",
+            "name": "Action allowlist",
+            "status": "passed",
+            "description": "Action type is explicitly allowlisted.",
+            "blocking": true,
+            "evidence": [
+              {
+                "evidence_type": "guardrail",
+                "description": "Action type is explicitly allowlisted.",
+                "score": 1.0,
+                "source_id": null,
+                "resource_ids": [],
+                "attributes": {
+                  "action_type": "observe_resource"
+                },
+                "observed_at": "2026-11-21T19:27:16.181420+00:00"
+              }
+            ],
+            "attributes": {
+              "action_type": "observe_resource"
+            }
+          },
+          {
+            "guardrail_id": "remediation.approval",
+            "name": "Approval handoff",
+            "status": "passed",
+            "description": "Dry-run mode does not require execution approval.",
+            "blocking": true,
+            "evidence": [
+              {
+                "evidence_type": "guardrail",
+                "description": "Dry-run mode does not require execution approval.",
+                "score": 1.0,
+                "source_id": null,
+                "resource_ids": [],
+                "attributes": {
+                  "approval_status": null,
+                  "approval_count": 0
+                },
+                "observed_at": "2026-11-21T19:27:16.181426+00:00"
+              }
+            ],
+            "attributes": {
+              "approval_status": null,
+              "approval_count": 0
+            }
+          },
+          {
+            "guardrail_id": "remediation.request-expiry",
+            "name": "Request freshness",
+            "status": "passed",
+            "description": "Dry-run request has no mandatory expiry requirement.",
+            "blocking": true,
+            "evidence": [
+              {
+                "evidence_type": "guardrail",
+                "description": "Dry-run request has no mandatory expiry requirement.",
+                "score": 1.0,
+                "source_id": null,
+                "resource_ids": [],
+                "attributes": {
+                  "expires_at": null
+                },
+                "observed_at": "2026-11-21T19:27:16.181430+00:00"
+              }
+            ],
+            "attributes": {
+              "expires_at": null
+            }
+          },
+          {
+            "guardrail_id": "remediation.target-scope",
+            "name": "Target scope",
+            "status": "passed",
+            "description": "Request has explicit targets within configured limits.",
+            "blocking": true,
+            "evidence": [
+              {
+                "evidence_type": "guardrail",
+                "description": "Request has explicit targets within configured limits.",
+                "score": 1.0,
+                "source_id": null,
+                "resource_ids": [],
+                "attributes": {
+                  "resource_count": 1,
+                  "service_count": 0,
+                  "maximum_resources": 1,
+                  "maximum_services": 1
+                },
+                "observed_at": "2026-11-21T19:27:16.181434+00:00"
+              }
+            ],
+            "attributes": {
+              "resource_count": 1,
+              "service_count": 0,
+              "maximum_resources": 1,
+              "maximum_services": 1
+            }
+          },
+          {
+            "guardrail_id": "remediation.risk-limit",
+            "name": "Risk tolerance",
+            "status": "passed",
+            "description": "Action risk is within the remediation limit.",
+            "blocking": true,
+            "evidence": [
+              {
+                "evidence_type": "guardrail",
+                "description": "Action risk is within the remediation limit.",
+                "score": 1.0,
+                "source_id": null,
+                "resource_ids": [],
+                "attributes": {
+                  "risk_score": 0.15838303562028208,
+                  "risk_level": "none",
+                  "maximum_risk_score": 0.7
+                },
+                "observed_at": "2026-11-21T19:27:16.181438+00:00"
+              }
+            ],
+            "attributes": {
+              "risk_score": 0.15838303562028208,
+              "risk_level": "none",
+              "maximum_risk_score": 0.7
+            }
+          },
+          {
+            "guardrail_id": "remediation.rollback",
+            "name": "Rollback availability",
+            "status": "passed",
+            "description": "Dry-run mode does not require an executable rollback.",
+            "blocking": true,
+            "evidence": [
+              {
+                "evidence_type": "guardrail",
+                "description": "Dry-run mode does not require an executable rollback.",
+                "score": 1.0,
+                "source_id": null,
+                "resource_ids": [],
+                "attributes": {
+                  "rollback_action_type": "stop_observation"
+                },
+                "observed_at": "2026-11-21T19:27:16.181441+00:00"
+              }
+            ],
+            "attributes": {
+              "rollback_action_type": "stop_observation"
+            }
+          },
+          {
+            "guardrail_id": "remediation.parameters",
+            "name": "Parameter allowlist",
+            "status": "passed",
+            "description": "All remediation parameters are allowlisted.",
+            "blocking": true,
+            "evidence": [
+              {
+                "evidence_type": "guardrail",
+                "description": "All remediation parameters are allowlisted.",
+                "score": 1.0,
+                "source_id": null,
+                "resource_ids": [],
+                "attributes": {
+                  "unknown_parameters": []
+                },
+                "observed_at": "2026-11-21T19:27:16.181446+00:00"
+              }
+            ],
+            "attributes": {
+              "unknown_parameters": []
+            }
+          },
+          {
+            "guardrail_id": "validation.action-id",
+            "name": "Action identity",
+            "status": "passed",
+            "description": "Request contains an action ID.",
+            "blocking": true,
+            "evidence": [
+              {
+                "evidence_type": "validation",
+                "description": "Request contains an action ID.",
+                "score": 1.0,
+                "source_id": null,
+                "resource_ids": [],
+                "attributes": {},
+                "observed_at": "2026-11-21T19:27:16.181460+00:00"
+              }
+            ],
+            "attributes": {}
+          },
+          {
+            "guardrail_id": "validation.decision-handoff",
+            "name": "Decision handoff",
+            "status": "passed",
+            "description": "Dry-run request may be validated without complete decision handoff metadata.",
+            "blocking": true,
+            "evidence": [
+              {
+                "evidence_type": "validation",
+                "description": "Dry-run request may be validated without complete decision handoff metadata.",
+                "score": 1.0,
+                "source_id": null,
+                "resource_ids": [],
+                "attributes": {},
+                "observed_at": "2026-11-21T19:27:16.181463+00:00"
+              }
+            ],
+            "attributes": {}
+          },
+          {
+            "guardrail_id": "validation.target-identity",
+            "name": "Target identity",
+            "status": "passed",
+            "description": "All target identifiers are non-empty.",
+            "blocking": true,
+            "evidence": [
+              {
+                "evidence_type": "validation",
+                "description": "All target identifiers are non-empty.",
+                "score": 1.0,
+                "source_id": null,
+                "resource_ids": [],
+                "attributes": {},
+                "observed_at": "2026-11-21T19:27:16.181467+00:00"
+              }
+            ],
+            "attributes": {}
+          },
+          {
+            "guardrail_id": "validation.timeout",
+            "name": "Timeout parameter",
+            "status": "passed",
+            "description": "No explicit timeout was provided.",
+            "blocking": false,
+            "evidence": [
+              {
+                "evidence_type": "validation",
+                "description": "No explicit timeout was provided.",
+                "score": 1.0,
+                "source_id": null,
+                "resource_ids": [],
+                "attributes": {},
+                "observed_at": "2026-11-21T19:27:16.181470+00:00"
+              }
+            ],
+            "attributes": {}
+          },
+          {
+            "guardrail_id": "validation.maximum-targets",
+            "name": "Maximum target parameter",
+            "status": "passed",
+            "description": "No per-action target bound was supplied.",
+            "blocking": false,
+            "evidence": [
+              {
+                "evidence_type": "validation",
+                "description": "No per-action target bound was supplied.",
+                "score": 1.0,
+                "source_id": null,
+                "resource_ids": [],
+                "attributes": {},
+                "observed_at": "2026-11-21T19:27:16.181473+00:00"
+              }
+            ],
+            "attributes": {}
+          },
+          {
+            "guardrail_id": "validation.capacity-delta",
+            "name": "Capacity parameter",
+            "status": "passed",
+            "description": "No capacity adjustment was provided.",
+            "blocking": false,
+            "evidence": [
+              {
+                "evidence_type": "validation",
+                "description": "No capacity adjustment was provided.",
+                "score": 1.0,
+                "source_id": null,
+                "resource_ids": [],
+                "attributes": {},
+                "observed_at": "2026-11-21T19:27:16.181476+00:00"
+              }
+            ],
+            "attributes": {}
+          },
+          {
+            "guardrail_id": "validation.expected_state",
+            "name": "expected_state parameter",
+            "status": "passed",
+            "description": "No expected_state parameter was supplied.",
+            "blocking": false,
+            "evidence": [
+              {
+                "evidence_type": "validation",
+                "description": "No expected_state parameter was supplied.",
+                "score": 1.0,
+                "source_id": null,
+                "resource_ids": [],
+                "attributes": {},
+                "observed_at": "2026-11-21T19:27:16.181479+00:00"
+              }
+            ],
+            "attributes": {}
+          },
+          {
+            "guardrail_id": "validation.configuration_version",
+            "name": "configuration_version parameter",
+            "status": "passed",
+            "description": "No configuration_version parameter was supplied.",
+            "blocking": false,
+            "evidence": [
+              {
+                "evidence_type": "validation",
+                "description": "No configuration_version parameter was supplied.",
+                "score": 1.0,
+                "source_id": null,
+                "resource_ids": [],
+                "attributes": {},
+                "observed_at": "2026-11-21T19:27:16.181482+00:00"
+              }
+            ],
+            "attributes": {}
+          },
+          {
+            "guardrail_id": "validation.reason",
+            "name": "reason parameter",
+            "status": "passed",
+            "description": "No reason parameter was supplied.",
+            "blocking": false,
+            "evidence": [
+              {
+                "evidence_type": "validation",
+                "description": "No reason parameter was supplied.",
+                "score": 1.0,
+                "source_id": null,
+                "resource_ids": [],
+                "attributes": {},
+                "observed_at": "2026-11-21T19:27:16.181485+00:00"
+              }
+            ],
+            "attributes": {}
+          },
+          {
+            "guardrail_id": "validation.adapter-support",
+            "name": "Adapter support",
+            "status": "passed",
+            "description": "A compatible adapter capability is available, or no adapter is required for this dry-run.",
+            "blocking": true,
+            "evidence": [
+              {
+                "evidence_type": "validation",
+                "description": "A compatible adapter capability is available, or no adapter is required for this dry-run.",
+                "score": 1.0,
+                "source_id": null,
+                "resource_ids": [],
+                "attributes": {
+                  "matching_adapters": [
+                    "dry-run"
+                  ]
+                },
+                "observed_at": "2026-11-21T19:27:16.181491+00:00"
+              }
+            ],
+            "attributes": {
+              "matching_adapters": [
+                "dry-run"
+              ]
+            }
+          },
+          {
+            "guardrail_id": "validation.rollback-support",
+            "name": "Rollback adapter support",
+            "status": "passed",
+            "description": "Dry-run does not require executable rollback support.",
+            "blocking": true,
+            "evidence": [
+              {
+                "evidence_type": "validation",
+                "description": "Dry-run does not require executable rollback support.",
+                "score": 1.0,
+                "source_id": null,
+                "resource_ids": [],
+                "attributes": {},
+                "observed_at": "2026-11-21T19:27:16.181494+00:00"
+              }
+            ],
+            "attributes": {}
+          }
+        ],
+        "blocking_reasons": [],
+        "warnings": [],
+        "validated_at": "2026-11-21T19:27:16.181501+00:00",
+        "attributes": {
+          "request_id": "remediation:request:5296a06419fb088b7729b3ccec131462258429c25d18e999e8ae8d413762c9b7",
+          "mode": "dry_run",
+          "adapter_capability_count": 1,
+          "guardrails_allowed": true
+        }
+      }
+    }
+  },
+  "verification": {
+    "status": "inconclusive",
+    "passed": false,
+    "health_before": null,
+    "health_after": null,
+    "checks": [],
+    "failed_checks": [
+      "insufficient_observations"
+    ],
+    "evidence": [
+      {
+        "evidence_type": "verification",
+        "description": "Not enough independent post-action observations were supplied.",
+        "score": 0.0,
+        "source_id": "remediation:request:5296a06419fb088b7729b3ccec131462258429c25d18e999e8ae8d413762c9b7",
+        "resource_ids": [
+          "osha:resource:fb7efc1007996520f34d4fa6df78ff0f0d87942069afbc7ea39dc7af3c84c767"
+        ],
+        "attributes": {
+          "observation_count": 0,
+          "minimum_observations": 1
+        },
+        "observed_at": "2026-11-21T19:27:16.181893+00:00"
+      }
+    ],
+    "started_at": "2026-11-21T19:27:16.181881+00:00",
+    "finished_at": "2026-11-21T19:27:16.181895+00:00",
+    "attributes": {}
+  },
+  "rollback": {
+    "status": "not_required",
+    "success": false,
+    "action_type": "stop_observation",
+    "adapter_name": "dry-run",
+    "started_at": null,
+    "finished_at": null,
+    "reason": "Execution did not report an infrastructure state change.",
+    "evidence": [
+      {
+        "evidence_type": "rollback_decision",
+        "description": "Execution did not report an infrastructure state change.",
+        "score": 1.0,
+        "source_id": "remediation:request:5296a06419fb088b7729b3ccec131462258429c25d18e999e8ae8d413762c9b7",
+        "resource_ids": [
+          "osha:resource:fb7efc1007996520f34d4fa6df78ff0f0d87942069afbc7ea39dc7af3c84c767"
+        ],
+        "attributes": {
+          "required": false,
+          "available": true,
+          "allowed": false,
+          "reason": "Execution did not report an infrastructure state change.",
+          "adapter_name": "dry-run",
+          "rollback_action_type": "stop_observation",
+          "attributes": {
+            "rollback_enabled": false,
+            "mode": "dry_run",
+            "execution_status": "dry_run",
+            "execution_changed": false,
+            "verification_status": "inconclusive"
+          }
+        },
+        "observed_at": "2026-11-21T19:27:16.182182+00:00"
+      }
+    ],
+    "attributes": {}
+  },
+  "audit_events": [
+    {
+      "event_type": "remediation.requested",
+      "description": "Remediation request entered the controlled lifecycle.",
+      "remediation_id": "remediation:09715c944875290445bce470e6661bc363d65dc496a6a8afbfdc00cd1230a197",
+      "request_id": "remediation:request:5296a06419fb088b7729b3ccec131462258429c25d18e999e8ae8d413762c9b7",
+      "action_id": "decision:action:9af67e8d00d4700724cfc481ca0f0479b2100ddeb17853fb57fc2350aa8f51ff",
+      "actor_id": null,
+      "occurred_at": "2026-11-21T19:27:16.180648+00:00",
+      "attributes": {
+        "action_type": "observe_resource",
+        "environment_id": "local-dev",
+        "mode": "dry_run",
+        "target_resource_ids": [
+          "osha:resource:fb7efc1007996520f34d4fa6df78ff0f0d87942069afbc7ea39dc7af3c84c767"
+        ],
+        "target_service_ids": [],
+        "risk_level": "none",
+        "risk_score": 0.15838303562028208,
+        "approval_status": null,
+        "approval_count": 0,
+        "decision_id": "decision:fa1bcc218c13ddcb857a048a053b5cfcc44c4bb990d8432aacf3a497518519ff",
+        "plan_id": "decision:plan:0cedd8bcf7a7bb4b0bbecef2561ea62dd6bff609818c8de7b2b0ad6dcc2f376a",
+        "incident_id": "intel:incident:e629c2eca21c62b2f16c6c09ef25fb08ccee778b62a28d62e5825fbbc5d77128"
+      }
+    },
+    {
+      "event_type": "remediation.validation",
+      "description": "Remediation request validation status: valid.",
+      "remediation_id": "remediation:09715c944875290445bce470e6661bc363d65dc496a6a8afbfdc00cd1230a197",
+      "request_id": "remediation:request:5296a06419fb088b7729b3ccec131462258429c25d18e999e8ae8d413762c9b7",
+      "action_id": "decision:action:9af67e8d00d4700724cfc481ca0f0479b2100ddeb17853fb57fc2350aa8f51ff",
+      "actor_id": null,
+      "occurred_at": "2026-11-21T19:27:16.181136+00:00",
+      "attributes": {
+        "status": "valid",
+        "valid": true,
+        "blocking_reasons": [],
+        "warnings": [],
+        "check_count": 20
+      }
+    },
+    {
+      "event_type": "remediation.execution",
+      "description": "Remediation execution status: dry_run.",
+      "remediation_id": "remediation:09715c944875290445bce470e6661bc363d65dc496a6a8afbfdc00cd1230a197",
+      "request_id": "remediation:request:5296a06419fb088b7729b3ccec131462258429c25d18e999e8ae8d413762c9b7",
+      "action_id": "decision:action:9af67e8d00d4700724cfc481ca0f0479b2100ddeb17853fb57fc2350aa8f51ff",
+      "actor_id": null,
+      "occurred_at": "2026-11-21T19:27:16.181616+00:00",
+      "attributes": {
+        "status": "dry_run",
+        "success": true,
+        "adapter_name": "dry-run",
+        "operation": "observe_resource",
+        "changed": false,
+        "duration_seconds": 8.899951353669167e-08,
+        "exit_code": null
+      }
+    },
+    {
+      "event_type": "remediation.verification",
+      "description": "Post-action verification status: inconclusive.",
+      "remediation_id": "remediation:09715c944875290445bce470e6661bc363d65dc496a6a8afbfdc00cd1230a197",
+      "request_id": "remediation:request:5296a06419fb088b7729b3ccec131462258429c25d18e999e8ae8d413762c9b7",
+      "action_id": "decision:action:9af67e8d00d4700724cfc481ca0f0479b2100ddeb17853fb57fc2350aa8f51ff",
+      "actor_id": null,
+      "occurred_at": "2026-11-21T19:27:16.181904+00:00",
+      "attributes": {
+        "status": "inconclusive",
+        "passed": false,
+        "health_before": null,
+        "health_after": null,
+        "checks": [],
+        "failed_checks": [
+          "insufficient_observations"
+        ]
+      }
+    },
+    {
+      "event_type": "remediation.rollback",
+      "description": "Rollback lifecycle status: not_required.",
+      "remediation_id": "remediation:09715c944875290445bce470e6661bc363d65dc496a6a8afbfdc00cd1230a197",
+      "request_id": "remediation:request:5296a06419fb088b7729b3ccec131462258429c25d18e999e8ae8d413762c9b7",
+      "action_id": "decision:action:9af67e8d00d4700724cfc481ca0f0479b2100ddeb17853fb57fc2350aa8f51ff",
+      "actor_id": null,
+      "occurred_at": "2026-11-21T19:27:16.182191+00:00",
+      "attributes": {
+        "status": "not_required",
+        "success": false,
+        "action_type": "stop_observation",
+        "adapter_name": "dry-run",
+        "reason": "Execution did not report an infrastructure state change."
+      }
+    },
+    {
+      "event_type": "remediation.completed",
+      "description": "Remediation lifecycle reached status: completed.",
+      "remediation_id": "remediation:09715c944875290445bce470e6661bc363d65dc496a6a8afbfdc00cd1230a197",
+      "request_id": "remediation:request:5296a06419fb088b7729b3ccec131462258429c25d18e999e8ae8d413762c9b7",
+      "action_id": "decision:action:9af67e8d00d4700724cfc481ca0f0479b2100ddeb17853fb57fc2350aa8f51ff",
+      "actor_id": null,
+      "occurred_at": "2026-11-21T19:27:16.182444+00:00",
+      "attributes": {
+        "status": "completed",
+        "validation_status": "valid",
+        "execution_status": "dry_run",
+        "verification_status": "inconclusive",
+        "rollback_status": "not_required",
+        "error_present": false
+      }
+    }
+  ],
+  "evidence": [],
+  "started_at": "2026-11-21T19:27:16.180599+00:00",
+  "completed_at": "2026-11-21T19:27:16.182423+00:00",
+  "error": null,
+  "attributes": {
+    "execution_enabled": false,
+    "dry_run": true,
+    "recovery_verified": false,
+    "infrastructure_changed": false
+  }
+}

@@ -5,3 +5,8 @@ pytest
 pytest-cov
 pandas
 pyarrow
+scikit-learn
+matplotlib
+kubernetes
+openstacksdk
+fastapi

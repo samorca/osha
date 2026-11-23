@@ -1,0 +1,2114 @@
+{
+  "summary": {
+    "elapsed_seconds": 2.208683,
+    "episodes_written": 9,
+    "patterns_written": 33,
+    "baselines_touched": 0,
+    "incidents_written": 3,
+    "store": {
+      "memory_count": 48,
+      "active_count": 48,
+      "archived_count": 0,
+      "expired_count": 0,
+      "verified_count": 0,
+      "environments": 1,
+      "memory_types": {
+        "incident": 3,
+        "root_cause": 3,
+        "pattern": 33,
+        "episode": 9
+      }
+    },
+    "retention": {
+      "examined": 48,
+      "kept": 48,
+      "archived": 0,
+      "expired": 0,
+      "deleted": 0,
+      "errors": 0,
+      "decisions": [
+        {
+          "memory_id": "memory:episode:4b51c269f72b501428d573a68142fac53af97b1d77f3955e6ecb6316b94a6f10",
+          "memory_type": "episode",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 2.6e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:52.960028+00:00",
+          "reference_timestamp": "2026-11-21T18:17:18.510793+00:00"
+        },
+        {
+          "memory_id": "memory:episode:7a4ca311fc3dade203eb06915442638872dfc3da234082b10d3308412dd18e8d",
+          "memory_type": "episode",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 2.5e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:52.975579+00:00",
+          "reference_timestamp": "2026-11-21T18:17:18.545176+00:00"
+        },
+        {
+          "memory_id": "memory:episode:c3135c673e2b205028f30bee4cec8bdf70cc69df3f0e8ee7cd7a830def6d047e",
+          "memory_type": "episode",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 2.5e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:52.983781+00:00",
+          "reference_timestamp": "2026-11-21T18:17:18.571933+00:00"
+        },
+        {
+          "memory_id": "memory:episode:d47e92ddaf15508b7f4b8a3cff986a6c2162e88c8857b0c0f02cc292390e784e",
+          "memory_type": "episode",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 2.4e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:52.990715+00:00",
+          "reference_timestamp": "2026-11-21T18:17:18.602999+00:00"
+        },
+        {
+          "memory_id": "memory:episode:e24889b57518099cd67ff7426f71a1f578cc9758b15d4977f5211a6ea7d9a648",
+          "memory_type": "episode",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 2.4e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:52.998353+00:00",
+          "reference_timestamp": "2026-11-21T18:17:18.629569+00:00"
+        },
+        {
+          "memory_id": "memory:episode:4ad8bed84f23489fda747c888a0c9f80eef9e4ab3f93aaee364165a56ccbfcc8",
+          "memory_type": "episode",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 2.4e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.005157+00:00",
+          "reference_timestamp": "2026-11-21T18:17:18.657588+00:00"
+        },
+        {
+          "memory_id": "memory:episode:b8edd63d303b0cf8f5b86dfa59425bb342a5ff17a052aa1b8fd1d2e63eed0c8a",
+          "memory_type": "episode",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 2.3e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.012163+00:00",
+          "reference_timestamp": "2026-11-21T18:17:18.685900+00:00"
+        },
+        {
+          "memory_id": "memory:episode:2dee57cfc725c78f5a7e128f48a3ab42001b14a92aecea382ee389b18068e3ea",
+          "memory_type": "episode",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 2.3e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.020785+00:00",
+          "reference_timestamp": "2026-11-21T18:17:18.719233+00:00"
+        },
+        {
+          "memory_id": "memory:episode:43539a242d18fd9e487f43c1c20d7db91f30f3a10fe3ce542e18a390be29c52b",
+          "memory_type": "episode",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 2.3e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.041324+00:00",
+          "reference_timestamp": "2026-11-21T18:17:18.749559+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:2ed820d3c25a6d880890365ab710790fb681508b9fc5253fe3b8a5aedf8aa558",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 2.2e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.060471+00:00",
+          "reference_timestamp": "2026-11-21T18:17:18.786891+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:5dec2a075cfd214f4a1d24253a54f31dcf645d3f3b3b0f21c0bf5f7023ea7b92",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 2.2e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.086611+00:00",
+          "reference_timestamp": "2026-11-21T18:17:18.821763+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:200d20685f8910da2675046c3610c11da9c79f722add54b11f724499358e6291",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 2.2e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.113409+00:00",
+          "reference_timestamp": "2026-11-21T18:17:18.853139+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:9a54a1ecfb0ce9b30f43cb050a0b526f2e1d6e6f9e73f8815fd9f8b4e66f2272",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 2.1e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.141856+00:00",
+          "reference_timestamp": "2026-11-21T18:17:18.883725+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:3901877516f6fb00d4c73e4507ecc87a8077d6cf2c525e05532b3db5094a5c39",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 2.1e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.171338+00:00",
+          "reference_timestamp": "2026-11-21T18:17:18.917768+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:d3ebae59c4128c4f70c461be37368155b54a92b43e79a1f9dd5333107157316f",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 2e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.196837+00:00",
+          "reference_timestamp": "2026-11-21T18:17:18.952706+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:356a25084efa43c85c2812f6655f798819cd8e6f85b12ead47109c916bc1d8aa",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 2e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.221291+00:00",
+          "reference_timestamp": "2026-11-21T18:17:18.985138+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:c0bf409b92cfb118401f4644cc9c049396e881a7e97beb29c7e0e184cd091adf",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 2e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.245269+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.015491+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:a882b1376d69faef3313ae13640219fdba389418403d755b8968659f9ae68f41",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 1.9e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.268966+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.046030+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:63da68f020bc376cefffa2b5fa518ed23b1c742043fa6d4c290650b626d7fb77",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 1.9e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.294190+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.077563+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:c19eb379c6b0a344c58629ca84a5a78398036e172231a0b1d71657bd66b93cf9",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 1.9e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.321883+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.109836+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:4e715bbccdaffbc468054715b0984c14b4daca625818fd212c4e6029bcab8ae5",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 1.8e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.348140+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.159410+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:8e0ba3966021b3e77001ce0ec092943a691f4851cba3a59e77976cb96fe19174",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 1.7e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.376049+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.210803+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:3212fa985798be8aa581a6e03abe7aa70f3473f225bf90f6096b160ce4fc4c45",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 1.7e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.401747+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.257715+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:9ec77e19f480ee9a79ee741e64aa34ad3d084ea7cbb0a8c9a5de03af0d0341a8",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 1.6e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.427253+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.291812+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:e51b8dc7e4d71248bc7095349acb4d8dce352a213de77a6e724e2b2e9abd3236",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 1.6e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.454180+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.325693+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:a3df6ea30c18f74b186c848a6a38f3815a960395f36797cae7509f7d52808952",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 1.6e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.479003+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.358453+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:6b2284d681d93f8725e8cecc9d9b5d1f2a94b3112010fcf4aa22cd26e4a4d62e",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 1.5e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.503526+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.389564+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:945cce4ec9bfdc6b08e8ff418cb7a447f69b0bfbbe944180fc266752d02fffeb",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 1.5e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.529694+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.420447+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:950517b214ce72af98a9c234ffa48eb214beb2b1a4d0b07f612cccc65cc4e9e2",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 1.5e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.555799+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.456573+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:db77dcd858e6449bba945b27913f85be40adcf185ed853db6a580f4691d8e54e",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 1.4e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.582024+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.487397+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:0d25ac32cd8a05a30b71d00f949c01bb4397d3a525ba8bd931b6ab6d892ca6c6",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 1.4e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.608996+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.518966+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:9b660dcf97c70e17cae64cb85834fdab8bc44920dc204de139ecab2beef45708",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 1.3e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.635812+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.550807+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:af38f73d993c32d38944f1d1e3144cd567c6b84a126f7c0b8a5db0878118ab0c",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 1.3e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.664532+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.581645+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:153d4de7d8ed8446fe0af334ac8774e8a6a6aed8f8e3668876327e96d404e715",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 1.3e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.692116+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.615406+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:d115f937eb565872287fd6b8e13726ebc0391c056f7dc1f92b142191705d5744",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 1.2e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.718431+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.650663+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:c6066086b922cd797db85ea2b18221cd41a5cb25bb5237fc7a66eb6ec3d279d9",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 1.2e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.744853+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.683836+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:5c9794e9ec271e8bacf143581f5ce496272a35f839e5d2e9c0f6e94e34b23906",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 1.2e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.770523+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.717128+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:857b480e47ca7c62a3304c26268fd3241515b4a120a4ac503970fca25a768852",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 1.1e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.797675+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.749932+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:d9ad922d1ce8e01abb4835bbd03a06932c418292fc6e2b924b3e149f237992c0",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 1.1e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.824221+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.782079+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:9b3c5f7da5c0010b205e72cafe88f7fa40a7d4a23db8bb359464fb9501153bdc",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 1e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.856024+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.813770+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:42a73b072b2214db8e64fe2fe747777a51e5807da5a34d354a40c543acede962",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 1e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.886715+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.845193+00:00"
+        },
+        {
+          "memory_id": "memory:pattern:7c5e8ba23106900a7592dcae7afadcc6da1e9c92e27526f7cbe68c4c3f4e255d",
+          "memory_type": "pattern",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 1e-05,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.917853+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.877901+00:00"
+        },
+        {
+          "memory_id": "memory:root_cause:5167d84dee6f4ee70e0d3d70fa1477fd283e6e843b305ab508a2169fed829ef8",
+          "memory_type": "root_cause",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 9e-06,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.954742+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.910138+00:00"
+        },
+        {
+          "memory_id": "memory:incident:13d8a1c638fe68250f200b1ef4c9a334d5cb2c124520fafd3934ee9e73293136",
+          "memory_type": "incident",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 9e-06,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:53.983526+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.941333+00:00"
+        },
+        {
+          "memory_id": "memory:root_cause:fd458db582e62d9137e4bd5f455296a2ef5c096d1bbbb7d8e26b9d2ff6f652d5",
+          "memory_type": "root_cause",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 9e-06,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:54.008968+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.970434+00:00"
+        },
+        {
+          "memory_id": "memory:incident:808265028eeb310d8a132462a788e5296184454dd46dcb82e7c5d668832db348",
+          "memory_type": "incident",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 8e-06,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:54.033835+00:00",
+          "reference_timestamp": "2026-11-21T18:17:19.997886+00:00"
+        },
+        {
+          "memory_id": "memory:root_cause:f4772f1e29e634cf76289b5d8e52d81364055984434c9dbf6bba2b3cc3b8ded2",
+          "memory_type": "root_cause",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 8e-06,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:54.064349+00:00",
+          "reference_timestamp": "2026-11-21T18:17:20.035099+00:00"
+        },
+        {
+          "memory_id": "memory:incident:e2913d95b5c06dc2142c02bb9c40cea8357a4301fb7e81795d4e5ddbf82c9b37",
+          "memory_type": "incident",
+          "current_status": "active",
+          "action": "keep",
+          "reason": "Memory remains inside its active retention period.",
+          "age_days": 8e-06,
+          "verified": false,
+          "created_at": "2026-11-21T18:10:54.106162+00:00",
+          "reference_timestamp": "2026-11-21T18:17:20.063622+00:00"
+        }
+      ]
+    }
+  },
+  "historical_context": {
+    "incidents": [
+      {
+        "incident_id": "intel:incident:e629c2eca21c62b2f16c6c09ef25fb08ccee778b62a28d62e5825fbbc5d77128",
+        "context": {
+          "patterns": {
+            "intel:pattern:2c3b83047af96284e6f02e1cb6cb8548132020b77f73f457a946084c3a877269": {
+              "known": true,
+              "memory_id": "memory:pattern:2ed820d3c25a6d880890365ab710790fb681508b9fc5253fe3b8a5aedf8aa558",
+              "occurrence_count": 4168,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.197792+00:00"
+            },
+            "intel:pattern:05235689391e9937f8a42674d02f7fa8cb16969ce4107e19d3681f30a3d467fd": {
+              "known": true,
+              "memory_id": "memory:pattern:5dec2a075cfd214f4a1d24253a54f31dcf645d3f3b3b0f21c0bf5f7023ea7b92",
+              "occurrence_count": 652,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:05.762187+00:00"
+            },
+            "intel:pattern:164662170987d2612527c3ef582978d47b09d66bb54b46769b3da99a43339b5e": {
+              "known": true,
+              "memory_id": "memory:pattern:200d20685f8910da2675046c3610c11da9c79f722add54b11f724499358e6291",
+              "occurrence_count": 374,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.147966+00:00"
+            },
+            "intel:pattern:6148c22d16eddac2c364f824a1302ca5ff5f72337618a8deeb94a921874e9bc3": {
+              "known": true,
+              "memory_id": "memory:pattern:9a54a1ecfb0ce9b30f43cb050a0b526f2e1d6e6f9e73f8815fd9f8b4e66f2272",
+              "occurrence_count": 354,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:05.705626+00:00"
+            },
+            "intel:pattern:6d98a0969f3e944f5610a226a910c22952553e074dd080172b909dda59d2b6b6": {
+              "known": true,
+              "memory_id": "memory:pattern:3901877516f6fb00d4c73e4507ecc87a8077d6cf2c525e05532b3db5094a5c39",
+              "occurrence_count": 340,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.158067+00:00"
+            },
+            "intel:pattern:156f806f1defd1dc3c231016d164660e17b872f0c5e4d6f5ce76eba7a3f546e8": {
+              "known": true,
+              "memory_id": "memory:pattern:d3ebae59c4128c4f70c461be37368155b54a92b43e79a1f9dd5333107157316f",
+              "occurrence_count": 238,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.209309+00:00"
+            },
+            "intel:pattern:c6cf3bb8b853b1f5a9ed1290b826d77e48cc2a06ff5da14c30b8c836bd3b283f": {
+              "known": true,
+              "memory_id": "memory:pattern:356a25084efa43c85c2812f6655f798819cd8e6f85b12ead47109c916bc1d8aa",
+              "occurrence_count": 142,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:05.679399+00:00"
+            },
+            "intel:pattern:1b4e7b931d657e7a5df2f7cbdd43f5df2af3238c64d83ba1e0b5e64a62181a41": {
+              "known": true,
+              "memory_id": "memory:pattern:c0bf409b92cfb118401f4644cc9c049396e881a7e97beb29c7e0e184cd091adf",
+              "occurrence_count": 118,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:03.286896+00:00"
+            },
+            "intel:pattern:2acc8dcf9fdfc63941abab7b4758607e07c36876987f0df83ac2e0d383835b86": {
+              "known": true,
+              "memory_id": "memory:pattern:a882b1376d69faef3313ae13640219fdba389418403d755b8968659f9ae68f41",
+              "occurrence_count": 116,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:36:03.286936+00:00"
+            },
+            "intel:pattern:c9996701d82e27efb2f157eedccc46cf6a8b8a714db7d8daa0969c1e863b441b": {
+              "known": true,
+              "memory_id": "memory:pattern:63da68f020bc376cefffa2b5fa518ed23b1c742043fa6d4c290650b626d7fb77",
+              "occurrence_count": 108,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:05.776492+00:00"
+            },
+            "intel:pattern:98a0602c7d3fbca7305827fcd4917baa54cef393ac1babf78076a98c8cd99aea": {
+              "known": true,
+              "memory_id": "memory:pattern:c19eb379c6b0a344c58629ca84a5a78398036e172231a0b1d71657bd66b93cf9",
+              "occurrence_count": 88,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.153560+00:00"
+            },
+            "intel:pattern:1e96310f3e9b809bd5a8e2d7ab16a63b2a973070a168c476934d173ca00e2c1a": {
+              "known": true,
+              "memory_id": "memory:pattern:4e715bbccdaffbc468054715b0984c14b4daca625818fd212c4e6029bcab8ae5",
+              "occurrence_count": 76,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:05.649107+00:00"
+            },
+            "intel:pattern:a6a0eac20e813f6af040b8bd67aac8c1cc32e793494a8311681db22f846b5b9d": {
+              "known": true,
+              "memory_id": "memory:pattern:8e0ba3966021b3e77001ce0ec092943a691f4851cba3a59e77976cb96fe19174",
+              "occurrence_count": 16,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:05.994137+00:00"
+            },
+            "intel:pattern:2d6d7e7ba8a4aa94b9e98342b24b919a34897a750f267f7aa872428b0bbd9f72": {
+              "known": true,
+              "memory_id": "memory:pattern:3212fa985798be8aa581a6e03abe7aa70f3473f225bf90f6096b160ce4fc4c45",
+              "occurrence_count": 14,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.209516+00:00"
+            },
+            "intel:pattern:26602a6e8206eb3cbc248c86aa171ba80b59724a2c255438abf22115cac411c7": {
+              "known": true,
+              "memory_id": "memory:pattern:9ec77e19f480ee9a79ee741e64aa34ad3d084ea7cbb0a8c9a5de03af0d0341a8",
+              "occurrence_count": 8,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.144272+00:00"
+            },
+            "intel:pattern:fb886d6cd645ff6a36a5321e55b8f9ddce10936f1ab588db600dcce84a6cb026": {
+              "known": true,
+              "memory_id": "memory:pattern:e51b8dc7e4d71248bc7095349acb4d8dce352a213de77a6e724e2b2e9abd3236",
+              "occurrence_count": 6,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.129272+00:00"
+            },
+            "intel:pattern:815ca99b2175d21d840d1c732d9be01b73f02bc9369f00c598f80ea8a5524d99": {
+              "known": true,
+              "memory_id": "memory:pattern:a3df6ea30c18f74b186c848a6a38f3815a960395f36797cae7509f7d52808952",
+              "occurrence_count": 6,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:28:24.653816+00:00"
+            },
+            "intel:pattern:f1582e8d64d019050baa54a9641b7b9987be5e55120e86b3cfb8ae980dea08c7": {
+              "known": true,
+              "memory_id": "memory:pattern:6b2284d681d93f8725e8cecc9d9b5d1f2a94b3112010fcf4aa22cd26e4a4d62e",
+              "occurrence_count": 6,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:02.403223+00:00"
+            },
+            "intel:pattern:5d2f96f2c64d6ada70f05cd7ee383cf9d7cb036f4a5faf59c573401ba727b2a8": {
+              "known": true,
+              "memory_id": "memory:pattern:945cce4ec9bfdc6b08e8ff418cb7a447f69b0bfbbe944180fc266752d02fffeb",
+              "occurrence_count": 4,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:28:06.223876+00:00"
+            },
+            "intel:pattern:1ed2953c58637e19afc7af92b5f96ce90b945265abbf917874ec5879d626a9e1": {
+              "known": true,
+              "memory_id": "memory:pattern:950517b214ce72af98a9c234ffa48eb214beb2b1a4d0b07f612cccc65cc4e9e2",
+              "occurrence_count": 4,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:26:06.993603+00:00"
+            },
+            "intel:pattern:b13e38ec8f0de459ecb5bf3cf130e1cc24f7f041b6494ae04f86406cd1a319a4": {
+              "known": true,
+              "memory_id": "memory:pattern:db77dcd858e6449bba945b27913f85be40adcf185ed853db6a580f4691d8e54e",
+              "occurrence_count": 4,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:28:24.653816+00:00"
+            },
+            "intel:pattern:556efc841d04116ffdcdd9fd5ee842496492675eb30a13c5956692668da0c12c": {
+              "known": true,
+              "memory_id": "memory:pattern:0d25ac32cd8a05a30b71d00f949c01bb4397d3a525ba8bd931b6ab6d892ca6c6",
+              "occurrence_count": 4,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:28:06.299275+00:00"
+            },
+            "intel:pattern:29d89adf62bf65c679f176a247bbee0991f6770418f766f99e39165b9f899b94": {
+              "known": true,
+              "memory_id": "memory:pattern:9b660dcf97c70e17cae64cb85834fdab8bc44920dc204de139ecab2beef45708",
+              "occurrence_count": 4,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:28:24.583609+00:00"
+            },
+            "intel:pattern:674998a5ec877d1118aa3e20703300e21c8fadad6715cca1718757a543013626": {
+              "known": true,
+              "memory_id": "memory:pattern:af38f73d993c32d38944f1d1e3144cd567c6b84a126f7c0b8a5db0878118ab0c",
+              "occurrence_count": 4,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:28:24.562752+00:00"
+            },
+            "intel:pattern:d729197b1a553bce184f04b5e4daa8b815e277464fd512cb02a423dd974c9b5c": {
+              "known": true,
+              "memory_id": "memory:pattern:153d4de7d8ed8446fe0af334ac8774e8a6a6aed8f8e3668876327e96d404e715",
+              "occurrence_count": 4,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:28:06.201705+00:00"
+            },
+            "intel:pattern:d5adef8c6ccb25e048f87fe275cd399e775d6e1f67b3f3dcdfb9690f61740e19": {
+              "known": true,
+              "memory_id": "memory:pattern:d115f937eb565872287fd6b8e13726ebc0391c056f7dc1f92b142191705d5744",
+              "occurrence_count": 4,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:23:35.262482+00:00"
+            },
+            "intel:pattern:79af5f6ffeb6727cf0d05f506f771e5545d5a549aed88d5182d5b28cea5e8cc9": {
+              "known": true,
+              "memory_id": "memory:pattern:c6066086b922cd797db85ea2b18221cd41a5cb25bb5237fc7a66eb6ec3d279d9",
+              "occurrence_count": 4,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.256343+00:00"
+            },
+            "intel:pattern:f2cece85ec9473e58cc477769a3990a42f0a43c374dbd2878316bc90ff283c8b": {
+              "known": true,
+              "memory_id": "memory:pattern:5c9794e9ec271e8bacf143581f5ce496272a35f839e5d2e9c0f6e94e34b23906",
+              "occurrence_count": 2,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:05.994137+00:00"
+            },
+            "intel:pattern:96a2b0ec3e7b797e7ac3135d6f43715618a60de28e3979adfac64d5f807d4a20": {
+              "known": true,
+              "memory_id": "memory:pattern:857b480e47ca7c62a3304c26268fd3241515b4a120a4ac503970fca25a768852",
+              "occurrence_count": 2,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:33:48.358010+00:00"
+            },
+            "intel:pattern:b8ccd5708f2bbacd894083b0bd0f7cbc9a552bd5a9dcb34856e16aa01acfbcf3": {
+              "known": true,
+              "memory_id": "memory:pattern:d9ad922d1ce8e01abb4835bbd03a06932c418292fc6e2b924b3e149f237992c0",
+              "occurrence_count": 2,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:02.403223+00:00"
+            },
+            "intel:pattern:7c8fd0911b3ea2b94b8670e313e5dba64b3c36dee69c842dc38725f8a73a8de2": {
+              "known": true,
+              "memory_id": "memory:pattern:9b3c5f7da5c0010b205e72cafe88f7fa40a7d4a23db8bb359464fb9501153bdc",
+              "occurrence_count": 2,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:17:01.803273+00:00"
+            },
+            "intel:pattern:5a758db4530fb593aa2062a332e9d3c62cf19207ae88ab1276a7a7db3eeadfc1": {
+              "known": true,
+              "memory_id": "memory:pattern:42a73b072b2214db8e64fe2fe747777a51e5807da5a34d354a40c543acede962",
+              "occurrence_count": 2,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.256343+00:00"
+            },
+            "intel:pattern:1bf89f6d145c7121b7fc3046bc5c60996cb16183e6990aa42f9c5f8e83feb056": {
+              "known": true,
+              "memory_id": "memory:pattern:7c5e8ba23106900a7592dcae7afadcc6da1e9c92e27526f7cbe68c4c3f4e255d",
+              "occurrence_count": 2,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.129272+00:00"
+            }
+          },
+          "resources": {
+            "osha:resource:fb7efc1007996520f34d4fa6df78ff0f0d87942069afbc7ea39dc7af3c84c767": {
+              "memory_count": 9,
+              "memory_ids": [
+                "memory:incident:808265028eeb310d8a132462a788e5296184454dd46dcb82e7c5d668832db348",
+                "memory:root_cause:fd458db582e62d9137e4bd5f455296a2ef5c096d1bbbb7d8e26b9d2ff6f652d5",
+                "memory:incident:13d8a1c638fe68250f200b1ef4c9a334d5cb2c124520fafd3934ee9e73293136",
+                "memory:root_cause:5167d84dee6f4ee70e0d3d70fa1477fd283e6e843b305ab508a2169fed829ef8",
+                "memory:pattern:d9ad922d1ce8e01abb4835bbd03a06932c418292fc6e2b924b3e149f237992c0",
+                "memory:pattern:857b480e47ca7c62a3304c26268fd3241515b4a120a4ac503970fca25a768852",
+                "memory:pattern:6b2284d681d93f8725e8cecc9d9b5d1f2a94b3112010fcf4aa22cd26e4a4d62e",
+                "memory:episode:b8edd63d303b0cf8f5b86dfa59425bb342a5ff17a052aa1b8fd1d2e63eed0c8a",
+                "memory:episode:4ad8bed84f23489fda747c888a0c9f80eef9e4ab3f93aaee364165a56ccbfcc8"
+              ],
+              "verified_root_cause_memory_ids": []
+            }
+          },
+          "similar_incidents": [
+            {
+              "memory_id": "memory:incident:808265028eeb310d8a132462a788e5296184454dd46dcb82e7c5d668832db348",
+              "memory_type": "incident",
+              "score": 0.85,
+              "verification_status": "unverified",
+              "reasons": [
+                "resource similarity=1.00",
+                "pattern similarity=1.00",
+                "severity similarity=1.00",
+                "title similarity=1.00",
+                "environment similarity=1.00"
+              ],
+              "attributes": {
+                "incident_id": "intel:incident:d3954cff08b64ae668db8cd6d90eda0595d862a47e3db325a25361bc8f1259fd",
+                "title": "Correlated abnormal activity",
+                "outcome_memory_id": null,
+                "dimension_scores": {
+                  "resource": 1.0,
+                  "pattern": 1.0,
+                  "service": 0.0,
+                  "severity": 1.0,
+                  "title": 1.0,
+                  "environment": 1.0
+                }
+              }
+            },
+            {
+              "memory_id": "memory:incident:e2913d95b5c06dc2142c02bb9c40cea8357a4301fb7e81795d4e5ddbf82c9b37",
+              "memory_type": "incident",
+              "score": 0.30000000000000004,
+              "verification_status": "unverified",
+              "reasons": [
+                "severity similarity=1.00",
+                "title similarity=1.00",
+                "environment similarity=1.00"
+              ],
+              "attributes": {
+                "incident_id": "intel:incident:ab756d33d0297e99786ad563a11130070bf2d809df8675584d2cdf49a563be33",
+                "title": "Correlated abnormal activity",
+                "outcome_memory_id": null,
+                "dimension_scores": {
+                  "resource": 0.0,
+                  "pattern": 0.0,
+                  "service": 0.0,
+                  "severity": 1.0,
+                  "title": 1.0,
+                  "environment": 1.0
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "incident_id": "intel:incident:d3954cff08b64ae668db8cd6d90eda0595d862a47e3db325a25361bc8f1259fd",
+        "context": {
+          "patterns": {
+            "intel:pattern:2c3b83047af96284e6f02e1cb6cb8548132020b77f73f457a946084c3a877269": {
+              "known": true,
+              "memory_id": "memory:pattern:2ed820d3c25a6d880890365ab710790fb681508b9fc5253fe3b8a5aedf8aa558",
+              "occurrence_count": 4168,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.197792+00:00"
+            },
+            "intel:pattern:05235689391e9937f8a42674d02f7fa8cb16969ce4107e19d3681f30a3d467fd": {
+              "known": true,
+              "memory_id": "memory:pattern:5dec2a075cfd214f4a1d24253a54f31dcf645d3f3b3b0f21c0bf5f7023ea7b92",
+              "occurrence_count": 652,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:05.762187+00:00"
+            },
+            "intel:pattern:164662170987d2612527c3ef582978d47b09d66bb54b46769b3da99a43339b5e": {
+              "known": true,
+              "memory_id": "memory:pattern:200d20685f8910da2675046c3610c11da9c79f722add54b11f724499358e6291",
+              "occurrence_count": 374,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.147966+00:00"
+            },
+            "intel:pattern:6148c22d16eddac2c364f824a1302ca5ff5f72337618a8deeb94a921874e9bc3": {
+              "known": true,
+              "memory_id": "memory:pattern:9a54a1ecfb0ce9b30f43cb050a0b526f2e1d6e6f9e73f8815fd9f8b4e66f2272",
+              "occurrence_count": 354,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:05.705626+00:00"
+            },
+            "intel:pattern:6d98a0969f3e944f5610a226a910c22952553e074dd080172b909dda59d2b6b6": {
+              "known": true,
+              "memory_id": "memory:pattern:3901877516f6fb00d4c73e4507ecc87a8077d6cf2c525e05532b3db5094a5c39",
+              "occurrence_count": 340,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.158067+00:00"
+            },
+            "intel:pattern:156f806f1defd1dc3c231016d164660e17b872f0c5e4d6f5ce76eba7a3f546e8": {
+              "known": true,
+              "memory_id": "memory:pattern:d3ebae59c4128c4f70c461be37368155b54a92b43e79a1f9dd5333107157316f",
+              "occurrence_count": 238,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.209309+00:00"
+            },
+            "intel:pattern:c6cf3bb8b853b1f5a9ed1290b826d77e48cc2a06ff5da14c30b8c836bd3b283f": {
+              "known": true,
+              "memory_id": "memory:pattern:356a25084efa43c85c2812f6655f798819cd8e6f85b12ead47109c916bc1d8aa",
+              "occurrence_count": 142,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:05.679399+00:00"
+            },
+            "intel:pattern:1b4e7b931d657e7a5df2f7cbdd43f5df2af3238c64d83ba1e0b5e64a62181a41": {
+              "known": true,
+              "memory_id": "memory:pattern:c0bf409b92cfb118401f4644cc9c049396e881a7e97beb29c7e0e184cd091adf",
+              "occurrence_count": 118,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:03.286896+00:00"
+            },
+            "intel:pattern:2acc8dcf9fdfc63941abab7b4758607e07c36876987f0df83ac2e0d383835b86": {
+              "known": true,
+              "memory_id": "memory:pattern:a882b1376d69faef3313ae13640219fdba389418403d755b8968659f9ae68f41",
+              "occurrence_count": 116,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:36:03.286936+00:00"
+            },
+            "intel:pattern:c9996701d82e27efb2f157eedccc46cf6a8b8a714db7d8daa0969c1e863b441b": {
+              "known": true,
+              "memory_id": "memory:pattern:63da68f020bc376cefffa2b5fa518ed23b1c742043fa6d4c290650b626d7fb77",
+              "occurrence_count": 108,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:05.776492+00:00"
+            },
+            "intel:pattern:98a0602c7d3fbca7305827fcd4917baa54cef393ac1babf78076a98c8cd99aea": {
+              "known": true,
+              "memory_id": "memory:pattern:c19eb379c6b0a344c58629ca84a5a78398036e172231a0b1d71657bd66b93cf9",
+              "occurrence_count": 88,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.153560+00:00"
+            },
+            "intel:pattern:1e96310f3e9b809bd5a8e2d7ab16a63b2a973070a168c476934d173ca00e2c1a": {
+              "known": true,
+              "memory_id": "memory:pattern:4e715bbccdaffbc468054715b0984c14b4daca625818fd212c4e6029bcab8ae5",
+              "occurrence_count": 76,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:05.649107+00:00"
+            },
+            "intel:pattern:a6a0eac20e813f6af040b8bd67aac8c1cc32e793494a8311681db22f846b5b9d": {
+              "known": true,
+              "memory_id": "memory:pattern:8e0ba3966021b3e77001ce0ec092943a691f4851cba3a59e77976cb96fe19174",
+              "occurrence_count": 16,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:05.994137+00:00"
+            },
+            "intel:pattern:2d6d7e7ba8a4aa94b9e98342b24b919a34897a750f267f7aa872428b0bbd9f72": {
+              "known": true,
+              "memory_id": "memory:pattern:3212fa985798be8aa581a6e03abe7aa70f3473f225bf90f6096b160ce4fc4c45",
+              "occurrence_count": 14,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.209516+00:00"
+            },
+            "intel:pattern:26602a6e8206eb3cbc248c86aa171ba80b59724a2c255438abf22115cac411c7": {
+              "known": true,
+              "memory_id": "memory:pattern:9ec77e19f480ee9a79ee741e64aa34ad3d084ea7cbb0a8c9a5de03af0d0341a8",
+              "occurrence_count": 8,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.144272+00:00"
+            },
+            "intel:pattern:fb886d6cd645ff6a36a5321e55b8f9ddce10936f1ab588db600dcce84a6cb026": {
+              "known": true,
+              "memory_id": "memory:pattern:e51b8dc7e4d71248bc7095349acb4d8dce352a213de77a6e724e2b2e9abd3236",
+              "occurrence_count": 6,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.129272+00:00"
+            },
+            "intel:pattern:815ca99b2175d21d840d1c732d9be01b73f02bc9369f00c598f80ea8a5524d99": {
+              "known": true,
+              "memory_id": "memory:pattern:a3df6ea30c18f74b186c848a6a38f3815a960395f36797cae7509f7d52808952",
+              "occurrence_count": 6,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:28:24.653816+00:00"
+            },
+            "intel:pattern:f1582e8d64d019050baa54a9641b7b9987be5e55120e86b3cfb8ae980dea08c7": {
+              "known": true,
+              "memory_id": "memory:pattern:6b2284d681d93f8725e8cecc9d9b5d1f2a94b3112010fcf4aa22cd26e4a4d62e",
+              "occurrence_count": 6,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:02.403223+00:00"
+            },
+            "intel:pattern:5d2f96f2c64d6ada70f05cd7ee383cf9d7cb036f4a5faf59c573401ba727b2a8": {
+              "known": true,
+              "memory_id": "memory:pattern:945cce4ec9bfdc6b08e8ff418cb7a447f69b0bfbbe944180fc266752d02fffeb",
+              "occurrence_count": 4,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:28:06.223876+00:00"
+            },
+            "intel:pattern:1ed2953c58637e19afc7af92b5f96ce90b945265abbf917874ec5879d626a9e1": {
+              "known": true,
+              "memory_id": "memory:pattern:950517b214ce72af98a9c234ffa48eb214beb2b1a4d0b07f612cccc65cc4e9e2",
+              "occurrence_count": 4,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:26:06.993603+00:00"
+            },
+            "intel:pattern:b13e38ec8f0de459ecb5bf3cf130e1cc24f7f041b6494ae04f86406cd1a319a4": {
+              "known": true,
+              "memory_id": "memory:pattern:db77dcd858e6449bba945b27913f85be40adcf185ed853db6a580f4691d8e54e",
+              "occurrence_count": 4,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:28:24.653816+00:00"
+            },
+            "intel:pattern:556efc841d04116ffdcdd9fd5ee842496492675eb30a13c5956692668da0c12c": {
+              "known": true,
+              "memory_id": "memory:pattern:0d25ac32cd8a05a30b71d00f949c01bb4397d3a525ba8bd931b6ab6d892ca6c6",
+              "occurrence_count": 4,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:28:06.299275+00:00"
+            },
+            "intel:pattern:29d89adf62bf65c679f176a247bbee0991f6770418f766f99e39165b9f899b94": {
+              "known": true,
+              "memory_id": "memory:pattern:9b660dcf97c70e17cae64cb85834fdab8bc44920dc204de139ecab2beef45708",
+              "occurrence_count": 4,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:28:24.583609+00:00"
+            },
+            "intel:pattern:674998a5ec877d1118aa3e20703300e21c8fadad6715cca1718757a543013626": {
+              "known": true,
+              "memory_id": "memory:pattern:af38f73d993c32d38944f1d1e3144cd567c6b84a126f7c0b8a5db0878118ab0c",
+              "occurrence_count": 4,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:28:24.562752+00:00"
+            },
+            "intel:pattern:d729197b1a553bce184f04b5e4daa8b815e277464fd512cb02a423dd974c9b5c": {
+              "known": true,
+              "memory_id": "memory:pattern:153d4de7d8ed8446fe0af334ac8774e8a6a6aed8f8e3668876327e96d404e715",
+              "occurrence_count": 4,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:28:06.201705+00:00"
+            },
+            "intel:pattern:d5adef8c6ccb25e048f87fe275cd399e775d6e1f67b3f3dcdfb9690f61740e19": {
+              "known": true,
+              "memory_id": "memory:pattern:d115f937eb565872287fd6b8e13726ebc0391c056f7dc1f92b142191705d5744",
+              "occurrence_count": 4,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:23:35.262482+00:00"
+            },
+            "intel:pattern:79af5f6ffeb6727cf0d05f506f771e5545d5a549aed88d5182d5b28cea5e8cc9": {
+              "known": true,
+              "memory_id": "memory:pattern:c6066086b922cd797db85ea2b18221cd41a5cb25bb5237fc7a66eb6ec3d279d9",
+              "occurrence_count": 4,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.256343+00:00"
+            },
+            "intel:pattern:f2cece85ec9473e58cc477769a3990a42f0a43c374dbd2878316bc90ff283c8b": {
+              "known": true,
+              "memory_id": "memory:pattern:5c9794e9ec271e8bacf143581f5ce496272a35f839e5d2e9c0f6e94e34b23906",
+              "occurrence_count": 2,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:05.994137+00:00"
+            },
+            "intel:pattern:96a2b0ec3e7b797e7ac3135d6f43715618a60de28e3979adfac64d5f807d4a20": {
+              "known": true,
+              "memory_id": "memory:pattern:857b480e47ca7c62a3304c26268fd3241515b4a120a4ac503970fca25a768852",
+              "occurrence_count": 2,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:33:48.358010+00:00"
+            },
+            "intel:pattern:b8ccd5708f2bbacd894083b0bd0f7cbc9a552bd5a9dcb34856e16aa01acfbcf3": {
+              "known": true,
+              "memory_id": "memory:pattern:d9ad922d1ce8e01abb4835bbd03a06932c418292fc6e2b924b3e149f237992c0",
+              "occurrence_count": 2,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:02.403223+00:00"
+            },
+            "intel:pattern:7c8fd0911b3ea2b94b8670e313e5dba64b3c36dee69c842dc38725f8a73a8de2": {
+              "known": true,
+              "memory_id": "memory:pattern:9b3c5f7da5c0010b205e72cafe88f7fa40a7d4a23db8bb359464fb9501153bdc",
+              "occurrence_count": 2,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:17:01.803273+00:00"
+            },
+            "intel:pattern:5a758db4530fb593aa2062a332e9d3c62cf19207ae88ab1276a7a7db3eeadfc1": {
+              "known": true,
+              "memory_id": "memory:pattern:42a73b072b2214db8e64fe2fe747777a51e5807da5a34d354a40c543acede962",
+              "occurrence_count": 2,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.256343+00:00"
+            },
+            "intel:pattern:1bf89f6d145c7121b7fc3046bc5c60996cb16183e6990aa42f9c5f8e83feb056": {
+              "known": true,
+              "memory_id": "memory:pattern:7c5e8ba23106900a7592dcae7afadcc6da1e9c92e27526f7cbe68c4c3f4e255d",
+              "occurrence_count": 2,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.129272+00:00"
+            }
+          },
+          "resources": {
+            "osha:resource:fb7efc1007996520f34d4fa6df78ff0f0d87942069afbc7ea39dc7af3c84c767": {
+              "memory_count": 9,
+              "memory_ids": [
+                "memory:incident:808265028eeb310d8a132462a788e5296184454dd46dcb82e7c5d668832db348",
+                "memory:root_cause:fd458db582e62d9137e4bd5f455296a2ef5c096d1bbbb7d8e26b9d2ff6f652d5",
+                "memory:incident:13d8a1c638fe68250f200b1ef4c9a334d5cb2c124520fafd3934ee9e73293136",
+                "memory:root_cause:5167d84dee6f4ee70e0d3d70fa1477fd283e6e843b305ab508a2169fed829ef8",
+                "memory:pattern:d9ad922d1ce8e01abb4835bbd03a06932c418292fc6e2b924b3e149f237992c0",
+                "memory:pattern:857b480e47ca7c62a3304c26268fd3241515b4a120a4ac503970fca25a768852",
+                "memory:pattern:6b2284d681d93f8725e8cecc9d9b5d1f2a94b3112010fcf4aa22cd26e4a4d62e",
+                "memory:episode:b8edd63d303b0cf8f5b86dfa59425bb342a5ff17a052aa1b8fd1d2e63eed0c8a",
+                "memory:episode:4ad8bed84f23489fda747c888a0c9f80eef9e4ab3f93aaee364165a56ccbfcc8"
+              ],
+              "verified_root_cause_memory_ids": []
+            }
+          },
+          "similar_incidents": [
+            {
+              "memory_id": "memory:incident:13d8a1c638fe68250f200b1ef4c9a334d5cb2c124520fafd3934ee9e73293136",
+              "memory_type": "incident",
+              "score": 0.85,
+              "verification_status": "unverified",
+              "reasons": [
+                "resource similarity=1.00",
+                "pattern similarity=1.00",
+                "severity similarity=1.00",
+                "title similarity=1.00",
+                "environment similarity=1.00"
+              ],
+              "attributes": {
+                "incident_id": "intel:incident:e629c2eca21c62b2f16c6c09ef25fb08ccee778b62a28d62e5825fbbc5d77128",
+                "title": "Correlated abnormal activity",
+                "outcome_memory_id": null,
+                "dimension_scores": {
+                  "resource": 1.0,
+                  "pattern": 1.0,
+                  "service": 0.0,
+                  "severity": 1.0,
+                  "title": 1.0,
+                  "environment": 1.0
+                }
+              }
+            },
+            {
+              "memory_id": "memory:incident:e2913d95b5c06dc2142c02bb9c40cea8357a4301fb7e81795d4e5ddbf82c9b37",
+              "memory_type": "incident",
+              "score": 0.30000000000000004,
+              "verification_status": "unverified",
+              "reasons": [
+                "severity similarity=1.00",
+                "title similarity=1.00",
+                "environment similarity=1.00"
+              ],
+              "attributes": {
+                "incident_id": "intel:incident:ab756d33d0297e99786ad563a11130070bf2d809df8675584d2cdf49a563be33",
+                "title": "Correlated abnormal activity",
+                "outcome_memory_id": null,
+                "dimension_scores": {
+                  "resource": 0.0,
+                  "pattern": 0.0,
+                  "service": 0.0,
+                  "severity": 1.0,
+                  "title": 1.0,
+                  "environment": 1.0
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "incident_id": "intel:incident:ab756d33d0297e99786ad563a11130070bf2d809df8675584d2cdf49a563be33",
+        "context": {
+          "patterns": {
+            "intel:pattern:2c3b83047af96284e6f02e1cb6cb8548132020b77f73f457a946084c3a877269": {
+              "known": true,
+              "memory_id": "memory:pattern:2ed820d3c25a6d880890365ab710790fb681508b9fc5253fe3b8a5aedf8aa558",
+              "occurrence_count": 4168,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.197792+00:00"
+            },
+            "intel:pattern:05235689391e9937f8a42674d02f7fa8cb16969ce4107e19d3681f30a3d467fd": {
+              "known": true,
+              "memory_id": "memory:pattern:5dec2a075cfd214f4a1d24253a54f31dcf645d3f3b3b0f21c0bf5f7023ea7b92",
+              "occurrence_count": 652,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:05.762187+00:00"
+            },
+            "intel:pattern:164662170987d2612527c3ef582978d47b09d66bb54b46769b3da99a43339b5e": {
+              "known": true,
+              "memory_id": "memory:pattern:200d20685f8910da2675046c3610c11da9c79f722add54b11f724499358e6291",
+              "occurrence_count": 374,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.147966+00:00"
+            },
+            "intel:pattern:6148c22d16eddac2c364f824a1302ca5ff5f72337618a8deeb94a921874e9bc3": {
+              "known": true,
+              "memory_id": "memory:pattern:9a54a1ecfb0ce9b30f43cb050a0b526f2e1d6e6f9e73f8815fd9f8b4e66f2272",
+              "occurrence_count": 354,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:05.705626+00:00"
+            },
+            "intel:pattern:6d98a0969f3e944f5610a226a910c22952553e074dd080172b909dda59d2b6b6": {
+              "known": true,
+              "memory_id": "memory:pattern:3901877516f6fb00d4c73e4507ecc87a8077d6cf2c525e05532b3db5094a5c39",
+              "occurrence_count": 340,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.158067+00:00"
+            },
+            "intel:pattern:156f806f1defd1dc3c231016d164660e17b872f0c5e4d6f5ce76eba7a3f546e8": {
+              "known": true,
+              "memory_id": "memory:pattern:d3ebae59c4128c4f70c461be37368155b54a92b43e79a1f9dd5333107157316f",
+              "occurrence_count": 238,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.209309+00:00"
+            },
+            "intel:pattern:c6cf3bb8b853b1f5a9ed1290b826d77e48cc2a06ff5da14c30b8c836bd3b283f": {
+              "known": true,
+              "memory_id": "memory:pattern:356a25084efa43c85c2812f6655f798819cd8e6f85b12ead47109c916bc1d8aa",
+              "occurrence_count": 142,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:05.679399+00:00"
+            },
+            "intel:pattern:1b4e7b931d657e7a5df2f7cbdd43f5df2af3238c64d83ba1e0b5e64a62181a41": {
+              "known": true,
+              "memory_id": "memory:pattern:c0bf409b92cfb118401f4644cc9c049396e881a7e97beb29c7e0e184cd091adf",
+              "occurrence_count": 118,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:03.286896+00:00"
+            },
+            "intel:pattern:2acc8dcf9fdfc63941abab7b4758607e07c36876987f0df83ac2e0d383835b86": {
+              "known": true,
+              "memory_id": "memory:pattern:a882b1376d69faef3313ae13640219fdba389418403d755b8968659f9ae68f41",
+              "occurrence_count": 116,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:36:03.286936+00:00"
+            },
+            "intel:pattern:c9996701d82e27efb2f157eedccc46cf6a8b8a714db7d8daa0969c1e863b441b": {
+              "known": true,
+              "memory_id": "memory:pattern:63da68f020bc376cefffa2b5fa518ed23b1c742043fa6d4c290650b626d7fb77",
+              "occurrence_count": 108,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:05.776492+00:00"
+            },
+            "intel:pattern:98a0602c7d3fbca7305827fcd4917baa54cef393ac1babf78076a98c8cd99aea": {
+              "known": true,
+              "memory_id": "memory:pattern:c19eb379c6b0a344c58629ca84a5a78398036e172231a0b1d71657bd66b93cf9",
+              "occurrence_count": 88,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.153560+00:00"
+            },
+            "intel:pattern:1e96310f3e9b809bd5a8e2d7ab16a63b2a973070a168c476934d173ca00e2c1a": {
+              "known": true,
+              "memory_id": "memory:pattern:4e715bbccdaffbc468054715b0984c14b4daca625818fd212c4e6029bcab8ae5",
+              "occurrence_count": 76,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:05.649107+00:00"
+            },
+            "intel:pattern:a6a0eac20e813f6af040b8bd67aac8c1cc32e793494a8311681db22f846b5b9d": {
+              "known": true,
+              "memory_id": "memory:pattern:8e0ba3966021b3e77001ce0ec092943a691f4851cba3a59e77976cb96fe19174",
+              "occurrence_count": 16,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:05.994137+00:00"
+            },
+            "intel:pattern:2d6d7e7ba8a4aa94b9e98342b24b919a34897a750f267f7aa872428b0bbd9f72": {
+              "known": true,
+              "memory_id": "memory:pattern:3212fa985798be8aa581a6e03abe7aa70f3473f225bf90f6096b160ce4fc4c45",
+              "occurrence_count": 14,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.209516+00:00"
+            },
+            "intel:pattern:26602a6e8206eb3cbc248c86aa171ba80b59724a2c255438abf22115cac411c7": {
+              "known": true,
+              "memory_id": "memory:pattern:9ec77e19f480ee9a79ee741e64aa34ad3d084ea7cbb0a8c9a5de03af0d0341a8",
+              "occurrence_count": 8,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.144272+00:00"
+            },
+            "intel:pattern:fb886d6cd645ff6a36a5321e55b8f9ddce10936f1ab588db600dcce84a6cb026": {
+              "known": true,
+              "memory_id": "memory:pattern:e51b8dc7e4d71248bc7095349acb4d8dce352a213de77a6e724e2b2e9abd3236",
+              "occurrence_count": 6,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.129272+00:00"
+            },
+            "intel:pattern:815ca99b2175d21d840d1c732d9be01b73f02bc9369f00c598f80ea8a5524d99": {
+              "known": true,
+              "memory_id": "memory:pattern:a3df6ea30c18f74b186c848a6a38f3815a960395f36797cae7509f7d52808952",
+              "occurrence_count": 6,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:28:24.653816+00:00"
+            },
+            "intel:pattern:f1582e8d64d019050baa54a9641b7b9987be5e55120e86b3cfb8ae980dea08c7": {
+              "known": true,
+              "memory_id": "memory:pattern:6b2284d681d93f8725e8cecc9d9b5d1f2a94b3112010fcf4aa22cd26e4a4d62e",
+              "occurrence_count": 6,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:02.403223+00:00"
+            },
+            "intel:pattern:5d2f96f2c64d6ada70f05cd7ee383cf9d7cb036f4a5faf59c573401ba727b2a8": {
+              "known": true,
+              "memory_id": "memory:pattern:945cce4ec9bfdc6b08e8ff418cb7a447f69b0bfbbe944180fc266752d02fffeb",
+              "occurrence_count": 4,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:28:06.223876+00:00"
+            },
+            "intel:pattern:1ed2953c58637e19afc7af92b5f96ce90b945265abbf917874ec5879d626a9e1": {
+              "known": true,
+              "memory_id": "memory:pattern:950517b214ce72af98a9c234ffa48eb214beb2b1a4d0b07f612cccc65cc4e9e2",
+              "occurrence_count": 4,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:26:06.993603+00:00"
+            },
+            "intel:pattern:b13e38ec8f0de459ecb5bf3cf130e1cc24f7f041b6494ae04f86406cd1a319a4": {
+              "known": true,
+              "memory_id": "memory:pattern:db77dcd858e6449bba945b27913f85be40adcf185ed853db6a580f4691d8e54e",
+              "occurrence_count": 4,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:28:24.653816+00:00"
+            },
+            "intel:pattern:556efc841d04116ffdcdd9fd5ee842496492675eb30a13c5956692668da0c12c": {
+              "known": true,
+              "memory_id": "memory:pattern:0d25ac32cd8a05a30b71d00f949c01bb4397d3a525ba8bd931b6ab6d892ca6c6",
+              "occurrence_count": 4,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:28:06.299275+00:00"
+            },
+            "intel:pattern:29d89adf62bf65c679f176a247bbee0991f6770418f766f99e39165b9f899b94": {
+              "known": true,
+              "memory_id": "memory:pattern:9b660dcf97c70e17cae64cb85834fdab8bc44920dc204de139ecab2beef45708",
+              "occurrence_count": 4,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:28:24.583609+00:00"
+            },
+            "intel:pattern:674998a5ec877d1118aa3e20703300e21c8fadad6715cca1718757a543013626": {
+              "known": true,
+              "memory_id": "memory:pattern:af38f73d993c32d38944f1d1e3144cd567c6b84a126f7c0b8a5db0878118ab0c",
+              "occurrence_count": 4,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:28:24.562752+00:00"
+            },
+            "intel:pattern:d729197b1a553bce184f04b5e4daa8b815e277464fd512cb02a423dd974c9b5c": {
+              "known": true,
+              "memory_id": "memory:pattern:153d4de7d8ed8446fe0af334ac8774e8a6a6aed8f8e3668876327e96d404e715",
+              "occurrence_count": 4,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:28:06.201705+00:00"
+            },
+            "intel:pattern:d5adef8c6ccb25e048f87fe275cd399e775d6e1f67b3f3dcdfb9690f61740e19": {
+              "known": true,
+              "memory_id": "memory:pattern:d115f937eb565872287fd6b8e13726ebc0391c056f7dc1f92b142191705d5744",
+              "occurrence_count": 4,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:23:35.262482+00:00"
+            },
+            "intel:pattern:79af5f6ffeb6727cf0d05f506f771e5545d5a549aed88d5182d5b28cea5e8cc9": {
+              "known": true,
+              "memory_id": "memory:pattern:c6066086b922cd797db85ea2b18221cd41a5cb25bb5237fc7a66eb6ec3d279d9",
+              "occurrence_count": 4,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.256343+00:00"
+            },
+            "intel:pattern:f2cece85ec9473e58cc477769a3990a42f0a43c374dbd2878316bc90ff283c8b": {
+              "known": true,
+              "memory_id": "memory:pattern:5c9794e9ec271e8bacf143581f5ce496272a35f839e5d2e9c0f6e94e34b23906",
+              "occurrence_count": 2,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:05.994137+00:00"
+            },
+            "intel:pattern:96a2b0ec3e7b797e7ac3135d6f43715618a60de28e3979adfac64d5f807d4a20": {
+              "known": true,
+              "memory_id": "memory:pattern:857b480e47ca7c62a3304c26268fd3241515b4a120a4ac503970fca25a768852",
+              "occurrence_count": 2,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:33:48.358010+00:00"
+            },
+            "intel:pattern:b8ccd5708f2bbacd894083b0bd0f7cbc9a552bd5a9dcb34856e16aa01acfbcf3": {
+              "known": true,
+              "memory_id": "memory:pattern:d9ad922d1ce8e01abb4835bbd03a06932c418292fc6e2b924b3e149f237992c0",
+              "occurrence_count": 2,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:02.403223+00:00"
+            },
+            "intel:pattern:7c8fd0911b3ea2b94b8670e313e5dba64b3c36dee69c842dc38725f8a73a8de2": {
+              "known": true,
+              "memory_id": "memory:pattern:9b3c5f7da5c0010b205e72cafe88f7fa40a7d4a23db8bb359464fb9501153bdc",
+              "occurrence_count": 2,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:17:01.803273+00:00"
+            },
+            "intel:pattern:5a758db4530fb593aa2062a332e9d3c62cf19207ae88ab1276a7a7db3eeadfc1": {
+              "known": true,
+              "memory_id": "memory:pattern:42a73b072b2214db8e64fe2fe747777a51e5807da5a34d354a40c543acede962",
+              "occurrence_count": 2,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.256343+00:00"
+            },
+            "intel:pattern:1bf89f6d145c7121b7fc3046bc5c60996cb16183e6990aa42f9c5f8e83feb056": {
+              "known": true,
+              "memory_id": "memory:pattern:7c5e8ba23106900a7592dcae7afadcc6da1e9c92e27526f7cbe68c4c3f4e255d",
+              "occurrence_count": 2,
+              "verified_incident_count": 0,
+              "verified_normal_count": 0,
+              "verified_incident_rate": null,
+              "verified_normal_rate": null,
+              "last_seen": "2026-11-20T19:37:06.129272+00:00"
+            }
+          },
+          "resources": {
+            "osha:resource:410b52e405d0dfcf9e2971db95e1c95061547739d6c5351d2ed3b65f87aa9d84": {
+              "memory_count": 10,
+              "memory_ids": [
+                "memory:incident:e2913d95b5c06dc2142c02bb9c40cea8357a4301fb7e81795d4e5ddbf82c9b37",
+                "memory:root_cause:f4772f1e29e634cf76289b5d8e52d81364055984434c9dbf6bba2b3cc3b8ded2",
+                "memory:pattern:42a73b072b2214db8e64fe2fe747777a51e5807da5a34d354a40c543acede962",
+                "memory:pattern:c6066086b922cd797db85ea2b18221cd41a5cb25bb5237fc7a66eb6ec3d279d9",
+                "memory:pattern:c19eb379c6b0a344c58629ca84a5a78398036e172231a0b1d71657bd66b93cf9",
+                "memory:pattern:a882b1376d69faef3313ae13640219fdba389418403d755b8968659f9ae68f41",
+                "memory:pattern:c0bf409b92cfb118401f4644cc9c049396e881a7e97beb29c7e0e184cd091adf",
+                "memory:pattern:d3ebae59c4128c4f70c461be37368155b54a92b43e79a1f9dd5333107157316f",
+                "memory:pattern:3901877516f6fb00d4c73e4507ecc87a8077d6cf2c525e05532b3db5094a5c39",
+                "memory:episode:4b51c269f72b501428d573a68142fac53af97b1d77f3955e6ecb6316b94a6f10"
+              ],
+              "verified_root_cause_memory_ids": []
+            }
+          },
+          "similar_incidents": [
+            {
+              "memory_id": "memory:incident:13d8a1c638fe68250f200b1ef4c9a334d5cb2c124520fafd3934ee9e73293136",
+              "memory_type": "incident",
+              "score": 0.30000000000000004,
+              "verification_status": "unverified",
+              "reasons": [
+                "severity similarity=1.00",
+                "title similarity=1.00",
+                "environment similarity=1.00"
+              ],
+              "attributes": {
+                "incident_id": "intel:incident:e629c2eca21c62b2f16c6c09ef25fb08ccee778b62a28d62e5825fbbc5d77128",
+                "title": "Correlated abnormal activity",
+                "outcome_memory_id": null,
+                "dimension_scores": {
+                  "resource": 0.0,
+                  "pattern": 0.0,
+                  "service": 0.0,
+                  "severity": 1.0,
+                  "title": 1.0,
+                  "environment": 1.0
+                }
+              }
+            },
+            {
+              "memory_id": "memory:incident:808265028eeb310d8a132462a788e5296184454dd46dcb82e7c5d668832db348",
+              "memory_type": "incident",
+              "score": 0.30000000000000004,
+              "verification_status": "unverified",
+              "reasons": [
+                "severity similarity=1.00",
+                "title similarity=1.00",
+                "environment similarity=1.00"
+              ],
+              "attributes": {
+                "incident_id": "intel:incident:d3954cff08b64ae668db8cd6d90eda0595d862a47e3db325a25361bc8f1259fd",
+                "title": "Correlated abnormal activity",
+                "outcome_memory_id": null,
+                "dimension_scores": {
+                  "resource": 0.0,
+                  "pattern": 0.0,
+                  "service": 0.0,
+                  "severity": 1.0,
+                  "title": 1.0,
+                  "environment": 1.0
+                }
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "patterns": {
+      "intel:pattern:2c3b83047af96284e6f02e1cb6cb8548132020b77f73f457a946084c3a877269": {
+        "known": true,
+        "memory_id": "memory:pattern:2ed820d3c25a6d880890365ab710790fb681508b9fc5253fe3b8a5aedf8aa558",
+        "occurrence_count": 4168,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:37:06.197792+00:00"
+      },
+      "intel:pattern:05235689391e9937f8a42674d02f7fa8cb16969ce4107e19d3681f30a3d467fd": {
+        "known": true,
+        "memory_id": "memory:pattern:5dec2a075cfd214f4a1d24253a54f31dcf645d3f3b3b0f21c0bf5f7023ea7b92",
+        "occurrence_count": 652,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:37:05.762187+00:00"
+      },
+      "intel:pattern:164662170987d2612527c3ef582978d47b09d66bb54b46769b3da99a43339b5e": {
+        "known": true,
+        "memory_id": "memory:pattern:200d20685f8910da2675046c3610c11da9c79f722add54b11f724499358e6291",
+        "occurrence_count": 374,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:37:06.147966+00:00"
+      },
+      "intel:pattern:6148c22d16eddac2c364f824a1302ca5ff5f72337618a8deeb94a921874e9bc3": {
+        "known": true,
+        "memory_id": "memory:pattern:9a54a1ecfb0ce9b30f43cb050a0b526f2e1d6e6f9e73f8815fd9f8b4e66f2272",
+        "occurrence_count": 354,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:37:05.705626+00:00"
+      },
+      "intel:pattern:6d98a0969f3e944f5610a226a910c22952553e074dd080172b909dda59d2b6b6": {
+        "known": true,
+        "memory_id": "memory:pattern:3901877516f6fb00d4c73e4507ecc87a8077d6cf2c525e05532b3db5094a5c39",
+        "occurrence_count": 340,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:37:06.158067+00:00"
+      },
+      "intel:pattern:156f806f1defd1dc3c231016d164660e17b872f0c5e4d6f5ce76eba7a3f546e8": {
+        "known": true,
+        "memory_id": "memory:pattern:d3ebae59c4128c4f70c461be37368155b54a92b43e79a1f9dd5333107157316f",
+        "occurrence_count": 238,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:37:06.209309+00:00"
+      },
+      "intel:pattern:c6cf3bb8b853b1f5a9ed1290b826d77e48cc2a06ff5da14c30b8c836bd3b283f": {
+        "known": true,
+        "memory_id": "memory:pattern:356a25084efa43c85c2812f6655f798819cd8e6f85b12ead47109c916bc1d8aa",
+        "occurrence_count": 142,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:37:05.679399+00:00"
+      },
+      "intel:pattern:1b4e7b931d657e7a5df2f7cbdd43f5df2af3238c64d83ba1e0b5e64a62181a41": {
+        "known": true,
+        "memory_id": "memory:pattern:c0bf409b92cfb118401f4644cc9c049396e881a7e97beb29c7e0e184cd091adf",
+        "occurrence_count": 118,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:37:03.286896+00:00"
+      },
+      "intel:pattern:2acc8dcf9fdfc63941abab7b4758607e07c36876987f0df83ac2e0d383835b86": {
+        "known": true,
+        "memory_id": "memory:pattern:a882b1376d69faef3313ae13640219fdba389418403d755b8968659f9ae68f41",
+        "occurrence_count": 116,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:36:03.286936+00:00"
+      },
+      "intel:pattern:c9996701d82e27efb2f157eedccc46cf6a8b8a714db7d8daa0969c1e863b441b": {
+        "known": true,
+        "memory_id": "memory:pattern:63da68f020bc376cefffa2b5fa518ed23b1c742043fa6d4c290650b626d7fb77",
+        "occurrence_count": 108,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:37:05.776492+00:00"
+      },
+      "intel:pattern:98a0602c7d3fbca7305827fcd4917baa54cef393ac1babf78076a98c8cd99aea": {
+        "known": true,
+        "memory_id": "memory:pattern:c19eb379c6b0a344c58629ca84a5a78398036e172231a0b1d71657bd66b93cf9",
+        "occurrence_count": 88,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:37:06.153560+00:00"
+      },
+      "intel:pattern:1e96310f3e9b809bd5a8e2d7ab16a63b2a973070a168c476934d173ca00e2c1a": {
+        "known": true,
+        "memory_id": "memory:pattern:4e715bbccdaffbc468054715b0984c14b4daca625818fd212c4e6029bcab8ae5",
+        "occurrence_count": 76,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:37:05.649107+00:00"
+      },
+      "intel:pattern:a6a0eac20e813f6af040b8bd67aac8c1cc32e793494a8311681db22f846b5b9d": {
+        "known": true,
+        "memory_id": "memory:pattern:8e0ba3966021b3e77001ce0ec092943a691f4851cba3a59e77976cb96fe19174",
+        "occurrence_count": 16,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:37:05.994137+00:00"
+      },
+      "intel:pattern:2d6d7e7ba8a4aa94b9e98342b24b919a34897a750f267f7aa872428b0bbd9f72": {
+        "known": true,
+        "memory_id": "memory:pattern:3212fa985798be8aa581a6e03abe7aa70f3473f225bf90f6096b160ce4fc4c45",
+        "occurrence_count": 14,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:37:06.209516+00:00"
+      },
+      "intel:pattern:26602a6e8206eb3cbc248c86aa171ba80b59724a2c255438abf22115cac411c7": {
+        "known": true,
+        "memory_id": "memory:pattern:9ec77e19f480ee9a79ee741e64aa34ad3d084ea7cbb0a8c9a5de03af0d0341a8",
+        "occurrence_count": 8,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:37:06.144272+00:00"
+      },
+      "intel:pattern:fb886d6cd645ff6a36a5321e55b8f9ddce10936f1ab588db600dcce84a6cb026": {
+        "known": true,
+        "memory_id": "memory:pattern:e51b8dc7e4d71248bc7095349acb4d8dce352a213de77a6e724e2b2e9abd3236",
+        "occurrence_count": 6,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:37:06.129272+00:00"
+      },
+      "intel:pattern:815ca99b2175d21d840d1c732d9be01b73f02bc9369f00c598f80ea8a5524d99": {
+        "known": true,
+        "memory_id": "memory:pattern:a3df6ea30c18f74b186c848a6a38f3815a960395f36797cae7509f7d52808952",
+        "occurrence_count": 6,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:28:24.653816+00:00"
+      },
+      "intel:pattern:f1582e8d64d019050baa54a9641b7b9987be5e55120e86b3cfb8ae980dea08c7": {
+        "known": true,
+        "memory_id": "memory:pattern:6b2284d681d93f8725e8cecc9d9b5d1f2a94b3112010fcf4aa22cd26e4a4d62e",
+        "occurrence_count": 6,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:37:02.403223+00:00"
+      },
+      "intel:pattern:5d2f96f2c64d6ada70f05cd7ee383cf9d7cb036f4a5faf59c573401ba727b2a8": {
+        "known": true,
+        "memory_id": "memory:pattern:945cce4ec9bfdc6b08e8ff418cb7a447f69b0bfbbe944180fc266752d02fffeb",
+        "occurrence_count": 4,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:28:06.223876+00:00"
+      },
+      "intel:pattern:1ed2953c58637e19afc7af92b5f96ce90b945265abbf917874ec5879d626a9e1": {
+        "known": true,
+        "memory_id": "memory:pattern:950517b214ce72af98a9c234ffa48eb214beb2b1a4d0b07f612cccc65cc4e9e2",
+        "occurrence_count": 4,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:26:06.993603+00:00"
+      },
+      "intel:pattern:b13e38ec8f0de459ecb5bf3cf130e1cc24f7f041b6494ae04f86406cd1a319a4": {
+        "known": true,
+        "memory_id": "memory:pattern:db77dcd858e6449bba945b27913f85be40adcf185ed853db6a580f4691d8e54e",
+        "occurrence_count": 4,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:28:24.653816+00:00"
+      },
+      "intel:pattern:556efc841d04116ffdcdd9fd5ee842496492675eb30a13c5956692668da0c12c": {
+        "known": true,
+        "memory_id": "memory:pattern:0d25ac32cd8a05a30b71d00f949c01bb4397d3a525ba8bd931b6ab6d892ca6c6",
+        "occurrence_count": 4,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:28:06.299275+00:00"
+      },
+      "intel:pattern:29d89adf62bf65c679f176a247bbee0991f6770418f766f99e39165b9f899b94": {
+        "known": true,
+        "memory_id": "memory:pattern:9b660dcf97c70e17cae64cb85834fdab8bc44920dc204de139ecab2beef45708",
+        "occurrence_count": 4,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:28:24.583609+00:00"
+      },
+      "intel:pattern:674998a5ec877d1118aa3e20703300e21c8fadad6715cca1718757a543013626": {
+        "known": true,
+        "memory_id": "memory:pattern:af38f73d993c32d38944f1d1e3144cd567c6b84a126f7c0b8a5db0878118ab0c",
+        "occurrence_count": 4,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:28:24.562752+00:00"
+      },
+      "intel:pattern:d729197b1a553bce184f04b5e4daa8b815e277464fd512cb02a423dd974c9b5c": {
+        "known": true,
+        "memory_id": "memory:pattern:153d4de7d8ed8446fe0af334ac8774e8a6a6aed8f8e3668876327e96d404e715",
+        "occurrence_count": 4,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:28:06.201705+00:00"
+      },
+      "intel:pattern:d5adef8c6ccb25e048f87fe275cd399e775d6e1f67b3f3dcdfb9690f61740e19": {
+        "known": true,
+        "memory_id": "memory:pattern:d115f937eb565872287fd6b8e13726ebc0391c056f7dc1f92b142191705d5744",
+        "occurrence_count": 4,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:23:35.262482+00:00"
+      },
+      "intel:pattern:79af5f6ffeb6727cf0d05f506f771e5545d5a549aed88d5182d5b28cea5e8cc9": {
+        "known": true,
+        "memory_id": "memory:pattern:c6066086b922cd797db85ea2b18221cd41a5cb25bb5237fc7a66eb6ec3d279d9",
+        "occurrence_count": 4,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:37:06.256343+00:00"
+      },
+      "intel:pattern:f2cece85ec9473e58cc477769a3990a42f0a43c374dbd2878316bc90ff283c8b": {
+        "known": true,
+        "memory_id": "memory:pattern:5c9794e9ec271e8bacf143581f5ce496272a35f839e5d2e9c0f6e94e34b23906",
+        "occurrence_count": 2,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:37:05.994137+00:00"
+      },
+      "intel:pattern:96a2b0ec3e7b797e7ac3135d6f43715618a60de28e3979adfac64d5f807d4a20": {
+        "known": true,
+        "memory_id": "memory:pattern:857b480e47ca7c62a3304c26268fd3241515b4a120a4ac503970fca25a768852",
+        "occurrence_count": 2,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:33:48.358010+00:00"
+      },
+      "intel:pattern:b8ccd5708f2bbacd894083b0bd0f7cbc9a552bd5a9dcb34856e16aa01acfbcf3": {
+        "known": true,
+        "memory_id": "memory:pattern:d9ad922d1ce8e01abb4835bbd03a06932c418292fc6e2b924b3e149f237992c0",
+        "occurrence_count": 2,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:37:02.403223+00:00"
+      },
+      "intel:pattern:7c8fd0911b3ea2b94b8670e313e5dba64b3c36dee69c842dc38725f8a73a8de2": {
+        "known": true,
+        "memory_id": "memory:pattern:9b3c5f7da5c0010b205e72cafe88f7fa40a7d4a23db8bb359464fb9501153bdc",
+        "occurrence_count": 2,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:17:01.803273+00:00"
+      },
+      "intel:pattern:5a758db4530fb593aa2062a332e9d3c62cf19207ae88ab1276a7a7db3eeadfc1": {
+        "known": true,
+        "memory_id": "memory:pattern:42a73b072b2214db8e64fe2fe747777a51e5807da5a34d354a40c543acede962",
+        "occurrence_count": 2,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:37:06.256343+00:00"
+      },
+      "intel:pattern:1bf89f6d145c7121b7fc3046bc5c60996cb16183e6990aa42f9c5f8e83feb056": {
+        "known": true,
+        "memory_id": "memory:pattern:7c5e8ba23106900a7592dcae7afadcc6da1e9c92e27526f7cbe68c4c3f4e255d",
+        "occurrence_count": 2,
+        "verified_incident_count": 0,
+        "verified_normal_count": 0,
+        "verified_incident_rate": null,
+        "verified_normal_rate": null,
+        "last_seen": "2026-11-20T19:37:06.129272+00:00"
+      }
+    }
+  }
+}
