@@ -40,27 +40,23 @@ WILDCARD = "*"
 # Errors
 # ---------------------------------------------------------------
 
-class PermissionErrorBase(
-    RuntimeError
-):
+
+class PermissionErrorBase(RuntimeError):
     pass
 
 
-class PermissionConflictError(
-    PermissionErrorBase
-):
+class PermissionConflictError(PermissionErrorBase):
     pass
 
 
-class PermissionNotFoundError(
-    PermissionErrorBase
-):
+class PermissionNotFoundError(PermissionErrorBase):
     pass
 
 
 # ---------------------------------------------------------------
 # Normalization
 # ---------------------------------------------------------------
+
 
 def normalize_resource(
     value: Any,
@@ -78,9 +74,7 @@ def normalize_resource(
 
     return required_string(
         value,
-        name=(
-            "permission resource"
-        ),
+        name=("permission resource"),
         maximum_length=256,
     ).lower()
 
@@ -101,49 +95,34 @@ def normalize_action(
 
     return required_string(
         value,
-        name=(
-            "permission action"
-        ),
+        name=("permission action"),
         maximum_length=128,
     ).lower()
 
 
 def normalize_scope(
-    value: Optional[
-        Any
-    ],
+    value: Optional[Any],
 ) -> Optional[str]:
     if value is None:
         return None
 
-    text = str(
-        value
-    ).strip()
+    text = str(value).strip()
 
-    return (
-        text
-        or None
-    )
+    return text or None
 
 
 def normalize_environment(
-    value: Optional[
-        Any
-    ],
+    value: Optional[Any],
 ) -> Optional[str]:
     if value is None:
         return None
 
-    text = str(
-        value
-    ).strip()
+    text = str(value).strip()
 
     if not text:
         return None
 
-    return environment_id(
-        text
-    )
+    return environment_id(text)
 
 
 def normalize_permission(
@@ -152,29 +131,11 @@ def normalize_permission(
     value.finalize()
 
     return Permission(
-        resource=(
-            normalize_resource(
-                value.resource
-            )
-        ),
-        action=(
-            normalize_action(
-                value.action
-            )
-        ),
-        scope=(
-            normalize_scope(
-                value.scope
-            )
-        ),
-        environment_id=(
-            normalize_environment(
-                value.environment_id
-            )
-        ),
-        attributes=dict(
-            value.attributes
-        ),
+        resource=(normalize_resource(value.resource)),
+        action=(normalize_action(value.action)),
+        scope=(normalize_scope(value.scope)),
+        environment_id=(normalize_environment(value.environment_id)),
+        attributes=dict(value.attributes),
     ).finalize()
 
 
@@ -182,16 +143,13 @@ def normalize_permission(
 # Permission constructor
 # ---------------------------------------------------------------
 
+
 def permission(
     resource: str,
     action: str,
     *,
-    scope: Optional[
-        str
-    ] = None,
-    environment: Optional[
-        str
-    ] = None,
+    scope: Optional[str] = None,
+    environment: Optional[str] = None,
     attributes: Optional[
         Dict[
             str,
@@ -209,13 +167,8 @@ def permission(
             resource=resource,
             action=action,
             scope=scope,
-            environment_id=(
-                environment
-            ),
-            attributes=dict(
-                attributes
-                or {}
-            ),
+            environment_id=(environment),
+            attributes=dict(attributes or {}),
         )
     )
 
@@ -224,13 +177,10 @@ def permission(
 # Matching helpers
 # ---------------------------------------------------------------
 
+
 def _field_matches(
-    granted: Optional[
-        str
-    ],
-    requested: Optional[
-        str
-    ],
+    granted: Optional[str],
+    requested: Optional[str],
 ) -> bool:
     """
     Exact match with explicit wildcard support.
@@ -246,15 +196,13 @@ def _field_matches(
     if granted == WILDCARD:
         return True
 
-    return (
-        granted
-        == requested
-    )
+    return granted == requested
 
 
 # ---------------------------------------------------------------
 # Permission matching
 # ---------------------------------------------------------------
+
 
 def permission_matches(
     granted: Permission,
@@ -282,34 +230,20 @@ def permission_matches(
     for missing values.
     """
 
-    granted = (
-        normalize_permission(
-            granted
-        )
-    )
+    granted = normalize_permission(granted)
 
-    requested = (
-        normalize_permission(
-            requested
-        )
-    )
+    requested = normalize_permission(requested)
 
-    if (
-        granted.resource
-        not in {
-            WILDCARD,
-            requested.resource,
-        }
-    ):
+    if granted.resource not in {
+        WILDCARD,
+        requested.resource,
+    }:
         return False
 
-    if (
-        granted.action
-        not in {
-            WILDCARD,
-            requested.action,
-        }
-    ):
+    if granted.action not in {
+        WILDCARD,
+        requested.action,
+    }:
         return False
 
     if not _field_matches(
@@ -331,6 +265,7 @@ def permission_matches(
 # Permission grant
 # ---------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class PermissionGrant:
     """
@@ -348,15 +283,13 @@ class PermissionGrant:
     def key(
         self,
     ) -> str:
-        return (
-            f"{self.principal_id}|"
-            f"{self.permission.key()}"
-        )
+        return f"{self.principal_id}|{self.permission.key()}"
 
 
 # ---------------------------------------------------------------
 # Permission catalog
 # ---------------------------------------------------------------
+
 
 class PermissionCatalog:
     """
@@ -396,26 +329,15 @@ class PermissionCatalog:
         self,
         value: Permission,
     ) -> Permission:
-        value = normalize_permission(
-            value
-        )
+        value = normalize_permission(value)
 
         key = value.key()
 
         with self._lock:
-            if (
-                key
-                in self._permissions
-            ):
-                raise PermissionConflictError(
-                    "Permission already "
-                    "registered: "
-                    f"{key}"
-                )
+            if key in self._permissions:
+                raise PermissionConflictError(f"Permission already registered: {key}")
 
-            self._permissions[
-                key
-            ] = value
+            self._permissions[key] = value
 
         return value
 
@@ -423,14 +345,10 @@ class PermissionCatalog:
         self,
         value: Permission,
     ) -> Permission:
-        value = normalize_permission(
-            value
-        )
+        value = normalize_permission(value)
 
         with self._lock:
-            self._permissions[
-                value.key()
-            ] = value
+            self._permissions[value.key()] = value
 
         return value
 
@@ -441,45 +359,26 @@ class PermissionCatalog:
     def get(
         self,
         key: str,
-    ) -> Optional[
-        Permission
-    ]:
+    ) -> Optional[Permission]:
         with self._lock:
-            return self._permissions.get(
-                key
-            )
+            return self._permissions.get(key)
 
     def require(
         self,
         key: str,
     ) -> Permission:
-        value = self.get(
-            key
-        )
+        value = self.get(key)
 
         if value is None:
-            raise PermissionNotFoundError(
-                "Unknown permission: "
-                f"{key}"
-            )
+            raise PermissionNotFoundError(f"Unknown permission: {key}")
 
         return value
 
     def list(
         self,
-    ) -> List[
-        Permission
-    ]:
+    ) -> List[Permission]:
         with self._lock:
-            return [
-                self._permissions[
-                    key
-                ]
-                for key
-                in sorted(
-                    self._permissions
-                )
-            ]
+            return [self._permissions[key] for key in sorted(self._permissions)]
 
     # ---------------------------------------------------------
     # Grant
@@ -499,35 +398,24 @@ class PermissionCatalog:
         or policy integration later.
         """
 
-        principal_id = (
-            required_string(
-                principal_id,
-                name="principal_id",
-                maximum_length=512,
-            )
+        principal_id = required_string(
+            principal_id,
+            name="principal_id",
+            maximum_length=512,
         )
 
-        value = normalize_permission(
-            value
-        )
+        value = normalize_permission(value)
 
         with self._lock:
-            grants = (
-                self._grants.
-                setdefault(
-                    principal_id,
-                    {},
-                )
+            grants = self._grants.setdefault(
+                principal_id,
+                {},
             )
 
-            grants[
-                value.key()
-            ] = value
+            grants[value.key()] = value
 
         return PermissionGrant(
-            principal_id=(
-                principal_id
-            ),
+            principal_id=(principal_id),
             permission=value,
         )
 
@@ -540,24 +428,16 @@ class PermissionCatalog:
         principal_id: str,
         value: Permission,
     ) -> bool:
-        principal_id = (
-            required_string(
-                principal_id,
-                name="principal_id",
-                maximum_length=512,
-            )
+        principal_id = required_string(
+            principal_id,
+            name="principal_id",
+            maximum_length=512,
         )
 
-        value = normalize_permission(
-            value
-        )
+        value = normalize_permission(value)
 
         with self._lock:
-            grants = (
-                self._grants.get(
-                    principal_id
-                )
-            )
+            grants = self._grants.get(principal_id)
 
             if not grants:
                 return False
@@ -585,34 +465,20 @@ class PermissionCatalog:
     def grants_for(
         self,
         principal_id: str,
-    ) -> List[
-        Permission
-    ]:
-        principal_id = (
-            required_string(
-                principal_id,
-                name="principal_id",
-                maximum_length=512,
-            )
+    ) -> List[Permission]:
+        principal_id = required_string(
+            principal_id,
+            name="principal_id",
+            maximum_length=512,
         )
 
         with self._lock:
-            grants = (
-                self._grants.get(
-                    principal_id,
-                    {},
-                )
+            grants = self._grants.get(
+                principal_id,
+                {},
             )
 
-            return [
-                grants[
-                    key
-                ]
-                for key
-                in sorted(
-                    grants
-                )
-            ]
+            return [grants[key] for key in sorted(grants)]
 
     # ---------------------------------------------------------
     # Basic grant check
@@ -630,21 +496,14 @@ class PermissionCatalog:
         decision.
         """
 
-        requested = (
-            normalize_permission(
-                requested
-            )
-        )
+        requested = normalize_permission(requested)
 
         return any(
             permission_matches(
                 granted,
                 requested,
             )
-            for granted
-            in self.grants_for(
-                principal_id
-            )
+            for granted in self.grants_for(principal_id)
         )
 
     # ---------------------------------------------------------
@@ -655,21 +514,12 @@ class PermissionCatalog:
         self,
         principal_id: str,
         requested: Permission,
-    ) -> List[
-        Permission
-    ]:
-        requested = (
-            normalize_permission(
-                requested
-            )
-        )
+    ) -> List[Permission]:
+        requested = normalize_permission(requested)
 
         return [
             granted
-            for granted
-            in self.grants_for(
-                principal_id
-            )
+            for granted in self.grants_for(principal_id)
             if permission_matches(
                 granted,
                 requested,
@@ -685,28 +535,9 @@ class PermissionCatalog:
     ) -> Dict[str, Any]:
         with self._lock:
             return {
-                "registered_permissions": (
-                    len(
-                        self._permissions
-                    )
-                ),
-
-                "principals_with_grants": (
-                    len(
-                        self._grants
-                    )
-                ),
-
-                "grant_count": (
-                    sum(
-                        len(
-                            items
-                        )
-                        for items
-                        in self._grants.
-                        values()
-                    )
-                ),
+                "registered_permissions": (len(self._permissions)),
+                "principals_with_grants": (len(self._grants)),
+                "grant_count": (sum(len(items) for items in self._grants.values())),
             }
 
 
@@ -716,21 +547,16 @@ class PermissionCatalog:
 
 __all__ = [
     "WILDCARD",
-
     "PermissionErrorBase",
     "PermissionConflictError",
     "PermissionNotFoundError",
-
     "normalize_resource",
     "normalize_action",
     "normalize_scope",
     "normalize_environment",
-
     "normalize_permission",
     "permission",
-
     "permission_matches",
-
     "PermissionGrant",
     "PermissionCatalog",
 ]

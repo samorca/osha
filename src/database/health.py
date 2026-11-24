@@ -29,6 +29,7 @@ from src.database.schema import (
 # Database health checker
 # ---------------------------------------------------------------
 
+
 class DatabaseHealthChecker:
     """
     Probe OSHA's configured persistence
@@ -48,28 +49,14 @@ class DatabaseHealthChecker:
         connection: DatabaseConnection,
         degraded_latency_seconds: float = 1.0,
     ) -> None:
-        if (
-            degraded_latency_seconds
-            <= 0
-        ):
-            raise ValueError(
-                "degraded_latency_seconds "
-                "must be > 0"
-            )
+        if degraded_latency_seconds <= 0:
+            raise ValueError("degraded_latency_seconds must be > 0")
 
-        self.connection = (
-            connection
-        )
+        self.connection = connection
 
-        self.degraded_latency_seconds = (
-            float(
-                degraded_latency_seconds
-            )
-        )
+        self.degraded_latency_seconds = float(degraded_latency_seconds)
 
-        self._last: Optional[
-            DatabaseHealth
-        ] = None
+        self._last: Optional[DatabaseHealth] = None
 
     # ---------------------------------------------------------
     # Health check
@@ -94,51 +81,27 @@ class DatabaseHealthChecker:
         # -----------------------------------------------------
 
         if not self.connection.ready:
-            state = (
-                self.connection.
-                status.state
-            )
+            state = self.connection.status.state
 
             status = (
                 "unhealthy"
                 if state
                 in {
-                    ConnectionState.
-                    FAILED.value,
-
-                    ConnectionState.
-                    CLOSED.value,
+                    ConnectionState.FAILED.value,
+                    ConnectionState.CLOSED.value,
                 }
                 else "unknown"
             )
 
-            self._last = (
-                DatabaseHealth(
-                    status=status,
-
-                    connection_id=(
-                        self.connection.
-                        status.connection_id
-                    ),
-
-                    message=(
-                        "Database connection "
-                        "is not ready."
-                    ),
-
-                    attributes={
-                        "connection_state": (
-                            state
-                        ),
-
-                        "error_type": (
-                            self.connection.
-                            status.
-                            last_error_type
-                        ),
-                    },
-                ).finalize()
-            )
+            self._last = DatabaseHealth(
+                status=status,
+                connection_id=(self.connection.status.connection_id),
+                message=("Database connection is not ready."),
+                attributes={
+                    "connection_state": (state),
+                    "error_type": (self.connection.status.last_error_type),
+                },
+            ).finalize()
 
             return self._last
 
@@ -149,53 +112,30 @@ class DatabaseHealthChecker:
         started = perf_counter()
 
         try:
-            healthy = (
-                self.connection.ping()
-            )
+            healthy = self.connection.ping()
 
         except Exception as exc:
             latency = max(
                 0.0,
-                perf_counter()
-                - started,
+                perf_counter() - started,
             )
 
-            self._last = (
-                DatabaseHealth(
-                    status="unhealthy",
-
-                    connection_id=(
-                        self.connection.
-                        status.connection_id
-                    ),
-
-                    latency_seconds=(
-                        latency
-                    ),
-
-                    message=(
-                        "Database health "
-                        "probe failed."
-                    ),
-
-                    attributes={
-                        "error_type": (
-                            type(exc).__name__
-                        ),
-
-                        "error_module": (
-                            type(exc).__module__
-                        ),
-                    },
-                ).finalize()
-            )
+            self._last = DatabaseHealth(
+                status="unhealthy",
+                connection_id=(self.connection.status.connection_id),
+                latency_seconds=(latency),
+                message=("Database health probe failed."),
+                attributes={
+                    "error_type": (type(exc).__name__),
+                    "error_module": (type(exc).__module__),
+                },
+            ).finalize()
 
             return self._last
 
         latency = max(
             0.0,
-            perf_counter()
-            - started,
+            perf_counter() - started,
         )
 
         # -----------------------------------------------------
@@ -205,66 +145,31 @@ class DatabaseHealthChecker:
         if not healthy:
             status = "unhealthy"
 
-            message = (
-                "Database readiness "
-                "probe failed."
-            )
+            message = "Database readiness probe failed."
 
-        elif (
-            latency
-            >= self.
-            degraded_latency_seconds
-        ):
+        elif latency >= self.degraded_latency_seconds:
             status = "degraded"
 
             message = (
-                "Database readiness "
-                "probe exceeded the "
-                "configured latency "
-                "threshold."
+                "Database readiness probe exceeded the configured latency threshold."
             )
 
         else:
             status = "healthy"
 
-            message = (
-                "Database dependency "
-                "is ready."
-            )
+            message = "Database dependency is ready."
 
-        self._last = (
-            DatabaseHealth(
-                status=status,
-
-                connection_id=(
-                    self.connection.
-                    status.connection_id
-                ),
-
-                latency_seconds=(
-                    latency
-                ),
-
-                message=message,
-
-                attributes={
-                    "connection_state": (
-                        self.connection.
-                        status.state
-                    ),
-
-                    "degraded_latency_seconds": (
-                        self.
-                        degraded_latency_seconds
-                    ),
-
-                    "backend": (
-                        self.connection.
-                        config.backend
-                    ),
-                },
-            ).finalize()
-        )
+        self._last = DatabaseHealth(
+            status=status,
+            connection_id=(self.connection.status.connection_id),
+            latency_seconds=(latency),
+            message=message,
+            attributes={
+                "connection_state": (self.connection.status.state),
+                "degraded_latency_seconds": (self.degraded_latency_seconds),
+                "backend": (self.connection.config.backend),
+            },
+        ).finalize()
 
         return self._last
 
@@ -275,9 +180,7 @@ class DatabaseHealthChecker:
     @property
     def last(
         self,
-    ) -> Optional[
-        DatabaseHealth
-    ]:
+    ) -> Optional[DatabaseHealth]:
         return self._last
 
     # ---------------------------------------------------------
@@ -294,10 +197,7 @@ class DatabaseHealthChecker:
         fully ready in this helper.
         """
 
-        return (
-            self.check().status
-            == "healthy"
-        )
+        return self.check().status == "healthy"
 
     # ---------------------------------------------------------
     # Safe summary
@@ -307,34 +207,12 @@ class DatabaseHealthChecker:
         self,
     ) -> Dict[str, Any]:
         return {
-            "connection_ready": (
-                self.connection.ready
-            ),
-
-            "connection_state": (
-                self.connection.
-                status.state
-            ),
-
-            "degraded_latency_seconds": (
-                self.
-                degraded_latency_seconds
-            ),
-
-            "last_health": (
-                self._last.to_dict()
-                if self._last
-                is not None
-                else None
-            ),
-
-            "scope": (
-                "osha_database_dependency"
-            ),
-
-            "credentials_exposed": (
-                False
-            ),
+            "connection_ready": (self.connection.ready),
+            "connection_state": (self.connection.status.state),
+            "degraded_latency_seconds": (self.degraded_latency_seconds),
+            "last_health": (self._last.to_dict() if self._last is not None else None),
+            "scope": ("osha_database_dependency"),
+            "credentials_exposed": (False),
         }
 
 

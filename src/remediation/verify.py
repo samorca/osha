@@ -31,6 +31,7 @@ from src.remediation.schema import (
 # Verification observations
 # ---------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class VerificationObservation:
     """
@@ -49,19 +50,13 @@ class VerificationObservation:
 
     name: str
 
-    passed: Optional[
-        bool
-    ]
+    passed: Optional[bool]
 
     score: float = 0.0
 
-    description: Optional[
-        str
-    ] = None
+    description: Optional[str] = None
 
-    source_id: Optional[
-        str
-    ] = None
+    source_id: Optional[str] = None
 
     resource_ids: tuple[
         str,
@@ -71,56 +66,35 @@ class VerificationObservation:
     attributes: Mapping[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    observed_at: str = field(
-        default_factory=utc_now
-    )
+    observed_at: str = field(default_factory=utc_now)
 
     def normalized_score(
         self,
     ) -> float:
-        return checked_score(
-            self.score
-        )
+        return checked_score(self.score)
 
     def to_dict(
         self,
     ) -> Dict[str, Any]:
         return {
-            "check_id": (
-                self.check_id
-            ),
+            "check_id": (self.check_id),
             "name": self.name,
             "passed": self.passed,
-            "score": (
-                self.normalized_score()
-            ),
-            "description": (
-                self.description
-            ),
-            "source_id": (
-                self.source_id
-            ),
-            "resource_ids": sorted(
-                set(
-                    self.resource_ids
-                )
-            ),
-            "attributes": dict(
-                self.attributes
-            ),
-            "observed_at": (
-                self.observed_at
-            ),
+            "score": (self.normalized_score()),
+            "description": (self.description),
+            "source_id": (self.source_id),
+            "resource_ids": sorted(set(self.resource_ids)),
+            "attributes": dict(self.attributes),
+            "observed_at": (self.observed_at),
         }
 
 
 # ---------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class VerificationConfig:
@@ -141,62 +115,34 @@ class VerificationConfig:
 
     require_execution_success: bool = True
 
-    require_changed_state_for_live_verification: bool = (
-        True
-    )
+    require_changed_state_for_live_verification: bool = True
 
     allow_dry_run_verification: bool = True
 
     fail_on_explicit_failed_check: bool = True
 
-    inconclusive_on_missing_observations: bool = (
-        True
-    )
+    inconclusive_on_missing_observations: bool = True
 
     def validate(
         self,
     ) -> None:
         if self.minimum_observations < 1:
-            raise ValueError(
-                "minimum_observations "
-                "must be >= 1"
-            )
+            raise ValueError("minimum_observations must be >= 1")
 
-        if not (
-            0.0
-            <= self.minimum_pass_ratio
-            <= 1.0
-        ):
-            raise ValueError(
-                "minimum_pass_ratio must "
-                "be between 0 and 1"
-            )
+        if not (0.0 <= self.minimum_pass_ratio <= 1.0):
+            raise ValueError("minimum_pass_ratio must be between 0 and 1")
 
-        if not (
-            0.0
-            <= self.minimum_health_score
-            <= 1.0
-        ):
-            raise ValueError(
-                "minimum_health_score must "
-                "be between 0 and 1"
-            )
+        if not (0.0 <= self.minimum_health_score <= 1.0):
+            raise ValueError("minimum_health_score must be between 0 and 1")
 
-        if not (
-            -1.0
-            <= self.
-            minimum_health_improvement
-            <= 1.0
-        ):
-            raise ValueError(
-                "minimum_health_improvement "
-                "must be between -1 and 1"
-            )
+        if not (-1.0 <= self.minimum_health_improvement <= 1.0):
+            raise ValueError("minimum_health_improvement must be between -1 and 1")
 
 
 # ---------------------------------------------------------------
 # Health aggregation
 # ---------------------------------------------------------------
+
 
 def finite_number(
     value: Any,
@@ -208,9 +154,7 @@ def finite_number(
         return None
 
     try:
-        result = float(
-            value
-        )
+        result = float(value)
 
     except (
         TypeError,
@@ -218,18 +162,14 @@ def finite_number(
     ):
         return None
 
-    if not math.isfinite(
-        result
-    ):
+    if not math.isfinite(result):
         return None
 
     return result
 
 
 def observation_health(
-    observations: Iterable[
-        VerificationObservation
-    ],
+    observations: Iterable[VerificationObservation],
 ) -> Optional[float]:
     """
     Aggregate scored observations.
@@ -241,32 +181,21 @@ def observation_health(
     scores = []
 
     for observation in observations:
-        score = finite_number(
-            observation.score
-        )
+        score = finite_number(observation.score)
 
         if score is None:
             continue
 
-        scores.append(
-            checked_score(
-                score
-            )
-        )
+        scores.append(checked_score(score))
 
     if not scores:
         return None
 
-    return checked_score(
-        sum(scores)
-        / len(scores)
-    )
+    return checked_score(sum(scores) / len(scores))
 
 
 def pass_ratio(
-    observations: Iterable[
-        VerificationObservation
-    ],
+    observations: Iterable[VerificationObservation],
 ) -> Optional[float]:
     """
     Ratio across observations carrying explicit
@@ -276,32 +205,21 @@ def pass_ratio(
     """
 
     resolved = [
-        observation
-        for observation
-        in observations
-        if observation.passed
-        is not None
+        observation for observation in observations if observation.passed is not None
     ]
 
     if not resolved:
         return None
 
-    passed_count = sum(
-        1
-        for observation
-        in resolved
-        if observation.passed
-    )
+    passed_count = sum(1 for observation in resolved if observation.passed)
 
-    return (
-        passed_count
-        / len(resolved)
-    )
+    return passed_count / len(resolved)
 
 
 # ---------------------------------------------------------------
 # Execution eligibility
 # ---------------------------------------------------------------
+
 
 def execution_allows_verification(
     request: RemediationRequest,
@@ -321,35 +239,17 @@ def execution_allows_verification(
 
     execution.finalize()
 
-    if (
-        request.mode
-        == RemediationMode.
-        DRY_RUN.value
-    ):
-        if not (
-            config.
-            allow_dry_run_verification
-        ):
+    if request.mode == RemediationMode.DRY_RUN.value:
+        if not (config.allow_dry_run_verification):
             return (
                 False,
-                (
-                    "Dry-run verification "
-                    "is disabled."
-                ),
+                ("Dry-run verification is disabled."),
             )
 
-        if (
-            execution.status
-            != ExecutionStatus.
-            DRY_RUN.value
-        ):
+        if execution.status != ExecutionStatus.DRY_RUN.value:
             return (
                 False,
-                (
-                    "Dry-run request does "
-                    "not have a dry-run "
-                    "execution result."
-                ),
+                ("Dry-run request does not have a dry-run execution result."),
             )
 
         return (
@@ -358,31 +258,18 @@ def execution_allows_verification(
         )
 
     if (
-        config.
-        require_execution_success
-        and execution.status
-        != ExecutionStatus.
-        SUCCEEDED.value
+        config.require_execution_success
+        and execution.status != ExecutionStatus.SUCCEEDED.value
     ):
         return (
             False,
-            (
-                "Live verification requires "
-                "successful execution."
-            ),
+            ("Live verification requires successful execution."),
         )
 
-    if (
-        config.
-        require_changed_state_for_live_verification
-        and not execution.changed
-    ):
+    if config.require_changed_state_for_live_verification and not execution.changed:
         return (
             False,
-            (
-                "Live execution reported no "
-                "state change to verify."
-            ),
+            ("Live execution reported no state change to verify."),
         )
 
     return (
@@ -395,19 +282,14 @@ def execution_allows_verification(
 # Main verification
 # ---------------------------------------------------------------
 
+
 def verify_execution(
     request: RemediationRequest,
     execution: ExecutionResult,
     *,
-    observations: Iterable[
-        VerificationObservation
-    ] = (),
-    health_before: Optional[
-        float
-    ] = None,
-    config: Optional[
-        VerificationConfig
-    ] = None,
+    observations: Iterable[VerificationObservation] = (),
+    health_before: Optional[float] = None,
+    config: Optional[VerificationConfig] = None,
 ) -> VerificationResult:
     """
     Verify the operational outcome independently
@@ -417,10 +299,7 @@ def verify_execution(
     action and does not query providers itself.
     """
 
-    configuration = (
-        config
-        or VerificationConfig()
-    )
+    configuration = config or VerificationConfig()
 
     configuration.validate()
 
@@ -430,64 +309,39 @@ def verify_execution(
 
     started_at = utc_now()
 
-    observation_list = list(
-        observations
-    )
+    observation_list = list(observations)
 
-    allowed, reason = (
-        execution_allows_verification(
-            request,
-            execution,
-            config=configuration,
-        )
+    allowed, reason = execution_allows_verification(
+        request,
+        execution,
+        config=configuration,
     )
 
     if not allowed:
         return VerificationResult(
-            status=(
-                VerificationStatus.
-                INCONCLUSIVE.value
-            ),
+            status=(VerificationStatus.INCONCLUSIVE.value),
             passed=False,
-            health_before=(
-                health_before
-            ),
+            health_before=(health_before),
             health_after=None,
             checks=[],
             failed_checks=[],
             evidence=[
                 RemediationEvidence(
-                    evidence_type=(
-                        "verification"
-                    ),
+                    evidence_type=("verification"),
                     description=(
-                        reason
-                        or (
-                            "Execution cannot "
-                            "be independently "
-                            "verified."
-                        )
+                        reason or ("Execution cannot be independently verified.")
                     ),
                     score=0.0,
-                    source_id=(
-                        request.request_id
-                    ),
-                    resource_ids=list(
-                        request.
-                        target_resource_ids
-                    ),
+                    source_id=(request.request_id),
+                    resource_ids=list(request.target_resource_ids),
                 )
             ],
             started_at=started_at,
             finished_at=utc_now(),
             attributes={
-                "verification_allowed": (
-                    False
-                ),
+                "verification_allowed": (False),
                 "mode": request.mode,
-                "execution_status": (
-                    execution.status
-                ),
+                "execution_status": (execution.status),
             },
         ).finalize()
 
@@ -495,28 +349,17 @@ def verify_execution(
     # Dry-run
     # ---------------------------------------------------------
 
-    if (
-        request.mode
-        == RemediationMode  ):
+    if request.mode == RemediationMode:
         return VerificationResult(
-            status=(
-                VerificationStatus.
-                INCONCLUSIVE.value
-            ),
+            status=(VerificationStatus.INCONCLUSIVE.value),
             passed=False,
-            health_before=(
-                health_before
-            ),
+            health_before=(health_before),
             health_after=None,
-            checks=[
-                "dry_run_execution"
-            ],
+            checks=["dry_run_execution"],
             failed_checks=[],
             evidence=[
                 RemediationEvidence(
-                    evidence_type=(
-                        "dry_run_verification"
-                    ),
+                    evidence_type=("dry_run_verification"),
                     description=(
                         "Dry-run execution was "
                         "successful, but no "
@@ -526,25 +369,16 @@ def verify_execution(
                         "changed."
                     ),
                     score=0.0,
-                    source_id=(
-                        request.request_id
-                    ),
-                    resource_ids=list(
-                        request.
-                        target_resource_ids
-                    ),
+                    source_id=(request.request_id),
+                    resource_ids=list(request.target_resource_ids),
                 )
             ],
             started_at=started_at,
             finished_at=utc_now(),
             attributes={
-                "verification_allowed": (
-                    True
-                ),
+                "verification_allowed": (True),
                 "dry_run": True,
-                "recovery_claimed": (
-                    False
-                ),
+                "recovery_claimed": (False),
             },
         ).finalize()
 
@@ -552,65 +386,32 @@ def verify_execution(
     # Real execution verification
     # ---------------------------------------------------------
 
-    if (
-        len(
-            observation_list
-        )
-        < configuration.
-        minimum_observations
-    ):
+    if len(observation_list) < configuration.minimum_observations:
         status = (
-            VerificationStatus.
-            INCONCLUSIVE.value
-            if configuration.
-            inconclusive_on_missing_observations
-            else VerificationStatus.
-            FAILED.value
+            VerificationStatus.INCONCLUSIVE.value
+            if configuration.inconclusive_on_missing_observations
+            else VerificationStatus.FAILED.value
         )
 
         return VerificationResult(
             status=status,
             passed=False,
-            health_before=(
-                health_before
-            ),
+            health_before=(health_before),
             health_after=None,
-            checks=[
-                observation.check_id
-                for observation
-                in observation_list
-            ],
-            failed_checks=[
-                "insufficient_observations"
-            ],
+            checks=[observation.check_id for observation in observation_list],
+            failed_checks=["insufficient_observations"],
             evidence=[
                 RemediationEvidence(
-                    evidence_type=(
-                        "verification"
-                    ),
+                    evidence_type=("verification"),
                     description=(
-                        "Not enough independent "
-                        "post-action observations "
-                        "were supplied."
+                        "Not enough independent post-action observations were supplied."
                     ),
                     score=0.0,
-                    source_id=(
-                        request.request_id
-                    ),
-                    resource_ids=list(
-                        request.
-                        target_resource_ids
-                    ),
+                    source_id=(request.request_id),
+                    resource_ids=list(request.target_resource_ids),
                     attributes={
-                        "observation_count": (
-                            len(
-                                observation_list
-                            )
-                        ),
-                        "minimum_observations": (
-                            configuration.
-                            minimum_observations
-                        ),
+                        "observation_count": (len(observation_list)),
+                        "minimum_observations": (configuration.minimum_observations),
                     },
                 )
             ],
@@ -619,278 +420,132 @@ def verify_execution(
         ).finalize()
 
     explicit_failures = [
-        observation
-        for observation
-        in observation_list
-        if observation.passed
-        is False
+        observation for observation in observation_list if observation.passed is False
     ]
 
-    ratio = pass_ratio(
-        observation_list
-    )
+    ratio = pass_ratio(observation_list)
 
-    health_after = observation_health(
-        observation_list
-    )
+    health_after = observation_health(observation_list)
 
-    before = (
-        checked_score(
-            health_before
-        )
-        if health_before
-        is not None
-        else None
-    )
+    before = checked_score(health_before) if health_before is not None else None
 
     improvement = None
 
-    if (
-        before is not None
-        and health_after
-        is not None
-    ):
-        improvement = (
-            health_after
-            - before
-        )
+    if before is not None and health_after is not None:
+        improvement = health_after - before
 
-    failed_checks = [
-        observation.check_id
-        for observation
-        in explicit_failures
-    ]
+    failed_checks = [observation.check_id for observation in explicit_failures]
 
     reasons = []
 
     failed = False
 
-    if (
-        configuration.
-        fail_on_explicit_failed_check
-        and explicit_failures
-    ):
+    if configuration.fail_on_explicit_failed_check and explicit_failures:
         failed = True
 
-        reasons.append(
-            "One or more verification "
-            "checks explicitly failed."
-        )
+        reasons.append("One or more verification checks explicitly failed.")
 
-    if (
-        ratio is not None
-        and ratio
-        < configuration.
-        minimum_pass_ratio
-    ):
+    if ratio is not None and ratio < configuration.minimum_pass_ratio:
         failed = True
 
-        reasons.append(
-            "Verification pass ratio is "
-            "below the configured minimum."
-        )
+        reasons.append("Verification pass ratio is below the configured minimum.")
 
-    if (
-        health_after is not None
-        and health_after
-        < configuration.
-        minimum_health_score
-    ):
+    if health_after is not None and health_after < configuration.minimum_health_score:
         failed = True
 
-        reasons.append(
-            "Post-action health score is "
-            "below the configured minimum."
-        )
+        reasons.append("Post-action health score is below the configured minimum.")
 
     if (
         improvement is not None
-        and improvement
-        < configuration.
-        minimum_health_improvement
+        and improvement < configuration.minimum_health_improvement
     ):
         failed = True
 
         reasons.append(
-            "Post-action health improvement "
-            "is below the configured minimum."
+            "Post-action health improvement is below the configured minimum."
         )
 
     unresolved = [
-        observation
-        for observation
-        in observation_list
-        if observation.passed
-        is None
+        observation for observation in observation_list if observation.passed is None
     ]
 
     # If every check is unknown and no useful
     # health measurement exists, there isn't
     # sufficient evidence for PASS or FAIL.
-    if (
-        len(unresolved)
-        == len(
-            observation_list
-        )
-        and health_after is None
-    ):
-        status = (
-            VerificationStatus.
-            INCONCLUSIVE.value
-        )
+    if len(unresolved) == len(observation_list) and health_after is None:
+        status = VerificationStatus.INCONCLUSIVE.value
 
     elif failed:
-        status = (
-            VerificationStatus.
-            FAILED.value
-        )
+        status = VerificationStatus.FAILED.value
 
     else:
-        status = (
-            VerificationStatus.
-            PASSED.value
-        )
+        status = VerificationStatus.PASSED.value
 
     evidence = [
         RemediationEvidence(
-            evidence_type=(
-                "post_action_observation"
-            ),
-            description=(
-                observation.description
-                or observation.name
-            ),
-            score=(
-                observation.
-                normalized_score()
-            ),
-            source_id=(
-                observation.source_id
-            ),
-            resource_ids=list(
-                observation.resource_ids
-            ),
+            evidence_type=("post_action_observation"),
+            description=(observation.description or observation.name),
+            score=(observation.normalized_score()),
+            source_id=(observation.source_id),
+            resource_ids=list(observation.resource_ids),
             attributes={
-                "check_id": (
-                    observation.check_id
-                ),
-                "passed": (
-                    observation.passed
-                ),
-                **dict(
-                    observation.attributes
-                ),
+                "check_id": (observation.check_id),
+                "passed": (observation.passed),
+                **dict(observation.attributes),
             },
-            observed_at=(
-                observation.observed_at
-            ),
+            observed_at=(observation.observed_at),
         )
-        for observation
-        in observation_list
+        for observation in observation_list
     ]
 
     evidence.append(
         RemediationEvidence(
-            evidence_type=(
-                "verification_summary"
-            ),
+            evidence_type=("verification_summary"),
             description=(
-                (
-                    "Post-action verification "
-                    "passed."
-                )
-                if status
-                == VerificationStatus.
-                PASSED.value
-                else (
-                    "Post-action verification "
-                    "did not establish "
-                    "successful recovery."
-                )
+                ("Post-action verification passed.")
+                if status == VerificationStatus.PASSED.value
+                else ("Post-action verification did not establish successful recovery.")
             ),
             score=(
                 health_after
-                if health_after
-                is not None
-                else (
-                    ratio
-                    if ratio
-                    is not None
-                    else 0.0
-                )
+                if health_after is not None
+                else (ratio if ratio is not None else 0.0)
             ),
-            source_id=(
-                request.request_id
-            ),
-            resource_ids=list(
-                request.
-                target_resource_ids
-            ),
+            source_id=(request.request_id),
+            resource_ids=list(request.target_resource_ids),
             attributes={
                 "pass_ratio": ratio,
-                "health_before": (
-                    before
-                ),
-                "health_after": (
-                    health_after
-                ),
-                "health_improvement": (
-                    improvement
-                ),
-                "failure_reasons": (
-                    reasons
-                ),
+                "health_before": (before),
+                "health_after": (health_after),
+                "health_improvement": (improvement),
+                "failure_reasons": (reasons),
             },
         )
     )
 
     return VerificationResult(
         status=status,
-        passed=(
-            status
-            == VerificationStatus.
-            PASSED.value
-        ),
+        passed=(status == VerificationStatus.PASSED.value),
         health_before=before,
-        health_after=(
-            health_after
-        ),
-        checks=[
-            observation.check_id
-            for observation
-            in observation_list
-        ],
-        failed_checks=(
-            failed_checks
-        ),
+        health_after=(health_after),
+        checks=[observation.check_id for observation in observation_list],
+        failed_checks=(failed_checks),
         evidence=evidence,
         started_at=started_at,
         finished_at=utc_now(),
         attributes={
-            "observation_count": (
-                len(
-                    observation_list
-                )
-            ),
+            "observation_count": (len(observation_list)),
             "resolved_check_count": (
                 sum(
                     1
-                    for observation
-                    in observation_list
-                    if observation.passed
-                    is not None
+                    for observation in observation_list
+                    if observation.passed is not None
                 )
             ),
-            "unresolved_check_count": (
-                len(unresolved)
-            ),
+            "unresolved_check_count": (len(unresolved)),
             "pass_ratio": ratio,
-            "health_improvement": (
-                improvement
-            ),
-            "failure_reasons": (
-                reasons
-            ),
+            "health_improvement": (improvement),
+            "failure_reasons": (reasons),
         },
     ).finalize()
 
@@ -899,28 +554,20 @@ def verify_execution(
 # Batch
 # ---------------------------------------------------------------
 
+
 def verify_executions(
     items: Iterable[
         tuple[
             RemediationRequest,
             ExecutionResult,
-            Iterable[
-                VerificationObservation
-            ],
+            Iterable[VerificationObservation],
             Optional[float],
         ]
     ],
     *,
-    config: Optional[
-        VerificationConfig
-    ] = None,
-) -> List[
-    VerificationResult
-]:
-    configuration = (
-        config
-        or VerificationConfig()
-    )
+    config: Optional[VerificationConfig] = None,
+) -> List[VerificationResult]:
+    configuration = config or VerificationConfig()
 
     configuration.validate()
 
@@ -929,9 +576,7 @@ def verify_executions(
             request,
             execution,
             observations=observations,
-            health_before=(
-                health_before
-            ),
+            health_before=(health_before),
             config=configuration,
         )
         for (
@@ -939,8 +584,7 @@ def verify_executions(
             execution,
             observations,
             health_before,
-        )
-        in items
+        ) in items
     ]
 
 
@@ -948,14 +592,11 @@ def verify_executions(
 # Summary
 # ---------------------------------------------------------------
 
+
 def verification_summary(
-    results: Iterable[
-        VerificationResult
-    ],
+    results: Iterable[VerificationResult],
 ) -> Dict[str, Any]:
-    values = list(
-        results
-    )
+    values = list(results)
 
     statuses: Dict[
         str,
@@ -963,9 +604,7 @@ def verification_summary(
     ] = {}
 
     for result in values:
-        statuses[
-            result.status
-        ] = (
+        statuses[result.status] = (
             statuses.get(
                 result.status,
                 0,
@@ -974,35 +613,17 @@ def verification_summary(
         )
 
     return {
-        "verification_count": (
-            len(values)
-        ),
+        "verification_count": (len(values)),
         "passed_count": sum(
-            1
-            for result in values
-            if (
-                result.status
-                == VerificationStatus.
-                PASSED.value
-            )
+            1 for result in values if (result.status == VerificationStatus.PASSED.value)
         ),
         "failed_count": sum(
-            1
-            for result in values
-            if (
-                result.status
-                == VerificationStatus.
-                FAILED.value
-            )
+            1 for result in values if (result.status == VerificationStatus.FAILED.value)
         ),
         "inconclusive_count": sum(
             1
             for result in values
-            if (
-                result.status
-                == VerificationStatus.
-                INCONCLUSIVE.value
-            )
+            if (result.status == VerificationStatus.INCONCLUSIVE.value)
         ),
         "statuses": statuses,
     }
@@ -1020,14 +641,9 @@ class RemediationVerifier:
     def __init__(
         self,
         *,
-        config: Optional[
-            VerificationConfig
-        ] = None,
+        config: Optional[VerificationConfig] = None,
     ) -> None:
-        self.config = (
-            config
-            or VerificationConfig()
-        )
+        self.config = config or VerificationConfig()
 
         self.config.validate()
 
@@ -1036,19 +652,13 @@ class RemediationVerifier:
         request: RemediationRequest,
         execution: ExecutionResult,
         *,
-        observations: Iterable[
-            VerificationObservation
-        ] = (),
-        health_before: Optional[
-            float
-        ] = None,
+        observations: Iterable[VerificationObservation] = (),
+        health_before: Optional[float] = None,
     ) -> VerificationResult:
         return verify_execution(
             request,
             execution,
             observations=observations,
-            health_before=(
-                health_before
-            ),
+            health_before=(health_before),
             config=self.config,
         )

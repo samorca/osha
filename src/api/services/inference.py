@@ -113,9 +113,7 @@ from src.api.schema import (
 # Logging
 # ------------------------------------------------------------------
 
-logger = logging.getLogger(
-    __name__
-)
+logger = logging.getLogger(__name__)
 
 
 # ------------------------------------------------------------------
@@ -130,6 +128,7 @@ INFERENCE_SERVICE_VERSION = "1"
 # ------------------------------------------------------------------
 # Operation context
 # ------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class InferenceOperationContext:
@@ -166,6 +165,7 @@ class InferenceOperationContext:
 # Generic object helpers
 # ------------------------------------------------------------------
 
+
 def _mapping(
     value: Any,
 ) -> Dict[str, Any]:
@@ -176,9 +176,7 @@ def _mapping(
         value,
         Mapping,
     ):
-        return dict(
-            value
-        )
+        return dict(value)
 
     converter = getattr(
         value,
@@ -186,18 +184,14 @@ def _mapping(
         None,
     )
 
-    if callable(
-        converter
-    ):
+    if callable(converter):
         converted = converter()
 
         if isinstance(
             converted,
             Mapping,
         ):
-            return dict(
-                converted
-            )
+            return dict(converted)
 
     dumper = getattr(
         value,
@@ -205,18 +199,14 @@ def _mapping(
         None,
     )
 
-    if callable(
-        dumper
-    ):
+    if callable(dumper):
         converted = dumper()
 
         if isinstance(
             converted,
             Mapping,
         ):
-            return dict(
-                converted
-            )
+            return dict(converted)
 
     return {}
 
@@ -250,9 +240,7 @@ def _string(
     if value is None:
         return default
 
-    return str(
-        value
-    )
+    return str(value)
 
 
 def _string_list(
@@ -265,26 +253,15 @@ def _string_list(
         value,
         str,
     ):
-        return [
-            value
-        ]
+        return [value]
 
     if isinstance(
         value,
         Iterable,
     ):
-        return [
-            str(
-                item
-            )
-            for item in value
-        ]
+        return [str(item) for item in value]
 
-    return [
-        str(
-            value
-        )
-    ]
+    return [str(value)]
 
 
 def _optional_float(
@@ -294,9 +271,7 @@ def _optional_float(
         return None
 
     try:
-        return float(
-            value
-        )
+        return float(value)
 
     except (
         TypeError,
@@ -312,9 +287,7 @@ def _optional_int(
         return None
 
     try:
-        return int(
-            value
-        )
+        return int(value)
 
     except (
         TypeError,
@@ -324,42 +297,26 @@ def _optional_int(
 
 
 def _request_identifier(
-    context: Optional[
-        InferenceOperationContext
-    ],
+    context: Optional[InferenceOperationContext],
     *,
     suffix: Optional[str] = None,
 ) -> str:
     base = (
         context.request_id
-        if (
-            context is not None
-            and context.request_id
-        )
-        else str(
-            uuid4()
-        )
+        if (context is not None and context.request_id)
+        else str(uuid4())
     )
 
     if suffix:
-        return (
-            str(
-                base
-            )
-            + ":"
-            + str(
-                suffix
-            )
-        )
+        return str(base) + ":" + str(suffix)
 
-    return str(
-        base
-    )
+    return str(base)
 
 
 # ------------------------------------------------------------------
 # Constructor compatibility helper
 # ------------------------------------------------------------------
+
 
 def _construct_with_supported_arguments(
     target: Any,
@@ -378,137 +335,75 @@ def _construct_with_supported_arguments(
     """
 
     try:
-        signature = inspect.signature(
-            target
-        )
+        signature = inspect.signature(target)
 
     except (
         TypeError,
         ValueError,
     ):
-        return target(
-            **dict(
-                values
-            )
-        )
+        return target(**dict(values))
 
     parameters = signature.parameters
 
     accepts_kwargs = any(
-        parameter.kind
-        == inspect.Parameter.VAR_KEYWORD
-        for parameter
-        in parameters.values()
+        parameter.kind == inspect.Parameter.VAR_KEYWORD
+        for parameter in parameters.values()
     )
 
     if accepts_kwargs:
-        arguments = dict(
-            values
-        )
+        arguments = dict(values)
 
     else:
         arguments = {
-            name: value
-            for name, value
-            in values.items()
-            if name in parameters
+            name: value for name, value in values.items() if name in parameters
         }
 
-    return target(
-        **arguments
-    )
+    return target(**arguments)
 
 
 # ------------------------------------------------------------------
 # Provenance translation
 # ------------------------------------------------------------------
 
+
 def provenance_payload(
     provenance: Any,
     *,
-    context: Optional[
-        InferenceOperationContext
-    ] = None,
+    context: Optional[InferenceOperationContext] = None,
 ) -> Dict[str, Any]:
-    source = _mapping(
-        provenance
-    )
+    source = _mapping(provenance)
 
-    if (
-        context is not None
-        and context.tenant_id
-        and not source.get(
-            "tenant_id"
-        )
-    ):
-        source[
-            "tenant_id"
-        ] = context.tenant_id
+    if context is not None and context.tenant_id and not source.get("tenant_id"):
+        source["tenant_id"] = context.tenant_id
 
     if (
         context is not None
         and context.correlation_id
-        and not source.get(
-            "correlation_id"
-        )
+        and not source.get("correlation_id")
     ):
-        source[
-            "correlation_id"
-        ] = context.correlation_id
+        source["correlation_id"] = context.correlation_id
 
     return source
 
 
 def provenance_response(
     provenance: Any,
-) -> Optional[
-    InferenceProvenanceResponse
-]:
-    source = _mapping(
-        provenance
-    )
+) -> Optional[InferenceProvenanceResponse]:
+    source = _mapping(provenance)
 
     if not source:
         return None
 
     return InferenceProvenanceResponse(
-        source=source.get(
-            "source"
-        ),
-
-        source_id=source.get(
-            "source_id"
-        ),
-
-        tenant_id=source.get(
-            "tenant_id"
-        ),
-
-        environment=source.get(
-            "environment"
-        ),
-
-        cluster=source.get(
-            "cluster"
-        ),
-
-        host=source.get(
-            "host"
-        ),
-
-        correlation_id=source.get(
-            "correlation_id"
-        ),
-
-        observed_at=source.get(
-            "observed_at"
-        ),
-
-        attributes=_mapping(
-            source.get(
-                "attributes"
-            )
-        ),
+        source=source.get("source"),
+        source_id=source.get("source_id"),
+        tenant_id=source.get("tenant_id"),
+        environment=source.get("environment"),
+        cluster=source.get("cluster"),
+        host=source.get("host"),
+        correlation_id=source.get("correlation_id"),
+        observed_at=source.get("observed_at"),
+        attributes=_mapping(source.get("attributes")),
     )
 
 
@@ -516,26 +411,21 @@ def provenance_response(
 # Internal request translation
 # ------------------------------------------------------------------
 
+
 def event_domain_request(
     request: EventInferenceRequest,
     *,
     request_id: str,
-    context: Optional[
-        InferenceOperationContext
-    ] = None,
+    context: Optional[InferenceOperationContext] = None,
 ) -> InferenceRequest:
-    payload = dict(
-        request.payload
-    )
+    payload = dict(request.payload)
 
     payload.setdefault(
         "content",
         request.content,
     )
 
-    options = dict(
-        request.options
-    )
+    options = dict(request.options)
 
     if request.max_length is not None:
         options.setdefault(
@@ -557,51 +447,30 @@ def event_domain_request(
 
     values = {
         "request_id": request_id,
-
-        "family": (
-            ModelFamilyAPI.EVENT.value
-        ),
-
-        "model_family": (
-            ModelFamilyAPI.EVENT.value
-        ),
-
-        "model_name": (
-            request.model_name
-        ),
-
-        "model_version": (
-            request.model_version
-        ),
-
+        "family": (ModelFamilyAPI.EVENT.value),
+        "model_family": (ModelFamilyAPI.EVENT.value),
+        "model_name": (request.model_name),
+        "model_version": (request.model_version),
         "payload": payload,
-
         "options": options,
-
         "provenance": (
             provenance_payload(
                 request.provenance,
                 context=context,
             )
         ),
-
         "attributes": {
             "api_request": True,
-
             "api_request_id": (
-                context.request_id
-                if context is not None
-                else request_id
+                context.request_id if context is not None else request_id
             ),
         },
     }
 
     try:
-        domain_request = (
-            _construct_with_supported_arguments(
-                InferenceRequest,
-                values,
-            )
+        domain_request = _construct_with_supported_arguments(
+            InferenceRequest,
+            values,
         )
 
         validator = getattr(
@@ -610,29 +479,18 @@ def event_domain_request(
             None,
         )
 
-        if callable(
-            validator
-        ):
+        if callable(validator):
             validator()
 
         return domain_request
 
     except Exception as exc:
         raise InferenceInputAPIError(
-            "The event inference request "
-            "could not be translated.",
+            "The event inference request could not be translated.",
             details={
-                "operation": (
-                    "event_request_translation"
-                ),
-
+                "operation": ("event_request_translation"),
                 "request_id": request_id,
-
-                "error_type": (
-                    type(
-                        exc
-                    ).__name__
-                ),
+                "error_type": (type(exc).__name__),
             },
         ) from exc
 
@@ -641,24 +499,16 @@ def anomaly_domain_request(
     request: AnomalyInferenceRequest,
     *,
     request_id: str,
-    context: Optional[
-        InferenceOperationContext
-    ] = None,
+    context: Optional[InferenceOperationContext] = None,
 ) -> InferenceRequest:
-    payload = dict(
-        request.payload
-    )
+    payload = dict(request.payload)
 
     payload.setdefault(
         "features",
-        list(
-            request.features
-        ),
+        list(request.features),
     )
 
-    options = dict(
-        request.options
-    )
+    options = dict(request.options)
 
     if request.threshold is not None:
         options.setdefault(
@@ -680,51 +530,30 @@ def anomaly_domain_request(
 
     values = {
         "request_id": request_id,
-
-        "family": (
-            ModelFamilyAPI.ANOMALY.value
-        ),
-
-        "model_family": (
-            ModelFamilyAPI.ANOMALY.value
-        ),
-
-        "model_name": (
-            request.model_name
-        ),
-
-        "model_version": (
-            request.model_version
-        ),
-
+        "family": (ModelFamilyAPI.ANOMALY.value),
+        "model_family": (ModelFamilyAPI.ANOMALY.value),
+        "model_name": (request.model_name),
+        "model_version": (request.model_version),
         "payload": payload,
-
         "options": options,
-
         "provenance": (
             provenance_payload(
                 request.provenance,
                 context=context,
             )
         ),
-
         "attributes": {
             "api_request": True,
-
             "api_request_id": (
-                context.request_id
-                if context is not None
-                else request_id
+                context.request_id if context is not None else request_id
             ),
         },
     }
 
     try:
-        domain_request = (
-            _construct_with_supported_arguments(
-                InferenceRequest,
-                values,
-            )
+        domain_request = _construct_with_supported_arguments(
+            InferenceRequest,
+            values,
         )
 
         validator = getattr(
@@ -733,29 +562,18 @@ def anomaly_domain_request(
             None,
         )
 
-        if callable(
-            validator
-        ):
+        if callable(validator):
             validator()
 
         return domain_request
 
     except Exception as exc:
         raise InferenceInputAPIError(
-            "The anomaly inference request "
-            "could not be translated.",
+            "The anomaly inference request could not be translated.",
             details={
-                "operation": (
-                    "anomaly_request_translation"
-                ),
-
+                "operation": ("anomaly_request_translation"),
                 "request_id": request_id,
-
-                "error_type": (
-                    type(
-                        exc
-                    ).__name__
-                ),
+                "error_type": (type(exc).__name__),
             },
         ) from exc
 
@@ -764,18 +582,12 @@ def batch_item_domain_request(
     item: BatchInferenceItemRequest,
     *,
     request_id: str,
-    context: Optional[
-        InferenceOperationContext
-    ] = None,
+    context: Optional[InferenceOperationContext] = None,
 ) -> InferenceRequest:
-    if (
-        item.family
-        == ModelFamilyAPI.EVENT.value
-    ):
+    if item.family == ModelFamilyAPI.EVENT.value:
         if item.event is None:
             raise InferenceInputAPIError(
-                "Event batch item has no "
-                "event payload.",
+                "Event batch item has no event payload.",
                 details={
                     "request_id": request_id,
                 },
@@ -787,14 +599,10 @@ def batch_item_domain_request(
             context=context,
         )
 
-    if (
-        item.family
-        == ModelFamilyAPI.ANOMALY.value
-    ):
+    if item.family == ModelFamilyAPI.ANOMALY.value:
         if item.anomaly is None:
             raise InferenceInputAPIError(
-                "Anomaly batch item has no "
-                "anomaly payload.",
+                "Anomaly batch item has no anomaly payload.",
                 details={
                     "request_id": request_id,
                 },
@@ -819,12 +627,11 @@ def batch_item_domain_request(
 # Result translation
 # ------------------------------------------------------------------
 
+
 def prediction_response(
     value: Any,
 ) -> PredictionResponse:
-    source = _mapping(
-        value
-    )
+    source = _mapping(value)
 
     return PredictionResponse(
         label=_string(
@@ -837,7 +644,6 @@ def prediction_response(
                 ),
             )
         ),
-
         score=_optional_float(
             source.get(
                 "score",
@@ -848,7 +654,6 @@ def prediction_response(
                 ),
             )
         ),
-
         probability=_optional_float(
             source.get(
                 "probability",
@@ -859,7 +664,6 @@ def prediction_response(
                 ),
             )
         ),
-
         attributes=_mapping(
             source.get(
                 "attributes",
@@ -875,155 +679,90 @@ def prediction_response(
 
 def event_detail_response(
     value: Any,
-) -> Optional[
-    EventInferenceDetailResponse
-]:
-    source = _mapping(
-        value
-    )
+) -> Optional[EventInferenceDetailResponse]:
+    source = _mapping(value)
 
     if not source:
         return None
 
-    source_prediction = source.get(
-        "source"
-    )
+    source_prediction = source.get("source")
 
-    component_prediction = source.get(
-        "component"
-    )
+    component_prediction = source.get("component")
 
-    event_prediction = source.get(
-        "event"
-    )
+    event_prediction = source.get("event")
 
     return EventInferenceDetailResponse(
         source=(
-            prediction_response(
-                source_prediction
-            )
+            prediction_response(source_prediction)
             if source_prediction is not None
             else None
         ),
-
         component=(
-            prediction_response(
-                component_prediction
-            )
+            prediction_response(component_prediction)
             if component_prediction is not None
             else None
         ),
-
         event=(
-            prediction_response(
-                event_prediction
-            )
+            prediction_response(event_prediction)
             if event_prediction is not None
             else None
         ),
-
         representation_dimension=(
-            _optional_int(
-                source.get(
-                    "representation_dimension"
-                )
-            )
+            _optional_int(source.get("representation_dimension"))
         ),
-
-        attributes=_mapping(
-            source.get(
-                "attributes"
-            )
-        ),
+        attributes=_mapping(source.get("attributes")),
     )
 
 
 def anomaly_detail_response(
     value: Any,
-) -> Optional[
-    AnomalyInferenceDetailResponse
-]:
-    source = _mapping(
-        value
-    )
+) -> Optional[AnomalyInferenceDetailResponse]:
+    source = _mapping(value)
 
     if not source:
         return None
 
-    probability = _optional_float(
-        source.get(
-            "probability"
-        )
-    )
+    probability = _optional_float(source.get("probability"))
 
-    threshold = _optional_float(
-        source.get(
-            "threshold"
-        )
-    )
+    threshold = _optional_float(source.get("threshold"))
 
     if probability is None:
         raise InternalServerAPIError(
-            "Anomaly inference result has "
-            "no probability.",
+            "Anomaly inference result has no probability.",
             details={
-                "resource": (
-                    "anomaly_inference_result"
-                ),
+                "resource": ("anomaly_inference_result"),
             },
         )
 
     if threshold is None:
         raise InternalServerAPIError(
-            "Anomaly inference result has "
-            "no threshold.",
+            "Anomaly inference result has no threshold.",
             details={
-                "resource": (
-                    "anomaly_inference_result"
-                ),
+                "resource": ("anomaly_inference_result"),
             },
         )
 
     return AnomalyInferenceDetailResponse(
         probability=probability,
-
         threshold=threshold,
-
         anomalous=bool(
             source.get(
                 "anomalous",
                 probability >= threshold,
             )
         ),
-
-        score=_optional_float(
-            source.get(
-                "score"
-            )
-        ),
-
+        score=_optional_float(source.get("score")),
         representation_dimension=(
-            _optional_int(
-                source.get(
-                    "representation_dimension"
-                )
-            )
+            _optional_int(source.get("representation_dimension"))
         ),
-
-        attributes=_mapping(
-            source.get(
-                "attributes"
-            )
-        ),
+        attributes=_mapping(source.get("attributes")),
     )
 
 
 def model_identity_response(
     value: Any,
 ) -> ModelIdentityResponse:
-    source = _mapping(
-        value
-    )
+    source = _mapping(value)
 
     return ModelIdentityResponse(
         model_id=_string(
@@ -1036,7 +775,6 @@ def model_identity_response(
                 ),
             )
         ),
-
         name=_string(
             source.get(
                 "name",
@@ -1047,7 +785,6 @@ def model_identity_response(
                 ),
             )
         ),
-
         family=_string(
             source.get(
                 "family",
@@ -1058,7 +795,6 @@ def model_identity_response(
                 ),
             )
         ),
-
         version=_string(
             source.get(
                 "version",
@@ -1077,9 +813,7 @@ def inference_response(
     *,
     request_id: Optional[str] = None,
 ) -> InferenceResponse:
-    source = _mapping(
-        result
-    )
+    source = _mapping(result)
 
     result_request_id = _string(
         source.get(
@@ -1090,12 +824,7 @@ def inference_response(
                 request_id,
             ),
         ),
-        default=(
-            request_id
-            or str(
-                uuid4()
-            )
-        ),
+        default=(request_id or str(uuid4())),
     )
 
     model = source.get(
@@ -1109,16 +838,10 @@ def inference_response(
 
     if model is None:
         raise InternalServerAPIError(
-            "Inference result has no "
-            "model identity.",
+            "Inference result has no model identity.",
             details={
-                "request_id": (
-                    result_request_id
-                ),
-
-                "resource": (
-                    "inference_result"
-                ),
+                "request_id": (result_request_id),
+                "resource": ("inference_result"),
             },
         )
 
@@ -1133,34 +856,20 @@ def inference_response(
 
     return InferenceResponse(
         request_id=result_request_id,
-
         state=_string(
             source.get(
                 "state",
                 _value(
                     result,
                     "state",
-                    InferenceStateAPI.
-                    COMPLETED.value,
+                    InferenceStateAPI.COMPLETED.value,
                 ),
             )
         ),
-
-        model=model_identity_response(
-            model
-        ),
-
+        model=model_identity_response(model),
         predictions=[
-            prediction_response(
-                prediction
-            )
-            for prediction
-            in (
-                predictions
-                or ()
-            )
+            prediction_response(prediction) for prediction in (predictions or ())
         ],
-
         event=event_detail_response(
             source.get(
                 "event",
@@ -1171,7 +880,6 @@ def inference_response(
                 ),
             )
         ),
-
         anomaly=anomaly_detail_response(
             source.get(
                 "anomaly",
@@ -1182,7 +890,6 @@ def inference_response(
                 ),
             )
         ),
-
         provenance=provenance_response(
             source.get(
                 "provenance",
@@ -1193,7 +900,6 @@ def inference_response(
                 ),
             )
         ),
-
         latency_ms=_optional_float(
             source.get(
                 "latency_ms",
@@ -1204,7 +910,6 @@ def inference_response(
                 ),
             )
         ),
-
         attributes=_mapping(
             source.get(
                 "attributes",
@@ -1215,12 +920,8 @@ def inference_response(
                 ),
             )
         ),
-
         metadata=APIResponseMetadata(
-            request_id=(
-                request_id
-                or result_request_id
-            ),
+            request_id=(request_id or result_request_id),
         ),
     )
 
@@ -1229,12 +930,11 @@ def inference_response(
 # Pipeline invocation
 # ------------------------------------------------------------------
 
+
 async def _await_if_needed(
     value: Any,
 ) -> Any:
-    if inspect.isawaitable(
-        value
-    ):
+    if inspect.isawaitable(value):
         return await value
 
     return value
@@ -1248,45 +948,30 @@ def _invoke_with_supported_arguments(
     ],
 ) -> Any:
     try:
-        signature = inspect.signature(
-            method
-        )
+        signature = inspect.signature(method)
 
     except (
         TypeError,
         ValueError,
     ):
-        return method(
-            **dict(
-                values
-            )
-        )
+        return method(**dict(values))
 
     parameters = signature.parameters
 
     accepts_kwargs = any(
-        parameter.kind
-        == inspect.Parameter.VAR_KEYWORD
-        for parameter
-        in parameters.values()
+        parameter.kind == inspect.Parameter.VAR_KEYWORD
+        for parameter in parameters.values()
     )
 
     if accepts_kwargs:
-        arguments = dict(
-            values
-        )
+        arguments = dict(values)
 
     else:
         arguments = {
-            name: value
-            for name, value
-            in values.items()
-            if name in parameters
+            name: value for name, value in values.items() if name in parameters
         }
 
-    return method(
-        **arguments
-    )
+    return method(**arguments)
 
 
 async def invoke_pipeline(
@@ -1319,17 +1004,11 @@ async def invoke_pipeline(
             None,
         )
 
-        if not callable(
-            method
-        ):
+        if not callable(method):
             continue
 
         try:
-            return await _await_if_needed(
-                method(
-                    request
-                )
-            )
+            return await _await_if_needed(method(request))
 
         except TypeError:
             # Compatibility path for keyword-only
@@ -1340,9 +1019,7 @@ async def invoke_pipeline(
                         method,
                         {
                             "request": request,
-                            "inference_request": (
-                                request
-                            ),
+                            "inference_request": (request),
                         },
                     )
                 )
@@ -1351,12 +1028,9 @@ async def invoke_pipeline(
                 continue
 
     raise ServiceUnavailableAPIError(
-        "The AI pipeline exposes no "
-        "supported inference operation.",
+        "The AI pipeline exposes no supported inference operation.",
         details={
-            "resource": (
-                "ai_pipeline"
-            ),
+            "resource": ("ai_pipeline"),
         },
     )
 
@@ -1364,6 +1038,7 @@ async def invoke_pipeline(
 # ------------------------------------------------------------------
 # Inference service
 # ------------------------------------------------------------------
+
 
 class InferenceService:
     """
@@ -1387,12 +1062,8 @@ class InferenceService:
         self._closed = False
         self._lock = RLock()
 
-        self._inference_semaphore = (
-            asyncio.Semaphore(
-                config.
-                limits.
-                maximum_concurrent_inference_requests
-            )
+        self._inference_semaphore = asyncio.Semaphore(
+            config.limits.maximum_concurrent_inference_requests
         )
 
     # ------------------------------------------------------
@@ -1405,28 +1076,19 @@ class InferenceService:
         with self._lock:
             if self._closed:
                 raise ServiceUnavailableAPIError(
-                    "The inference service "
-                    "is closed.",
+                    "The inference service is closed.",
                     details={
-                        "resource": (
-                            INFERENCE_SERVICE_NAME
-                        ),
+                        "resource": (INFERENCE_SERVICE_NAME),
                     },
                 )
 
     def _require_enabled(
         self,
     ) -> None:
-        if not (
-            self.config.
-            features.
-            inference_enabled
-        ):
+        if not (self.config.features.inference_enabled):
             raise FeatureDisabledError(
                 details={
-                    "resource": (
-                        "inference"
-                    ),
+                    "resource": ("inference"),
                 },
             )
 
@@ -1449,11 +1111,7 @@ class InferenceService:
         self._ensure_open()
         self._require_enabled()
 
-        timeout = (
-            self.config.
-            timeouts.
-            inference_seconds
-        )
+        timeout = self.config.timeouts.inference_seconds
 
         started = time.perf_counter()
 
@@ -1470,13 +1128,8 @@ class InferenceService:
         except asyncio.TimeoutError as exc:
             raise InferenceTimeoutAPIError(
                 details={
-                    "operation": (
-                        "inference"
-                    ),
-
-                    "request_id": (
-                        public_request_id
-                    ),
+                    "operation": ("inference"),
+                    "request_id": (public_request_id),
                 },
             ) from exc
 
@@ -1484,53 +1137,35 @@ class InferenceService:
             raise
 
         except Exception as exc:
-            translated = translate_exception(
-                exc
-            )
+            translated = translate_exception(exc)
 
-            if isinstance(
-                translated,
-                APIException,
-            ) and translated.status_code < 500:
+            if (
+                isinstance(
+                    translated,
+                    APIException,
+                )
+                and translated.status_code < 500
+            ):
                 raise translated from exc
 
             raise InferenceAPIError(
                 details={
-                    "operation": (
-                        "inference"
-                    ),
-
-                    "request_id": (
-                        public_request_id
-                    ),
-
-                    "error_type": (
-                        type(
-                            exc
-                        ).__name__
-                    ),
+                    "operation": ("inference"),
+                    "request_id": (public_request_id),
+                    "error_type": (type(exc).__name__),
                 },
             ) from exc
 
         if result is None:
             raise InferenceAPIError(
-                "The inference pipeline returned "
-                "no result.",
+                "The inference pipeline returned no result.",
                 details={
-                    "operation": (
-                        "inference"
-                    ),
-
-                    "request_id": (
-                        public_request_id
-                    ),
+                    "operation": ("inference"),
+                    "request_id": (public_request_id),
                 },
             )
 
-        elapsed_ms = (
-            time.perf_counter()
-            - started
-        ) * 1000.0
+        elapsed_ms = (time.perf_counter() - started) * 1000.0
 
         result_attributes = _value(
             result,
@@ -1557,13 +1192,9 @@ class InferenceService:
         self,
         request: EventInferenceRequest,
         *,
-        context: Optional[
-            InferenceOperationContext
-        ] = None,
+        context: Optional[InferenceOperationContext] = None,
     ) -> InferenceResponse:
-        request_id = _request_identifier(
-            context
-        )
+        request_id = _request_identifier(context)
 
         domain_request = event_domain_request(
             request,
@@ -1589,20 +1220,14 @@ class InferenceService:
         self,
         request: AnomalyInferenceRequest,
         *,
-        context: Optional[
-            InferenceOperationContext
-        ] = None,
+        context: Optional[InferenceOperationContext] = None,
     ) -> InferenceResponse:
-        request_id = _request_identifier(
-            context
-        )
+        request_id = _request_identifier(context)
 
-        domain_request = (
-            anomaly_domain_request(
-                request,
-                request_id=request_id,
-                context=context,
-            )
+        domain_request = anomaly_domain_request(
+            request,
+            request_id=request_id,
+            context=context,
         )
 
         result = await self._execute(
@@ -1624,90 +1249,52 @@ class InferenceService:
         item: BatchInferenceItemRequest,
         *,
         root_request_id: str,
-        context: Optional[
-            InferenceOperationContext
-        ] = None,
+        context: Optional[InferenceOperationContext] = None,
     ) -> BatchInferenceItemResponse:
-        item_request_id = (
-            root_request_id
-            + ":"
-            + item.item_id
-        )
+        item_request_id = root_request_id + ":" + item.item_id
 
         try:
-            domain_request = (
-                batch_item_domain_request(
-                    item,
-                    request_id=(
-                        item_request_id
-                    ),
-                    context=context,
-                )
+            domain_request = batch_item_domain_request(
+                item,
+                request_id=(item_request_id),
+                context=context,
             )
 
             result = await self._execute(
                 domain_request,
-                public_request_id=(
-                    item_request_id
-                ),
+                public_request_id=(item_request_id),
             )
 
             return BatchInferenceItemResponse(
                 item_id=item.item_id,
-
                 success=True,
-
                 result=inference_response(
                     result,
-                    request_id=(
-                        item_request_id
-                    ),
+                    request_id=(item_request_id),
                 ),
-
                 error=None,
             )
 
         except Exception as exc:
-            translated = translate_exception(
-                exc
-            )
+            translated = translate_exception(exc)
 
             logger.warning(
                 "Batch inference item failed",
                 extra={
                     "batch_inference": {
-                        "request_id": (
-                            root_request_id
-                        ),
-
-                        "item_id": (
-                            item.item_id
-                        ),
-
-                        "family": (
-                            item.family
-                        ),
-
-                        "error_code": (
-                            translated.code
-                        ),
-
-                        "error_type": (
-                            type(
-                                exc
-                            ).__name__
-                        ),
+                        "request_id": (root_request_id),
+                        "item_id": (item.item_id),
+                        "family": (item.family),
+                        "error_code": (translated.code),
+                        "error_type": (type(exc).__name__),
                     },
                 },
             )
 
             return BatchInferenceItemResponse(
                 item_id=item.item_id,
-
                 success=False,
-
                 result=None,
-
                 error=translated.to_api_error(),
             )
 
@@ -1719,82 +1306,44 @@ class InferenceService:
         self,
         request: BatchInferenceRequest,
         *,
-        context: Optional[
-            InferenceOperationContext
-        ] = None,
+        context: Optional[InferenceOperationContext] = None,
     ) -> BatchInferenceResponse:
         self._ensure_open()
         self._require_enabled()
 
-        if (
-            len(
-                request.items
-            )
-            > self.config.
-            limits.
-            maximum_batch_inference_items
-        ):
+        if len(request.items) > self.config.limits.maximum_batch_inference_items:
             raise InferenceInputAPIError(
-                "The inference batch exceeds "
-                "the configured API limit.",
+                "The inference batch exceeds the configured API limit.",
                 details={
-                    "limit": (
-                        self.config.
-                        limits.
-                        maximum_batch_inference_items
-                    ),
-
-                    "current": len(
-                        request.items
-                    ),
+                    "limit": (self.config.limits.maximum_batch_inference_items),
+                    "current": len(request.items),
                 },
             )
 
         if request.require_same_family:
-            families = {
-                item.family
-                for item in request.items
-            }
+            families = {item.family for item in request.items}
 
-            if len(
-                families
-            ) > 1:
+            if len(families) > 1:
                 raise InferenceInputAPIError(
-                    "The batch requires a single "
-                    "model family.",
+                    "The batch requires a single model family.",
                     details={
-                        "operation": (
-                            "batch_inference"
-                        ),
+                        "operation": ("batch_inference"),
                     },
                 )
 
-        root_request_id = (
-            _request_identifier(
-                context
-            )
-        )
+        root_request_id = _request_identifier(context)
 
-        responses: List[
-            BatchInferenceItemResponse
-        ] = []
+        responses: List[BatchInferenceItemResponse] = []
 
         if request.fail_fast:
             for item in request.items:
-                response = (
-                    await self.
-                    _infer_batch_item(
-                        item,
-                        root_request_id=(
-                            root_request_id
-                        ),
-                        context=context,
-                    )
+                response = await self._infer_batch_item(
+                    item,
+                    root_request_id=(root_request_id),
+                    context=context,
                 )
 
-                responses.append(
-                    response
-                )
+                responses.append(response)
 
                 if not response.success:
                     break
@@ -1805,45 +1354,25 @@ class InferenceService:
                     *(
                         self._infer_batch_item(
                             item,
-                            root_request_id=(
-                                root_request_id
-                            ),
+                            root_request_id=(root_request_id),
                             context=context,
                         )
-                        for item
-                        in request.items
+                        for item in request.items
                     )
                 )
             )
 
-        succeeded = sum(
-            1
-            for response in responses
-            if response.success
-        )
+        succeeded = sum(1 for response in responses if response.success)
 
-        failed = (
-            len(
-                responses
-            )
-            - succeeded
-        )
+        failed = len(responses) - succeeded
 
         return BatchInferenceResponse(
             items=responses,
-
-            total=len(
-                responses
-            ),
-
+            total=len(responses),
             succeeded=succeeded,
-
             failed=failed,
-
             metadata=APIResponseMetadata(
-                request_id=(
-                    root_request_id
-                ),
+                request_id=(root_request_id),
             ),
         )
 
@@ -1864,20 +1393,14 @@ class InferenceService:
             None,
         )
 
-        if callable(
-            checker
-        ):
+        if callable(checker):
             try:
-                result = checker(
-                    deep=deep
-                )
+                result = checker(deep=deep)
 
             except TypeError:
                 result = checker()
 
-            return _mapping(
-                result
-            )
+            return _mapping(result)
 
         summary = getattr(
             self.pipeline,
@@ -1885,32 +1408,19 @@ class InferenceService:
             None,
         )
 
-        if callable(
-            summary
-        ):
+        if callable(summary):
             try:
-                result = summary(
-                    deep=deep
-                )
+                result = summary(deep=deep)
 
             except TypeError:
                 result = summary()
 
-            return _mapping(
-                result
-            )
+            return _mapping(result)
 
         return {
-            "status": (
-                "unknown"
-            ),
-
+            "status": ("unknown"),
             "ready": False,
-
-            "message": (
-                "The AI pipeline exposes no "
-                "health operation."
-            ),
+            "message": ("The AI pipeline exposes no health operation."),
         }
 
     # ------------------------------------------------------
@@ -1924,49 +1434,23 @@ class InferenceService:
             closed = self._closed
 
         return {
-            "service": (
-                INFERENCE_SERVICE_NAME
-            ),
-
-            "version": (
-                INFERENCE_SERVICE_VERSION
-            ),
-
+            "service": (INFERENCE_SERVICE_NAME),
+            "version": (INFERENCE_SERVICE_VERSION),
             "closed": closed,
-
-            "enabled": (
-                self.config.
-                features.
-                inference_enabled
-            ),
-
-            "timeout_seconds": (
-                self.config.
-                timeouts.
-                inference_seconds
-            ),
-
-            "maximum_batch_items": (
-                self.config.
-                limits.
-                maximum_batch_inference_items
-            ),
-
+            "enabled": (self.config.features.inference_enabled),
+            "timeout_seconds": (self.config.timeouts.inference_seconds),
+            "maximum_batch_items": (self.config.limits.maximum_batch_inference_items),
             "maximum_concurrent_inference_requests": (
-                self.config.
-                limits.
-                maximum_concurrent_inference_requests
+                self.config.limits.maximum_concurrent_inference_requests
             ),
-
-            "pipeline": type(
-                self.pipeline
-            ).__name__,
+            "pipeline": type(self.pipeline).__name__,
         }
 
 
 # ------------------------------------------------------------------
 # Construction
 # ------------------------------------------------------------------
+
 
 def create_inference_service(
     *,
@@ -1982,6 +1466,7 @@ def create_inference_service(
 # ------------------------------------------------------------------
 # Dependency registration
 # ------------------------------------------------------------------
+
 
 def register_inference_service(
     dependencies: Any,
@@ -2018,9 +1503,7 @@ def register_inference_service(
         raise InternalServerAPIError(
             "API configuration is unavailable.",
             details={
-                "resource": (
-                    "api_config"
-                ),
+                "resource": ("api_config"),
             },
         )
 
@@ -2028,22 +1511,15 @@ def register_inference_service(
         raise InternalServerAPIError(
             "AI pipeline is unavailable.",
             details={
-                "resource": (
-                    "ai_pipeline"
-                ),
+                "resource": ("ai_pipeline"),
             },
         )
 
-    if not callable(
-        register
-    ):
+    if not callable(register):
         raise InternalServerAPIError(
-            "API service registration is "
-            "unavailable.",
+            "API service registration is unavailable.",
             details={
-                "resource": (
-                    "api_dependencies"
-                ),
+                "resource": ("api_dependencies"),
             },
         )
 
@@ -2068,26 +1544,19 @@ def register_inference_service(
 __all__ = [
     "INFERENCE_SERVICE_NAME",
     "INFERENCE_SERVICE_VERSION",
-
     "InferenceOperationContext",
-
     "provenance_payload",
     "provenance_response",
-
     "event_domain_request",
     "anomaly_domain_request",
     "batch_item_domain_request",
-
     "prediction_response",
     "event_detail_response",
     "anomaly_detail_response",
     "model_identity_response",
     "inference_response",
-
     "invoke_pipeline",
-
     "InferenceService",
-
     "create_inference_service",
     "register_inference_service",
 ]

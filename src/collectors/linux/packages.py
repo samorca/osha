@@ -15,12 +15,7 @@ def collect_debian_packages() -> List[dict]:
             "dpkg-query",
             "-W",
             "-f",
-            (
-                "${binary:Package}\t"
-                "${Version}\t"
-                "${Architecture}\t"
-                "${db:Status-Abbrev}\n"
-            ),
+            ("${binary:Package}\t${Version}\t${Architecture}\t${db:Status-Abbrev}\n"),
         ],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -32,19 +27,11 @@ def collect_debian_packages() -> List[dict]:
     if result.returncode != 0:
         return [
             build_record(
-                signal_type=(
-                    "collector_error"
-                ),
+                signal_type=("collector_error"),
                 payload={
-                    "collector": (
-                        "linux_packages"
-                    ),
-                    "error": (
-                        "dpkg_query_failed"
-                    ),
-                    "message": (
-                        result.stderr.strip()
-                    ),
+                    "collector": ("linux_packages"),
+                    "error": ("dpkg_query_failed"),
+                    "message": (result.stderr.strip()),
                 },
             )
         ]
@@ -52,39 +39,24 @@ def collect_debian_packages() -> List[dict]:
     records: List[dict] = []
 
     for line in result.stdout.splitlines():
-        parts = line.split(
-            "\t"
-        )
+        parts = line.split("\t")
 
         if len(parts) < 4:
             continue
 
-        package, version, architecture, status = (
-            parts[:4]
-        )
+        package, version, architecture, status = parts[:4]
 
-        installed = (
-            len(status) >= 2
-            and status[1] == "i"
-        )
+        installed = len(status) >= 2 and status[1] == "i"
 
         records.append(
             build_record(
-                signal_type=(
-                    "package_state"
-                ),
+                signal_type=("package_state"),
                 payload={
-                    "package_manager": (
-                        "dpkg"
-                    ),
+                    "package_manager": ("dpkg"),
                     "name": package,
                     "version": version,
-                    "architecture": (
-                        architecture
-                    ),
-                    "status_abbreviation": (
-                        status
-                    ),
+                    "architecture": (architecture),
+                    "status_abbreviation": (status),
                     "installed": installed,
                 },
             )
@@ -99,11 +71,7 @@ def collect_rpm_packages() -> List[dict]:
             "rpm",
             "-qa",
             "--qf",
-            (
-                "%{NAME}\t"
-                "%{VERSION}-%{RELEASE}\t"
-                "%{ARCH}\n"
-            ),
+            ("%{NAME}\t%{VERSION}-%{RELEASE}\t%{ARCH}\n"),
         ],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -118,27 +86,19 @@ def collect_rpm_packages() -> List[dict]:
     records: List[dict] = []
 
     for line in result.stdout.splitlines():
-        parts = line.split(
-            "\t"
-        )
+        parts = line.split("\t")
 
         if len(parts) < 3:
             continue
 
         records.append(
             build_record(
-                signal_type=(
-                    "package_state"
-                ),
+                signal_type=("package_state"),
                 payload={
-                    "package_manager": (
-                        "rpm"
-                    ),
+                    "package_manager": ("rpm"),
                     "name": parts[0],
                     "version": parts[1],
-                    "architecture": (
-                        parts[2]
-                    ),
+                    "architecture": (parts[2]),
                     "installed": True,
                 },
             )
@@ -148,9 +108,7 @@ def collect_rpm_packages() -> List[dict]:
 
 
 def collect_packages() -> List[dict]:
-    if shutil.which(
-        "dpkg-query"
-    ):
+    if shutil.which("dpkg-query"):
         return collect_debian_packages()
 
     if shutil.which("rpm"):
@@ -158,16 +116,10 @@ def collect_packages() -> List[dict]:
 
     return [
         build_record(
-            signal_type=(
-                "collector_error"
-            ),
+            signal_type=("collector_error"),
             payload={
-                "collector": (
-                    "linux_packages"
-                ),
-                "error": (
-                    "unsupported_package_manager"
-                ),
+                "collector": ("linux_packages"),
+                "error": ("unsupported_package_manager"),
             },
         )
     ]

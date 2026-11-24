@@ -41,14 +41,13 @@ from src.security.schema import (
 # Environment prefix
 # ---------------------------------------------------------------
 
-DEFAULT_ENV_PREFIX = (
-    "OSHA_LINUX_"
-)
+DEFAULT_ENV_PREFIX = "OSHA_LINUX_"
 
 
 # ---------------------------------------------------------------
 # Connection mode
 # ---------------------------------------------------------------
+
 
 class LinuxMode(
     str,
@@ -62,6 +61,7 @@ class LinuxMode(
 # ---------------------------------------------------------------
 # Linux connection configuration
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class LinuxConnectionConfig:
@@ -77,53 +77,27 @@ class LinuxConnectionConfig:
     Credential values never belong here.
     """
 
-    mode: str = (
-        LinuxMode.LOCAL.value
-    )
+    mode: str = LinuxMode.LOCAL.value
 
-    host: Optional[
-        str
-    ] = None
+    host: Optional[str] = None
 
     port: int = 22
 
-    username: Optional[
-        str
-    ] = None
+    username: Optional[str] = None
 
-    credential: Optional[
-        SecretReference
-    ] = None
+    credential: Optional[SecretReference] = None
 
     verify_host_key: bool = True
 
     def validate(
         self,
     ) -> None:
-        if (
-            self.mode
-            not in {
-                item.value
-                for item
-                in LinuxMode
-            }
-        ):
-            raise ValueError(
-                "Unknown Linux "
-                f"integration mode: "
-                f"{self.mode}"
-            )
+        if self.mode not in {item.value for item in LinuxMode}:
+            raise ValueError(f"Unknown Linux integration mode: {self.mode}")
 
-        if (
-            self.mode
-            == LinuxMode.REMOTE.value
-        ):
+        if self.mode == LinuxMode.REMOTE.value:
             if not self.host:
-                raise ValueError(
-                    "Remote Linux "
-                    "integration requires "
-                    "host"
-                )
+                raise ValueError("Remote Linux integration requires host")
 
             required_string(
                 self.host,
@@ -131,18 +105,8 @@ class LinuxConnectionConfig:
                 maximum_length=512,
             )
 
-            if not (
-                1
-                <= int(
-                    self.port
-                )
-                <= 65535
-            ):
-                raise ValueError(
-                    "Linux remote port "
-                    "must be between "
-                    "1 and 65535"
-                )
+            if not (1 <= int(self.port) <= 65535):
+                raise ValueError("Linux remote port must be between 1 and 65535")
 
             if self.username is not None:
                 required_string(
@@ -151,16 +115,9 @@ class LinuxConnectionConfig:
                     maximum_length=256,
                 )
 
-        if (
-            self.mode
-            == LinuxMode.LOCAL.value
-            and self.credential
-            is not None
-        ):
+        if self.mode == LinuxMode.LOCAL.value and self.credential is not None:
             raise ValueError(
-                "Local Linux integration "
-                "does not require a "
-                "credential reference"
+                "Local Linux integration does not require a credential reference"
             )
 
         if self.credential is not None:
@@ -173,34 +130,19 @@ class LinuxConnectionConfig:
 
         return {
             "mode": self.mode,
-
             "host": self.host,
-
             "port": self.port,
-
-            "username": (
-                self.username
-            ),
-
-            "verify_host_key": (
-                self.verify_host_key
-            ),
-
-            "credential": (
-                self.credential.to_dict()
-                if self.credential
-                else None
-            ),
-
-            "credential_value_exposed": (
-                False
-            ),
+            "username": (self.username),
+            "verify_host_key": (self.verify_host_key),
+            "credential": (self.credential.to_dict() if self.credential else None),
+            "credential_value_exposed": (False),
         }
 
 
 # ---------------------------------------------------------------
 # Linux integration configuration
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class LinuxConfig:
@@ -216,11 +158,7 @@ class LinuxConfig:
 
     target_id: str
 
-    connection: LinuxConnectionConfig = field(
-        default_factory=(
-            LinuxConnectionConfig
-        )
-    )
+    connection: LinuxConnectionConfig = field(default_factory=(LinuxConnectionConfig))
 
     request_timeout_seconds: float = 15.0
 
@@ -243,9 +181,7 @@ class LinuxConfig:
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def validate(
         self,
@@ -264,9 +200,7 @@ class LinuxConfig:
 
         number(
             self.request_timeout_seconds,
-            name=(
-                "request_timeout_seconds"
-            ),
+            name=("request_timeout_seconds"),
             minimum=0.001,
         )
 
@@ -283,53 +217,19 @@ class LinuxConfig:
 
         endpoint = None
 
-        if (
-            self.connection.mode
-            == LinuxMode.REMOTE.value
-            and self.connection.host
-        ):
-            endpoint = (
-                f"ssh://"
-                f"{self.connection.host}:"
-                f"{self.connection.port}"
-            )
+        if self.connection.mode == LinuxMode.REMOTE.value and self.connection.host:
+            endpoint = f"ssh://{self.connection.host}:{self.connection.port}"
 
         return IntegrationTarget(
-            provider=(
-                ProviderKind.
-                LINUX.value
-            ),
-
-            environment_id=(
-                self.environment_id
-            ),
-
-            target_id=(
-                self.target_id
-            ),
-
+            provider=(ProviderKind.LINUX.value),
+            environment_id=(self.environment_id),
+            target_id=(self.target_id),
             endpoint=endpoint,
-
-            credential=(
-                self.connection.
-                credential
-            ),
-
+            credential=(self.connection.credential),
             attributes={
-                "mode": (
-                    self.connection.mode
-                ),
-
-                "remote": (
-                    self.connection.mode
-                    == LinuxMode.
-                    REMOTE.value
-                ),
-
-                "verify_host_key": (
-                    self.connection.
-                    verify_host_key
-                ),
+                "mode": (self.connection.mode),
+                "remote": (self.connection.mode == LinuxMode.REMOTE.value),
+                "verify_host_key": (self.connection.verify_host_key),
             },
         ).finalize()
 
@@ -343,63 +243,27 @@ class LinuxConfig:
         self.validate()
 
         return {
-            "environment_id": (
-                self.environment_id
-            ),
-
-            "target_id": (
-                self.target_id
-            ),
-
-            "connection": (
-                self.connection.
-                to_dict()
-            ),
-
-            "request_timeout_seconds": (
-                self.
-                request_timeout_seconds
-            ),
-
+            "environment_id": (self.environment_id),
+            "target_id": (self.target_id),
+            "connection": (self.connection.to_dict()),
+            "request_timeout_seconds": (self.request_timeout_seconds),
             "collection": {
-                "processes": (
-                    self.include_processes
-                ),
-
-                "cpu": (
-                    self.include_cpu
-                ),
-
-                "memory": (
-                    self.include_memory
-                ),
-
-                "disks": (
-                    self.include_disks
-                ),
-
-                "network": (
-                    self.include_network
-                ),
-
-                "boot_info": (
-                    self.include_boot_info
-                ),
-
-                "environment": (
-                    self.include_environment
-                ),
+                "processes": (self.include_processes),
+                "cpu": (self.include_cpu),
+                "memory": (self.include_memory),
+                "disks": (self.include_disks),
+                "network": (self.include_network),
+                "boot_info": (self.include_boot_info),
+                "environment": (self.include_environment),
             },
-
-            "attributes": dict(
-                self.attributes
-            ),
+            "attributes": dict(self.attributes),
         }
 
 
 # ---------------------------------------------------------------
 # Mapping helpers
 # ---------------------------------------------------------------
+
 
 def _get(
     values: Mapping[
@@ -423,9 +287,7 @@ def _text(
     ],
     prefix: str,
     name: str,
-    default: Optional[
-        str
-    ] = None,
+    default: Optional[str] = None,
 ) -> Optional[str]:
     value = _get(
         values,
@@ -437,9 +299,7 @@ def _text(
     if value is None:
         return None
 
-    result = str(
-        value
-    ).strip()
+    result = str(value).strip()
 
     return result or None
 
@@ -459,10 +319,7 @@ def _bool(
         name,
     )
 
-    if (
-        value is None
-        or str(value).strip() == ""
-    ):
+    if value is None or str(value).strip() == "":
         return default
 
     return boolean(
@@ -486,10 +343,7 @@ def _float(
         name,
     )
 
-    if (
-        value is None
-        or str(value).strip() == ""
-    ):
+    if value is None or str(value).strip() == "":
         return default
 
     return number(
@@ -502,6 +356,7 @@ def _float(
 # ---------------------------------------------------------------
 # Mapping loader
 # ---------------------------------------------------------------
+
 
 def from_mapping(
     values: Mapping[
@@ -548,18 +403,13 @@ def from_mapping(
     credential = (
         SecretReference(
             name=secret_name,
-
-            provider=(
-                secret_provider
-            ),
-
+            provider=(secret_provider),
             key=secret_key,
-
             version=_text(
                 values,
                 prefix,
                 "SECRET_VERSION",
-               ),
+            ),
         ).finalize()
         if secret_key
         else None
@@ -572,10 +422,7 @@ def from_mapping(
         "22",
     )
 
-    port = int(
-        port_text
-        or "22"
-    )
+    port = int(port_text or "22")
 
     config = LinuxConfig(
         environment_id=(
@@ -587,7 +434,6 @@ def from_mapping(
             )
             or "local-dev"
         ),
-
         target_id=(
             _text(
                 values,
@@ -597,26 +443,21 @@ def from_mapping(
             )
             or "linux-local"
         ),
-
         connection=(
-            LinuxConnectionConfig               mode=mode,
-
+            LinuxConnectionConfig(
+                mode=mode,
                 host=_text(
                     values,
                     prefix,
                     "HOST",
                 ),
-
                 port=port,
-
                 username=_text(
                     values,
                     prefix,
                     "USERNAME",
                 ),
-
                 credential=credential,
-
                 verify_host_key=_bool(
                     values,
                     prefix,
@@ -625,7 +466,6 @@ def from_mapping(
                 ),
             )
         ),
-
         request_timeout_seconds=(
             _float(
                 values,
@@ -634,60 +474,50 @@ def from_mapping(
                 15.0,
             )
         ),
-
         include_processes=_bool(
             values,
             prefix,
             "INCLUDE_PROCESSES",
             True,
         ),
-
         include_cpu=_bool(
             values,
             prefix,
             "INCLUDE_CPU",
             True,
         ),
-
         include_memory=_bool(
             values,
             prefix,
             "INCLUDE_MEMORY",
             True,
         ),
-
         include_disks=_bool(
             values,
             prefix,
             "INCLUDE_DISKS",
             True,
         ),
-
         include_network=_bool(
             values,
             prefix,
             "INCLUDE_NETWORK",
             True,
         ),
-
         include_boot_info=_bool(
             values,
             prefix,
             "INCLUDE_BOOT_INFO",
             True,
         ),
-
         include_environment=_bool(
             values,
             prefix,
             "INCLUDE_ENVIRONMENT",
             False,
         ),
-
         attributes={
-            "config_source": (
-                "mapping"
-            ),
+            "config_source": ("mapping"),
         },
     )
 
@@ -700,6 +530,7 @@ def from_mapping(
 # Environment loader
 # ---------------------------------------------------------------
 
+
 def from_environment(
     *,
     environ: Optional[
@@ -710,11 +541,7 @@ def from_environment(
     ] = None,
     prefix: str = DEFAULT_ENV_PREFIX,
 ) -> LinuxConfig:
-    source = (
-        os.environ
-        if environ is None
-        else environ
-    )
+    source = os.environ if environ is None else environ
 
     return from_mapping(
         source,
@@ -726,85 +553,32 @@ def from_environment(
 # Safe summary
 # ---------------------------------------------------------------
 
+
 def safe_config_summary(
     config: LinuxConfig,
 ) -> Dict[str, Any]:
     config.validate()
 
     return {
-        "environment_id": (
-            config.environment_id
-        ),
-
-        "target_id": (
-            config.target_id
-        ),
-
-        "mode": (
-            config.connection.mode
-        ),
-
-        "remote_host_configured": (
-            config.connection.host
-            is not None
-        ),
-
-        "remote_port": (
-            config.connection.port
-        ),
-
-        "username_configured": (
-            config.connection.username
-            is not None
-        ),
-
-        "credential_reference_configured": (
-            config.connection.credential
-            is not None
-        ),
-
-        "verify_host_key": (
-            config.connection.
-            verify_host_key
-        ),
-
+        "environment_id": (config.environment_id),
+        "target_id": (config.target_id),
+        "mode": (config.connection.mode),
+        "remote_host_configured": (config.connection.host is not None),
+        "remote_port": (config.connection.port),
+        "username_configured": (config.connection.username is not None),
+        "credential_reference_configured": (config.connection.credential is not None),
+        "verify_host_key": (config.connection.verify_host_key),
         "collection": {
-            "processes": (
-                config.include_processes
-            ),
-
-            "cpu": (
-                config.include_cpu
-            ),
-
-            "memory": (
-                config.include_memory
-            ),
-
-            "disks": (
-                config.include_disks
-            ),
-
-            "network": (
-                config.include_network
-            ),
-
-            "boot_info": (
-                config.include_boot_info
-            ),
-
-            "environment": (
-                config.include_environment
-            ),
+            "processes": (config.include_processes),
+            "cpu": (config.include_cpu),
+            "memory": (config.include_memory),
+            "disks": (config.include_disks),
+            "network": (config.include_network),
+            "boot_info": (config.include_boot_info),
+            "environment": (config.include_environment),
         },
-
-        "secret_value_exposed": (
-            False
-        ),
-
-        "arbitrary_command_execution_enabled": (
-            False
-        ),
+        "secret_value_exposed": (False),
+        "arbitrary_command_execution_enabled": (False),
     }
 
 
@@ -814,14 +588,10 @@ def safe_config_summary(
 
 __all__ = [
     "DEFAULT_ENV_PREFIX",
-
     "LinuxMode",
-
     "LinuxConnectionConfig",
     "LinuxConfig",
-
     "from_mapping",
     "from_environment",
-
     "safe_config_summary",
 ]

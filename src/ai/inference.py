@@ -97,6 +97,7 @@ from src.ai.schema import (
 # Payload validation result
 # ---------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class PayloadValidation:
     request_id: str
@@ -111,27 +112,17 @@ class PayloadValidation:
         self,
     ) -> Dict[str, Any]:
         return {
-            "request_id": (
-                self.request_id
-            ),
-
-            "payload_bytes": (
-                self.payload_bytes
-            ),
-
-            "maximum_payload_bytes": (
-                self.maximum_payload_bytes
-            ),
-
-            "finite_values_checked": (
-                self.finite_values_checked
-            ),
+            "request_id": (self.request_id),
+            "payload_bytes": (self.payload_bytes),
+            "maximum_payload_bytes": (self.maximum_payload_bytes),
+            "finite_values_checked": (self.finite_values_checked),
         }
 
 
 # ---------------------------------------------------------------
 # Inference execution record
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class InferenceExecution:
@@ -154,28 +145,17 @@ class InferenceExecution:
         self,
     ) -> Dict[str, Any]:
         return {
-            "route": (
-                self.route.to_dict()
-            ),
-
-            "result": (
-                self.result.to_dict()
-            ),
-
-            "payload_validation": (
-                self.payload_validation.
-                to_dict()
-            ),
-
-            "total_latency_ms": (
-                self.total_latency_ms
-            ),
+            "route": (self.route.to_dict()),
+            "result": (self.result.to_dict()),
+            "payload_validation": (self.payload_validation.to_dict()),
+            "total_latency_ms": (self.total_latency_ms),
         }
 
 
 # ---------------------------------------------------------------
 # JSON payload size
 # ---------------------------------------------------------------
+
 
 def serialized_payload_size(
     payload: Mapping[
@@ -193,9 +173,7 @@ def serialized_payload_size(
 
     try:
         encoded = json.dumps(
-            dict(
-                payload
-            ),
+            dict(payload),
             ensure_ascii=False,
             sort_keys=True,
             separators=(
@@ -203,32 +181,26 @@ def serialized_payload_size(
                 ":",
             ),
             allow_nan=False,
-        ).encode(
-            "utf-8"
-        )
+        ).encode("utf-8")
 
     except (
         TypeError,
         ValueError,
     ) as exc:
         raise AIInferenceInputError(
-            "Inference payload must be "
-            "JSON-serializable.",
+            "Inference payload must be JSON-serializable.",
             details={
-                "error_type": (
-                    type(exc).__name__
-                ),
+                "error_type": (type(exc).__name__),
             },
         ) from exc
 
-    return len(
-        encoded
-    )
+    return len(encoded)
 
 
 # ---------------------------------------------------------------
 # Recursive finite-value validation
 # ---------------------------------------------------------------
+
 
 def validate_finite_values(
     value: Any,
@@ -259,18 +231,12 @@ def validate_finite_values(
             float,
         ),
     ):
-        numeric = float(
-            value
-        )
+        numeric = float(value)
 
-        if not math.isfinite(
-            numeric
-        ):
+        if not math.isfinite(numeric):
             raise (
                 AIInferenceNonFiniteInputError(
-                    "Inference payload "
-                    "contains a non-finite "
-                    "numeric value.",
+                    "Inference payload contains a non-finite numeric value.",
                     details={
                         "path": path,
                     },
@@ -286,13 +252,7 @@ def validate_finite_values(
         count = 0
 
         for key, item in value.items():
-            child_path = (
-                path
-                + "."
-                + str(
-                    key
-                )
-            )
+            child_path = path + "." + str(key)
 
             count += validate_finite_values(
                 item,
@@ -314,17 +274,8 @@ def validate_finite_values(
     ):
         count = 0
 
-        for index, item in enumerate(
-            value
-        ):
-            child_path = (
-                path
-                + "["
-                + str(
-                    index
-                )
-                + "]"
-            )
+        for index, item in enumerate(value):
+            child_path = path + "[" + str(index) + "]"
 
             count += validate_finite_values(
                 item,
@@ -339,6 +290,7 @@ def validate_finite_values(
 # ---------------------------------------------------------------
 # Request validation
 # ---------------------------------------------------------------
+
 
 def validate_inference_request(
     request: InferenceRequest,
@@ -357,9 +309,7 @@ def validate_inference_request(
         raise AIInferenceRequestError(
             "Inference request is invalid.",
             details={
-                "error_type": (
-                    type(exc).__name__
-                ),
+                "error_type": (type(exc).__name__),
             },
         ) from exc
 
@@ -368,91 +318,50 @@ def validate_inference_request(
             "AI serving is disabled.",
             retryable=False,
             details={
-                "request_id": (
-                    request.request_id
-                ),
+                "request_id": (request.request_id),
             },
         )
 
-    if not config.family_allowed(
-        request.family
-    ):
+    if not config.family_allowed(request.family):
         raise AIInferenceRequestError(
-            "Inference request family is "
-            "not enabled.",
+            "Inference request family is not enabled.",
             details={
-                "request_id": (
-                    request.request_id
-                ),
-                "family": (
-                    request.family
-                ),
+                "request_id": (request.request_id),
+                "family": (request.family),
             },
         )
 
-    payload_bytes = (
-        serialized_payload_size(
-            request.payload
-        )
-    )
+    payload_bytes = serialized_payload_size(request.payload)
 
-    maximum = (
-        config.inference.
-        maximum_payload_bytes
-    )
+    maximum = config.inference.maximum_payload_bytes
 
     if payload_bytes > maximum:
         raise (
             AIInferencePayloadTooLargeError(
-                "Inference payload exceeds "
-                "the configured byte "
-                "limit.",
+                "Inference payload exceeds the configured byte limit.",
                 details={
-                    "request_id": (
-                        request.request_id
-                    ),
-                    "payload_bytes": (
-                        payload_bytes
-                    ),
-                    "maximum_payload_bytes": (
-                        maximum
-                    ),
+                    "request_id": (request.request_id),
+                    "payload_bytes": (payload_bytes),
+                    "maximum_payload_bytes": (maximum),
                 },
             )
         )
 
     finite_values_checked = 0
 
-    if (
-        config.inference.
-        reject_non_finite_inputs
-    ):
-        finite_values_checked = (
-            validate_finite_values(
-                request.payload
-            )
-        )
+    if config.inference.reject_non_finite_inputs:
+        finite_values_checked = validate_finite_values(request.payload)
 
-        finite_values_checked += (
-            validate_finite_values(
-                request.options,
-                path="options",
-            )
+        finite_values_checked += validate_finite_values(
+            request.options,
+            path="options",
         )
 
     return PayloadValidation(
-        request_id=str(
-            request.request_id
-        ),
-        payload_bytes=(
-            payload_bytes
-        ),
-        maximum_payload_bytes=(
-            maximum
-        ),
-        finite_values_checked=(
-            finite_values_checked
-        ),
+        request_id=str(request.request_id),
+        payload_bytes=(payload_bytes),
+        maximum_payload_bytes=(maximum),
+        finite_values_checked=(finite_values_checked),
     )
 
 
@@ -460,12 +369,11 @@ def validate_inference_request(
 # Failure identity
 # ---------------------------------------------------------------
 
+
 def failure_model_identity(
     request: InferenceRequest,
     *,
-    route: Optional[
-        AIRoute
-    ] = None,
+    route: Optional[AIRoute] = None,
 ) -> AIModelIdentity:
     """
     Construct the best available model identity
@@ -477,25 +385,12 @@ def failure_model_identity(
     """
 
     if route is not None:
-        return (
-            route.descriptor.
-            identity
-        )
+        return route.descriptor.identity
 
     return AIModelIdentity(
-        model_name=(
-            request.model_name
-            or "unrouted"
-        ),
-
-        family=(
-            request.family
-        ),
-
-        version=(
-            request.model_version
-            or "unresolved"
-        ),
+        model_name=(request.model_name or "unrouted"),
+        family=(request.family),
+        version=(request.model_version or "unresolved"),
     )
 
 
@@ -503,16 +398,13 @@ def failure_model_identity(
 # Structured failure result
 # ---------------------------------------------------------------
 
+
 def inference_failure_result(
     request: InferenceRequest,
     error: BaseException,
     *,
-    route: Optional[
-        AIRoute
-    ] = None,
-    latency_ms: Optional[
-        float
-    ] = None,
+    route: Optional[AIRoute] = None,
+    latency_ms: Optional[float] = None,
 ) -> InferenceResult:
     """
     Convert an inference failure into a bounded
@@ -538,8 +430,7 @@ def inference_failure_result(
     )
 
     state = (
-        InferenceState.
-        REJECTED.value
+        InferenceState.REJECTED.value
         if isinstance(
             error,
             (
@@ -553,48 +444,27 @@ def inference_failure_result(
     )
 
     return InferenceResult(
-        request_id=str(
-            request.request_id
-        ),
-
+        request_id=str(request.request_id),
         model=failure_model_identity(
             request,
             route=route,
         ),
-
         state=state,
-
-        provenance=(
-            request.provenance
-        ),
-
-        latency_ms=(
-            latency_ms
-        ),
-
+        provenance=(request.provenance),
+        latency_ms=(latency_ms),
         attributes={
-            "error_code": (
-                error_code
-            ),
-
-            "retryable": (
-                retryable
-            ),
-
-            "route_resolved": (
-                route is not None
-            ),
+            "error_code": (error_code),
+            "retryable": (retryable),
+            "route_resolved": (route is not None),
         },
-
-        error_type=(
-            type(error).__name__
-        ),
+        error_type=(type(error).__name__),
     ).finalize()
 
 
 # ---------------------------------------------------------------
 # Inference engine
 # ---------------------------------------------------------------
+
 
 class AIInferenceEngine:
     """
@@ -611,36 +481,19 @@ class AIInferenceEngine:
     def __init__(
         self,
         *,
-        config: Optional[
-            AIConfig
-        ] = None,
-        registry: Optional[
-            AIModelRegistry
-        ] = None,
-        router: Optional[
-            AIModelRouter
-        ] = None,
+        config: Optional[AIConfig] = None,
+        registry: Optional[AIModelRegistry] = None,
+        router: Optional[AIModelRouter] = None,
     ) -> None:
-        self.config = (
-            config
-            or AIConfig()
-        )
+        self.config = config or AIConfig()
 
         self.config.validate()
 
-        self.registry = (
-            registry
-            or AIModelRegistry(
-                config=self.config
-            )
-        )
+        self.registry = registry or AIModelRegistry(config=self.config)
 
-        self.router = (
-            router
-            or AIModelRouter(
-                config=self.config,
-                registry=self.registry,
-            )
+        self.router = router or AIModelRouter(
+            config=self.config,
+            registry=self.registry,
         )
 
     # ---------------------------------------------------------
@@ -652,9 +505,7 @@ class AIInferenceEngine:
         adapter: AIModelAdapter,
         request: InferenceRequest,
     ) -> InferenceResult:
-        return adapter.infer(
-            request
-        )
+        return adapter.infer(request)
 
     # ---------------------------------------------------------
     # Timeout execution
@@ -677,17 +528,11 @@ class AIInferenceEngine:
         stronger cancellation when needed.
         """
 
-        timeout_seconds = (
-            self.config.
-            inference.
-            timeout_seconds
-        )
+        timeout_seconds = self.config.inference.timeout_seconds
 
         executor = ThreadPoolExecutor(
             max_workers=1,
-            thread_name_prefix=(
-                "osha-ai-inference"
-            ),
+            thread_name_prefix=("osha-ai-inference"),
         )
 
         future = executor.submit(
@@ -697,24 +542,16 @@ class AIInferenceEngine:
         )
 
         try:
-            return future.result(
-                timeout=timeout_seconds
-            )
+            return future.result(timeout=timeout_seconds)
 
         except FutureTimeoutError as exc:
             future.cancel()
 
             raise AIInferenceTimeoutError(
                 details={
-                    "request_id": (
-                        request.request_id
-                    ),
-                    "model_id": (
-                        adapter.model_id
-                    ),
-                    "timeout_seconds": (
-                        timeout_seconds
-                    ),
+                    "request_id": (request.request_id),
+                    "model_id": (adapter.model_id),
+                    "timeout_seconds": (timeout_seconds),
                 },
             ) from exc
 
@@ -734,60 +571,31 @@ class AIInferenceEngine:
     ) -> InferenceExecution:
         started = time.perf_counter()
 
-        route: Optional[
-            AIRoute
-        ] = None
+        route: Optional[AIRoute] = None
 
-        validation = (
-            validate_inference_request(
-                request,
-                config=self.config,
-            )
+        validation = validate_inference_request(
+            request,
+            config=self.config,
         )
 
         try:
-            route = self.router.route(
-                request
+            route = self.router.route(request)
+
+            adapter = self.registry.load(route.model_id)
+
+            result = self._execute_with_timeout(
+                adapter,
+                request,
             )
 
-            adapter = (
-                self.registry.load(
-                    route.model_id
-                )
-            )
-
-            result = (
-                self.
-                _execute_with_timeout(
-                    adapter,
-                    request,
-                )
-            )
-
-            total_latency_ms = (
-                time.perf_counter()
-                - started
-            ) * 1000.0
+            total_latency_ms = (time.perf_counter() - started) * 1000.0
 
             result.attributes.update(
                 {
-                    "route_reason": (
-                        route.reason
-                    ),
-
-                    "fallback_route": (
-                        route.
-                        fallback_used
-                    ),
-
-                    "payload_bytes": (
-                        validation.
-                        payload_bytes
-                    ),
-
-                    "total_latency_ms": (
-                        total_latency_ms
-                    ),
+                    "route_reason": (route.reason),
+                    "fallback_route": (route.fallback_used),
+                    "payload_bytes": (validation.payload_bytes),
+                    "total_latency_ms": (total_latency_ms),
                 }
             )
 
@@ -796,39 +604,24 @@ class AIInferenceEngine:
             return InferenceExecution(
                 route=route,
                 result=result,
-                payload_validation=(
-                    validation
-                ),
-                total_latency_ms=(
-                    total_latency_ms
-                ),
+                payload_validation=(validation),
+                total_latency_ms=(total_latency_ms),
             )
 
         except AIError:
             raise
 
         except Exception as exc:
-            model_id = (
-                route.model_id
-                if route is not None
-                else None
-            )
+            model_id = route.model_id if route is not None else None
 
             raise AIModelUnavailableError(
-                "AI inference execution "
-                "failed unexpectedly.",
+                "AI inference execution failed unexpectedly.",
                 details=safe_ai_error_details(
                     exc,
-                    operation=(
-                        "execute_inference"
-                    ),
+                    operation=("execute_inference"),
                     model_id=model_id,
-                    family=(
-                        request.family
-                    ),
-                    request_id=(
-                        request.request_id
-                    ),
+                    family=(request.family),
+                    request_id=(request.request_id),
                 ),
             ) from exc
 
@@ -840,9 +633,7 @@ class AIInferenceEngine:
         self,
         request: InferenceRequest,
     ) -> InferenceResult:
-        return self.execute(
-            request
-        ).result
+        return self.execute(request).result
 
     # ---------------------------------------------------------
     # Safe single inference
@@ -859,9 +650,7 @@ class AIInferenceEngine:
 
         started = time.perf_counter()
 
-        route: Optional[
-            AIRoute
-        ] = None
+        route: Optional[AIRoute] = None
 
         try:
             request.finalize()
@@ -871,61 +660,35 @@ class AIInferenceEngine:
                 config=self.config,
             )
 
-            route = self.router.route(
-                request
+            route = self.router.route(request)
+
+            adapter = self.registry.load(route.model_id)
+
+            result = self._execute_with_timeout(
+                adapter,
+                request,
             )
 
-            adapter = (
-                self.registry.load(
-                    route.model_id
-                )
-            )
-
-            result = (
-                self.
-                _execute_with_timeout(
-                    adapter,
-                    request,
-                )
-            )
-
-            total_latency_ms = (
-                time.perf_counter()
-                - started
-            ) * 1000.0
+            total_latency_ms = (time.perf_counter() - started) * 1000.0
 
             result.attributes.update(
                 {
-                    "route_reason": (
-                        route.reason
-                    ),
-
-                    "fallback_route": (
-                        route.
-                        fallback_used
-                    ),
-
-                    "total_latency_ms": (
-                        total_latency_ms
-                    ),
+                    "route_reason": (route.reason),
+                    "fallback_route": (route.fallback_used),
+                    "total_latency_ms": (total_latency_ms),
                 }
             )
 
             return result.finalize()
 
         except Exception as exc:
-            latency_ms = (
-                time.perf_counter()
-                - started
-            ) * 1000.0
+            latency_ms = (time.perf_counter() - started) * 1000.0
 
             return inference_failure_result(
                 request,
                 exc,
                 route=route,
-                latency_ms=(
-                    latency_ms
-                ),
+                latency_ms=(latency_ms),
             )
 
     # ---------------------------------------------------------
@@ -941,51 +704,24 @@ class AIInferenceEngine:
 
         except Exception as exc:
             raise AIBatchInferenceError(
-                "Inference batch is "
-                "invalid.",
+                "Inference batch is invalid.",
                 details={
-                    "error_type": (
-                        type(exc).__name__
-                    ),
+                    "error_type": (type(exc).__name__),
                 },
             ) from exc
 
-        if not (
-            self.config.
-            inference.
-            enable_batch_inference
-        ):
-            raise AIBatchDisabledError(
-                "Batch inference is "
-                "disabled."
-            )
+        if not (self.config.inference.enable_batch_inference):
+            raise AIBatchDisabledError("Batch inference is disabled.")
 
-        maximum = (
-            self.config.
-            inference.
-            maximum_batch_size
-        )
+        maximum = self.config.inference.maximum_batch_size
 
-        if (
-            len(
-                batch.requests
-            )
-            > maximum
-        ):
+        if len(batch.requests) > maximum:
             raise AIBatchSizeError(
-                "Inference batch exceeds "
-                "the configured size "
-                "limit.",
+                "Inference batch exceeds the configured size limit.",
                 details={
-                    "batch_id": (
-                        batch.batch_id
-                    ),
-                    "request_count": len(
-                        batch.requests
-                    ),
-                    "maximum_batch_size": (
-                        maximum
-                    ),
+                    "batch_id": (batch.batch_id),
+                    "request_count": len(batch.requests),
+                    "maximum_batch_size": (maximum),
                 },
             )
 
@@ -995,43 +731,24 @@ class AIInferenceEngine:
 
     @staticmethod
     def validate_same_family(
-        requests: Iterable[
-            InferenceRequest
-        ],
+        requests: Iterable[InferenceRequest],
     ) -> str:
-        families = {
-            request.family
-            for request
-            in requests
-        }
+        families = {request.family for request in requests}
 
         if not families:
-            raise AIBatchInferenceError(
-                "Inference batch cannot "
-                "be empty."
-            )
+            raise AIBatchInferenceError("Inference batch cannot be empty.")
 
-        if len(
-            families
-        ) != 1:
+        if len(families) != 1:
             raise (
                 AIBatchFamilyMismatchError(
-                    "Inference batch "
-                    "contains multiple "
-                    "model families.",
+                    "Inference batch contains multiple model families.",
                     details={
-                        "families": sorted(
-                            families
-                        ),
+                        "families": sorted(families),
                     },
                 )
             )
 
-        return next(
-            iter(
-                families
-            )
-        )
+        return next(iter(families))
 
     # ---------------------------------------------------------
     # Batch inference
@@ -1044,38 +761,22 @@ class AIInferenceEngine:
         fail_fast: bool = False,
         require_same_family: bool = False,
     ) -> BatchInferenceResult:
-        self._validate_batch(
-            batch
-        )
+        self._validate_batch(batch)
 
         if require_same_family:
-            self.validate_same_family(
-                batch.requests
-            )
+            self.validate_same_family(batch.requests)
 
-        results: List[
-            InferenceResult
-        ] = []
+        results: List[InferenceResult] = []
 
         for request in batch.requests:
             if fail_fast:
-                results.append(
-                    self.infer(
-                        request
-                    )
-                )
+                results.append(self.infer(request))
 
             else:
-                results.append(
-                    self.infer_safe(
-                        request
-                    )
-                )
+                results.append(self.infer_safe(request))
 
         return BatchInferenceResult(
-            batch_id=str(
-                batch.batch_id
-            ),
+            batch_id=str(batch.batch_id),
             results=results,
         ).finalize()
 
@@ -1085,25 +786,17 @@ class AIInferenceEngine:
 
     def infer_many(
         self,
-        requests: Iterable[
-            InferenceRequest
-        ],
+        requests: Iterable[InferenceRequest],
         *,
         fail_fast: bool = False,
         require_same_family: bool = False,
     ) -> BatchInferenceResult:
-        batch = BatchInferenceRequest(
-            requests=list(
-                requests
-            )
-        ).finalize()
+        batch = BatchInferenceRequest(requests=list(requests)).finalize()
 
         return self.infer_batch(
             batch,
             fail_fast=fail_fast,
-            require_same_family=(
-                require_same_family
-            ),
+            require_same_family=(require_same_family),
         )
 
     # ---------------------------------------------------------
@@ -1114,61 +807,19 @@ class AIInferenceEngine:
         self,
     ) -> Dict[str, Any]:
         return {
-            "enabled": (
-                self.config.enabled
-            ),
-
-            "maximum_batch_size": (
-                self.config.
-                inference.
-                maximum_batch_size
-            ),
-
-            "maximum_payload_bytes": (
-                self.config.
-                inference.
-                maximum_payload_bytes
-            ),
-
-            "timeout_seconds": (
-                self.config.
-                inference.
-                timeout_seconds
-            ),
-
-            "batch_inference_enabled": (
-                self.config.
-                inference.
-                enable_batch_inference
-            ),
-
+            "enabled": (self.config.enabled),
+            "maximum_batch_size": (self.config.inference.maximum_batch_size),
+            "maximum_payload_bytes": (self.config.inference.maximum_payload_bytes),
+            "timeout_seconds": (self.config.inference.timeout_seconds),
+            "batch_inference_enabled": (self.config.inference.enable_batch_inference),
             "reject_non_finite_inputs": (
-                self.config.
-                inference.
-                reject_non_finite_inputs
+                self.config.inference.reject_non_finite_inputs
             ),
-
-            "include_representations": (
-                self.config.
-                inference.
-                include_representations
-            ),
-
-            "registry": (
-                self.registry.summary()
-            ),
-
-            "router": (
-                self.router.summary()
-            ),
-
-            "training_performed": (
-                False
-            ),
-
-            "remediation_performed": (
-                False
-            ),
+            "include_representations": (self.config.inference.include_representations),
+            "registry": (self.registry.summary()),
+            "router": (self.router.summary()),
+            "training_performed": (False),
+            "remediation_performed": (False),
         }
 
 
@@ -1179,13 +830,10 @@ class AIInferenceEngine:
 __all__ = [
     "PayloadValidation",
     "InferenceExecution",
-
     "serialized_payload_size",
     "validate_finite_values",
     "validate_inference_request",
-
     "failure_model_identity",
     "inference_failure_result",
-
     "AIInferenceEngine",
 ]

@@ -113,9 +113,7 @@ class CorrelationDirection(
 
     REVERSE = "reverse"
 
-    BIDIRECTIONAL = (
-        "bidirectional"
-    )
+    BIDIRECTIONAL = "bidirectional"
 
 
 class GroupStatus(str, Enum):
@@ -131,9 +129,7 @@ class GroupStatus(str, Enum):
 
 
 def utc_now() -> str:
-    return datetime.now(
-        timezone.utc
-    ).isoformat()
+    return datetime.now(timezone.utc).isoformat()
 
 
 def normalize_string(
@@ -162,9 +158,7 @@ def json_safe(
     """
 
     if depth > maximum_depth:
-        return (
-            "[MAX_DEPTH_REACHED]"
-        )
+        return "[MAX_DEPTH_REACHED]"
 
     if value is None:
         return None
@@ -193,9 +187,7 @@ def json_safe(
         datetime,
     ):
         if value.tzinfo is None:
-            value = value.replace(
-                tzinfo=timezone.utc
-            )
+            value = value.replace(tzinfo=timezone.utc)
 
         return value.isoformat()
 
@@ -216,12 +208,9 @@ def json_safe(
             str(key): json_safe(
                 item,
                 depth=depth + 1,
-                maximum_depth=(
-                    maximum_depth
-                ),
+                maximum_depth=(maximum_depth),
             )
-            for key, item
-            in value.items()
+            for key, item in value.items()
         }
 
     if isinstance(
@@ -237,9 +226,7 @@ def json_safe(
             json_safe(
                 item,
                 depth=depth + 1,
-                maximum_depth=(
-                    maximum_depth
-                ),
+                maximum_depth=(maximum_depth),
             )
             for item in value
         ]
@@ -251,9 +238,7 @@ def json_safe(
         return json_safe(
             asdict(value),
             depth=depth + 1,
-            maximum_depth=(
-                maximum_depth
-            ),
+            maximum_depth=(maximum_depth),
         )
 
     return str(value)
@@ -273,9 +258,7 @@ def stable_hash(
         default=str,
     ).encode("utf-8")
 
-    return hashlib.sha256(
-        encoded
-    ).hexdigest()
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def checked_score(
@@ -298,9 +281,7 @@ def checked_score(
     ):
         return 0.0
 
-    if not math.isfinite(
-        number
-    ):
+    if not math.isfinite(number):
         return 0.0
 
     return min(
@@ -331,68 +312,36 @@ class CorrelationEvidence:
 
     score: float
 
-    source_record_id: Optional[
-        str
-    ] = None
+    source_record_id: Optional[str] = None
 
-    target_record_id: Optional[
-        str
-    ] = None
+    target_record_id: Optional[str] = None
 
-    source_resource_id: Optional[
-        str
-    ] = None
+    source_resource_id: Optional[str] = None
 
-    target_resource_id: Optional[
-        str
-    ] = None
+    target_resource_id: Optional[str] = None
 
-    description: Optional[str] = (
-        None
-    )
+    description: Optional[str] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def normalized_score(
         self,
     ) -> float:
-        return checked_score(
-            self.score
-        )
+        return checked_score(self.score)
 
     def to_dict(self) -> dict:
         return {
-            "evidence_type": (
-                self.evidence_type
-            ),
-            "score": (
-                self.normalized_score()
-            ),
-            "source_record_id": (
-                self.source_record_id
-            ),
-            "target_record_id": (
-                self.target_record_id
-            ),
-            "source_resource_id": (
-                self.source_resource_id
-            ),
-            "target_resource_id": (
-                self.target_resource_id
-            ),
-            "description": (
-                self.description
-            ),
-            "attributes": (
-                json_safe(
-                    self.attributes
-                )
-            ),
+            "evidence_type": (self.evidence_type),
+            "score": (self.normalized_score()),
+            "source_record_id": (self.source_record_id),
+            "target_record_id": (self.target_record_id),
+            "source_resource_id": (self.source_resource_id),
+            "target_resource_id": (self.target_resource_id),
+            "description": (self.description),
+            "attributes": (json_safe(self.attributes)),
         }
 
 
@@ -431,41 +380,19 @@ class CorrelationScore:
         self,
     ) -> "CorrelationScore":
         return CorrelationScore(
-            identity=checked_score(
-                self.identity
-            ),
-            temporal=checked_score(
-                self.temporal
-            ),
-            topology=checked_score(
-                self.topology
-            ),
-            resource=checked_score(
-                self.resource
-            ),
-            service=checked_score(
-                self.service
-            ),
-            signal=checked_score(
-                self.signal
-            ),
-            severity=checked_score(
-                self.severity
-            ),
-            historical=checked_score(
-                self.historical
-            ),
-            overall=checked_score(
-                self.overall
-            ),
+            identity=checked_score(self.identity),
+            temporal=checked_score(self.temporal),
+            topology=checked_score(self.topology),
+            resource=checked_score(self.resource),
+            service=checked_score(self.service),
+            signal=checked_score(self.signal),
+            severity=checked_score(self.severity),
+            historical=checked_score(self.historical),
+            overall=checked_score(self.overall),
         )
 
     def to_dict(self) -> dict:
-        return json_safe(
-            asdict(
-                self.normalized()
-            )
-        )
+        return json_safe(asdict(self.normalized()))
 
 
 @dataclass
@@ -492,153 +419,74 @@ class CorrelationCandidate:
 
     environment_id: str
 
-    source_provider: Optional[
-        str
-    ] = None
+    source_provider: Optional[str] = None
 
-    target_provider: Optional[
-        str
-    ] = None
+    target_provider: Optional[str] = None
 
-    source_signal_type: Optional[
-        str
-    ] = None
+    source_signal_type: Optional[str] = None
 
-    target_signal_type: Optional[
-        str
-    ] = None
+    target_signal_type: Optional[str] = None
 
-    direction: str = (
-        CorrelationDirection.NONE.value
-    )
+    direction: str = CorrelationDirection.NONE.value
 
-    evidence: List[
-        CorrelationEvidence
-    ] = field(
-        default_factory=list
-    )
+    evidence: List[CorrelationEvidence] = field(default_factory=list)
 
-    scores: CorrelationScore = field(
-        default_factory=(
-            CorrelationScore
-        )
-    )
+    scores: CorrelationScore = field(default_factory=(CorrelationScore))
 
-    decision: str = (
-        CorrelationDecision.WEAK.value
-    )
+    decision: str = CorrelationDecision.WEAK.value
 
-    created_at: str = field(
-        default_factory=utc_now
-    )
+    created_at: str = field(default_factory=utc_now)
 
-    candidate_id: Optional[str] = (
-        None
-    )
+    candidate_id: Optional[str] = None
 
     def build_candidate_id(
         self,
     ) -> str:
         body = {
-            "source_record_id": (
-                self.source_record_id
-            ),
-            "target_record_id": (
-                self.target_record_id
-            ),
-            "source_resource_id": (
-                self.source_resource_id
-            ),
-            "target_resource_id": (
-                self.target_resource_id
-            ),
-            "environment_id": (
-                self.environment_id
-            ),
+            "source_record_id": (self.source_record_id),
+            "target_record_id": (self.target_record_id),
+            "source_resource_id": (self.source_resource_id),
+            "target_resource_id": (self.target_resource_id),
+            "environment_id": (self.environment_id),
         }
 
-        return (
-            "corr:candidate:"
-            + stable_hash(body)
-        )
+        return "corr:candidate:" + stable_hash(body)
 
     def finalize(
         self,
     ) -> "CorrelationCandidate":
         if not self.candidate_id:
-            self.candidate_id = (
-                self.build_candidate_id()
-            )
+            self.candidate_id = self.build_candidate_id()
 
         return self
 
     def add_evidence(
         self,
-        evidence: (
-            CorrelationEvidence
-        ),
+        evidence: (CorrelationEvidence),
     ) -> None:
-        self.evidence.append(
-            evidence
-        )
+        self.evidence.append(evidence)
 
     def to_dict(self) -> dict:
         self.finalize()
 
         return {
-            "candidate_id": (
-                self.candidate_id
-            ),
-            "source_record_id": (
-                self.source_record_id
-            ),
-            "target_record_id": (
-                self.target_record_id
-            ),
-            "source_resource_id": (
-                self.source_resource_id
-            ),
-            "target_resource_id": (
-                self.target_resource_id
-            ),
-            "source_timestamp": (
-                self.source_timestamp
-            ),
-            "target_timestamp": (
-                self.target_timestamp
-            ),
-            "environment_id": (
-                self.environment_id
-            ),
-            "source_provider": (
-                self.source_provider
-            ),
-            "target_provider": (
-                self.target_provider
-            ),
-            "source_signal_type": (
-                self.source_signal_type
-            ),
-            "target_signal_type": (
-                self.target_signal_type
-            ),
-            "direction": (
-                self.direction
-            ),
-            "evidence": [
-                item.to_dict()
-                for item
-                in self.evidence
-            ],
-            "scores": (
-                self.scores.to_dict()
-            ),
-            "decision": (
-                self.decision
-            ),
-            "created_at": (
-                self.created_at
-            ),
+            "candidate_id": (self.candidate_id),
+            "source_record_id": (self.source_record_id),
+            "target_record_id": (self.target_record_id),
+            "source_resource_id": (self.source_resource_id),
+            "target_resource_id": (self.target_resource_id),
+            "source_timestamp": (self.source_timestamp),
+            "target_timestamp": (self.target_timestamp),
+            "environment_id": (self.environment_id),
+            "source_provider": (self.source_provider),
+            "target_provider": (self.target_provider),
+            "source_signal_type": (self.source_signal_type),
+            "target_signal_type": (self.target_signal_type),
+            "direction": (self.direction),
+            "evidence": [item.to_dict() for item in self.evidence],
+            "scores": (self.scores.to_dict()),
+            "decision": (self.decision),
+            "created_at": (self.created_at),
         }
 
 
@@ -659,18 +507,12 @@ class TimeWindow:
 
     environment_id: str
 
-    anchor_record_id: Optional[
-        str
-    ] = None
+    anchor_record_id: Optional[str] = None
 
-    anchor_resource_id: Optional[
-        str
-    ] = None
+    anchor_resource_id: Optional[str] = None
 
     def to_dict(self) -> dict:
-        return json_safe(
-            asdict(self)
-        )
+        return json_safe(asdict(self))
 
 
 @dataclass
@@ -696,118 +538,57 @@ class CorrelationGroup:
 
     group_id: Optional[str] = None
 
-    candidate_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    candidate_ids: List[str] = field(default_factory=list)
 
-    providers: List[str] = field(
-        default_factory=list
-    )
+    providers: List[str] = field(default_factory=list)
 
-    signal_types: List[str] = field(
-        default_factory=list
-    )
+    signal_types: List[str] = field(default_factory=list)
 
     strongest_score: float = 0.0
 
     average_score: float = 0.0
 
-    status: str = (
-        GroupStatus.OPEN.value
-    )
+    status: str = GroupStatus.OPEN.value
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    created_at: str = field(
-        default_factory=utc_now
-    )
+    created_at: str = field(default_factory=utc_now)
 
     def build_group_id(
         self,
     ) -> str:
         body = {
-            "environment_id": (
-                self.environment_id
-            ),
-            "record_ids": sorted(
-                set(
-                    self.record_ids
-                )
-            ),
-            "resource_ids": sorted(
-                set(
-                    self.resource_ids
-                )
-            ),
-            "start_timestamp": (
-                self.start_timestamp
-            ),
-            "end_timestamp": (
-                self.end_timestamp
-            ),
+            "environment_id": (self.environment_id),
+            "record_ids": sorted(set(self.record_ids)),
+            "resource_ids": sorted(set(self.resource_ids)),
+            "start_timestamp": (self.start_timestamp),
+            "end_timestamp": (self.end_timestamp),
         }
 
-        return (
-            "corr:group:"
-            + stable_hash(body)
-        )
+        return "corr:group:" + stable_hash(body)
 
     def finalize(
         self,
     ) -> "CorrelationGroup":
-        self.record_ids = sorted(
-            set(
-                self.record_ids
-            )
-        )
+        self.record_ids = sorted(set(self.record_ids))
 
-        self.resource_ids = sorted(
-            set(
-                self.resource_ids
-            )
-        )
+        self.resource_ids = sorted(set(self.resource_ids))
 
-        self.candidate_ids = sorted(
-            set(
-                self.candidate_ids
-            )
-        )
+        self.candidate_ids = sorted(set(self.candidate_ids))
 
-        self.providers = sorted(
-            set(
-                self.providers
-            )
-        )
+        self.providers = sorted(set(self.providers))
 
-        self.signal_types = sorted(
-            set(
-                self.signal_types
-            )
-        )
+        self.signal_types = sorted(set(self.signal_types))
 
-        self.strongest_score = (
-            checked_score(
-                self.strongest_score
-            )
-        )
+        self.strongest_score = checked_score(self.strongest_score)
 
-        self.average_score = (
-            checked_score(
-                self.average_score
-            )
-        )
+        self.average_score = checked_score(self.average_score)
 
         if not self.group_id:
-            self.group_id = (
-                self.build_group_id()
-            )
+            self.group_id = self.build_group_id()
 
         return self
 
@@ -815,48 +596,20 @@ class CorrelationGroup:
         self.finalize()
 
         return {
-            "group_id": (
-                self.group_id
-            ),
-            "environment_id": (
-                self.environment_id
-            ),
-            "record_ids": (
-                self.record_ids
-            ),
-            "resource_ids": (
-                self.resource_ids
-            ),
-            "candidate_ids": (
-                self.candidate_ids
-            ),
-            "providers": (
-                self.providers
-            ),
-            "signal_types": (
-                self.signal_types
-            ),
-            "start_timestamp": (
-                self.start_timestamp
-            ),
-            "end_timestamp": (
-                self.end_timestamp
-            ),
-            "strongest_score": (
-                self.strongest_score
-            ),
-            "average_score": (
-                self.average_score
-            ),
+            "group_id": (self.group_id),
+            "environment_id": (self.environment_id),
+            "record_ids": (self.record_ids),
+            "resource_ids": (self.resource_ids),
+            "candidate_ids": (self.candidate_ids),
+            "providers": (self.providers),
+            "signal_types": (self.signal_types),
+            "start_timestamp": (self.start_timestamp),
+            "end_timestamp": (self.end_timestamp),
+            "strongest_score": (self.strongest_score),
+            "average_score": (self.average_score),
             "status": self.status,
-            "attributes": (
-                json_safe(
-                    self.attributes
-                )
-            ),
-            "created_at": (
-                self.created_at
-            ),
+            "attributes": (json_safe(self.attributes)),
+            "created_at": (self.created_at),
         }
 
 
@@ -867,58 +620,31 @@ class CorrelationResult:
     correlation pipeline.
     """
 
-    groups: List[
-        CorrelationGroup
-    ] = field(
-        default_factory=list
-    )
+    groups: List[CorrelationGroup] = field(default_factory=list)
 
-    candidates: List[
-        CorrelationCandidate
-    ] = field(
-        default_factory=list
-    )
+    candidates: List[CorrelationCandidate] = field(default_factory=list)
 
-    uncorrelated_record_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    uncorrelated_record_ids: List[str] = field(default_factory=list)
 
-    schema_version: str = (
-        CORRELATION_SCHEMA_VERSION
-    )
+    schema_version: str = CORRELATION_SCHEMA_VERSION
 
-    generated_at: str = field(
-        default_factory=utc_now
-    )
+    generated_at: str = field(default_factory=utc_now)
 
     metadata: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
     ) -> "CorrelationResult":
-        for candidate in (
-            self.candidates
-        ):
+        for candidate in self.candidates:
             candidate.finalize()
 
         for group in self.groups:
             group.finalize()
 
-        self.uncorrelated_record_ids = (
-            sorted(
-                set(
-                    self.
-                    uncorrelated_record_ids
-                )
-            )
-        )
+        self.uncorrelated_record_ids = sorted(set(self.uncorrelated_record_ids))
 
         return self
 
@@ -926,31 +652,12 @@ class CorrelationResult:
         self.finalize()
 
         return {
-            "schema_version": (
-                self.schema_version
-            ),
-            "generated_at": (
-                self.generated_at
-            ),
-            "groups": [
-                group.to_dict()
-                for group
-                in self.groups
-            ],
-            "candidates": [
-                candidate.to_dict()
-                for candidate
-                in self.candidates
-            ],
-            "uncorrelated_record_ids": (
-                self.
-                uncorrelated_record_ids
-            ),
-            "metadata": (
-                json_safe(
-                    self.metadata
-                )
-            ),
+            "schema_version": (self.schema_version),
+            "generated_at": (self.generated_at),
+            "groups": [group.to_dict() for group in self.groups],
+            "candidates": [candidate.to_dict() for candidate in self.candidates],
+            "uncorrelated_record_ids": (self.uncorrelated_record_ids),
+            "metadata": (json_safe(self.metadata)),
         }
 
     def to_json(self) -> str:
@@ -986,28 +693,20 @@ def combine_independent_scores(
     found = False
 
     for raw_score in scores:
-        score = checked_score(
-            raw_score
-        )
+        score = checked_score(raw_score)
 
         found = True
 
-        remaining *= (
-            1.0 - score
-        )
+        remaining *= 1.0 - score
 
     if not found:
         return 0.0
 
-    return checked_score(
-        1.0 - remaining
-    )
+    return checked_score(1.0 - remaining)
 
 
 def evidence_by_type(
-    evidence: Sequence[
-        CorrelationEvidence
-    ],
+    evidence: Sequence[CorrelationEvidence],
 ) -> Dict[
     str,
     List[CorrelationEvidence],
@@ -1027,20 +726,12 @@ def evidence_by_type(
 
 
 def strongest_evidence(
-    evidence: Iterable[
-        CorrelationEvidence
-    ],
-) -> Optional[
-    CorrelationEvidence
-]:
+    evidence: Iterable[CorrelationEvidence],
+) -> Optional[CorrelationEvidence]:
     strongest = None
 
     for item in evidence:
-        if (
-            strongest is None
-            or item.normalized_score()
-            > strongest.normalized_score()
-        ):
+        if strongest is None or item.normalized_score() > strongest.normalized_score():
             strongest = item
 
     return strongest

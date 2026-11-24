@@ -42,6 +42,7 @@ from importlib import (
 from typing import (
     Any,
     AsyncIterator,
+    cast,
     Dict,
     Iterable,
     Optional,
@@ -111,18 +112,14 @@ from src.api.schema import (
 # Logging
 # ------------------------------------------------------------------
 
-logger = logging.getLogger(
-    __name__
-)
+logger = logging.getLogger(__name__)
 
 
 # ------------------------------------------------------------------
 # Application metadata
 # ------------------------------------------------------------------
 
-APPLICATION_TITLE = (
-    "OSHA Orchestration API"
-)
+APPLICATION_TITLE = "OSHA Orchestration API"
 
 APPLICATION_DESCRIPTION = (
     "HTTP control plane for OSHA infrastructure "
@@ -156,6 +153,7 @@ ROUTER_MODULES: Tuple[
 # Request state helpers
 # ------------------------------------------------------------------
 
+
 def request_id_from_request(
     request: Request,
 ) -> Optional[str]:
@@ -168,46 +166,35 @@ def request_id_from_request(
     if value is None:
         return None
 
-    return str(
-        value
-    )
+    return str(value)
 
 
 # ------------------------------------------------------------------
 # JSON error response
 # ------------------------------------------------------------------
 
+
 def api_error_json_response(
     error: BaseException,
     *,
     request: Request,
 ) -> JSONResponse:
-    request_id = (
-        request_id_from_request(
-            request
-        )
-    )
+    request_id = request_id_from_request(request)
 
-    duration_ms = (
-        current_request_duration_ms()
-    )
+    duration_ms = current_request_duration_ms()
 
-    status_code, body, headers = (
-        error_response(
-            error,
-            request_id=request_id,
-            duration_ms=duration_ms,
-        )
+    status_code, body, headers = error_response(
+        error,
+        request_id=request_id,
+        duration_ms=duration_ms,
     )
 
     return JSONResponse(
         status_code=status_code,
-
         content=body.model_dump(
             mode="json",
             exclude_none=True,
         ),
-
         headers=headers,
     )
 
@@ -216,17 +203,14 @@ def api_error_json_response(
 # Exception handlers
 # ------------------------------------------------------------------
 
+
 async def api_exception_handler(
     request: Request,
     error: APIException,
 ) -> JSONResponse:
     log_api_exception(
         error,
-        request_id=(
-            request_id_from_request(
-                request
-            )
-        ),
+        request_id=(request_id_from_request(request)),
         method=request.method,
         route=request.url.path,
     )
@@ -250,87 +234,50 @@ async def request_validation_exception_handler(
 
     fields = []
 
-    for item in error.errors()[
-        :128
-    ]:
-        location = []
+    for item in error.errors()[:128]:
+        location: list[str | int] = []
 
         for part in item.get(
             "loc",
             (),
-        )[
-            :32
-        ]:
+        )[:32]:
             if isinstance(
                 part,
                 int,
             ):
-                location.append(
-                    part
-                )
+                location.append(part)
 
             else:
-                location.append(
-                    str(
-                        part
-                    )[
-                        :256
-                    ]
-                )
+                location.append(str(part)[:256])
 
         fields.append(
             {
-                "location": (
-                    location
-                ),
-
+                "location": (location),
                 "code": str(
                     item.get(
                         "type",
                         "validation_error",
                     )
-                )[
-                    :128
-                ],
-
+                )[:128],
                 "message": str(
                     item.get(
                         "msg",
                         "Invalid value.",
                     )
-                )[
-                    :2048
-                ],
+                )[:2048],
             }
         )
 
-    translated = (
-        RequestValidationAPIError(
-            fields=[
-                from_error_field(
-                    value
-                )
-                for value
-                in fields
-            ],
-
-            details={
-                "error_type": (
-                    type(
-                        error
-                    ).__name__
-                ),
-            },
-        )
+    translated = RequestValidationAPIError(
+        fields=[from_error_field(value) for value in fields],
+        details={
+            "error_type": (type(error).__name__),
+        },
     )
 
     log_api_exception(
         translated,
-        request_id=(
-            request_id_from_request(
-                request
-            )
-        ),
+        request_id=(request_id_from_request(request)),
         method=request.method,
         route=request.url.path,
     )
@@ -363,14 +310,12 @@ def from_error_field(
                 (),
             )
         ),
-
         code=str(
             value.get(
                 "code",
                 "validation_error",
             )
         ),
-
         message=str(
             value.get(
                 "message",
@@ -384,31 +329,16 @@ async def pydantic_validation_exception_handler(
     request: Request,
     error: ValidationError,
 ) -> JSONResponse:
-    translated = (
-        RequestValidationAPIError(
-            fields=list(
-                validation_error_fields(
-                    error
-                )
-            ),
-
-            details={
-                "error_type": (
-                    type(
-                        error
-                    ).__name__
-                ),
-            },
-        )
+    translated = RequestValidationAPIError(
+        fields=list(validation_error_fields(error)),
+        details={
+            "error_type": (type(error).__name__),
+        },
     )
 
     log_api_exception(
         translated,
-        request_id=(
-            request_id_from_request(
-                request
-            )
-        ),
+        request_id=(request_id_from_request(request)),
         method=request.method,
         route=request.url.path,
     )
@@ -430,48 +360,24 @@ async def http_exception_handler(
     Internal exception details are not echoed.
     """
 
-    status_code = int(
-        error.status_code
-    )
+    status_code = int(error.status_code)
 
     if status_code == 404:
-        translated: APIException = (
-            ResourceNotFoundError()
-        )
+        translated: APIException = ResourceNotFoundError()
 
     elif status_code == 400:
         translated = BadRequestError()
 
     else:
         translated = APIException(
-            public_message=(
-                "The HTTP request could not "
-                "be completed."
-            ),
-
-            code=(
-                "http_"
-                + str(
-                    status_code
-                )
-            ),
-
-            status_code=(
-                status_code
-                if 400
-                <= status_code
-                <= 599
-                else 500
-            ),
+            public_message=("The HTTP request could not be completed."),
+            code=("http_" + str(status_code)),
+            status_code=(status_code if 400 <= status_code <= 599 else 500),
         )
 
     log_api_exception(
         translated,
-        request_id=(
-            request_id_from_request(
-                request
-            )
-        ),
+        request_id=(request_id_from_request(request)),
         method=request.method,
         route=request.url.path,
     )
@@ -493,25 +399,15 @@ async def unhandled_exception_handler(
     exception text.
     """
 
-    translated = (
-        InternalServerAPIError(
-            details={
-                "error_type": (
-                    type(
-                        error
-                    ).__name__
-                ),
-            },
-        )
+    translated = InternalServerAPIError(
+        details={
+            "error_type": (type(error).__name__),
+        },
     )
 
     log_api_exception(
         error,
-        request_id=(
-            request_id_from_request(
-                request
-            )
-        ),
+        request_id=(request_id_from_request(request)),
         method=request.method,
         route=request.url.path,
     )
@@ -527,33 +423,34 @@ def install_exception_handlers(
 ) -> None:
     app.add_exception_handler(
         APIException,
-        api_exception_handler,
+        cast(Any, api_exception_handler),
     )
 
     app.add_exception_handler(
         RequestValidationError,
-        request_validation_exception_handler,
+        cast(Any, request_validation_exception_handler),
     )
 
     app.add_exception_handler(
         ValidationError,
-        pydantic_validation_exception_handler,
+        cast(Any, pydantic_validation_exception_handler),
     )
 
     app.add_exception_handler(
         StarletteHTTPException,
-        http_exception_handler,
+        cast(Any, http_exception_handler),
     )
 
     app.add_exception_handler(
         Exception,
-        unhandled_exception_handler,
+        cast(Any, unhandled_exception_handler),
     )
 
 
 # ------------------------------------------------------------------
 # Router feature map
 # ------------------------------------------------------------------
+
 
 def router_enabled(
     module_name: str,
@@ -567,74 +464,42 @@ def router_enabled(
     finer-grained feature gates.
     """
 
-    if module_name.endswith(
-        ".health"
-    ):
+    if module_name.endswith(".health"):
+        return bool(config.features.health_enabled)
+
+    if module_name.endswith(".accelerators"):
         return bool(
-            config.features.
-            health_enabled
+            config.features.accelerator_read_enabled
+            or config.features.accelerator_optimization_enabled
         )
 
-    if module_name.endswith(
-        ".accelerators"
-    ):
+    if module_name.endswith(".inference"):
+        return bool(config.features.inference_enabled)
+
+    if module_name.endswith(".models"):
         return bool(
-            config.features.
-            accelerator_read_enabled
-            or config.features.
-            accelerator_optimization_enabled
+            config.features.model_read_enabled
+            or config.features.model_load_operations_enabled
         )
 
-    if module_name.endswith(
-        ".inference"
-    ):
+    if module_name.endswith(".incidents"):
         return bool(
-            config.features.
-            inference_enabled
+            config.features.incident_read_enabled
+            or config.features.incident_create_enabled
         )
 
-    if module_name.endswith(
-        ".models"
-    ):
+    if module_name.endswith(".decisions"):
         return bool(
-            config.features.
-            model_read_enabled
-            or config.features.
-            model_load_operations_enabled
+            config.features.decision_read_enabled
+            or config.features.decision_evaluation_enabled
         )
 
-    if module_name.endswith(
-        ".incidents"
-    ):
+    if module_name.endswith(".remediation"):
         return bool(
-            config.features.
-            incident_read_enabled
-            or config.features.
-            incident_create_enabled
-        )
-
-    if module_name.endswith(
-        ".decisions"
-    ):
-        return bool(
-            config.features.
-            decision_read_enabled
-            or config.features.
-            decision_evaluation_enabled
-        )
-
-    if module_name.endswith(
-        ".remediation"
-    ):
-        return bool(
-            config.features.
-            remediation_read_enabled
-            or config.features.
-            remediation_plan_creation_enabled
-            or config.features.
-            remediation_approval_enabled
-            or config.features.
-            remediation_execution_enabled
+            config.features.remediation_read_enabled
+            or config.features.remediation_plan_creation_enabled
+            or config.features.remediation_approval_enabled
+            or config.features.remediation_execution_enabled
         )
 
     return False
@@ -643,6 +508,7 @@ def router_enabled(
 # ------------------------------------------------------------------
 # Router registration
 # ------------------------------------------------------------------
+
 
 def install_routers(
     app: FastAPI,
@@ -667,9 +533,7 @@ def install_routers(
             continue
 
         try:
-            module = import_module(
-                module_name
-            )
+            module = import_module(module_name)
 
         except ModuleNotFoundError as exc:
             # Ignore only when the route module
@@ -681,9 +545,7 @@ def install_routers(
                     "API router module not found",
                     extra={
                         "api_router": {
-                            "module": (
-                                module_name
-                            ),
+                            "module": (module_name),
                         },
                     },
                 )
@@ -700,13 +562,10 @@ def install_routers(
 
         if router is None:
             logger.debug(
-                "API route module contains no "
-                "router yet",
+                "API route module contains no router yet",
                 extra={
                     "api_router": {
-                        "module": (
-                            module_name
-                        ),
+                        "module": (module_name),
                     },
                 },
             )
@@ -715,28 +574,18 @@ def install_routers(
 
         app.include_router(
             router,
-            prefix=(
-                ""
-                if module_name.endswith(
-                    ".health"
-                )
-                else config.
-                versioned_prefix
-            ),
+            prefix=("" if module_name.endswith(".health") else config.versioned_prefix),
         )
 
-        installed.append(
-            module_name
-        )
+        installed.append(module_name)
 
-    return tuple(
-        installed
-    )
+    return tuple(installed)
 
 
 # ------------------------------------------------------------------
 # OpenAPI configuration
 # ------------------------------------------------------------------
+
 
 def documentation_paths(
     config: APIConfig,
@@ -744,9 +593,7 @@ def documentation_paths(
     str,
     Optional[str],
 ]:
-    if not (
-        config.documentation.enabled
-    ):
+    if not (config.documentation.enabled):
         return {
             "docs_url": None,
             "redoc_url": None,
@@ -754,20 +601,9 @@ def documentation_paths(
         }
 
     return {
-        "docs_url": (
-            config.documentation.
-            docs_path
-        ),
-
-        "redoc_url": (
-            config.documentation.
-            redoc_path
-        ),
-
-        "openapi_url": (
-            config.documentation.
-            openapi_path
-        ),
+        "docs_url": (config.documentation.docs_path),
+        "redoc_url": (config.documentation.redoc_path),
+        "openapi_url": (config.documentation.openapi_path),
     }
 
 
@@ -775,12 +611,11 @@ def documentation_paths(
 # Lifespan factory
 # ------------------------------------------------------------------
 
+
 def create_lifespan(
     config: APIConfig,
     *,
-    dependencies: Optional[
-        APIDependencies
-    ] = None,
+    dependencies: Optional[APIDependencies] = None,
 ):
     """
     Build the application lifespan manager.
@@ -793,18 +628,10 @@ def create_lifespan(
     async def lifespan(
         app: FastAPI,
     ) -> AsyncIterator[None]:
-        resolved_dependencies = (
-            dependencies
-            or create_api_dependencies(
-                config=config
-            )
-        )
+        resolved_dependencies = dependencies or create_api_dependencies(config=config)
 
         try:
-            await (
-                resolved_dependencies.
-                start()
-            )
+            await resolved_dependencies.start()
 
             install_api_dependencies(
                 app,
@@ -815,20 +642,9 @@ def create_lifespan(
                 "OSHA API started",
                 extra={
                     "osha_api": {
-                        "service": (
-                            config.
-                            service_name
-                        ),
-
-                        "environment": (
-                            config.
-                            environment
-                        ),
-
-                        "prefix": (
-                            config.
-                            versioned_prefix
-                        ),
+                        "service": (config.service_name),
+                        "environment": (config.environment),
+                        "prefix": (config.versioned_prefix),
                     },
                 },
             )
@@ -836,18 +652,13 @@ def create_lifespan(
             yield
 
         finally:
-            await close_api_dependencies(
-                app
-            )
+            await close_api_dependencies(app)
 
             logger.info(
                 "OSHA API stopped",
                 extra={
                     "osha_api": {
-                        "service": (
-                            config.
-                            service_name
-                        ),
+                        "service": (config.service_name),
                     },
                 },
             )
@@ -859,14 +670,11 @@ def create_lifespan(
 # Application factory
 # ------------------------------------------------------------------
 
+
 def create_app(
     *,
-    config: Optional[
-        APIConfig
-    ] = None,
-    dependencies: Optional[
-        APIDependencies
-    ] = None,
+    config: Optional[APIConfig] = None,
+    dependencies: Optional[APIDependencies] = None,
 ) -> FastAPI:
     """
     Construct a fully configured OSHA FastAPI
@@ -878,51 +686,20 @@ def create_app(
     starts.
     """
 
-    resolved_config = (
-        config
-        or from_environment()
-    )
+    resolved_config = config or from_environment()
 
     resolved_config.validate()
 
-    docs = documentation_paths(
-        resolved_config
-    )
+    docs = documentation_paths(resolved_config)
 
     app = FastAPI(
         title=APPLICATION_TITLE,
-
-        description=(
-            APPLICATION_DESCRIPTION
-        ),
-
-        version=(
-            APPLICATION_VERSION
-        ),
-
-        docs_url=(
-            docs[
-                "docs_url"
-            ]
-        ),
-
-        redoc_url=(
-            docs[
-                "redoc_url"
-            ]
-        ),
-
-        openapi_url=(
-            docs[
-                "openapi_url"
-            ]
-        ),
-
-        root_path=(
-            resolved_config.
-            server.root_path
-        ),
-
+        description=(APPLICATION_DESCRIPTION),
+        version=(APPLICATION_VERSION),
+        docs_url=(docs["docs_url"]),
+        redoc_url=(docs["redoc_url"]),
+        openapi_url=(docs["openapi_url"]),
+        root_path=(resolved_config.server.root_path),
         lifespan=create_lifespan(
             resolved_config,
             dependencies=dependencies,
@@ -932,23 +709,15 @@ def create_app(
     # Store immutable configuration immediately.
     # Runtime dependencies are stored separately
     # during lifespan startup.
-    app.state.osha_api_config = (
-        resolved_config
-    )
+    app.state.osha_api_config = resolved_config
 
-    app.state.osha_api_config_summary = (
-        safe_config_summary(
-            resolved_config
-        )
-    )
+    app.state.osha_api_config_summary = safe_config_summary(resolved_config)
 
     # ------------------------------------------------------
     # Exception handlers
     # ------------------------------------------------------
 
-    install_exception_handlers(
-        app
-    )
+    install_exception_handlers(app)
 
     # ------------------------------------------------------
     # Middleware
@@ -968,9 +737,7 @@ def create_app(
         resolved_config,
     )
 
-    app.state.osha_installed_routers = (
-        installed_routers
-    )
+    app.state.osha_installed_routers = installed_routers
 
     return app
 
@@ -1001,27 +768,19 @@ __all__ = [
     "APPLICATION_TITLE",
     "APPLICATION_DESCRIPTION",
     "APPLICATION_VERSION",
-
     "ROUTER_MODULES",
-
     "request_id_from_request",
     "api_error_json_response",
-
     "api_exception_handler",
     "request_validation_exception_handler",
     "pydantic_validation_exception_handler",
     "http_exception_handler",
     "unhandled_exception_handler",
-
     "install_exception_handlers",
-
     "router_enabled",
     "install_routers",
-
     "documentation_paths",
-
     "create_lifespan",
     "create_app",
-
     "app",
 ]

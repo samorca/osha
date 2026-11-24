@@ -1,0 +1,39 @@
+---
+apiVersion: v2
+
+name: osha
+
+description: >-
+  Kubernetes deployment chart for the OSHA
+  orchestration and self-healing infrastructure
+  platform.
+
+type: application
+
+version: 0.1.0
+
+appVersion: "0.1.0"
+
+keywords:
+  - orchestration
+  - infrastructure
+  - observability
+  - telemetry
+  - automation
+  - self-healing
+  - machine-learning
+
+annotations:
+  category: Infrastructure
+
+  osha.atonixcorp.io/system: >-
+    orchestration-self-healing-ai
+
+  osha.atonixcorp.io/api-entrypoint: >-
+    scripts/api/run.sh
+
+  osha.atonixcorp.io/runtime-entrypoint: >-
+    scripts/runtime/run.sh
+
+  osha.atonixcorp.io/worker-entrypoint: >-
+    scripts/runtime/worker.sh

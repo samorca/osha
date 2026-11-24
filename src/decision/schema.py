@@ -29,6 +29,7 @@ DECISION_SCHEMA_VERSION = "1"
 # Enums
 # -----------------------------------------------------------------
 
+
 class DecisionType(
     str,
     Enum,
@@ -47,17 +48,11 @@ class DecisionType(
 
     RECOMMEND = "recommend"
 
-    REQUEST_APPROVAL = (
-        "request_approval"
-    )
+    REQUEST_APPROVAL = "request_approval"
 
-    APPROVE_ACTION = (
-        "approve_action"
-    )
+    APPROVE_ACTION = "approve_action"
 
-    REJECT_ACTION = (
-        "reject_action"
-    )
+    REJECT_ACTION = "reject_action"
 
     DEFER = "defer"
 
@@ -76,9 +71,7 @@ class DecisionStatus(
 
     PROPOSED = "proposed"
 
-    PENDING_APPROVAL = (
-        "pending_approval"
-    )
+    PENDING_APPROVAL = "pending_approval"
 
     APPROVED = "approved"
 
@@ -104,33 +97,19 @@ class ActionCategory(
 
     OBSERVATION = "observation"
 
-    INVESTIGATION = (
-        "investigation"
-    )
+    INVESTIGATION = "investigation"
 
-    NOTIFICATION = (
-        "notification"
-    )
+    NOTIFICATION = "notification"
 
-    CONFIGURATION = (
-        "configuration"
-    )
+    CONFIGURATION = "configuration"
 
-    SERVICE_CONTROL = (
-        "service_control"
-    )
+    SERVICE_CONTROL = "service_control"
 
-    RESOURCE_CONTROL = (
-        "resource_control"
-    )
+    RESOURCE_CONTROL = "resource_control"
 
-    NETWORK_CONTROL = (
-        "network_control"
-    )
+    NETWORK_CONTROL = "network_control"
 
-    SECURITY_CONTROL = (
-        "security_control"
-    )
+    SECURITY_CONTROL = "security_control"
 
     CAPACITY = "capacity"
 
@@ -155,9 +134,7 @@ class ActionState(
 
     INELIGIBLE = "ineligible"
 
-    REQUIRES_APPROVAL = (
-        "requires_approval"
-    )
+    REQUIRES_APPROVAL = "requires_approval"
 
     APPROVED = "approved"
 
@@ -235,9 +212,7 @@ class ApprovalStatus(
     Current approval state.
     """
 
-    NOT_REQUIRED = (
-        "not_required"
-    )
+    NOT_REQUIRED = "not_required"
 
     PENDING = "pending"
 
@@ -269,10 +244,9 @@ class Reversibility(
 # Common helpers
 # -----------------------------------------------------------------
 
+
 def utc_now() -> str:
-    return datetime.now(
-        timezone.utc
-    ).isoformat()
+    return datetime.now(timezone.utc).isoformat()
 
 
 def normalize_string(
@@ -281,15 +255,9 @@ def normalize_string(
     if value is None:
         return None
 
-    text = str(
-        value
-    ).strip()
+    text = str(value).strip()
 
-    return (
-        text
-        if text
-        else None
-    )
+    return text if text else None
 
 
 def checked_score(
@@ -305,9 +273,7 @@ def checked_score(
     """
 
     try:
-        number = float(
-            value
-        )
+        number = float(value)
 
     except (
         TypeError,
@@ -315,9 +281,7 @@ def checked_score(
     ):
         return 0.0
 
-    if not math.isfinite(
-        number
-    ):
+    if not math.isfinite(number):
         return 0.0
 
     return min(
@@ -341,9 +305,7 @@ def json_safe(
     """
 
     if depth > maximum_depth:
-        return (
-            "[MAX_DEPTH_REACHED]"
-        )
+        return "[MAX_DEPTH_REACHED]"
 
     if value is None:
         return None
@@ -362,9 +324,7 @@ def json_safe(
         value,
         float,
     ):
-        if math.isfinite(
-            value
-        ):
+        if math.isfinite(value):
             return value
 
         return None
@@ -374,9 +334,7 @@ def json_safe(
         datetime,
     ):
         if value.tzinfo is None:
-            value = value.replace(
-                tzinfo=timezone.utc
-            )
+            value = value.replace(tzinfo=timezone.utc)
 
         return value.isoformat()
 
@@ -397,12 +355,9 @@ def json_safe(
             str(key): json_safe(
                 item,
                 depth=depth + 1,
-                maximum_depth=(
-                    maximum_depth
-                ),
+                maximum_depth=(maximum_depth),
             )
-            for key, item
-            in value.items()
+            for key, item in value.items()
         }
 
     if isinstance(
@@ -418,9 +373,7 @@ def json_safe(
             json_safe(
                 item,
                 depth=depth + 1,
-                maximum_depth=(
-                    maximum_depth
-                ),
+                maximum_depth=(maximum_depth),
             )
             for item in value
         ]
@@ -432,9 +385,7 @@ def json_safe(
         return json_safe(
             asdict(value),
             depth=depth + 1,
-            maximum_depth=(
-                maximum_depth
-            ),
+            maximum_depth=(maximum_depth),
         )
 
     return str(value)
@@ -455,18 +406,15 @@ def stable_hash(
             ":",
         ),
         default=str,
-    ).encode(
-        "utf-8"
-    )
+    ).encode("utf-8")
 
-    return hashlib.sha256(
-        encoded
-    ).hexdigest()
+    return hashlib.sha256(encoded).hexdigest()
 
 
 # -----------------------------------------------------------------
 # Decision evidence
 # -----------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class DecisionEvidence:
@@ -484,69 +432,38 @@ class DecisionEvidence:
 
     score: float = 0.0
 
-    source_id: Optional[
-        str
-    ] = None
+    source_id: Optional[str] = None
 
-    incident_id: Optional[
-        str
-    ] = None
+    incident_id: Optional[str] = None
 
-    memory_id: Optional[
-        str
-    ] = None
+    memory_id: Optional[str] = None
 
-    resource_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    resource_ids: List[str] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def to_dict(
         self,
     ) -> Dict[str, Any]:
         return {
-            "evidence_type": (
-                self.evidence_type
-            ),
-            "description": (
-                self.description
-            ),
-            "score": checked_score(
-                self.score
-            ),
-            "source_id": (
-                self.source_id
-            ),
-            "incident_id": (
-                self.incident_id
-            ),
-            "memory_id": (
-                self.memory_id
-            ),
-            "resource_ids": (
-                sorted(
-                    set(
-                        self.resource_ids
-                    )
-                )
-            ),
-            "attributes": json_safe(
-                self.attributes
-            ),
+            "evidence_type": (self.evidence_type),
+            "description": (self.description),
+            "score": checked_score(self.score),
+            "source_id": (self.source_id),
+            "incident_id": (self.incident_id),
+            "memory_id": (self.memory_id),
+            "resource_ids": (sorted(set(self.resource_ids))),
+            "attributes": json_safe(self.attributes),
         }
 
 
 # -----------------------------------------------------------------
 # Decision context
 # -----------------------------------------------------------------
+
 
 @dataclass
 class DecisionContext:
@@ -561,193 +478,87 @@ class DecisionContext:
 
     environment_id: str
 
-    incident_id: Optional[
-        str
-    ] = None
+    incident_id: Optional[str] = None
 
-    incident_severity: str = (
-        "unknown"
-    )
+    incident_severity: str = "unknown"
 
-    incident_confidence: float = (
-        0.0
-    )
+    incident_confidence: float = 0.0
 
-    incident_confidence_level: str = (
-        "none"
-    )
+    incident_confidence_level: str = "none"
 
-    impact_level: str = (
-        "unknown"
-    )
+    impact_level: str = "unknown"
 
     impact_score: float = 0.0
 
     user_impact_known: bool = False
 
-    resource_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    resource_ids: List[str] = field(default_factory=list)
 
-    service_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    service_ids: List[str] = field(default_factory=list)
 
-    root_cause_resource_id: Optional[
-        str
-    ] = None
+    root_cause_resource_id: Optional[str] = None
 
     root_cause_score: float = 0.0
 
-    root_cause_status: Optional[
-        str
-    ] = None
+    root_cause_status: Optional[str] = None
 
     root_cause_verified: bool = False
 
-    similar_incident_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    similar_incident_ids: List[str] = field(default_factory=list)
 
-    verified_similar_incident_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    verified_similar_incident_ids: List[str] = field(default_factory=list)
 
-    historical_outcome_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    historical_outcome_ids: List[str] = field(default_factory=list)
 
-    evidence: List[
-        DecisionEvidence
-    ] = field(
-        default_factory=list
-    )
+    evidence: List[DecisionEvidence] = field(default_factory=list)
 
-    limitations: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    limitations: List[str] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    created_at: str = field(
-        default_factory=utc_now
-    )
+    created_at: str = field(default_factory=utc_now)
 
-    context_id: Optional[
-        str
-    ] = None
+    context_id: Optional[str] = None
 
     def build_context_id(
         self,
     ) -> str:
-        return (
-            "decision:context:"
-            + stable_hash(
-                {
-                    "environment_id": (
-                        self.environment_id
-                    ),
-                    "incident_id": (
-                        self.incident_id
-                    ),
-                    "resource_ids": (
-                        sorted(
-                            set(
-                                self.
-                                resource_ids
-                            )
-                        )
-                    ),
-                }
-            )
+        return "decision:context:" + stable_hash(
+            {
+                "environment_id": (self.environment_id),
+                "incident_id": (self.incident_id),
+                "resource_ids": (sorted(set(self.resource_ids))),
+            }
         )
 
     def finalize(
         self,
     ) -> "DecisionContext":
-        self.incident_confidence = (
-            checked_score(
-                self.
-                incident_confidence
-            )
+        self.incident_confidence = checked_score(self.incident_confidence)
+
+        self.impact_score = checked_score(self.impact_score)
+
+        self.root_cause_score = checked_score(self.root_cause_score)
+
+        self.resource_ids = sorted(set(self.resource_ids))
+
+        self.service_ids = sorted(set(self.service_ids))
+
+        self.similar_incident_ids = sorted(set(self.similar_incident_ids))
+
+        self.verified_similar_incident_ids = sorted(
+            set(self.verified_similar_incident_ids)
         )
 
-        self.impact_score = checked_score(
-            self.impact_score
-        )
+        self.historical_outcome_ids = sorted(set(self.historical_outcome_ids))
 
-        self.root_cause_score = (
-            checked_score(
-                self.root_cause_score
-            )
-        )
-
-        self.resource_ids = sorted(
-            set(
-                self.resource_ids
-            )
-        )
-
-        self.service_ids = sorted(
-            set(
-                self.service_ids
-            )
-        )
-
-        self.similar_incident_ids = (
-            sorted(
-                set(
-                    self.
-                    similar_incident_ids
-                )
-            )
-        )
-
-        self.verified_similar_incident_ids = (
-            sorted(
-                set(
-                    self.
-                    verified_similar_incident_ids
-                )
-            )
-        )
-
-        self.historical_outcome_ids = (
-            sorted(
-                set(
-                    self.
-                    historical_outcome_ids
-                )
-            )
-        )
-
-        self.limitations = sorted(
-            set(
-                self.limitations
-            )
-        )
+        self.limitations = sorted(set(self.limitations))
 
         if not self.context_id:
-            self.context_id = (
-                self.build_context_id()
-            )
+            self.context_id = self.build_context_id()
 
         return self
 
@@ -757,84 +568,35 @@ class DecisionContext:
         self.finalize()
 
         return {
-            "context_id": (
-                self.context_id
-            ),
-            "environment_id": (
-                self.environment_id
-            ),
-            "incident_id": (
-                self.incident_id
-            ),
-            "incident_severity": (
-                self.incident_severity
-            ),
-            "incident_confidence": (
-                self.incident_confidence
-            ),
-            "incident_confidence_level": (
-                self.
-                incident_confidence_level
-            ),
-            "impact_level": (
-                self.impact_level
-            ),
-            "impact_score": (
-                self.impact_score
-            ),
-            "user_impact_known": (
-                self.user_impact_known
-            ),
-            "resource_ids": (
-                self.resource_ids
-            ),
-            "service_ids": (
-                self.service_ids
-            ),
-            "root_cause_resource_id": (
-                self.
-                root_cause_resource_id
-            ),
-            "root_cause_score": (
-                self.root_cause_score
-            ),
-            "root_cause_status": (
-                self.root_cause_status
-            ),
-            "root_cause_verified": (
-                self.
-                root_cause_verified
-            ),
-            "similar_incident_ids": (
-                self.similar_incident_ids
-            ),
-            "verified_similar_incident_ids": (
-                self.
-                verified_similar_incident_ids
-            ),
-            "historical_outcome_ids": (
-                self.
-                historical_outcome_ids
-            ),
-            "evidence": [
-                item.to_dict()
-                for item in self.evidence
-            ],
-            "limitations": (
-                self.limitations
-            ),
-            "attributes": json_safe(
-                self.attributes
-            ),
-            "created_at": (
-                self.created_at
-            ),
+            "context_id": (self.context_id),
+            "environment_id": (self.environment_id),
+            "incident_id": (self.incident_id),
+            "incident_severity": (self.incident_severity),
+            "incident_confidence": (self.incident_confidence),
+            "incident_confidence_level": (self.incident_confidence_level),
+            "impact_level": (self.impact_level),
+            "impact_score": (self.impact_score),
+            "user_impact_known": (self.user_impact_known),
+            "resource_ids": (self.resource_ids),
+            "service_ids": (self.service_ids),
+            "root_cause_resource_id": (self.root_cause_resource_id),
+            "root_cause_score": (self.root_cause_score),
+            "root_cause_status": (self.root_cause_status),
+            "root_cause_verified": (self.root_cause_verified),
+            "similar_incident_ids": (self.similar_incident_ids),
+            "verified_similar_incident_ids": (self.verified_similar_incident_ids),
+            "historical_outcome_ids": (self.historical_outcome_ids),
+            "evidence": [item.to_dict() for item in self.evidence],
+            "limitations": (self.limitations),
+            "attributes": json_safe(self.attributes),
+            "created_at": (self.created_at),
         }
 
 
 # -----------------------------------------------------------------
 # Risk
 # -----------------------------------------------------------------
+
 
 @dataclass
 class RiskAssessment:
@@ -845,95 +607,45 @@ class RiskAssessment:
     severity.
     """
 
-    level: str = (
-        RiskLevel.UNKNOWN.value
-    )
+    level: str = RiskLevel.UNKNOWN.value
 
     score: float = 0.0
 
-    blast_radius_score: float = (
-        0.0
-    )
+    blast_radius_score: float = 0.0
 
-    irreversibility_score: float = (
-        0.0
-    )
+    irreversibility_score: float = 0.0
 
-    service_impact_score: float = (
-        0.0
-    )
+    service_impact_score: float = 0.0
 
-    uncertainty_score: float = (
-        0.0
-    )
+    uncertainty_score: float = 0.0
 
-    privilege_score: float = (
-        0.0
-    )
+    privilege_score: float = 0.0
 
-    reasons: List[str] = field(
-        default_factory=list
-    )
+    reasons: List[str] = field(default_factory=list)
 
-    evidence: List[
-        DecisionEvidence
-    ] = field(
-        default_factory=list
-    )
+    evidence: List[DecisionEvidence] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
     ) -> "RiskAssessment":
-        self.score = checked_score(
-            self.score
-        )
+        self.score = checked_score(self.score)
 
-        self.blast_radius_score = (
-            checked_score(
-                self.
-                blast_radius_score
-            )
-        )
+        self.blast_radius_score = checked_score(self.blast_radius_score)
 
-        self.irreversibility_score = (
-            checked_score(
-                self.
-                irreversibility_score
-            )
-        )
+        self.irreversibility_score = checked_score(self.irreversibility_score)
 
-        self.service_impact_score = (
-            checked_score(
-                self.
-                service_impact_score
-            )
-        )
+        self.service_impact_score = checked_score(self.service_impact_score)
 
-        self.uncertainty_score = (
-            checked_score(
-                self.
-                uncertainty_score
-            )
-        )
+        self.uncertainty_score = checked_score(self.uncertainty_score)
 
-        self.privilege_score = (
-            checked_score(
-                self.privilege_score
-            )
-        )
+        self.privilege_score = checked_score(self.privilege_score)
 
-        self.reasons = list(
-            dict.fromkeys(
-                self.reasons
-            )
-        )
+        self.reasons = list(dict.fromkeys(self.reasons))
 
         return self
 
@@ -945,41 +657,21 @@ class RiskAssessment:
         return {
             "level": self.level,
             "score": self.score,
-            "blast_radius_score": (
-                self.
-                blast_radius_score
-            ),
-            "irreversibility_score": (
-                self.
-                irreversibility_score
-            ),
-            "service_impact_score": (
-                self.
-                service_impact_score
-            ),
-            "uncertainty_score": (
-                self.
-                uncertainty_score
-            ),
-            "privilege_score": (
-                self.privilege_score
-            ),
-            "reasons": (
-                self.reasons
-            ),
-            "evidence": [
-                item.to_dict()
-                for item in self.evidence
-            ],
-            "attributes": json_safe(
-                self.attributes
-            ),
+            "blast_radius_score": (self.blast_radius_score),
+            "irreversibility_score": (self.irreversibility_score),
+            "service_impact_score": (self.service_impact_score),
+            "uncertainty_score": (self.uncertainty_score),
+            "privilege_score": (self.privilege_score),
+            "reasons": (self.reasons),
+            "evidence": [item.to_dict() for item in self.evidence],
+            "attributes": json_safe(self.attributes),
         }
 
 
 # -----------------------------------------------------------------
 # Eligibility
 # -----------------------------------------------------------------
+
 
 @dataclass
 class EligibilityAssessment:
@@ -988,71 +680,35 @@ class EligibilityAssessment:
     considering one proposed action.
     """
 
-    status: str = (
-        EligibilityStatus.
-        UNKNOWN.value
-    )
+    status: str = EligibilityStatus.UNKNOWN.value
 
     score: float = 0.0
 
     eligible: bool = False
 
-    conditions: List[str] = field(
-        default_factory=list
-    )
+    conditions: List[str] = field(default_factory=list)
 
-    blocking_reasons: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    blocking_reasons: List[str] = field(default_factory=list)
 
-    satisfied_requirements: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    satisfied_requirements: List[str] = field(default_factory=list)
 
-    evidence: List[
-        DecisionEvidence
-    ] = field(
-        default_factory=list
-    )
+    evidence: List[DecisionEvidence] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
     ) -> "EligibilityAssessment":
-        self.score = checked_score(
-            self.score
-        )
+        self.score = checked_score(self.score)
 
-        self.conditions = list(
-            dict.fromkeys(
-                self.conditions
-            )
-        )
+        self.conditions = list(dict.fromkeys(self.conditions))
 
-        self.blocking_reasons = list(
-            dict.fromkeys(
-                self.blocking_reasons
-            )
-        )
+        self.blocking_reasons = list(dict.fromkeys(self.blocking_reasons))
 
-        self.satisfied_requirements = (
-            list(
-                dict.fromkeys(
-                    self.
-                    satisfied_requirements
-                )
-            )
-        )
+        self.satisfied_requirements = list(dict.fromkeys(self.satisfied_requirements))
 
         return self
 
@@ -1064,32 +720,19 @@ class EligibilityAssessment:
         return {
             "status": self.status,
             "score": self.score,
-            "eligible": (
-                self.eligible
-            ),
-            "conditions": (
-                self.conditions
-            ),
-            "blocking_reasons": (
-                self.blocking_reasons
-            ),
-            "satisfied_requirements": (
-                self.
-                satisfied_requirements
-            ),
-            "evidence": [
-                item.to_dict()
-                for item in self.evidence
-            ],
-            "attributes": json_safe(
-                self.attributes
-            ),
+            "eligible": (self.eligible),
+            "conditions": (self.conditions),
+            "blocking_reasons": (self.blocking_reasons),
+            "satisfied_requirements": (self.satisfied_requirements),
+            "evidence": [item.to_dict() for item in self.evidence],
+            "attributes": json_safe(self.attributes),
         }
 
 
 # -----------------------------------------------------------------
 # Approval
 # -----------------------------------------------------------------
+
 
 @dataclass
 class ApprovalRequirement:
@@ -1101,84 +744,46 @@ class ApprovalRequirement:
     than inferred from risk alone.
     """
 
-    mode: str = (
-        ApprovalMode.HUMAN.value
-    )
+    mode: str = ApprovalMode.HUMAN.value
 
-    status: str = (
-        ApprovalStatus.PENDING.value
-    )
+    status: str = ApprovalStatus.PENDING.value
 
     required: bool = True
 
-    required_roles: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    required_roles: List[str] = field(default_factory=list)
 
     minimum_approvals: int = 1
 
-    approved_by: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    approved_by: List[str] = field(default_factory=list)
 
-    rejected_by: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    rejected_by: List[str] = field(default_factory=list)
 
     reason: Optional[str] = None
 
-    requested_at: Optional[
-        str
-    ] = None
+    requested_at: Optional[str] = None
 
-    resolved_at: Optional[
-        str
-    ] = None
+    resolved_at: Optional[str] = None
 
-    expires_at: Optional[
-        str
-    ] = None
+    expires_at: Optional[str] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
     ) -> "ApprovalRequirement":
         self.minimum_approvals = max(
             0,
-            int(
-                self.minimum_approvals
-            ),
+            int(self.minimum_approvals),
         )
 
-        self.required_roles = sorted(
-            set(
-                self.required_roles
-            )
-        )
+        self.required_roles = sorted(set(self.required_roles))
 
-        self.approved_by = sorted(
-            set(
-                self.approved_by
-            )
-        )
+        self.approved_by = sorted(set(self.approved_by))
 
-        self.rejected_by = sorted(
-            set(
-                self.rejected_by
-            )
-        )
+        self.rejected_by = sorted(set(self.rejected_by))
 
         return self
 
@@ -1187,14 +792,13 @@ class ApprovalRequirement:
     ) -> Dict[str, Any]:
         self.finalize()
 
-        return json_safe(
-            asdict(self)
-        )
+        return json_safe(asdict(self))
 
 
 # -----------------------------------------------------------------
 # Action candidates
 # -----------------------------------------------------------------
+
 
 @dataclass
 class ActionCandidate:
@@ -1214,17 +818,9 @@ class ActionCandidate:
 
     environment_id: str
 
-    target_resource_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    target_resource_ids: List[str] = field(default_factory=list)
 
-    target_service_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    target_service_ids: List[str] = field(default_factory=list)
 
     description: Optional[str] = None
 
@@ -1233,133 +829,56 @@ class ActionCandidate:
     parameters: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    reversibility: str = (
-        Reversibility.UNKNOWN.value
-    )
+    reversibility: str = Reversibility.UNKNOWN.value
 
-    rollback_action_type: Optional[
-        str
-    ] = None
+    rollback_action_type: Optional[str] = None
 
-    expected_effect: Optional[
-        str
-    ] = None
+    expected_effect: Optional[str] = None
 
-    state: str = (
-        ActionState.PROPOSED.value
-    )
+    state: str = ActionState.PROPOSED.value
 
-    risk: RiskAssessment = field(
-        default_factory=(
-            RiskAssessment
-        )
-    )
+    risk: RiskAssessment = field(default_factory=(RiskAssessment))
 
-    eligibility: EligibilityAssessment = field(
-        default_factory=(
-            EligibilityAssessment
-        )
-    )
+    eligibility: EligibilityAssessment = field(default_factory=(EligibilityAssessment))
 
-    approval: ApprovalRequirement = field(
-        default_factory=(
-            ApprovalRequirement
-        )
-    )
+    approval: ApprovalRequirement = field(default_factory=(ApprovalRequirement))
 
-    evidence: List[
-        DecisionEvidence
-    ] = field(
-        default_factory=list
-    )
+    evidence: List[DecisionEvidence] = field(default_factory=list)
 
-    policy_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    policy_ids: List[str] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    created_at: str = field(
-        default_factory=utc_now
-    )
+    created_at: str = field(default_factory=utc_now)
 
-    action_id: Optional[
-        str
-    ] = None
+    action_id: Optional[str] = None
 
     def build_action_id(
         self,
     ) -> str:
-        return (
-            "decision:action:"
-            + stable_hash(
-                {
-                    "action_type": (
-                        self.action_type
-                    ),
-                    "environment_id": (
-                        self.environment_id
-                    ),
-                    "resources": (
-                        sorted(
-                            set(
-                                self.
-                                target_resource_ids
-                            )
-                        )
-                    ),
-                    "services": (
-                        sorted(
-                            set(
-                                self.
-                                target_service_ids
-                            )
-                        )
-                    ),
-                    "parameters": (
-                        self.parameters
-                    ),
-                }
-            )
+        return "decision:action:" + stable_hash(
+            {
+                "action_type": (self.action_type),
+                "environment_id": (self.environment_id),
+                "resources": (sorted(set(self.target_resource_ids))),
+                "services": (sorted(set(self.target_service_ids))),
+                "parameters": (self.parameters),
+            }
         )
 
     def finalize(
         self,
     ) -> "ActionCandidate":
-        self.target_resource_ids = (
-            sorted(
-                set(
-                    self.
-                    target_resource_ids
-                )
-            )
-        )
+        self.target_resource_ids = sorted(set(self.target_resource_ids))
 
-        self.target_service_ids = (
-            sorted(
-                set(
-                    self.
-                    target_service_ids
-                )
-            )
-        )
+        self.target_service_ids = sorted(set(self.target_service_ids))
 
-        self.policy_ids = sorted(
-            set(
-                self.policy_ids
-            )
-        )
+        self.policy_ids = sorted(set(self.policy_ids))
 
         self.risk.finalize()
 
@@ -1368,9 +887,7 @@ class ActionCandidate:
         self.approval.finalize()
 
         if not self.action_id:
-            self.action_id = (
-                self.build_action_id()
-            )
+            self.action_id = self.build_action_id()
 
         return self
 
@@ -1380,76 +897,34 @@ class ActionCandidate:
         self.finalize()
 
         return {
-            "action_id": (
-                self.action_id
-            ),
-            "action_type": (
-                self.action_type
-            ),
-            "category": (
-                self.category
-            ),
+            "action_id": (self.action_id),
+            "action_type": (self.action_type),
+            "category": (self.category),
             "title": self.title,
-            "environment_id": (
-                self.environment_id
-            ),
-            "target_resource_ids": (
-                self.
-                target_resource_ids
-            ),
-            "target_service_ids": (
-                self.
-                target_service_ids
-            ),
-            "description": (
-                self.description
-            ),
-            "rationale": (
-                self.rationale
-            ),
-            "parameters": json_safe(
-                self.parameters
-            ),
-            "reversibility": (
-                self.reversibility
-            ),
-            "rollback_action_type": (
-                self.
-                rollback_action_type
-            ),
-            "expected_effect": (
-                self.expected_effect
-            ),
+            "environment_id": (self.environment_id),
+            "target_resource_ids": (self.target_resource_ids),
+            "target_service_ids": (self.target_service_ids),
+            "description": (self.description),
+            "rationale": (self.rationale),
+            "parameters": json_safe(self.parameters),
+            "reversibility": (self.reversibility),
+            "rollback_action_type": (self.rollback_action_type),
+            "expected_effect": (self.expected_effect),
             "state": self.state,
-            "risk": (
-                self.risk.to_dict()
-            ),
-            "eligibility": (
-                self.
-                eligibility.to_dict()
-            ),
-            "approval": (
-                self.approval.to_dict()
-            ),
-            "evidence": [
-                item.to_dict()
-                for item in self.evidence
-            ],
-            "policy_ids": (
-                self.policy_ids
-            ),
-            "attributes": json_safe(
-                self.attributes
-            ),
-            "created_at": (
-                self.created_at
-            ),
+            "risk": (self.risk.to_dict()),
+            "eligibility": (self.eligibility.to_dict()),
+            "approval": (self.approval.to_dict()),
+            "evidence": [item.to_dict() for item in self.evidence],
+            "policy_ids": (self.policy_ids),
+            "attributes": json_safe(self.attributes),
+            "created_at": (self.created_at),
         }
 
 
 # -----------------------------------------------------------------
 # Decision plan
 # -----------------------------------------------------------------
+
 
 @dataclass
 class DecisionPlan:
@@ -1463,23 +938,15 @@ class DecisionPlan:
 
     environment_id: str
 
-    incident_id: Optional[
-        str
-    ] = None
+    incident_id: Optional[str] = None
 
-    actions: List[
-        ActionCandidate
-    ] = field(
-        default_factory=list
-    )
+    actions: List[ActionCandidate] = field(default_factory=list)
 
     summary: Optional[str] = None
 
     requires_approval: bool = False
 
-    highest_risk_level: str = (
-        RiskLevel.UNKNOWN.value
-    )
+    highest_risk_level: str = RiskLevel.UNKNOWN.value
 
     rollback_required: bool = False
 
@@ -1488,75 +955,47 @@ class DecisionPlan:
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    created_at: str = field(
-        default_factory=utc_now
-    )
+    created_at: str = field(default_factory=utc_now)
 
-    plan_id: Optional[
-        str
-    ] = None
+    plan_id: Optional[str] = None
 
     def build_plan_id(
         self,
     ) -> str:
-        return (
-            "decision:plan:"
-            + stable_hash(
-                {
-                    "environment_id": (
-                        self.environment_id
-                    ),
-                    "incident_id": (
-                        self.incident_id
-                    ),
-                    "action_ids": [
-                        action.action_id
-                        or action.
-                        build_action_id()
-                        for action
-                        in self.actions
-                    ],
-                }
-            )
+        return "decision:plan:" + stable_hash(
+            {
+                "environment_id": (self.environment_id),
+                "incident_id": (self.incident_id),
+                "action_ids": [
+                    action.action_id or action.build_action_id()
+                    for action in self.actions
+                ],
+            }
         )
 
     def finalize(
         self,
     ) -> "DecisionPlan":
-        self.actions = [
-            action.finalize()
-            for action
-            in self.actions
-        ]
+        self.actions = [action.finalize() for action in self.actions]
 
         self.requires_approval = any(
-            action.approval.required
-            for action
-            in self.actions
+            action.approval.required for action in self.actions
         )
 
         self.rollback_required = any(
             action.reversibility
             in {
-                Reversibility.
-                PARTIAL.value,
-                Reversibility.
-                NONE.value,
-                Reversibility.
-                UNKNOWN.value,
+                Reversibility.PARTIAL.value,
+                Reversibility.NONE.value,
+                Reversibility.UNKNOWN.value,
             }
-            for action
-            in self.actions
+            for action in self.actions
         )
 
         if not self.plan_id:
-            self.plan_id = (
-                self.build_plan_id()
-            )
+            self.plan_id = self.build_plan_id()
 
         return self
 
@@ -1566,46 +1005,24 @@ class DecisionPlan:
         self.finalize()
 
         return {
-            "plan_id": (
-                self.plan_id
-            ),
-            "environment_id": (
-                self.environment_id
-            ),
-            "incident_id": (
-                self.incident_id
-            ),
+            "plan_id": (self.plan_id),
+            "environment_id": (self.environment_id),
+            "incident_id": (self.incident_id),
             "summary": self.summary,
-            "requires_approval": (
-                self.requires_approval
-            ),
-            "highest_risk_level": (
-                self.
-                highest_risk_level
-            ),
-            "rollback_required": (
-                self.rollback_required
-            ),
-            "validation_required": (
-                self.validation_required
-            ),
-            "actions": [
-                action.to_dict()
-                for action
-                in self.actions
-            ],
-            "attributes": json_safe(
-                self.attributes
-            ),
-            "created_at": (
-                self.created_at
-            ),
+            "requires_approval": (self.requires_approval),
+            "highest_risk_level": (self.highest_risk_level),
+            "rollback_required": (self.rollback_required),
+            "validation_required": (self.validation_required),
+            "actions": [action.to_dict() for action in self.actions],
+            "attributes": json_safe(self.attributes),
+            "created_at": (self.created_at),
         }
 
 
 # -----------------------------------------------------------------
 # Decision
 # -----------------------------------------------------------------
+
 
 @dataclass
 class Decision:
@@ -1622,21 +1039,13 @@ class Decision:
 
     environment_id: str
 
-    status: str = (
-        DecisionStatus.DRAFT.value
-    )
+    status: str = DecisionStatus.DRAFT.value
 
-    incident_id: Optional[
-        str
-    ] = None
+    incident_id: Optional[str] = None
 
-    context_id: Optional[
-        str
-    ] = None
+    context_id: Optional[str] = None
 
-    plan_id: Optional[
-        str
-    ] = None
+    plan_id: Optional[str] = None
 
     title: Optional[str] = None
 
@@ -1644,94 +1053,47 @@ class Decision:
 
     confidence: float = 0.0
 
-    risk_level: str = (
-        RiskLevel.UNKNOWN.value
-    )
+    risk_level: str = RiskLevel.UNKNOWN.value
 
-    reason_codes: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    reason_codes: List[str] = field(default_factory=list)
 
-    evidence: List[
-        DecisionEvidence
-    ] = field(
-        default_factory=list
-    )
+    evidence: List[DecisionEvidence] = field(default_factory=list)
 
-    limitations: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    limitations: List[str] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    created_at: str = field(
-        default_factory=utc_now
-    )
+    created_at: str = field(default_factory=utc_now)
 
-    decision_id: Optional[
-        str
-    ] = None
+    decision_id: Optional[str] = None
 
     def build_decision_id(
         self,
     ) -> str:
-        return (
-            "decision:"
-            + stable_hash(
-                {
-                    "decision_type": (
-                        self.decision_type
-                    ),
-                    "environment_id": (
-                        self.environment_id
-                    ),
-                    "incident_id": (
-                        self.incident_id
-                    ),
-                    "context_id": (
-                        self.context_id
-                    ),
-                    "plan_id": (
-                        self.plan_id
-                    ),
-                }
-            )
+        return "decision:" + stable_hash(
+            {
+                "decision_type": (self.decision_type),
+                "environment_id": (self.environment_id),
+                "incident_id": (self.incident_id),
+                "context_id": (self.context_id),
+                "plan_id": (self.plan_id),
+            }
         )
 
     def finalize(
         self,
     ) -> "Decision":
-        self.confidence = (
-            checked_score(
-                self.confidence
-            )
-        )
+        self.confidence = checked_score(self.confidence)
 
-        self.reason_codes = sorted(
-            set(
-                self.reason_codes
-            )
-        )
+        self.reason_codes = sorted(set(self.reason_codes))
 
-        self.limitations = sorted(
-            set(
-                self.limitations
-            )
-        )
+        self.limitations = sorted(set(self.limitations))
 
         if not self.decision_id:
-            self.decision_id = (
-                self.build_decision_id()
-            )
+            self.decision_id = self.build_decision_id()
 
         return self
 
@@ -1741,55 +1103,29 @@ class Decision:
         self.finalize()
 
         return {
-            "decision_id": (
-                self.decision_id
-            ),
-            "decision_type": (
-                self.decision_type
-            ),
-            "environment_id": (
-                self.environment_id
-            ),
+            "decision_id": (self.decision_id),
+            "decision_type": (self.decision_type),
+            "environment_id": (self.environment_id),
             "status": self.status,
-            "incident_id": (
-                self.incident_id
-            ),
-            "context_id": (
-                self.context_id
-            ),
-            "plan_id": (
-                self.plan_id
-            ),
+            "incident_id": (self.incident_id),
+            "context_id": (self.context_id),
+            "plan_id": (self.plan_id),
             "title": self.title,
             "summary": self.summary,
-            "confidence": (
-                self.confidence
-            ),
-            "risk_level": (
-                self.risk_level
-            ),
-            "reason_codes": (
-                self.reason_codes
-            ),
-            "evidence": [
-                item.to_dict()
-                for item in self.evidence
-            ],
-            "limitations": (
-                self.limitations
-            ),
-            "attributes": json_safe(
-                self.attributes
-            ),
-            "created_at": (
-                self.created_at
-            ),
+            "confidence": (self.confidence),
+            "risk_level": (self.risk_level),
+            "reason_codes": (self.reason_codes),
+            "evidence": [item.to_dict() for item in self.evidence],
+            "limitations": (self.limitations),
+            "attributes": json_safe(self.attributes),
+            "created_at": (self.created_at),
         }
 
 
 # -----------------------------------------------------------------
 # Complete decision result
 # -----------------------------------------------------------------
+
 
 @dataclass
 class DecisionResult:
@@ -1801,74 +1137,33 @@ class DecisionResult:
     declarative.
     """
 
-    decisions: List[
-        Decision
-    ] = field(
-        default_factory=list
-    )
+    decisions: List[Decision] = field(default_factory=list)
 
-    plans: List[
-        DecisionPlan
-    ] = field(
-        default_factory=list
-    )
+    plans: List[DecisionPlan] = field(default_factory=list)
 
-    contexts: List[
-        DecisionContext
-    ] = field(
-        default_factory=list
-    )
+    contexts: List[DecisionContext] = field(default_factory=list)
 
-    unplanned_incident_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    unplanned_incident_ids: List[str] = field(default_factory=list)
 
-    schema_version: str = (
-        DECISION_SCHEMA_VERSION
-    )
+    schema_version: str = DECISION_SCHEMA_VERSION
 
-    generated_at: str = field(
-        default_factory=utc_now
-    )
+    generated_at: str = field(default_factory=utc_now)
 
     metadata: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
     ) -> "DecisionResult":
-        self.contexts = [
-            context.finalize()
-            for context
-            in self.contexts
-        ]
+        self.contexts = [context.finalize() for context in self.contexts]
 
-        self.plans = [
-            plan.finalize()
-            for plan
-            in self.plans
-        ]
+        self.plans = [plan.finalize() for plan in self.plans]
 
-        self.decisions = [
-            decision.finalize()
-            for decision
-            in self.decisions
-        ]
+        self.decisions = [decision.finalize() for decision in self.decisions]
 
-        self.unplanned_incident_ids = (
-            sorted(
-                set(
-                    self.
-                    unplanned_incident_ids
-                )
-            )
-        )
+        self.unplanned_incident_ids = sorted(set(self.unplanned_incident_ids))
 
         return self
 
@@ -1878,34 +1173,13 @@ class DecisionResult:
         self.finalize()
 
         return {
-            "schema_version": (
-                self.schema_version
-            ),
-            "generated_at": (
-                self.generated_at
-            ),
-            "contexts": [
-                context.to_dict()
-                for context
-                in self.contexts
-            ],
-            "plans": [
-                plan.to_dict()
-                for plan
-                in self.plans
-            ],
-            "decisions": [
-                decision.to_dict()
-                for decision
-                in self.decisions
-            ],
-            "unplanned_incident_ids": (
-                self.
-                unplanned_incident_ids
-            ),
-            "metadata": json_safe(
-                self.metadata
-            ),
+            "schema_version": (self.schema_version),
+            "generated_at": (self.generated_at),
+            "contexts": [context.to_dict() for context in self.contexts],
+            "plans": [plan.to_dict() for plan in self.plans],
+            "decisions": [decision.to_dict() for decision in self.decisions],
+            "unplanned_incident_ids": (self.unplanned_incident_ids),
+            "metadata": json_safe(self.metadata),
         }
 
     def to_json(
@@ -1925,6 +1199,7 @@ class DecisionResult:
 # -----------------------------------------------------------------
 # Utility functions
 # -----------------------------------------------------------------
+
 
 def risk_rank(
     level: str,
@@ -1948,9 +1223,7 @@ def highest_risk(
     levels: List[str],
 ) -> str:
     if not levels:
-        return (
-            RiskLevel.UNKNOWN.value
-        )
+        return RiskLevel.UNKNOWN.value
 
     return max(
         levels,
@@ -1963,15 +1236,10 @@ def action_requires_approval(
 ) -> bool:
     action.finalize()
 
-    return (
-        action.approval.required
-        or action.approval.mode
-        in {
-            ApprovalMode.HUMAN.value,
-            ApprovalMode.
-            MULTI_PARTY.value,
-        }
-    )
+    return action.approval.required or action.approval.mode in {
+        ApprovalMode.HUMAN.value,
+        ApprovalMode.MULTI_PARTY.value,
+    }
 
 
 def action_is_executable_candidate(
@@ -1989,18 +1257,12 @@ def action_is_executable_candidate(
     if not action.eligibility.eligible:
         return False
 
-    if (
-        action.approval.mode
-        == ApprovalMode.
-        FORBIDDEN.value
-    ):
+    if action.approval.mode == ApprovalMode.FORBIDDEN.value:
         return False
 
     if (
         action.approval.required
-        and action.approval.status
-        != ApprovalStatus.
-        APPROVED.value
+        and action.approval.status != ApprovalStatus.APPROVED.value
     ):
         return False
 

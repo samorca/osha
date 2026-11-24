@@ -107,9 +107,7 @@ from src.api.schema import (
 # Logging
 # ------------------------------------------------------------------
 
-logger = logging.getLogger(
-    __name__
-)
+logger = logging.getLogger(__name__)
 
 
 # ------------------------------------------------------------------
@@ -136,23 +134,18 @@ MAX_IDEMPOTENCY_RECORDS = 10_000
 # Time
 # ------------------------------------------------------------------
 
+
 def utc_now() -> datetime:
-    return datetime.now(
-        timezone.utc
-    )
+    return datetime.now(timezone.utc)
 
 
 def normalize_datetime(
     value: datetime,
 ) -> datetime:
     if value.tzinfo is None:
-        return value.replace(
-            tzinfo=timezone.utc
-        )
+        return value.replace(tzinfo=timezone.utc)
 
-    return value.astimezone(
-        timezone.utc
-    )
+    return value.astimezone(timezone.utc)
 
 
 # ------------------------------------------------------------------
@@ -197,25 +190,15 @@ def safe_attributes(
 
     output: Dict[str, Any] = {}
 
-    for raw_key, item in list(
-        value.items()
-    )[
-        :maximum_entries
-    ]:
-        key = str(
-            raw_key
-        ).strip()
+    for raw_key, item in list(value.items())[:maximum_entries]:
+        key = str(raw_key).strip()
 
         if not key:
             continue
 
         normalized = key.lower()
 
-        if any(
-            fragment in normalized
-            for fragment
-            in _SENSITIVE_KEY_FRAGMENTS
-        ):
+        if any(fragment in normalized for fragment in _SENSITIVE_KEY_FRAGMENTS):
             continue
 
         if isinstance(
@@ -228,9 +211,7 @@ def safe_attributes(
                 type(None),
             ),
         ):
-            output[
-                key
-            ] = item
+            output[key] = item
 
             continue
 
@@ -243,9 +224,7 @@ def safe_attributes(
         ):
             values = []
 
-            for child in item[
-                :128
-            ]:
+            for child in item[:128]:
                 if isinstance(
                     child,
                     (
@@ -256,13 +235,9 @@ def safe_attributes(
                         type(None),
                     ),
                 ):
-                    values.append(
-                        child
-                    )
+                    values.append(child)
 
-            output[
-                key
-            ] = values
+            output[key] = values
 
             continue
 
@@ -270,21 +245,15 @@ def safe_attributes(
             item,
             Mapping,
         ):
-            output[
-                key
-            ] = safe_attributes(
+            output[key] = safe_attributes(
                 item,
                 maximum_entries=64,
             )
 
             continue
 
-        output[
-            key
-        ] = {
-            "type": type(
-                item
-            ).__name__,
+        output[key] = {
+            "type": type(item).__name__,
         }
 
     return output
@@ -293,6 +262,7 @@ def safe_attributes(
 # ------------------------------------------------------------------
 # Operation context
 # ------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class IncidentOperationContext:
@@ -319,15 +289,14 @@ class IncidentOperationContext:
             "actor_id": self.actor_id,
             "tenant_id": self.tenant_id,
             "correlation_id": self.correlation_id,
-            "idempotency_key_present": bool(
-                self.idempotency_key
-            ),
+            "idempotency_key_present": bool(self.idempotency_key),
         }
 
 
 # ------------------------------------------------------------------
 # Internal incident records
 # ------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class IncidentSignalRecord:
@@ -344,47 +313,27 @@ class IncidentSignalRecord:
     payload: Mapping[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     attributes: Mapping[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def validate(
         self,
     ) -> None:
         if not self.signal_id.strip():
-            raise ValueError(
-                "signal_id cannot be empty"
-            )
+            raise ValueError("signal_id cannot be empty")
 
         if not self.source.strip():
-            raise ValueError(
-                "signal source cannot be empty"
-            )
+            raise ValueError("signal source cannot be empty")
 
         if not self.signal_type.strip():
-            raise ValueError(
-                "signal_type cannot be empty"
-            )
+            raise ValueError("signal_type cannot be empty")
 
-        if (
-            self.severity
-            not in {
-                value.value
-                for value
-                in SeverityAPI
-            }
-        ):
-            raise ValueError(
-                "Unsupported signal severity: "
-                f"{self.severity}"
-            )
+        if self.severity not in {value.value for value in SeverityAPI}:
+            raise ValueError(f"Unsupported signal severity: {self.severity}")
 
 
 @dataclass(frozen=True)
@@ -431,66 +380,24 @@ class IncidentRecord:
         self,
     ) -> None:
         if not self.incident_id.strip():
-            raise ValueError(
-                "incident_id cannot be empty"
-            )
+            raise ValueError("incident_id cannot be empty")
 
         if not self.title.strip():
-            raise ValueError(
-                "incident title cannot be empty"
-            )
+            raise ValueError("incident title cannot be empty")
 
-        if (
-            self.severity
-            not in {
-                value.value
-                for value
-                in SeverityAPI
-            }
-        ):
-            raise ValueError(
-                "Unsupported incident severity: "
-                f"{self.severity}"
-            )
+        if self.severity not in {value.value for value in SeverityAPI}:
+            raise ValueError(f"Unsupported incident severity: {self.severity}")
 
-        if (
-            self.status
-            not in {
-                value.value
-                for value
-                in IncidentStatusAPI
-            }
-        ):
-            raise ValueError(
-                "Unsupported incident status: "
-                f"{self.status}"
-            )
+        if self.status not in {value.value for value in IncidentStatusAPI}:
+            raise ValueError(f"Unsupported incident status: {self.status}")
 
         if self.version < 1:
-            raise ValueError(
-                "incident version must be >= 1"
-            )
+            raise ValueError("incident version must be >= 1")
 
-        signal_ids = [
-            signal.signal_id
-            for signal
-            in self.signals
-        ]
+        signal_ids = [signal.signal_id for signal in self.signals]
 
-        if (
-            len(
-                signal_ids
-            )
-            != len(
-                set(
-                    signal_ids
-                )
-            )
-        ):
-            raise ValueError(
-                "incident signal IDs must "
-                "be unique"
-            )
+        if len(signal_ids) != len(set(signal_ids)):
+            raise ValueError("incident signal IDs must be unique")
 
         for signal in self.signals:
             signal.validate()
@@ -499,6 +406,7 @@ class IncidentRecord:
 # ------------------------------------------------------------------
 # Query
 # ------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class IncidentQuery:
@@ -525,67 +433,35 @@ class IncidentQuery:
     def validate(
         self,
     ) -> None:
-        if (
-            self.status is not None
-            and self.status
-            not in {
-                value.value
-                for value
-                in IncidentStatusAPI
-            }
-        ):
-            raise ValueError(
-                "Unsupported incident status: "
-                f"{self.status}"
-            )
+        if self.status is not None and self.status not in {
+            value.value for value in IncidentStatusAPI
+        }:
+            raise ValueError(f"Unsupported incident status: {self.status}")
 
-        if (
-            self.severity is not None
-            and self.severity
-            not in {
-                value.value
-                for value
-                in SeverityAPI
-            }
-        ):
-            raise ValueError(
-                "Unsupported incident severity: "
-                f"{self.severity}"
-            )
+        if self.severity is not None and self.severity not in {
+            value.value for value in SeverityAPI
+        }:
+            raise ValueError(f"Unsupported incident severity: {self.severity}")
 
-        if (
-            self.limit < 1
-            or self.limit > 1000
-        ):
-            raise ValueError(
-                "limit must be between "
-                "1 and 1000"
-            )
+        if self.limit < 1 or self.limit > 1000:
+            raise ValueError("limit must be between 1 and 1000")
 
         if self.offset < 0:
-            raise ValueError(
-                "offset must be >= 0"
-            )
+            raise ValueError("offset must be >= 0")
 
         if (
             self.created_after is not None
             and self.created_before is not None
-            and normalize_datetime(
-                self.created_after
-            )
-            > normalize_datetime(
-                self.created_before
-            )
+            and normalize_datetime(self.created_after)
+            > normalize_datetime(self.created_before)
         ):
-            raise ValueError(
-                "created_after cannot be "
-                "later than created_before"
-            )
+            raise ValueError("created_after cannot be later than created_before")
 
 
 # ------------------------------------------------------------------
 # Repository protocol
 # ------------------------------------------------------------------
+
 
 @runtime_checkable
 class IncidentRepository(
@@ -594,14 +470,12 @@ class IncidentRepository(
     async def create(
         self,
         incident: IncidentRecord,
-    ) -> IncidentRecord:
-        ...
+    ) -> IncidentRecord: ...
 
     async def get(
         self,
         incident_id: str,
-    ) -> Optional[IncidentRecord]:
-        ...
+    ) -> Optional[IncidentRecord]: ...
 
     async def list(
         self,
@@ -612,32 +486,29 @@ class IncidentRepository(
             ...,
         ],
         int,
-    ]:
-        ...
+    ]: ...
 
     async def update(
         self,
         incident: IncidentRecord,
         *,
         expected_version: int,
-    ) -> IncidentRecord:
-        ...
+    ) -> IncidentRecord: ...
 
     async def find_by_idempotency_key(
         self,
         key: str,
-    ) -> Optional[IncidentRecord]:
-        ...
+    ) -> Optional[IncidentRecord]: ...
 
     async def close(
         self,
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 # ------------------------------------------------------------------
 # Process-local repository
 # ------------------------------------------------------------------
+
 
 class ProcessLocalIncidentRepository:
     """
@@ -669,9 +540,7 @@ class ProcessLocalIncidentRepository:
         self,
     ) -> None:
         if self._closed:
-            raise RuntimeError(
-                "Incident repository is closed."
-            )
+            raise RuntimeError("Incident repository is closed.")
 
     async def create(
         self,
@@ -682,89 +551,47 @@ class ProcessLocalIncidentRepository:
         async with self._lock:
             self._ensure_open()
 
-            if (
-                incident.incident_id
-                in self._records
-            ):
+            if incident.incident_id in self._records:
                 raise ResourceConflictError(
-                    "An incident with this ID "
-                    "already exists.",
+                    "An incident with this ID already exists.",
                     details={
-                        "incident_id": (
-                            incident.incident_id
-                        ),
+                        "incident_id": (incident.incident_id),
                     },
                 )
 
             if incident.idempotency_key:
-                existing_id = (
-                    self._idempotency_index.get(
-                        incident.idempotency_key
-                    )
-                )
+                existing_id = self._idempotency_index.get(incident.idempotency_key)
 
                 if existing_id:
-                    return deepcopy(
-                        self._records[
-                            existing_id
-                        ]
-                    )
+                    return deepcopy(self._records[existing_id])
 
-            self._records[
-                incident.incident_id
-            ] = deepcopy(
-                incident
-            )
+            self._records[incident.incident_id] = deepcopy(incident)
 
             if incident.idempotency_key:
-                if (
-                    len(
-                        self._idempotency_index
-                    )
-                    >= MAX_IDEMPOTENCY_RECORDS
-                ):
-                    oldest = next(
-                        iter(
-                            self.
-                            _idempotency_index
-                        )
-                    )
+                if len(self._idempotency_index) >= MAX_IDEMPOTENCY_RECORDS:
+                    oldest = next(iter(self._idempotency_index))
 
                     self._idempotency_index.pop(
                         oldest,
                         None,
                     )
 
-                self._idempotency_index[
-                    incident.idempotency_key
-                ] = incident.incident_id
+                self._idempotency_index[incident.idempotency_key] = incident.incident_id
 
-            return deepcopy(
-                incident
-            )
+            return deepcopy(incident)
 
     async def get(
         self,
         incident_id: str,
     ) -> Optional[IncidentRecord]:
-        normalized = str(
-            incident_id
-        ).strip()
+        normalized = str(incident_id).strip()
 
         async with self._lock:
             self._ensure_open()
 
-            incident = self._records.get(
-                normalized
-            )
+            incident = self._records.get(normalized)
 
-            return (
-                deepcopy(
-                    incident
-                )
-                if incident is not None
-                else None
-            )
+            return deepcopy(incident) if incident is not None else None
 
     async def list(
         self,
@@ -781,71 +608,45 @@ class ProcessLocalIncidentRepository:
         async with self._lock:
             self._ensure_open()
 
-            records = list(
-                self._records.values()
-            )
+            records = list(self._records.values())
 
             output = []
 
             for incident in records:
-                if (
-                    query.status is not None
-                    and incident.status
-                    != query.status
-                ):
+                if query.status is not None and incident.status != query.status:
                     continue
 
-                if (
-                    query.severity is not None
-                    and incident.severity
-                    != query.severity
-                ):
+                if query.severity is not None and incident.severity != query.severity:
                     continue
 
-                if (
-                    query.service is not None
-                    and incident.service
-                    != query.service
-                ):
+                if query.service is not None and incident.service != query.service:
                     continue
 
                 if (
                     query.environment is not None
-                    and incident.environment
-                    != query.environment
+                    and incident.environment != query.environment
                 ):
                     continue
 
                 if (
                     query.tenant_id is not None
-                    and incident.tenant_id
-                    != query.tenant_id
+                    and incident.tenant_id != query.tenant_id
                 ):
                     continue
 
                 if (
-                    query.created_after
-                    is not None
-                    and incident.created_at
-                    < normalize_datetime(
-                        query.created_after
-                    )
+                    query.created_after is not None
+                    and incident.created_at < normalize_datetime(query.created_after)
                 ):
                     continue
 
                 if (
-                    query.created_before
-                    is not None
-                    and incident.created_at
-                    > normalize_datetime(
-                        query.created_before
-                    )
+                    query.created_before is not None
+                    and incident.created_at > normalize_datetime(query.created_before)
                 ):
                     continue
 
-                output.append(
-                    incident
-                )
+                output.append(incident)
 
             output.sort(
                 key=lambda incident: (
@@ -855,22 +656,12 @@ class ProcessLocalIncidentRepository:
                 reverse=query.descending,
             )
 
-            total = len(
-                output
-            )
+            total = len(output)
 
-            selected = output[
-                query.offset:
-                query.offset
-                + query.limit
-            ]
+            selected = output[query.offset : query.offset + query.limit]
 
             return (
-                tuple(
-                    deepcopy(
-                        selected
-                    )
-                ),
+                tuple(deepcopy(selected)),
                 total,
             )
 
@@ -885,58 +676,35 @@ class ProcessLocalIncidentRepository:
         async with self._lock:
             self._ensure_open()
 
-            current = self._records.get(
-                incident.incident_id
-            )
+            current = self._records.get(incident.incident_id)
 
             if current is None:
                 raise IncidentNotFoundAPIError(
                     details={
-                        "incident_id": (
-                            incident.incident_id
-                        ),
+                        "incident_id": (incident.incident_id),
                     },
                 )
 
-            if (
-                current.version
-                != expected_version
-            ):
+            if current.version != expected_version:
                 raise ResourceConflictError(
                     "The incident version changed.",
                     code="version_conflict",
                     details={
-                        "incident_id": (
-                            incident.incident_id
-                        ),
-
-                        "expected_version": (
-                            expected_version
-                        ),
-
-                        "actual_version": (
-                            current.version
-                        ),
+                        "incident_id": (incident.incident_id),
+                        "expected_version": (expected_version),
+                        "actual_version": (current.version),
                     },
                 )
 
-            self._records[
-                incident.incident_id
-            ] = deepcopy(
-                incident
-            )
+            self._records[incident.incident_id] = deepcopy(incident)
 
-            return deepcopy(
-                incident
-            )
+            return deepcopy(incident)
 
     async def find_by_idempotency_key(
         self,
         key: str,
     ) -> Optional[IncidentRecord]:
-        normalized = str(
-            key
-        ).strip()
+        normalized = str(key).strip()
 
         if not normalized:
             return None
@@ -944,20 +712,12 @@ class ProcessLocalIncidentRepository:
         async with self._lock:
             self._ensure_open()
 
-            incident_id = (
-                self._idempotency_index.get(
-                    normalized
-                )
-            )
+            incident_id = self._idempotency_index.get(normalized)
 
             if incident_id is None:
                 return None
 
-            return deepcopy(
-                self._records.get(
-                    incident_id
-                )
-            )
+            return deepcopy(self._records.get(incident_id))
 
     async def close(
         self,
@@ -973,12 +733,11 @@ class ProcessLocalIncidentRepository:
 # Repository compatibility
 # ------------------------------------------------------------------
 
+
 async def await_if_needed(
     value: Any,
 ) -> Any:
-    if inspect.isawaitable(
-        value
-    ):
+    if inspect.isawaitable(value):
         return await value
 
     return value
@@ -988,34 +747,23 @@ async def await_if_needed(
 # Request translation
 # ------------------------------------------------------------------
 
+
 def signal_record(
     request: IncidentSignalRequest,
 ) -> IncidentSignalRecord:
     record = IncidentSignalRecord(
         signal_id=request.signal_id,
-
         source=request.source,
-
         signal_type=request.signal_type,
-
-        observed_at=normalize_datetime(
-            request.observed_at
-        ),
-
+        observed_at=normalize_datetime(request.observed_at),
         severity=request.severity,
-
         payload=safe_attributes(
             request.payload,
-            maximum_entries=(
-                MAX_SIGNAL_ATTRIBUTES
-            ),
+            maximum_entries=(MAX_SIGNAL_ATTRIBUTES),
         ),
-
         attributes=safe_attributes(
             request.attributes,
-            maximum_entries=(
-                MAX_SIGNAL_ATTRIBUTES
-            ),
+            maximum_entries=(MAX_SIGNAL_ATTRIBUTES),
         ),
     )
 
@@ -1027,56 +775,24 @@ def signal_record(
 def incident_record_from_request(
     request: IncidentCreateRequest,
     *,
-    context: Optional[
-        IncidentOperationContext
-    ] = None,
+    context: Optional[IncidentOperationContext] = None,
 ) -> IncidentRecord:
     now = utc_now()
 
-    context_key = (
-        context.idempotency_key
-        if context is not None
-        else None
-    )
+    context_key = context.idempotency_key if context is not None else None
 
-    idempotency_key = (
-        request.idempotency_key
-        or context_key
-    )
+    idempotency_key = request.idempotency_key or context_key
 
-    signals = tuple(
-        signal_record(
-            signal
-        )
-        for signal
-        in request.signals
-    )
+    signals = tuple(signal_record(signal) for signal in request.signals)
 
-    signal_ids = [
-        signal.signal_id
-        for signal
-        in signals
-    ]
+    signal_ids = [signal.signal_id for signal in signals]
 
-    if (
-        len(
-            signal_ids
-        )
-        != len(
-            set(
-                signal_ids
-            )
-        )
-    ):
-        raise ValueError(
-            "incident signal IDs must be unique"
-        )
+    if len(signal_ids) != len(set(signal_ids)):
+        raise ValueError("incident signal IDs must be unique")
 
     attributes = safe_attributes(
         request.attributes,
-        maximum_entries=(
-            MAX_INCIDENT_ATTRIBUTES
-        ),
+        maximum_entries=(MAX_INCIDENT_ATTRIBUTES),
     )
 
     attributes.setdefault(
@@ -1085,59 +801,22 @@ def incident_record_from_request(
     )
 
     record = IncidentRecord(
-        incident_id=(
-            "inc-"
-            + uuid4().hex
-        ),
-
+        incident_id=("inc-" + uuid4().hex),
         title=request.title,
-
         summary=request.summary,
-
         severity=request.severity,
-
-        status=(
-            IncidentStatusAPI.
-            OPEN.value
-        ),
-
+        status=(IncidentStatusAPI.OPEN.value),
         service=request.service,
-
-        environment=(
-            request.environment
-        ),
-
+        environment=(request.environment),
         signals=signals,
-
         attributes=attributes,
-
         created_at=now,
-
         updated_at=now,
-
         version=1,
-
-        tenant_id=(
-            context.tenant_id
-            if context is not None
-            else None
-        ),
-
-        created_by=(
-            context.actor_id
-            if context is not None
-            else None
-        ),
-
-        correlation_id=(
-            context.correlation_id
-            if context is not None
-            else None
-        ),
-
-        idempotency_key=(
-            idempotency_key
-        ),
+        tenant_id=(context.tenant_id if context is not None else None),
+        created_by=(context.actor_id if context is not None else None),
+        correlation_id=(context.correlation_id if context is not None else None),
+        idempotency_key=(idempotency_key),
     )
 
     record.validate()
@@ -1149,6 +828,7 @@ def incident_record_from_request(
 # Public response conversion
 # ------------------------------------------------------------------
 
+
 def incident_response(
     incident: IncidentRecord,
 ) -> IncidentResponse:
@@ -1156,57 +836,28 @@ def incident_response(
 
     public_attributes = safe_attributes(
         incident.attributes,
-        maximum_entries=(
-            MAX_INCIDENT_ATTRIBUTES
-        ),
+        maximum_entries=(MAX_INCIDENT_ATTRIBUTES),
     )
 
     public_attributes.update(
         {
-            "version": (
-                incident.version
-            ),
-
-            "correlation_id": (
-                incident.correlation_id
-            ),
+            "version": (incident.version),
+            "correlation_id": (incident.correlation_id),
         }
     )
 
     return IncidentResponse(
-        incident_id=(
-            incident.incident_id
-        ),
-
+        incident_id=(incident.incident_id),
         title=incident.title,
-
         summary=incident.summary,
-
         severity=incident.severity,
-
         status=incident.status,
-
         service=incident.service,
-
-        environment=(
-            incident.environment
-        ),
-
-        signal_count=len(
-            incident.signals
-        ),
-
-        created_at=(
-            incident.created_at
-        ),
-
-        updated_at=(
-            incident.updated_at
-        ),
-
-        attributes=(
-            public_attributes
-        ),
+        environment=(incident.environment),
+        signal_count=len(incident.signals),
+        created_at=(incident.created_at),
+        updated_at=(incident.updated_at),
+        attributes=(public_attributes),
     )
 
 
@@ -1219,54 +870,26 @@ _ALLOWED_STATUS_TRANSITIONS: Dict[
     Tuple[str, ...],
 ] = {
     IncidentStatusAPI.OPEN.value: (
-        IncidentStatusAPI.
-        INVESTIGATING.value,
-
-        IncidentStatusAPI.
-        MITIGATED.value,
-
-        IncidentStatusAPI.
-        RESOLVED.value,
-
-        IncidentStatusAPI.
-        CLOSED.value,
+        IncidentStatusAPI.INVESTIGATING.value,
+        IncidentStatusAPI.MITIGATED.value,
+        IncidentStatusAPI.RESOLVED.value,
+        IncidentStatusAPI.CLOSED.value,
     ),
-
-    IncidentStatusAPI.
-    INVESTIGATING.value: (
-        IncidentStatusAPI.
-        MITIGATED.value,
-
-        IncidentStatusAPI.
-        RESOLVED.value,
-
-        IncidentStatusAPI.
-        CLOSED.value,
+    IncidentStatusAPI.INVESTIGATING.value: (
+        IncidentStatusAPI.MITIGATED.value,
+        IncidentStatusAPI.RESOLVED.value,
+        IncidentStatusAPI.CLOSED.value,
     ),
-
-    IncidentStatusAPI.
-    MITIGATED.value: (
-        IncidentStatusAPI.
-        INVESTIGATING.value,
-
-        IncidentStatusAPI.
-        RESOLVED.value,
-
-        IncidentStatusAPI.
-        CLOSED.value,
+    IncidentStatusAPI.MITIGATED.value: (
+        IncidentStatusAPI.INVESTIGATING.value,
+        IncidentStatusAPI.RESOLVED.value,
+        IncidentStatusAPI.CLOSED.value,
     ),
-
-    IncidentStatusAPI.
-    RESOLVED.value: (
-        IncidentStatusAPI.
-        INVESTIGATING.value,
-
-        IncidentStatusAPI.
-        CLOSED.value,
+    IncidentStatusAPI.RESOLVED.value: (
+        IncidentStatusAPI.INVESTIGATING.value,
+        IncidentStatusAPI.CLOSED.value,
     ),
-
-    IncidentStatusAPI.
-    CLOSED.value: (),
+    IncidentStatusAPI.CLOSED.value: (),
 }
 
 
@@ -1277,22 +900,16 @@ def validate_status_transition(
     if current == target:
         return
 
-    allowed = (
-        _ALLOWED_STATUS_TRANSITIONS.get(
-            current,
-            (),
-        )
+    allowed = _ALLOWED_STATUS_TRANSITIONS.get(
+        current,
+        (),
     )
 
     if target not in allowed:
         raise ResourceConflictError(
-            "The incident status transition "
-            "is not allowed.",
+            "The incident status transition is not allowed.",
             details={
-                "resource": (
-                    "incident"
-                ),
-
+                "resource": ("incident"),
                 "state": current,
                 "status": target,
             },
@@ -1302,6 +919,7 @@ def validate_status_transition(
 # ------------------------------------------------------------------
 # Incident service
 # ------------------------------------------------------------------
+
 
 class IncidentService:
     """
@@ -1320,9 +938,7 @@ class IncidentService:
         self.repository = repository
 
         self._closed = False
-        self._lifecycle_lock = (
-            asyncio.Lock()
-        )
+        self._lifecycle_lock = asyncio.Lock()
 
     # ------------------------------------------------------
     # Lifecycle
@@ -1335,39 +951,27 @@ class IncidentService:
             raise InternalServerAPIError(
                 "The incident service is closed.",
                 details={
-                    "resource": (
-                        INCIDENT_SERVICE_NAME
-                    ),
+                    "resource": (INCIDENT_SERVICE_NAME),
                 },
             )
 
     def _require_read_enabled(
         self,
     ) -> None:
-        if not (
-            self.config.features.
-            incident_read_enabled
-        ):
+        if not (self.config.features.incident_read_enabled):
             raise FeatureDisabledError(
                 details={
-                    "resource": (
-                        "incident_read"
-                    ),
+                    "resource": ("incident_read"),
                 },
             )
 
     def _require_create_enabled(
         self,
     ) -> None:
-        if not (
-            self.config.features.
-            incident_create_enabled
-        ):
+        if not (self.config.features.incident_create_enabled):
             raise FeatureDisabledError(
                 details={
-                    "resource": (
-                        "incident_create"
-                    ),
+                    "resource": ("incident_create"),
                 },
             )
 
@@ -1378,9 +982,7 @@ class IncidentService:
             if self._closed:
                 return
 
-            await await_if_needed(
-                self.repository.close()
-            )
+            await await_if_needed(self.repository.close())
 
             self._closed = True
 
@@ -1392,77 +994,46 @@ class IncidentService:
         self,
         request: IncidentCreateRequest,
         *,
-        context: Optional[
-            IncidentOperationContext
-        ] = None,
+        context: Optional[IncidentOperationContext] = None,
     ) -> IncidentResponse:
         self._ensure_open()
         self._require_create_enabled()
 
-        idempotency_key = (
-            request.idempotency_key
-            or (
-                context.idempotency_key
-                if context is not None
-                else None
-            )
+        idempotency_key = request.idempotency_key or (
+            context.idempotency_key if context is not None else None
         )
 
         if idempotency_key:
             existing = await await_if_needed(
-                self.repository.
-                find_by_idempotency_key(
-                    idempotency_key
-                )
+                self.repository.find_by_idempotency_key(idempotency_key)
             )
 
             if existing is not None:
-                return incident_response(
-                    existing
-                )
+                return incident_response(existing)
 
-        record = (
-            incident_record_from_request(
-                request,
-                context=context,
-            )
+        record = incident_record_from_request(
+            request,
+            context=context,
         )
 
         try:
-            created = await await_if_needed(
-                self.repository.create(
-                    record
-                )
-            )
+            created = await await_if_needed(self.repository.create(record))
 
             logger.info(
                 "Incident created",
                 extra={
                     "incident": {
-                        "incident_id": (
-                            created.incident_id
-                        ),
-
-                        "severity": (
-                            created.severity
-                        ),
-
-                        "service": (
-                            created.service
-                        ),
-
+                        "incident_id": (created.incident_id),
+                        "severity": (created.severity),
+                        "service": (created.service),
                         "request_id": (
-                            context.request_id
-                            if context is not None
-                            else None
+                            context.request_id if context is not None else None
                         ),
                     },
                 },
             )
 
-            return incident_response(
-                created
-            )
+            return incident_response(created)
 
         except APIException:
             raise
@@ -1471,15 +1042,8 @@ class IncidentService:
             raise InternalServerAPIError(
                 "The incident could not be created.",
                 details={
-                    "operation": (
-                        "incident_create"
-                    ),
-
-                    "error_type": (
-                        type(
-                            exc
-                        ).__name__
-                    ),
+                    "operation": ("incident_create"),
+                    "error_type": (type(exc).__name__),
                 },
             ) from exc
 
@@ -1491,68 +1055,45 @@ class IncidentService:
         self,
         incident_id: str,
         *,
-        context: Optional[
-            IncidentOperationContext
-        ] = None,
+        context: Optional[IncidentOperationContext] = None,
     ) -> IncidentResponse:
         self._ensure_open()
         self._require_read_enabled()
 
-        normalized = str(
-            incident_id
-        ).strip()
+        normalized = str(incident_id).strip()
 
         if not normalized:
             raise IncidentNotFoundAPIError(
                 details={
-                    "resource": (
-                        "incident"
-                    ),
+                    "resource": ("incident"),
                 },
             )
 
-        incident = await await_if_needed(
-            self.repository.get(
-                normalized
-            )
-        )
+        incident = await await_if_needed(self.repository.get(normalized))
 
         if incident is None:
             raise IncidentNotFoundAPIError(
                 details={
-                    "resource": (
-                        "incident"
-                    ),
-
-                    "incident_id": (
-                        normalized
-                    ),
+                    "resource": ("incident"),
+                    "incident_id": (normalized),
                 },
             )
 
         if (
             context is not None
             and context.tenant_id is not None
-            and incident.tenant_id
-            != context.tenant_id
+            and incident.tenant_id != context.tenant_id
         ):
             # Return not found to avoid revealing
             # cross-tenant resource existence.
             raise IncidentNotFoundAPIError(
                 details={
-                    "resource": (
-                        "incident"
-                    ),
-
-                    "incident_id": (
-                        normalized
-                    ),
+                    "resource": ("incident"),
+                    "incident_id": (normalized),
                 },
             )
 
-        return incident_response(
-            incident
-        )
+        return incident_response(incident)
 
     # ------------------------------------------------------
     # List
@@ -1565,18 +1106,12 @@ class IncidentService:
         severity: Optional[str] = None,
         service: Optional[str] = None,
         environment: Optional[str] = None,
-        created_after: Optional[
-            datetime
-        ] = None,
-        created_before: Optional[
-            datetime
-        ] = None,
+        created_after: Optional[datetime] = None,
+        created_before: Optional[datetime] = None,
         limit: int = 100,
         offset: int = 0,
         descending: bool = True,
-        context: Optional[
-            IncidentOperationContext
-        ] = None,
+        context: Optional[IncidentOperationContext] = None,
     ) -> IncidentListResponse:
         self._ensure_open()
         self._require_read_enabled()
@@ -1586,21 +1121,9 @@ class IncidentService:
             severity=severity,
             service=service,
             environment=environment,
-
-            tenant_id=(
-                context.tenant_id
-                if context is not None
-                else None
-            ),
-
-            created_after=(
-                created_after
-            ),
-
-            created_before=(
-                created_before
-            ),
-
+            tenant_id=(context.tenant_id if context is not None else None),
+            created_after=(created_after),
+            created_before=(created_before),
             limit=limit,
             offset=offset,
             descending=descending,
@@ -1609,13 +1132,7 @@ class IncidentService:
         query.validate()
 
         try:
-            incidents, total = (
-                await await_if_needed(
-                    self.repository.list(
-                        query
-                    )
-                )
-            )
+            incidents, total = await await_if_needed(self.repository.list(query))
 
         except APIException:
             raise
@@ -1624,52 +1141,27 @@ class IncidentService:
             raise InternalServerAPIError(
                 "Incidents could not be listed.",
                 details={
-                    "operation": (
-                        "incident_list"
-                    ),
-
-                    "error_type": (
-                        type(
-                            exc
-                        ).__name__
-                    ),
+                    "operation": ("incident_list"),
+                    "error_type": (type(exc).__name__),
                 },
             ) from exc
 
-        returned = len(
-            incidents
-        )
+        returned = len(incidents)
 
         return IncidentListResponse(
-            incidents=[
-                incident_response(
-                    incident
-                )
-                for incident
-                in incidents
-            ],
-
+            incidents=[incident_response(incident) for incident in incidents],
             pagination=(
                 PaginationMetadata(
                     limit=limit,
                     offset=offset,
                     returned=returned,
                     total=total,
-                    has_more=(
-                        offset
-                        + returned
-                        < total
-                    ),
+                    has_more=(offset + returned < total),
                 )
             ),
-
             metadata=(
                 APIResponseMetadata(
-                    request_id=(
-                        context.request_id
-                        if context is not None
-                        else None
-                    ),
+                    request_id=(context.request_id if context is not None else None),
                 )
             ),
         )
@@ -1684,40 +1176,20 @@ class IncidentService:
         status: str,
         *,
         expected_version: int,
-        context: Optional[
-            IncidentOperationContext
-        ] = None,
+        context: Optional[IncidentOperationContext] = None,
     ) -> IncidentResponse:
         self._ensure_open()
         self._require_create_enabled()
 
         if expected_version < 1:
-            raise ValueError(
-                "expected_version must be >= 1"
-            )
+            raise ValueError("expected_version must be >= 1")
 
-        if (
-            status
-            not in {
-                value.value
-                for value
-                in IncidentStatusAPI
-            }
-        ):
-            raise ValueError(
-                "Unsupported incident status: "
-                f"{status}"
-            )
+        if status not in {value.value for value in IncidentStatusAPI}:
+            raise ValueError(f"Unsupported incident status: {status}")
 
-        normalized = str(
-            incident_id
-        ).strip()
+        normalized = str(incident_id).strip()
 
-        current = await await_if_needed(
-            self.repository.get(
-                normalized
-            )
-        )
+        current = await await_if_needed(self.repository.get(normalized))
 
         if current is None:
             raise IncidentNotFoundAPIError(
@@ -1729,8 +1201,7 @@ class IncidentService:
         if (
             context is not None
             and context.tenant_id is not None
-            and current.tenant_id
-            != context.tenant_id
+            and current.tenant_id != context.tenant_id
         ):
             raise IncidentNotFoundAPIError(
                 details={
@@ -1744,43 +1215,26 @@ class IncidentService:
         )
 
         if current.status == status:
-            return incident_response(
-                current
-            )
+            return incident_response(current)
 
-        attributes = dict(
-            current.attributes
-        )
+        attributes = dict(current.attributes)
 
-        attributes[
-            "last_updated_by"
-        ] = (
-            context.actor_id
-            if context is not None
-            else None
+        attributes["last_updated_by"] = (
+            context.actor_id if context is not None else None
         )
 
         updated = replace(
             current,
-
             status=status,
-
             updated_at=utc_now(),
-
-            version=(
-                current.version
-                + 1
-            ),
-
+            version=(current.version + 1),
             attributes=attributes,
         )
 
         stored = await await_if_needed(
             self.repository.update(
                 updated,
-                expected_version=(
-                    expected_version
-                ),
+                expected_version=(expected_version),
             )
         )
 
@@ -1788,34 +1242,16 @@ class IncidentService:
             "Incident status changed",
             extra={
                 "incident": {
-                    "incident_id": (
-                        stored.incident_id
-                    ),
-
-                    "previous_status": (
-                        current.status
-                    ),
-
-                    "status": (
-                        stored.status
-                    ),
-
-                    "version": (
-                        stored.version
-                    ),
-
-                    "request_id": (
-                        context.request_id
-                        if context is not None
-                        else None
-                    ),
+                    "incident_id": (stored.incident_id),
+                    "previous_status": (current.status),
+                    "status": (stored.status),
+                    "version": (stored.version),
+                    "request_id": (context.request_id if context is not None else None),
                 },
             },
         )
 
-        return incident_response(
-            stored
-        )
+        return incident_response(stored)
 
     # ------------------------------------------------------
     # Signals
@@ -1825,9 +1261,7 @@ class IncidentService:
         self,
         incident_id: str,
         *,
-        context: Optional[
-            IncidentOperationContext
-        ] = None,
+        context: Optional[IncidentOperationContext] = None,
     ) -> Tuple[
         IncidentSignalRecord,
         ...,
@@ -1835,15 +1269,9 @@ class IncidentService:
         self._ensure_open()
         self._require_read_enabled()
 
-        normalized = str(
-            incident_id
-        ).strip()
+        normalized = str(incident_id).strip()
 
-        incident = await await_if_needed(
-            self.repository.get(
-                normalized
-            )
-        )
+        incident = await await_if_needed(self.repository.get(normalized))
 
         if incident is None:
             raise IncidentNotFoundAPIError(
@@ -1855,8 +1283,7 @@ class IncidentService:
         if (
             context is not None
             and context.tenant_id is not None
-            and incident.tenant_id
-            != context.tenant_id
+            and incident.tenant_id != context.tenant_id
         ):
             raise IncidentNotFoundAPIError(
                 details={
@@ -1864,11 +1291,7 @@ class IncidentService:
                 },
             )
 
-        return tuple(
-            deepcopy(
-                incident.signals
-            )
-        )
+        return tuple(deepcopy(incident.signals))
 
     # ------------------------------------------------------
     # Health
@@ -1878,20 +1301,9 @@ class IncidentService:
         self,
     ) -> Dict[str, Any]:
         return {
-            "status": (
-                "unhealthy"
-                if self._closed
-                else "healthy"
-            ),
-
-            "ready": (
-                not self._closed
-            ),
-
-            "repository": type(
-                self.repository
-            ).__name__,
-
+            "status": ("unhealthy" if self._closed else "healthy"),
+            "ready": (not self._closed),
+            "repository": type(self.repository).__name__,
             "persistent": not isinstance(
                 self.repository,
                 ProcessLocalIncidentRepository,
@@ -1906,46 +1318,20 @@ class IncidentService:
         self,
     ) -> Dict[str, Any]:
         return {
-            "service": (
-                INCIDENT_SERVICE_NAME
-            ),
-
-            "version": (
-                INCIDENT_SERVICE_VERSION
-            ),
-
-            "closed": (
-                self._closed
-            ),
-
-            "read_enabled": (
-                self.config.
-                features.
-                incident_read_enabled
-            ),
-
-            "create_enabled": (
-                self.config.
-                features.
-                incident_create_enabled
-            ),
-
-            "repository": type(
-                self.repository
-            ).__name__,
-
+            "service": (INCIDENT_SERVICE_NAME),
+            "version": (INCIDENT_SERVICE_VERSION),
+            "closed": (self._closed),
+            "read_enabled": (self.config.features.incident_read_enabled),
+            "create_enabled": (self.config.features.incident_create_enabled),
+            "repository": type(self.repository).__name__,
             "persistent_repository": (
                 not isinstance(
                     self.repository,
                     ProcessLocalIncidentRepository,
                 )
             ),
-
             "correlation_supported": False,
-
-            "root_cause_analysis_supported": (
-                False
-            ),
+            "root_cause_analysis_supported": (False),
         }
 
 
@@ -1953,23 +1339,17 @@ class IncidentService:
 # Construction
 # ------------------------------------------------------------------
 
+
 def create_incident_service(
     *,
     config: APIConfig,
-    repository: Optional[
-        IncidentRepository
-    ] = None,
+    repository: Optional[IncidentRepository] = None,
 ) -> IncidentService:
-    resolved_repository = (
-        repository
-        or ProcessLocalIncidentRepository()
-    )
+    resolved_repository = repository or ProcessLocalIncidentRepository()
 
     return IncidentService(
         config=config,
-        repository=(
-            resolved_repository
-        ),
+        repository=(resolved_repository),
     )
 
 
@@ -1977,12 +1357,11 @@ def create_incident_service(
 # Dependency registration
 # ------------------------------------------------------------------
 
+
 def register_incident_service(
     dependencies: Any,
     *,
-    repository: Optional[
-        IncidentRepository
-    ] = None,
+    repository: Optional[IncidentRepository] = None,
     replace: bool = False,
 ) -> IncidentService:
     """
@@ -2006,22 +1385,15 @@ def register_incident_service(
         raise InternalServerAPIError(
             "API configuration is unavailable.",
             details={
-                "resource": (
-                    "api_config"
-                ),
+                "resource": ("api_config"),
             },
         )
 
-    if not callable(
-        register
-    ):
+    if not callable(register):
         raise InternalServerAPIError(
-            "API service registration is "
-            "unavailable.",
+            "API service registration is unavailable.",
             details={
-                "resource": (
-                    "api_dependencies"
-                ),
+                "resource": ("api_dependencies"),
             },
         )
 
@@ -2046,25 +1418,18 @@ def register_incident_service(
 __all__ = [
     "INCIDENT_SERVICE_NAME",
     "INCIDENT_SERVICE_VERSION",
-
     "IncidentOperationContext",
-
     "IncidentSignalRecord",
     "IncidentRecord",
     "IncidentQuery",
-
     "IncidentRepository",
     "ProcessLocalIncidentRepository",
-
     "safe_attributes",
     "signal_record",
     "incident_record_from_request",
     "incident_response",
-
     "validate_status_transition",
-
     "IncidentService",
-
     "create_incident_service",
     "register_incident_service",
 ]

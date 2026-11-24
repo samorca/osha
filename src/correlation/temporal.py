@@ -50,9 +50,7 @@ class TemporalOrder(
 
     AFTER = "after"
 
-    SIMULTANEOUS = (
-        "simultaneous"
-    )
+    SIMULTANEOUS = "simultaneous"
 
     UNKNOWN = "unknown"
 
@@ -74,29 +72,17 @@ class TemporalRelation:
         target occurred before source.
     """
 
-    source_record_id: Optional[
-        str
-    ]
+    source_record_id: Optional[str]
 
-    target_record_id: Optional[
-        str
-    ]
+    target_record_id: Optional[str]
 
-    source_timestamp: Optional[
-        str
-    ]
+    source_timestamp: Optional[str]
 
-    target_timestamp: Optional[
-        str
-    ]
+    target_timestamp: Optional[str]
 
-    delta_seconds: Optional[
-        float
-    ]
+    delta_seconds: Optional[float]
 
-    signed_delta_seconds: Optional[
-        float
-    ]
+    signed_delta_seconds: Optional[float]
 
     order: str
 
@@ -108,37 +94,16 @@ class TemporalRelation:
 
     def to_dict(self) -> dict:
         return {
-            "source_record_id": (
-                self.source_record_id
-            ),
-            "target_record_id": (
-                self.target_record_id
-            ),
-            "source_timestamp": (
-                self.source_timestamp
-            ),
-            "target_timestamp": (
-                self.target_timestamp
-            ),
-            "delta_seconds": (
-                self.delta_seconds
-            ),
-            "signed_delta_seconds": (
-                self.
-                signed_delta_seconds
-            ),
+            "source_record_id": (self.source_record_id),
+            "target_record_id": (self.target_record_id),
+            "source_timestamp": (self.source_timestamp),
+            "target_timestamp": (self.target_timestamp),
+            "delta_seconds": (self.delta_seconds),
+            "signed_delta_seconds": (self.signed_delta_seconds),
             "order": self.order,
-            "direction": (
-                self.direction
-            ),
-            "within_range": (
-                self.within_range
-            ),
-            "score": (
-                checked_score(
-                    self.score
-                )
-            ),
+            "direction": (self.direction),
+            "within_range": (self.within_range),
+            "score": (checked_score(self.score)),
         }
 
 
@@ -162,47 +127,30 @@ def parse_timestamp(
     Invalid or missing timestamps return None.
     """
 
-    text = optional_string(
-        value
-    )
+    text = optional_string(value)
 
     if text is None:
         return None
 
     if text.endswith("Z"):
-        text = (
-            text[:-1]
-            + "+00:00"
-        )
+        text = text[:-1] + "+00:00"
 
     try:
-        timestamp = (
-            datetime.fromisoformat(
-                text
-            )
-        )
+        timestamp = datetime.fromisoformat(text)
 
     except ValueError:
         return None
 
     if timestamp.tzinfo is None:
-        timestamp = (
-            timestamp.replace(
-                tzinfo=timezone.utc
-            )
-        )
+        timestamp = timestamp.replace(tzinfo=timezone.utc)
 
-    return timestamp.astimezone(
-        timezone.utc
-    )
+    return timestamp.astimezone(timezone.utc)
 
 
 def telemetry_timestamp(
     telemetry: TelemetryRecord,
 ) -> Optional[datetime]:
-    return parse_timestamp(
-        telemetry.signal.timestamp
-    )
+    return parse_timestamp(telemetry.signal.timestamp)
 
 
 def normalized_record_id(
@@ -226,27 +174,17 @@ def validate_seconds(
         TypeError,
         ValueError,
     ):
-        raise ValueError(
-            f"{name} must be numeric"
-        )
+        raise ValueError(f"{name} must be numeric")
 
-    if not math.isfinite(
-        number
-    ):
-        raise ValueError(
-            f"{name} must be finite"
-        )
+    if not math.isfinite(number):
+        raise ValueError(f"{name} must be finite")
 
     if allow_zero:
         if number < 0:
-            raise ValueError(
-                f"{name} must be >= 0"
-            )
+            raise ValueError(f"{name} must be >= 0")
     else:
         if number <= 0:
-            raise ValueError(
-                f"{name} must be > 0"
-            )
+            raise ValueError(f"{name} must be > 0")
 
     return number
 
@@ -263,28 +201,14 @@ def temporal_delta_seconds(
     in seconds.
     """
 
-    source_time = (
-        telemetry_timestamp(
-            source
-        )
-    )
+    source_time = telemetry_timestamp(source)
 
-    target_time = (
-        telemetry_timestamp(
-            target
-        )
-    )
+    target_time = telemetry_timestamp(target)
 
-    if (
-        source_time is None
-        or target_time is None
-    ):
+    if source_time is None or target_time is None:
         return None
 
-    return (
-        target_time
-        - source_time
-    ).total_seconds()
+    return (target_time - source_time).total_seconds()
 
 
 def absolute_delta_seconds(
@@ -306,9 +230,7 @@ def temporal_order(
     source: TelemetryRecord,
     target: TelemetryRecord,
     *,
-    simultaneous_tolerance: float = (
-        DEFAULT_SIMULTANEOUS_TOLERANCE
-    ),
+    simultaneous_tolerance: float = (DEFAULT_SIMULTANEOUS_TOLERANCE),
 ) -> str:
     """
     Determine record ordering.
@@ -319,9 +241,7 @@ def temporal_order(
 
     tolerance = validate_seconds(
         simultaneous_tolerance,
-        name=(
-            "simultaneous_tolerance"
-        ),
+        name=("simultaneous_tolerance"),
         allow_zero=True,
     )
 
@@ -331,20 +251,13 @@ def temporal_order(
     )
 
     if delta is None:
-        return (
-            TemporalOrder.UNKNOWN.value
-        )
+        return TemporalOrder.UNKNOWN.value
 
     if abs(delta) <= tolerance:
-        return (
-            TemporalOrder.
-            SIMULTANEOUS.value
-        )
+        return TemporalOrder.SIMULTANEOUS.value
 
     if delta > 0:
-        return (
-            TemporalOrder.BEFORE.value
-        )
+        return TemporalOrder.BEFORE.value
 
     return TemporalOrder.AFTER.value
 
@@ -353,9 +266,7 @@ def correlation_direction(
     source: TelemetryRecord,
     target: TelemetryRecord,
     *,
-    simultaneous_tolerance: float = (
-        DEFAULT_SIMULTANEOUS_TOLERANCE
-    ),
+    simultaneous_tolerance: float = (DEFAULT_SIMULTANEOUS_TOLERANCE),
 ) -> str:
     """
     Translate time order into candidate
@@ -367,50 +278,25 @@ def correlation_direction(
     order = temporal_order(
         source,
         target,
-        simultaneous_tolerance=(
-            simultaneous_tolerance
-        ),
+        simultaneous_tolerance=(simultaneous_tolerance),
     )
 
-    if (
-        order
-        == TemporalOrder.BEFORE.value
-    ):
-        return (
-            CorrelationDirection.
-            FORWARD.value
-        )
+    if order == TemporalOrder.BEFORE.value:
+        return CorrelationDirection.FORWARD.value
 
-    if (
-        order
-        == TemporalOrder.AFTER.value
-    ):
-        return (
-            CorrelationDirection.
-            REVERSE.value
-        )
+    if order == TemporalOrder.AFTER.value:
+        return CorrelationDirection.REVERSE.value
 
-    if (
-        order
-        == TemporalOrder.
-        SIMULTANEOUS.value
-    ):
-        return (
-            CorrelationDirection.
-            BIDIRECTIONAL.value
-        )
+    if order == TemporalOrder.SIMULTANEOUS.value:
+        return CorrelationDirection.BIDIRECTIONAL.value
 
-    return (
-        CorrelationDirection.NONE.value
-    )
+    return CorrelationDirection.NONE.value
 
 
 def exponential_decay_score(
     delta_seconds: float,
     *,
-    half_life_seconds: float = (
-        DEFAULT_HALF_LIFE_SECONDS
-    ),
+    half_life_seconds: float = (DEFAULT_HALF_LIFE_SECONDS),
 ) -> float:
     """
     Exponential temporal proximity score.
@@ -438,30 +324,18 @@ def exponential_decay_score(
 
     delta = max(
         0.0,
-        float(
-            delta_seconds
-        ),
+        float(delta_seconds),
     )
 
-    score = (
-        0.5
-        ** (
-            delta
-            / half_life
-        )
-    )
+    score = 0.5 ** (delta / half_life)
 
-    return checked_score(
-        score
-    )
+    return checked_score(score)
 
 
 def linear_decay_score(
     delta_seconds: float,
     *,
-    maximum_distance_seconds: float = (
-        DEFAULT_MAX_DISTANCE_SECONDS
-    ),
+    maximum_distance_seconds: float = (DEFAULT_MAX_DISTANCE_SECONDS),
 ) -> float:
     """
     Simple linear proximity score.
@@ -478,40 +352,26 @@ def linear_decay_score(
 
     limit = validate_seconds(
         maximum_distance_seconds,
-        name=(
-            "maximum_distance_seconds"
-        ),
+        name=("maximum_distance_seconds"),
     )
 
     delta = max(
         0.0,
-        float(
-            delta_seconds
-        ),
+        float(delta_seconds),
     )
 
     if delta >= limit:
         return 0.0
 
-    return checked_score(
-        1.0
-        - (
-            delta
-            / limit
-        )
-    )
+    return checked_score(1.0 - (delta / limit))
 
 
 def temporal_score(
     source: TelemetryRecord,
     target: TelemetryRecord,
     *,
-    maximum_distance_seconds: float = (
-        DEFAULT_MAX_DISTANCE_SECONDS
-    ),
-    half_life_seconds: float = (
-        DEFAULT_HALF_LIFE_SECONDS
-    ),
+    maximum_distance_seconds: float = (DEFAULT_MAX_DISTANCE_SECONDS),
+    half_life_seconds: float = (DEFAULT_HALF_LIFE_SECONDS),
     decay: str = "exponential",
 ) -> float:
     """
@@ -527,9 +387,7 @@ def temporal_score(
 
     limit = validate_seconds(
         maximum_distance_seconds,
-        name=(
-            "maximum_distance_seconds"
-        ),
+        name=("maximum_distance_seconds"),
     )
 
     delta = absolute_delta_seconds(
@@ -544,42 +402,27 @@ def temporal_score(
         return 0.0
 
     if decay == "exponential":
-        return (
-            exponential_decay_score(
-                delta,
-                half_life_seconds=(
-                    half_life_seconds
-                ),
-            )
+        return exponential_decay_score(
+            delta,
+            half_life_seconds=(half_life_seconds),
         )
 
     if decay == "linear":
         return linear_decay_score(
             delta,
-            maximum_distance_seconds=(
-                limit
-            ),
+            maximum_distance_seconds=(limit),
         )
 
-    raise ValueError(
-        "decay must be "
-        "'exponential' or 'linear'"
-    )
+    raise ValueError("decay must be 'exponential' or 'linear'")
 
 
 def temporal_relation(
     source: TelemetryRecord,
     target: TelemetryRecord,
     *,
-    maximum_distance_seconds: float = (
-        DEFAULT_MAX_DISTANCE_SECONDS
-    ),
-    half_life_seconds: float = (
-        DEFAULT_HALF_LIFE_SECONDS
-    ),
-    simultaneous_tolerance: float = (
-        DEFAULT_SIMULTANEOUS_TOLERANCE
-    ),
+    maximum_distance_seconds: float = (DEFAULT_MAX_DISTANCE_SECONDS),
+    half_life_seconds: float = (DEFAULT_HALF_LIFE_SECONDS),
+    simultaneous_tolerance: float = (DEFAULT_SIMULTANEOUS_TOLERANCE),
     decay: str = "exponential",
 ) -> TemporalRelation:
     """
@@ -588,126 +431,67 @@ def temporal_relation(
 
     limit = validate_seconds(
         maximum_distance_seconds,
-        name=(
-            "maximum_distance_seconds"
-        ),
+        name=("maximum_distance_seconds"),
     )
 
-    source_time = (
-        telemetry_timestamp(
-            source
-        )
-    )
+    source_time = telemetry_timestamp(source)
 
-    target_time = (
-        telemetry_timestamp(
-            target
-        )
-    )
+    target_time = telemetry_timestamp(target)
 
-    source_id = normalized_record_id(
-        source
-    )
+    source_id = normalized_record_id(source)
 
-    target_id = normalized_record_id(
-        target
-    )
+    target_id = normalized_record_id(target)
 
-    if (
-        source_time is None
-        or target_time is None
-    ):
+    if source_time is None or target_time is None:
         return TemporalRelation(
-            source_record_id=(
-                source_id
-            ),
-            target_record_id=(
-                target_id
-            ),
-            source_timestamp=(
-                source.signal.timestamp
-            ),
-            target_timestamp=(
-                target.signal.timestamp
-            ),
+            source_record_id=(source_id),
+            target_record_id=(target_id),
+            source_timestamp=(source.signal.timestamp),
+            target_timestamp=(target.signal.timestamp),
             delta_seconds=None,
             signed_delta_seconds=None,
-            order=(
-                TemporalOrder.UNKNOWN.value
-            ),
-            direction=(
-                CorrelationDirection.
-                NONE.value
-            ),
+            order=(TemporalOrder.UNKNOWN.value),
+            direction=(CorrelationDirection.NONE.value),
             within_range=False,
             score=0.0,
         )
 
-    signed_delta = (
-        target_time
-        - source_time
-    ).total_seconds()
+    signed_delta = (target_time - source_time).total_seconds()
 
-    delta = abs(
-        signed_delta
-    )
+    delta = abs(signed_delta)
 
-    within_range = (
-        delta <= limit
-    )
+    within_range = delta <= limit
 
     order = temporal_order(
         source,
         target,
-        simultaneous_tolerance=(
-            simultaneous_tolerance
-        ),
+        simultaneous_tolerance=(simultaneous_tolerance),
     )
 
-    direction = (
-        correlation_direction(
-            source,
-            target,
-            simultaneous_tolerance=(
-                simultaneous_tolerance
-            ),
-        )
+    direction = correlation_direction(
+        source,
+        target,
+        simultaneous_tolerance=(simultaneous_tolerance),
     )
 
     score = temporal_score(
         source,
         target,
-        maximum_distance_seconds=(
-            limit
-        ),
-        half_life_seconds=(
-            half_life_seconds
-        ),
+        maximum_distance_seconds=(limit),
+        half_life_seconds=(half_life_seconds),
         decay=decay,
     )
 
     return TemporalRelation(
-        source_record_id=(
-            source_id
-        ),
-        target_record_id=(
-            target_id
-        ),
-        source_timestamp=(
-            source.signal.timestamp
-        ),
-        target_timestamp=(
-            target.signal.timestamp
-        ),
+        source_record_id=(source_id),
+        target_record_id=(target_id),
+        source_timestamp=(source.signal.timestamp),
+        target_timestamp=(target.signal.timestamp),
         delta_seconds=delta,
-        signed_delta_seconds=(
-            signed_delta
-        ),
+        signed_delta_seconds=(signed_delta),
         order=order,
         direction=direction,
-        within_range=(
-            within_range
-        ),
+        within_range=(within_range),
         score=score,
     )
 
@@ -716,19 +500,11 @@ def temporal_evidence(
     source: TelemetryRecord,
     target: TelemetryRecord,
     *,
-    maximum_distance_seconds: float = (
-        DEFAULT_MAX_DISTANCE_SECONDS
-    ),
-    half_life_seconds: float = (
-        DEFAULT_HALF_LIFE_SECONDS
-    ),
-    simultaneous_tolerance: float = (
-        DEFAULT_SIMULTANEOUS_TOLERANCE
-    ),
+    maximum_distance_seconds: float = (DEFAULT_MAX_DISTANCE_SECONDS),
+    half_life_seconds: float = (DEFAULT_HALF_LIFE_SECONDS),
+    simultaneous_tolerance: float = (DEFAULT_SIMULTANEOUS_TOLERANCE),
     decay: str = "exponential",
-) -> Optional[
-    CorrelationEvidence
-]:
+) -> Optional[CorrelationEvidence]:
     """
     Convert temporal comparison into correlation
     evidence.
@@ -740,62 +516,33 @@ def temporal_evidence(
     relation = temporal_relation(
         source,
         target,
-        maximum_distance_seconds=(
-            maximum_distance_seconds
-        ),
-        half_life_seconds=(
-            half_life_seconds
-        ),
-        simultaneous_tolerance=(
-            simultaneous_tolerance
-        ),
+        maximum_distance_seconds=(maximum_distance_seconds),
+        half_life_seconds=(half_life_seconds),
+        simultaneous_tolerance=(simultaneous_tolerance),
         decay=decay,
     )
 
-    if (
-        relation.delta_seconds
-        is None
-        or not relation.within_range
-    ):
+    if relation.delta_seconds is None or not relation.within_range:
         return None
 
     return CorrelationEvidence(
-        evidence_type=(
-            EvidenceType.TEMPORAL.value
-        ),
+        evidence_type=(EvidenceType.TEMPORAL.value),
         score=relation.score,
-        source_record_id=(
-            relation.source_record_id
-        ),
-        target_record_id=(
-            relation.target_record_id
-        ),
-        source_resource_id=(
-            source.resource.effective_id()
-        ),
-        target_resource_id=(
-            target.resource.effective_id()
-        ),
+        source_record_id=(relation.source_record_id),
+        target_record_id=(relation.target_record_id),
+        source_resource_id=(source.resource.effective_id()),
+        target_resource_id=(target.resource.effective_id()),
         description=(
             "Telemetry observations occurred "
             f"{relation.delta_seconds:.6f} "
             "seconds apart"
         ),
         attributes={
-            "delta_seconds": (
-                relation.delta_seconds
-            ),
-            "signed_delta_seconds": (
-                relation.
-                signed_delta_seconds
-            ),
+            "delta_seconds": (relation.delta_seconds),
+            "signed_delta_seconds": (relation.signed_delta_seconds),
             "order": relation.order,
-            "direction": (
-                relation.direction
-            ),
-            "maximum_distance_seconds": (
-                maximum_distance_seconds
-            ),
+            "direction": (relation.direction),
+            "maximum_distance_seconds": (maximum_distance_seconds),
             "decay": decay,
         },
     )
@@ -803,20 +550,12 @@ def temporal_evidence(
 
 def compare_many(
     anchor: TelemetryRecord,
-    candidates: Iterable[
-        TelemetryRecord
-    ],
+    candidates: Iterable[TelemetryRecord],
     *,
-    maximum_distance_seconds: float = (
-        DEFAULT_MAX_DISTANCE_SECONDS
-    ),
-    half_life_seconds: float = (
-        DEFAULT_HALF_LIFE_SECONDS
-    ),
+    maximum_distance_seconds: float = (DEFAULT_MAX_DISTANCE_SECONDS),
+    half_life_seconds: float = (DEFAULT_HALF_LIFE_SECONDS),
     decay: str = "exponential",
-) -> List[
-    TemporalRelation
-]:
+) -> List[TemporalRelation]:
     """
     Compare one observation with many candidates.
     """
@@ -828,32 +567,22 @@ def compare_many(
     for candidate in candidates:
         candidate.finalize()
 
-        if (
-            anchor.record_id
-            == candidate.record_id
-        ):
+        if anchor.record_id == candidate.record_id:
             continue
 
         output.append(
             temporal_relation(
                 anchor,
                 candidate,
-                maximum_distance_seconds=(
-                    maximum_distance_seconds
-                ),
-                half_life_seconds=(
-                    half_life_seconds
-                ),
+                maximum_distance_seconds=(maximum_distance_seconds),
+                half_life_seconds=(half_life_seconds),
                 decay=decay,
             )
         )
 
     output.sort(
         key=lambda item: (
-            item.delta_seconds
-            if item.delta_seconds
-            is not None
-            else math.inf
+            item.delta_seconds if item.delta_seconds is not None else math.inf
         )
     )
 
@@ -862,17 +591,11 @@ def compare_many(
 
 def nearest_records(
     anchor: TelemetryRecord,
-    candidates: Iterable[
-        TelemetryRecord
-    ],
+    candidates: Iterable[TelemetryRecord],
     *,
     limit: int = 10,
-    maximum_distance_seconds: float = (
-        DEFAULT_MAX_DISTANCE_SECONDS
-    ),
-) -> List[
-    TemporalRelation
-]:
+    maximum_distance_seconds: float = (DEFAULT_MAX_DISTANCE_SECONDS),
+) -> List[TemporalRelation]:
     """
     Return temporally nearest valid candidates.
 
@@ -881,34 +604,20 @@ def nearest_records(
     """
 
     if limit < 1:
-        raise ValueError(
-            "limit must be >= 1"
-        )
+        raise ValueError("limit must be >= 1")
 
     relations = compare_many(
         anchor,
         candidates,
-        maximum_distance_seconds=(
-            maximum_distance_seconds
-        ),
+        maximum_distance_seconds=(maximum_distance_seconds),
     )
 
-    return [
-        relation
-        for relation in relations
-        if relation.within_range
-    ][
-        :limit
-    ]
+    return [relation for relation in relations if relation.within_range][:limit]
 
 
 def ordered_records(
-    records: Iterable[
-        TelemetryRecord
-    ],
-) -> List[
-    TelemetryRecord
-]:
+    records: Iterable[TelemetryRecord],
+) -> List[TelemetryRecord]:
     """
     Return telemetry ordered by valid timestamp.
 
@@ -919,23 +628,14 @@ def ordered_records(
     return sorted(
         records,
         key=lambda telemetry: (
-            telemetry_timestamp(
-                telemetry
-            )
-            or datetime.max.replace(
-                tzinfo=timezone.utc
-            )
+            telemetry_timestamp(telemetry) or datetime.max.replace(tzinfo=timezone.utc)
         ),
     )
 
 
 def event_sequence(
-    records: Iterable[
-        TelemetryRecord
-    ],
-) -> List[
-    Dict[str, Any]
-]:
+    records: Iterable[TelemetryRecord],
+) -> List[Dict[str, Any]]:
     """
     Produce a compact ordered timeline suitable
     for correlation diagnostics and eventual
@@ -944,40 +644,18 @@ def event_sequence(
 
     output = []
 
-    for telemetry in ordered_records(
-        records
-    ):
+    for telemetry in ordered_records(records):
         telemetry.finalize()
 
         output.append(
             {
-                "record_id": (
-                    telemetry.record_id
-                ),
-                "timestamp": (
-                    telemetry.signal.
-                    timestamp
-                ),
-                "provider": (
-                    telemetry.resource.
-                    provider
-                ),
-                "resource_id": (
-                    telemetry.resource.
-                    effective_id()
-                ),
-                "signal_type": (
-                    telemetry.signal.
-                    signal_type
-                ),
-                "signal_name": (
-                    telemetry.signal.
-                    signal_name
-                ),
-                "severity": (
-                    telemetry.signal.
-                    severity
-                ),
+                "record_id": (telemetry.record_id),
+                "timestamp": (telemetry.signal.timestamp),
+                "provider": (telemetry.resource.provider),
+                "resource_id": (telemetry.resource.effective_id()),
+                "signal_type": (telemetry.signal.signal_type),
+                "signal_name": (telemetry.signal.signal_name),
+                "severity": (telemetry.signal.severity),
             }
         )
 
@@ -992,53 +670,32 @@ class TemporalAnalyzer:
     def __init__(
         self,
         *,
-        maximum_distance_seconds: float = (
-            DEFAULT_MAX_DISTANCE_SECONDS
-        ),
-        half_life_seconds: float = (
-            DEFAULT_HALF_LIFE_SECONDS
-        ),
-        simultaneous_tolerance: float = (
-            DEFAULT_SIMULTANEOUS_TOLERANCE
-        ),
+        maximum_distance_seconds: float = (DEFAULT_MAX_DISTANCE_SECONDS),
+        half_life_seconds: float = (DEFAULT_HALF_LIFE_SECONDS),
+        simultaneous_tolerance: float = (DEFAULT_SIMULTANEOUS_TOLERANCE),
         decay: str = "exponential",
     ) -> None:
-        self.maximum_distance_seconds = (
-            validate_seconds(
-                maximum_distance_seconds,
-                name=(
-                    "maximum_distance_seconds"
-                ),
-            )
+        self.maximum_distance_seconds = validate_seconds(
+            maximum_distance_seconds,
+            name=("maximum_distance_seconds"),
         )
 
-        self.half_life_seconds = (
-            validate_seconds(
-                half_life_seconds,
-                name=(
-                    "half_life_seconds"
-                ),
-            )
+        self.half_life_seconds = validate_seconds(
+            half_life_seconds,
+            name=("half_life_seconds"),
         )
 
-        self.simultaneous_tolerance = (
-            validate_seconds(
-                simultaneous_tolerance,
-                name=(
-                    "simultaneous_tolerance"
-                ),
-                allow_zero=True,
-            )
+        self.simultaneous_tolerance = validate_seconds(
+            simultaneous_tolerance,
+            name=("simultaneous_tolerance"),
+            allow_zero=True,
         )
 
         if decay not in {
             "exponential",
             "linear",
         }:
-            raise ValueError(
-                "decay must be "
-                "'exponential' or 'linear'"
-            )
+            raise ValueError("decay must be 'exponential' or 'linear'")
 
         self.decay = decay
 
@@ -1050,17 +707,9 @@ class TemporalAnalyzer:
         return temporal_relation(
             source,
             target,
-            maximum_distance_seconds=(
-                self.
-                maximum_distance_seconds
-            ),
-            half_life_seconds=(
-                self.half_life_seconds
-            ),
-            simultaneous_tolerance=(
-                self.
-                simultaneous_tolerance
-            ),
+            maximum_distance_seconds=(self.maximum_distance_seconds),
+            half_life_seconds=(self.half_life_seconds),
+            simultaneous_tolerance=(self.simultaneous_tolerance),
             decay=self.decay,
         )
 
@@ -1068,22 +717,12 @@ class TemporalAnalyzer:
         self,
         source: TelemetryRecord,
         target: TelemetryRecord,
-    ) -> Optional[
-        CorrelationEvidence
-    ]:
+    ) -> Optional[CorrelationEvidence]:
         return temporal_evidence(
             source,
             target,
-            maximum_distance_seconds=(
-                self.
-                maximum_distance_seconds
-            ),
-            half_life_seconds=(
-                self.half_life_seconds
-            ),
-            simultaneous_tolerance=(
-                self.
-                simultaneous_tolerance
-            ),
+            maximum_distance_seconds=(self.maximum_distance_seconds),
+            half_life_seconds=(self.half_life_seconds),
+            simultaneous_tolerance=(self.simultaneous_tolerance),
             decay=self.decay,
         )

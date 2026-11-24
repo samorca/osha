@@ -49,33 +49,19 @@ from src.security.secrets import (
 # Capability names
 # ---------------------------------------------------------------
 
-CAPABILITY_CLUSTER_READ = (
-    "cluster.read"
-)
+CAPABILITY_CLUSTER_READ = "cluster.read"
 
-CAPABILITY_HEALTH_READ = (
-    "health.read"
-)
+CAPABILITY_HEALTH_READ = "health.read"
 
-CAPABILITY_OSD_READ = (
-    "osd.read"
-)
+CAPABILITY_OSD_READ = "osd.read"
 
-CAPABILITY_POOL_READ = (
-    "pool.read"
-)
+CAPABILITY_POOL_READ = "pool.read"
 
-CAPABILITY_HOST_READ = (
-    "host.read"
-)
+CAPABILITY_HOST_READ = "host.read"
 
-CAPABILITY_MONITOR_READ = (
-    "monitor.read"
-)
+CAPABILITY_MONITOR_READ = "monitor.read"
 
-CAPABILITY_SERVICE_READ = (
-    "service.read"
-)
+CAPABILITY_SERVICE_READ = "service.read"
 
 
 # ---------------------------------------------------------------
@@ -91,9 +77,8 @@ ACTION_LIST = "list"
 # Ceph adapter
 # ---------------------------------------------------------------
 
-class CephAdapter(
-    IntegrationAdapter
-):
+
+class CephAdapter(IntegrationAdapter):
     """
     Translate OSHA IntegrationOperation objects
     into CephClient read operations.
@@ -115,26 +100,15 @@ class CephAdapter(
         self,
         *,
         ceph_config: CephConfig,
-        config: Optional[
-            IntegrationsConfig
-        ] = None,
+        config: Optional[IntegrationsConfig] = None,
     ) -> None:
-        self.ceph_config = (
-            ceph_config
-        )
+        self.ceph_config = ceph_config
 
         self.ceph_config.validate()
 
         super().__init__(
-            target=(
-                self.ceph_config.
-                target()
-            ),
-
-            config=(
-                config
-                or IntegrationsConfig()
-            ),
+            target=(self.ceph_config.target()),
+            config=(config or IntegrationsConfig()),
         )
 
     # ---------------------------------------------------------
@@ -143,32 +117,21 @@ class CephAdapter(
 
     def define_capabilities(
         self,
-    ) -> Iterable[
-        IntegrationCapability
-    ]:
+    ) -> Iterable[IntegrationCapability]:
         capabilities = [
             # -------------------------------------------------
             # Cluster summary
             # -------------------------------------------------
-
             IntegrationCapability(
-                name=(
-                    CAPABILITY_CLUSTER_READ
-                ),
-
+                name=(CAPABILITY_CLUSTER_READ),
                 resource="cluster",
-
                 actions=[
                     ACTION_GET,
                 ],
-
                 read_only=True,
-
                 attributes={
                     "provider": "ceph",
-                    "api": (
-                        "dashboard"
-                    ),
+                    "api": ("dashboard"),
                 },
             )
         ]
@@ -177,29 +140,18 @@ class CephAdapter(
         # Health
         # -----------------------------------------------------
 
-        if (
-            self.ceph_config.
-            enable_health
-        ):
+        if self.ceph_config.enable_health:
             capabilities.append(
                 IntegrationCapability(
-                    name=(
-                        CAPABILITY_HEALTH_READ
-                    ),
-
+                    name=(CAPABILITY_HEALTH_READ),
                     resource="health",
-
                     actions=[
                         ACTION_GET,
                     ],
-
                     read_only=True,
-
                     attributes={
                         "provider": "ceph",
-                        "api": (
-                            "dashboard"
-                        ),
+                        "api": ("dashboard"),
                     },
                 )
             )
@@ -211,24 +163,16 @@ class CephAdapter(
         if self.ceph_config.enable_osd:
             capabilities.append(
                 IntegrationCapability(
-                    name=(
-                        CAPABILITY_OSD_READ
-                    ),
-
+                    name=(CAPABILITY_OSD_READ),
                     resource="osd",
-
                     actions=[
                         ACTION_LIST,
                         ACTION_GET,
                     ],
-
                     read_only=True,
-
                     attributes={
                         "provider": "ceph",
-                        "api": (
-                            "dashboard"
-                        ),
+                        "api": ("dashboard"),
                     },
                 )
             )
@@ -237,30 +181,19 @@ class CephAdapter(
         # Pools
         # -----------------------------------------------------
 
-        if (
-            self.ceph_config.
-            enable_pools
-        ):
+        if self.ceph_config.enable_pools:
             capabilities.append(
                 IntegrationCapability(
-                    name=(
-                        CAPABILITY_POOL_READ
-                    ),
-
+                    name=(CAPABILITY_POOL_READ),
                     resource="pool",
-
                     actions=[
                         ACTION_LIST,
                         ACTION_GET,
                     ],
-
                     read_only=True,
-
                     attributes={
                         "provider": "ceph",
-                        "api": (
-                            "dashboard"
-                        ),
+                        "api": ("dashboard"),
                     },
                 )
             )
@@ -269,29 +202,18 @@ class CephAdapter(
         # Hosts
         # -----------------------------------------------------
 
-        if (
-            self.ceph_config.
-            enable_hosts
-        ):
+        if self.ceph_config.enable_hosts:
             capabilities.append(
                 IntegrationCapability(
-                    name=(
-                        CAPABILITY_HOST_READ
-                    ),
-
+                    name=(CAPABILITY_HOST_READ),
                     resource="host",
-
                     actions=[
                         ACTION_LIST,
                     ],
-
                     read_only=True,
-
                     attributes={
                         "provider": "ceph",
-                        "api": (
-                            "dashboard"
-                        ),
+                        "api": ("dashboard"),
                     },
                 )
             )
@@ -300,29 +222,18 @@ class CephAdapter(
         # Monitors
         # -----------------------------------------------------
 
-        if (
-            self.ceph_config.
-            enable_monitors
-        ):
+        if self.ceph_config.enable_monitors:
             capabilities.append(
                 IntegrationCapability(
-                    name=(
-                        CAPABILITY_MONITOR_READ
-                    ),
-
+                    name=(CAPABILITY_MONITOR_READ),
                     resource="monitor",
-
                     actions=[
                         ACTION_GET,
                     ],
-
                     read_only=True,
-
                     attributes={
                         "provider": "ceph",
-                        "api": (
-                            "dashboard"
-                        ),
+                        "api": ("dashboard"),
                     },
                 )
             )
@@ -331,29 +242,18 @@ class CephAdapter(
         # Services
         # -----------------------------------------------------
 
-        if (
-            self.ceph_config.
-            enable_services
-        ):
+        if self.ceph_config.enable_services:
             capabilities.append(
                 IntegrationCapability(
-                    name=(
-                        CAPABILITY_SERVICE_READ
-                    ),
-
+                    name=(CAPABILITY_SERVICE_READ),
                     resource="service",
-
                     actions=[
                         ACTION_LIST,
                     ],
-
                     read_only=True,
-
                     attributes={
                         "provider": "ceph",
-                        "api": (
-                            "dashboard"
-                        ),
+                        "api": ("dashboard"),
                     },
                 )
             )
@@ -366,15 +266,10 @@ class CephAdapter(
 
     def connect_client(
         self,
-        credential: Optional[
-            SecretValue
-        ],
+        credential: Optional[SecretValue],
     ) -> CephClient:
         client = CephClient(
-            config=(
-                self.ceph_config
-            ),
-
+            config=(self.ceph_config),
             credential=credential,
         )
 
@@ -422,164 +317,78 @@ class CephAdapter(
 
         operation.finalize()
 
-        capability = (
-            operation.capability
-        )
+        capability = operation.capability
 
-        action = (
-            operation.action
-        )
+        action = operation.action
 
         # -----------------------------------------------------
         # Cluster summary
         # -----------------------------------------------------
 
-        if (
-            capability
-            == CAPABILITY_CLUSTER_READ
-            and action
-            == ACTION_GET
-        ):
-            return {
-                "cluster": (
-                    client.
-                    cluster_summary()
-                )
-            }
+        if capability == CAPABILITY_CLUSTER_READ and action == ACTION_GET:
+            return {"cluster": (client.cluster_summary())}
 
         # -----------------------------------------------------
         # Cluster health
         # -----------------------------------------------------
 
-        if (
-            capability
-            == CAPABILITY_HEALTH_READ
-            and action
-            == ACTION_GET
-        ):
-            return {
-                "health": (
-                    client.health()
-                )
-            }
+        if capability == CAPABILITY_HEALTH_READ and action == ACTION_GET:
+            return {"health": (client.health())}
 
         # -----------------------------------------------------
         # OSDs
         # -----------------------------------------------------
 
-        if (
-            capability
-            == CAPABILITY_OSD_READ
-        ):
+        if capability == CAPABILITY_OSD_READ:
             if action == ACTION_LIST:
-                return {
-                    "osds": (
-                        client.list_osds()
-                    )
-                }
+                return {"osds": (client.list_osds())}
 
             if action == ACTION_GET:
-                resource_id = (
-                    self._require_resource_id(
-                        operation,
-                        capability=(
-                            capability
-                        ),
-                        action=action,
-                    )
+                resource_id = self._require_resource_id(
+                    operation,
+                    capability=(capability),
+                    action=action,
                 )
 
-                return {
-                    "osd": (
-                        client.get_osd(
-                            resource_id
-                        )
-                    )
-                }
+                return {"osd": (client.get_osd(resource_id))}
 
         # ----------------------------------------------------
         # Pools
         # -----------------------------------------------------
 
-        if (
-            capability
-            == CAPABILITY_POOL_READ
-        ):
+        if capability == CAPABILITY_POOL_READ:
             if action == ACTION_LIST:
-                return {
-                    "pools": (
-                        client.
-                        list_pools()
-                    )
-                }
+                return {"pools": (client.list_pools())}
 
             if action == ACTION_GET:
-                resource_id = (
-                    self._require_resource_id(
-                        operation,
-                        capability=(
-                            capability
-                        ),
-                        action=action,
-                    )
+                resource_id = self._require_resource_id(
+                    operation,
+                    capability=(capability),
+                    action=action,
                 )
 
-                return {
-                    "pool": (
-                        client.get_pool(
-                            resource_id
-                        )
-                    )
-                }
+                return {"pool": (client.get_pool(resource_id))}
 
         # -----------------------------------------------------
         # Hosts
         # -----------------------------------------------------
 
-        if (
-            capability
-            == CAPABILITY_HOST_READ
-            and action
-            == ACTION_LIST
-        ):
-            return {
-                "hosts": (
-                    client.list_hosts()
-                )
-            }
+        if capability == CAPABILITY_HOST_READ and action == ACTION_LIST:
+            return {"hosts": (client.list_hosts())}
 
         # -----------------------------------------------------
         # Monitors
         # -----------------------------------------------------
 
-        if (
-            capability
-            == CAPABILITY_MONITOR_READ
-            and action
-            == ACTION_GET
-        ):
-            return {
-                "monitors": (
-                    client.monitors()
-                )
-            }
+        if capability == CAPABILITY_MONITOR_READ and action == ACTION_GET:
+            return {"monitors": (client.monitors())}
 
         # -----------------------------------------------------
         # Services
         # -----------------------------------------------------
 
-        if (
-            capability
-            == CAPABILITY_SERVICE_READ
-            and action
-            == ACTION_LIST
-        ):
-            return {
-                "services": (
-                    client.
-                    list_services()
-                )
-            }
+        if capability == CAPABILITY_SERVICE_READ and action == ACTION_LIST:
+            return {"services": (client.list_services())}
 
         # -----------------------------------------------------
         # Unsupported
@@ -587,9 +396,7 @@ class CephAdapter(
 
         raise (
             IntegrationCapabilityError(
-                "Unsupported Ceph "
-                "integration operation: "
-                f"{capability}/{action}"
+                f"Unsupported Ceph integration operation: {capability}/{action}"
             )
         )
 
@@ -607,8 +414,7 @@ class CephAdapter(
         if not operation.resource_id:
             raise (
                 IntegrationOperationError(
-                    f"{capability}/{action} "
-                    "requires resource_id."
+                    f"{capability}/{action} requires resource_id."
                 )
             )
 
@@ -630,51 +436,19 @@ class CephAdapter(
                 client,
                 CephClient,
             ):
-                client_summary = (
-                    client.summary()
-                )
+                client_summary = client.summary()
 
         return {
             "provider": "ceph",
-
-            "environment_id": (
-                self.target.
-                environment_id
-            ),
-
-            "target_id": (
-                self.target.target_id
-            ),
-
-            "api_url": (
-                self.ceph_config.
-                normalized_api_url
-            ),
-
-            "api_version": (
-                self.ceph_config.
-                api_version
-            ),
-
+            "environment_id": (self.target.environment_id),
+            "target_id": (self.target.target_id),
+            "api_url": (self.ceph_config.normalized_api_url),
+            "api_version": (self.ceph_config.api_version),
             "ready": self.ready,
-
-            "client": (
-                client_summary
-            ),
-
-            "capabilities": [
-                capability.name
-                for capability
-                in self.capabilities()
-            ],
-
-            "mutating_capabilities_advertised": (
-                False
-            ),
-
-            "credential_value_exposed": (
-                False
-            ),
+            "client": (client_summary),
+            "capabilities": [capability.name for capability in self.capabilities()],
+            "mutating_capabilities_advertised": (False),
+            "credential_value_exposed": (False),
         }
 
 
@@ -690,9 +464,7 @@ __all__ = [
     "CAPABILITY_HOST_READ",
     "CAPABILITY_MONITOR_READ",
     "CAPABILITY_SERVICE_READ",
-
     "ACTION_GET",
     "ACTION_LIST",
-
     "CephAdapter",
 ]

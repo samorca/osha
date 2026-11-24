@@ -13,41 +13,28 @@ def parse_timestamp(
     value: str,
 ) -> datetime:
     if not isinstance(value, str):
-        raise ValueError(
-            "timestamp must be a string"
-        )
+        raise ValueError("timestamp must be a string")
 
     text = value
 
     if text.endswith("Z"):
         text = text[:-1] + "+00:00"
 
-    parsed = datetime.fromisoformat(
-        text
-    )
+    parsed = datetime.fromisoformat(text)
 
     if parsed.tzinfo is None:
-        parsed = parsed.replace(
-            tzinfo=timezone.utc
-        )
+        parsed = parsed.replace(tzinfo=timezone.utc)
 
-    return parsed.astimezone(
-        timezone.utc
-    )
+    return parsed.astimezone(timezone.utc)
 
 
 def floor_window(
     timestamp: datetime,
     window_seconds: int,
 ) -> datetime:
-    epoch_seconds = int(
-        timestamp.timestamp()
-    )
+    epoch_seconds = int(timestamp.timestamp())
 
-    start_seconds = (
-        epoch_seconds
-        - epoch_seconds % window_seconds
-    )
+    start_seconds = epoch_seconds - epoch_seconds % window_seconds
 
     return datetime.fromtimestamp(
         start_seconds,
@@ -70,19 +57,13 @@ def read_jsonl(
                 continue
 
             try:
-                record = json.loads(
-                    line
-                )
+                record = json.loads(line)
             except json.JSONDecodeError as exc:
                 raise ValueError(
-                    f"Invalid JSON at "
-                    f"{path}:{line_number}: {exc}"
+                    f"Invalid JSON at {path}:{line_number}: {exc}"
                 ) from exc
 
-            if (
-                record.get("record_type")
-                != "normalized_telemetry"
-            ):
+            if record.get("record_type") != "normalized_telemetry":
                 continue
 
             yield record
@@ -93,15 +74,9 @@ def make_window_id(
     window_start: datetime,
     window_seconds: int,
 ) -> str:
-    identity = (
-        f"{resource_key}|"
-        f"{window_start.isoformat()}|"
-        f"{window_seconds}"
-    )
+    identity = f"{resource_key}|{window_start.isoformat()}|{window_seconds}"
 
-    return hashlib.sha256(
-        identity.encode("utf-8")
-    ).hexdigest()
+    return hashlib.sha256(identity.encode("utf-8")).hexdigest()
 
 
 def window_record(
@@ -119,14 +94,9 @@ def window_record(
 
     first = records[0]
 
-    end = window_start + timedelta(
-        seconds=window_seconds
-    )
+    end = window_start + timedelta(seconds=window_seconds)
 
-    signal_counts = Counter(
-        item["signal_type"]
-        for item in records
-    )
+    signal_counts = Counter(item["signal_type"] for item in records)
 
     logs = []
     events = []
@@ -137,13 +107,9 @@ def window_record(
     record_ids = []
 
     for item in records:
-        record_ids.append(
-            item["record_id"]
-        )
+        record_ids.append(item["record_id"])
 
-        signal_type = item[
-            "signal_type"
-        ]
+        signal_type = item["signal_type"]
 
         payload = item.get(
             "payload",
@@ -151,12 +117,8 @@ def window_record(
         )
 
         common = {
-            "record_id": item[
-                "record_id"
-            ],
-            "timestamp": item[
-                "timestamp"
-            ],
+            "record_id": item["record_id"],
+            "timestamp": item["timestamp"],
             "payload": payload,
         }
 
@@ -179,41 +141,19 @@ def window_record(
             window_start,
             window_seconds,
         ),
-        "window_start": (
-            window_start.isoformat()
-        ),
+        "window_start": (window_start.isoformat()),
         "window_end": end.isoformat(),
         "window_seconds": window_seconds,
-        "environment_id": first[
-            "environment_id"
-        ],
-        "cluster_id": first[
-            "cluster_id"
-        ],
-        "namespace": first.get(
-            "namespace"
-        ),
-        "service_name": first.get(
-            "service_name"
-        ),
-        "resource_key": first[
-            "resource_key"
-        ],
-        "pod_name": first.get(
-            "pod_name"
-        ),
-        "pod_uid": first.get(
-            "pod_uid"
-        ),
-        "node_name": first.get(
-            "node_name"
-        ),
-        "container_name": first.get(
-            "container_name"
-        ),
-        "signal_counts": dict(
-            signal_counts
-        ),
+        "environment_id": first["environment_id"],
+        "cluster_id": first["cluster_id"],
+        "namespace": first.get("namespace"),
+        "service_name": first.get("service_name"),
+        "resource_key": first["resource_key"],
+        "pod_name": first.get("pod_name"),
+        "pod_uid": first.get("pod_uid"),
+        "node_name": first.get("node_name"),
+        "container_name": first.get("container_name"),
+        "signal_counts": dict(signal_counts),
         "record_count": len(records),
         "record_ids": record_ids,
         "logs": logs,
@@ -232,27 +172,19 @@ def build_windows(
     minimum_records: int,
 ) -> dict:
     if window_seconds < 1:
-        raise ValueError(
-            "window_seconds must be positive"
-        )
+        raise ValueError("window_seconds must be positive")
 
     if minimum_records < 1:
-        raise ValueError(
-            "minimum_records must be positive"
-        )
+        raise ValueError("minimum_records must be positive")
 
     groups = defaultdict(list)
 
     source_records = 0
 
-    for record in read_jsonl(
-        input_path
-    ):
+    for record in read_jsonl(input_path):
         source_records += 1
 
-        timestamp = parse_timestamp(
-            record["timestamp"]
-        )
+        timestamp = parse_timestamp(record["timestamp"])
 
         start = floor_window(
             timestamp,
@@ -293,9 +225,7 @@ def build_windows(
             if len(records) < minimum_records:
                 continue
 
-            start = parse_timestamp(
-                start_text
-            )
+            start = parse_timestamp(start_text)
 
             window = window_record(
                 records,
@@ -312,17 +242,13 @@ def build_windows(
             )
 
             windows_written += 1
-            records_in_windows += len(
-                records
-            )
+            records_in_windows += len(records)
 
     return {
         "source_records": source_records,
         "candidate_windows": len(groups),
         "windows_written": windows_written,
-        "records_in_windows": (
-            records_in_windows
-        ),
+        "records_in_windows": (records_in_windows),
         "window_seconds": window_seconds,
         "minimum_records": minimum_records,
         "output": str(output_path),
@@ -331,25 +257,17 @@ def build_windows(
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description=(
-            "Build correlated OSHA telemetry windows."
-        )
+        description=("Build correlated OSHA telemetry windows.")
     )
 
     parser.add_argument(
         "--input",
-        default=(
-            "orchestration-ai-data/processed/"
-            "live/kubernetes/normalized.jsonl"
-        ),
+        default=("orchestration-ai-data/processed/live/kubernetes/normalized.jsonl"),
     )
 
     parser.add_argument(
         "--output",
-        default=(
-            "orchestration-ai-data/processed/"
-            "live/kubernetes/windows.jsonl"
-        ),
+        default=("orchestration-ai-data/processed/live/kubernetes/windows.jsonl"),
     )
 
     parser.add_argument(

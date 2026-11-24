@@ -56,6 +56,7 @@ ReadinessProbe = Callable[
 # Runtime service
 # ---------------------------------------------------------------
 
+
 @dataclass
 class RuntimeService:
     """
@@ -76,62 +77,33 @@ class RuntimeService:
 
     name: str
 
-    dependencies: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    dependencies: List[str] = field(default_factory=list)
 
-    start_hook: Optional[
-        StartHook
-    ] = None
+    start_hook: Optional[StartHook] = None
 
-    stop_hook: Optional[
-        StopHook
-    ] = None
+    stop_hook: Optional[StopHook] = None
 
-    readiness_probe: Optional[
-        ReadinessProbe
-    ] = None
+    readiness_probe: Optional[ReadinessProbe] = None
 
-    config: ServiceConfig = field(
-        default_factory=ServiceConfig
-    )
+    config: ServiceConfig = field(default_factory=ServiceConfig)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
     ) -> "RuntimeService":
-        self.name = (
-            self.name.strip()
-        )
+        self.name = self.name.strip()
 
         if not self.name:
-            raise ValueError(
-                "Runtime service name "
-                "is required"
-            )
+            raise ValueError("Runtime service name is required")
 
-        self.dependencies = sorted(
-            set(
-                self.dependencies
-            )
-        )
+        self.dependencies = sorted(set(self.dependencies))
 
-        if (
-            self.name
-            in self.dependencies
-        ):
-            raise ValueError(
-                f"Service {self.name} "
-                "cannot depend on itself"
-            )
+        if self.name in self.dependencies:
+            raise ValueError(f"Service {self.name} cannot depend on itself")
 
         self.config.validate()
 
@@ -144,39 +116,16 @@ class RuntimeService:
 
         return ServiceStatus(
             name=self.name,
-            state=(
-                ServiceState.
-                REGISTERED.value
-            ),
-            readiness=(
-                ReadinessStatus.
-                UNKNOWN.value
-            ),
-            required=(
-                self.config.required
-            ),
-            dependencies=list(
-                self.dependencies
-            ),
+            state=(ServiceState.REGISTERED.value),
+            readiness=(ReadinessStatus.UNKNOWN.value),
+            required=(self.config.required),
+            dependencies=list(self.dependencies),
             attributes={
-                **dict(
-                    self.attributes
-                ),
-                "enabled": (
-                    self.config.enabled
-                ),
-                "startup_timeout_seconds": (
-                    self.config.
-                    startup_timeout_seconds
-                ),
-                "shutdown_timeout_seconds": (
-                    self.config.
-                    shutdown_timeout_seconds
-                ),
-                "restart_limit": (
-                    self.config.
-                    restart_limit
-                ),
+                **dict(self.attributes),
+                "enabled": (self.config.enabled),
+                "startup_timeout_seconds": (self.config.startup_timeout_seconds),
+                "shutdown_timeout_seconds": (self.config.shutdown_timeout_seconds),
+                "restart_limit": (self.config.restart_limit),
             },
         ).finalize()
 
@@ -185,9 +134,8 @@ class RuntimeService:
 # Registry
 # ---------------------------------------------------------------
 
-class ServiceRegistryError(
-    RuntimeError
-):
+
+class ServiceRegistryError(RuntimeError):
     pass
 
 
@@ -213,53 +161,32 @@ class RuntimeServiceRegistry:
     ) -> RuntimeService:
         service.finalize()
 
-        if (
-            service.name
-            in self._services
-        ):
+        if service.name in self._services:
             raise (
                 ServiceRegistryError(
-                    "Runtime service "
-                    "already registered: "
-                    f"{service.name}"
+                    f"Runtime service already registered: {service.name}"
                 )
             )
 
-        self._services[
-            service.name
-        ] = service
+        self._services[service.name] = service
 
         return service
 
     def get(
         self,
         name: str,
-    ) -> Optional[
-        RuntimeService
-    ]:
-        return self._services.get(
-            name
-        )
+    ) -> Optional[RuntimeService]:
+        return self._services.get(name)
 
     def names(
         self,
     ) -> List[str]:
-        return sorted(
-            self._services
-        )
+        return sorted(self._services)
 
     def services(
         self,
-    ) -> List[
-        RuntimeService
-    ]:
-        return [
-            self._services[
-                name
-            ]
-            for name
-            in self.names()
-        ]
+    ) -> List[RuntimeService]:
+        return [self._services[name] for name in self.names()]
 
     # ---------------------------------------------------------
     # Dependency validation
@@ -268,28 +195,15 @@ class RuntimeServiceRegistry:
     def validate_dependencies(
         self,
     ) -> None:
-        names = set(
-            self._services
-        )
+        names = set(self._services)
 
-        for service in (
-            self._services.values()
-        ):
-            missing = sorted(
-                set(
-                    service.dependencies
-                )
-                - names
-            )
+        for service in self._services.values():
+            missing = sorted(set(service.dependencies) - names)
 
             if missing:
                 raise (
                     ServiceRegistryError(
-                        f"Service "
-                        f"{service.name} has "
-                        "missing "
-                        "dependencies: "
-                        f"{missing}"
+                        f"Service {service.name} has missing dependencies: {missing}"
                     )
                 )
 
@@ -311,36 +225,21 @@ class RuntimeServiceRegistry:
         Dependencies start before dependents.
         """
 
-        names = set(
-            self._services
-        )
+        names = set(self._services)
 
         indegree: Dict[
             str,
             int,
-        ] = {
-            name: 0
-            for name in names
-        }
+        ] = {name: 0 for name in names}
 
         dependents: Dict[
             str,
             Set[str],
-        ] = {
-            name: set()
-            for name in names
-        }
+        ] = {name: set() for name in names}
 
-        for service in (
-            self._services.values()
-        ):
-            for dependency in (
-                service.dependencies
-            ):
-                if (
-                    dependency
-                    not in names
-                ):
+        for service in self._services.values():
+            for dependency in service.dependencies:
+                if dependency not in names:
                     raise (
                         ServiceRegistryError(
                             f"Service "
@@ -351,74 +250,33 @@ class RuntimeServiceRegistry:
                         )
                     )
 
-                indegree[
-                    service.name
-                ] += 1
+                indegree[service.name] += 1
 
-                dependents[
-                    dependency
-                ].add(
-                    service.name
-                )
+                dependents[dependency].add(service.name)
 
-        ready = sorted(
-            name
-            for name, count
-            in indegree.items()
-            if count == 0
-        )
+        ready = sorted(name for name, count in indegree.items() if count == 0)
 
-        ordered: List[
-            str
-        ] = []
+        ordered: List[str] = []
 
         while ready:
-            current = ready.pop(
-                0
-            )
+            current = ready.pop(0)
 
-            ordered.append(
-                current
-            )
+            ordered.append(current)
 
-            for dependent in sorted(
-                dependents[
-                    current
-                ]
-            ):
-                indegree[
-                    dependent
-                ] -= 1
+            for dependent in sorted(dependents[current]):
+                indegree[dependent] -= 1
 
-                if (
-                    indegree[
-                        dependent
-                    ]
-                    == 0
-                ):
-                    ready.append(
-                        dependent
-                    )
+                if indegree[dependent] == 0:
+                    ready.append(dependent)
 
                     ready.sort()
 
-        if (
-            len(ordered)
-            != len(names)
-        ):
-            unresolved = sorted(
-                name
-                for name, count
-                in indegree.items()
-                if count > 0
-            )
+        if len(ordered) != len(names):
+            unresolved = sorted(name for name, count in indegree.items() if count > 0)
 
             raise (
                 ServiceRegistryError(
-                    "Runtime service "
-                    "dependency cycle "
-                    "detected: "
-                    f"{unresolved}"
+                    f"Runtime service dependency cycle detected: {unresolved}"
                 )
             )
 
@@ -439,11 +297,7 @@ class RuntimeServiceRegistry:
         dependencies.
         """
 
-        return list(
-            reversed(
-                self.startup_order()
-            )
-        )
+        return list(reversed(self.startup_order()))
 
     # ---------------------------------------------------------
     # Attach runtime statuses
@@ -454,11 +308,7 @@ class RuntimeServiceRegistry:
         runtime: RuntimeStatus,
     ) -> RuntimeStatus:
         runtime.services = [
-            self._services[
-                name
-            ].status()
-            for name
-            in self.startup_order()
+            self._services[name].status() for name in self.startup_order()
         ]
 
         return runtime.finalize()
@@ -467,6 +317,7 @@ class RuntimeServiceRegistry:
 # ---------------------------------------------------------------
 # Service operation result
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class ServiceOperationResult:
@@ -478,14 +329,13 @@ class ServiceOperationResult:
 
     reason: str
 
-    error_type: Optional[
-        str
-    ] = None
+    error_type: Optional[str] = None
 
 
 # ---------------------------------------------------------------
 # Runtime service manager
 # ---------------------------------------------------------------
+
 
 class RuntimeServiceManager:
     """
@@ -500,16 +350,11 @@ class RuntimeServiceManager:
         self,
         registry: RuntimeServiceRegistry,
         *,
-        state: Optional[
-            RuntimeStateManager
-        ] = None,
+        state: Optional[RuntimeStateManager] = None,
     ) -> None:
         self.registry = registry
 
-        self.state = (
-            state
-            or RuntimeStateManager()
-        )
+        self.state = state or RuntimeStateManager()
 
         self.registry.validate_dependencies()
 
@@ -522,20 +367,12 @@ class RuntimeServiceManager:
         runtime: RuntimeStatus,
         service: RuntimeService,
     ) -> bool:
-        for dependency_name in (
-            service.dependencies
-        ):
-            dependency = (
-                runtime.service(
-                    dependency_name
-                )
-            )
+        for dependency_name in service.dependencies:
+            dependency = runtime.service(dependency_name)
 
             if (
                 dependency is None
-                or dependency.readiness
-                != ReadinessStatus.
-                READY.value
+                or dependency.readiness != ReadinessStatus.READY.value
             ):
                 return False
 
@@ -550,51 +387,26 @@ class RuntimeServiceManager:
         runtime: RuntimeStatus,
         name: str,
     ) -> ServiceOperationResult:
-        service = (
-            self.registry.get(
-                name
-            )
-        )
+        service = self.registry.get(name)
 
         if service is None:
-            raise (
-                ServiceRegistryError(
-                    "Unknown runtime "
-                    f"service: {name}"
-                )
-            )
+            raise (ServiceRegistryError(f"Unknown runtime service: {name}"))
 
         if not service.config.enabled:
-            status = runtime.service(
-                name
-            )
+            status = runtime.service(name)
 
             if status is not None:
-                status.state = (
-                    ServiceState.
-                    STOPPED.value
-                )
+                status.state = ServiceState.STOPPED.value
 
-                status.readiness = (
-                    ReadinessStatus.
-                    NOT_READY.value
-                )
+                status.readiness = ReadinessStatus.NOT_READY.value
 
-                status.attributes[
-                    "disabled"
-                ] = True
+                status.attributes["disabled"] = True
 
-            return (
-                ServiceOperationResult(
-                    name=name,
-                    success=True,
-                    ready=False,
-                    reason=(
-                        "Service is disabled "
-                        "by runtime "
-                        "configuration."
-                    ),
-                )
+            return ServiceOperationResult(
+                name=name,
+                success=True,
+                ready=False,
+                reason=("Service is disabled by runtime configuration."),
             )
 
         if not (
@@ -603,17 +415,11 @@ class RuntimeServiceManager:
                 service,
             )
         ):
-            return (
-                ServiceOperationResult(
-                    name=name,
-                    success=False,
-                    ready=False,
-                    reason=(
-                        "Required service "
-                        "dependencies are "
-                        "not ready."
-                    ),
-                )
+            return ServiceOperationResult(
+                name=name,
+                success=False,
+                ready=False,
+                reason=("Required service dependencies are not ready."),
             )
 
         self.state.service_starting(
@@ -622,23 +428,13 @@ class RuntimeServiceManager:
         )
 
         try:
-            if (
-                service.start_hook
-                is not None
-            ):
+            if service.start_hook is not None:
                 service.start_hook()
 
             ready = (
                 True
-                if (
-                    service.
-                    readiness_probe
-                    is None
-                )
-                else bool(
-                    service.
-                    readiness_probe()
-                )
+                if (service.readiness_probe is None)
+                else bool(service.readiness_probe())
             )
 
             if ready:
@@ -647,39 +443,24 @@ class RuntimeServiceManager:
                     name,
                 )
 
-                return (
-                    ServiceOperationResult(
-                        name=name,
-                        success=True,
-                        ready=True,
-                        reason=(
-                            "Service started "
-                            "and is ready."
-                        ),
-                    )
+                return ServiceOperationResult(
+                    name=name,
+                    success=True,
+                    ready=True,
+                    reason=("Service started and is ready."),
                 )
 
             self.state.service_failed(
                 runtime,
                 name,
-                reason=(
-                    "Service readiness "
-                    "probe did not report "
-                    "ready."
-                ),
+                reason=("Service readiness probe did not report ready."),
             )
 
-            return (
-                ServiceOperationResult(
-                    name=name,
-                    success=False,
-                    ready=False,
-                    reason=(
-                        "Service started but "
-                        "did not become "
-                        "ready."
-                    ),
-                )
+            return ServiceOperationResult(
+                name=name,
+                success=False,
+                ready=False,
+                reason=("Service started but did not become ready."),
             )
 
         except Exception as exc:
@@ -688,28 +469,16 @@ class RuntimeServiceManager:
             self.state.service_failed(
                 runtime,
                 name,
-                reason=(
-                    "Service startup failed."
-                ),
-                error=(
-                    "Service startup hook "
-                    "failed."
-                ),
+                reason=("Service startup failed."),
+                error=("Service startup hook failed."),
             )
 
-            return (
-                ServiceOperationResult(
-                    name=name,
-                    success=False,
-                    ready=False,
-                    reason=(
-                        "Service startup "
-                        "failed."
-                    ),
-                    error_type=(
-                        type(exc).__name__
-                    ),
-                )
+            return ServiceOperationResult(
+                name=name,
+                success=False,
+                ready=False,
+                reason=("Service startup failed."),
+                error_type=(type(exc).__name__),
             )
 
     # ---------------------------------------------------------
@@ -721,77 +490,37 @@ class RuntimeServiceManager:
         runtime: RuntimeStatus,
         name: str,
     ) -> ServiceOperationResult:
-        service = (
-            self.registry.get(
-                name
-            )
-        )
+        service = self.registry.get(name)
 
         if service is None:
-            raise (
-                ServiceRegistryError(
-                    "Unknown runtime "
-                    f"service: {name}"
-                )
-            )
+            raise (ServiceRegistryError(f"Unknown runtime service: {name}"))
 
-        status = runtime.service(
-            name
-        )
+        status = runtime.service(name)
 
         if status is None:
-            raise (
-                ServiceRegistryError(
-                    "Runtime has no status "
-                    f"for service: {name}"
-                )
-            )
+            raise (ServiceRegistryError(f"Runtime has no status for service: {name}"))
 
-        if (
-            status.state
-            == ServiceState.
-            STOPPED.value
-        ):
-            return (
-                ServiceOperationResult(
-                    name=name,
-                    success=True,
-                    ready=False,
-                    reason=(
-                        "Service is already "
-                        "stopped."
-                    ),
-                )
+        if status.state == ServiceState.STOPPED.value:
+            return ServiceOperationResult(
+                name=name,
+                success=True,
+                ready=False,
+                reason=("Service is already stopped."),
             )
 
         # A registered service may never have
         # been started because bootstrap stopped
         # earlier. No stop hook is required.
-        if (
-            status.state
-            == ServiceState.
-            REGISTERED.value
-        ):
-            status.state = (
-                ServiceState.
-                STOPPED.value
-            )
+        if status.state == ServiceState.REGISTERED.value:
+            status.state = ServiceState.STOPPED.value
 
-            status.readiness = (
-                ReadinessStatus.
-                NOT_READY.value
-            )
+            status.readiness = ReadinessStatus.NOT_READY.value
 
-            return (
-                ServiceOperationResult(
-                    name=name,
-                    success=True,
-                    ready=False,
-                    reason=(
-                        "Service was never "
-                        "started."
-                    ),
-                )
+            return ServiceOperationResult(
+                name=name,
+                success=True,
+                ready=False,
+                reason=("Service was never started."),
             )
 
         self.state.service_stopping(
@@ -800,10 +529,7 @@ class RuntimeServiceManager:
         )
 
         try:
-            if (
-                service.stop_hook
-                is not None
-            ):
+            if service.stop_hook is not None:
                 service.stop_hook()
 
             self.state.service_stopped(
@@ -811,44 +537,27 @@ class RuntimeServiceManager:
                 name,
             )
 
-            return (
-                ServiceOperationResult(
-                    name=name,
-                    success=True,
-                    ready=False,
-                    reason=(
-                        "Service stopped."
-                    ),
-                )
+            return ServiceOperationResult(
+                name=name,
+                success=True,
+                ready=False,
+                reason=("Service stopped."),
             )
 
         except Exception as exc:
             self.state.service_failed(
                 runtime,
                 name,
-                reason=(
-                    "Service shutdown "
-                    "failed."
-                ),
-                error=(
-                    "Service shutdown "
-                    "hook failed."
-                ),
+                reason=("Service shutdown failed."),
+                error=("Service shutdown hook failed."),
             )
 
-            return (
-                ServiceOperationResult(
-                    name=name,
-                    success=False,
-                    ready=False,
-                    reason=(
-                        "Service shutdown "
-                        "failed."
-                    ),
-                    error_type=(
-                        type(exc).__name__
-                    ),
-                )
+            return ServiceOperationResult(
+                name=name,
+                success=False,
+                ready=False,
+                reason=("Service shutdown failed."),
+                error_type=(type(exc).__name__),
             )
 
     # ---------------------------------------------------------
@@ -860,45 +569,23 @@ class RuntimeServiceManager:
         runtime: RuntimeStatus,
         *,
         fail_fast: bool = True,
-    ) -> List[
-        ServiceOperationResult
-    ]:
-        results: List[
-            ServiceOperationResult
-        ] = []
+    ) -> List[ServiceOperationResult]:
+        results: List[ServiceOperationResult] = []
 
-        for name in (
-            self.registry.
-            startup_order()
-        ):
-            result = (
-                self.start_service(
-                    runtime,
-                    name,
-                )
+        for name in self.registry.startup_order():
+            result = self.start_service(
+                runtime,
+                name,
             )
 
-            results.append(
-                result
-            )
+            results.append(result)
 
-            service = (
-                self.registry.get(
-                    name
-                )
-            )
+            service = self.registry.get(name)
 
             if result.success:
                 continue
 
-            if (
-                fail_fast
-                or (
-                    service is not None
-                    and service.
-                    config.required
-                )
-            ):
+            if fail_fast or (service is not None and service.config.required):
                 break
 
         return results
@@ -910,17 +597,10 @@ class RuntimeServiceManager:
     def stop_all(
         self,
         runtime: RuntimeStatus,
-    ) -> List[
-        ServiceOperationResult
-    ]:
-        results: List[
-            ServiceOperationResult
-        ] = []
+    ) -> List[ServiceOperationResult]:
+        results: List[ServiceOperationResult] = []
 
-        for name in (
-            self.registry.
-            shutdown_order()
-        ):
+        for name in self.registry.shutdown_order():
             results.append(
                 self.stop_service(
                     runtime,
@@ -934,6 +614,7 @@ class RuntimeServiceManager:
 # ---------------------------------------------------------------
 # Registry builder
 # ---------------------------------------------------------------
+
 
 def registry_from_config(
     config: RuntimeConfig,
@@ -974,31 +655,19 @@ def registry_from_config(
     Callables must be supplied explicitly.
     """
 
-    registry = (
-        RuntimeServiceRegistry()
-    )
+    registry = RuntimeServiceRegistry()
 
-    hook_map = (
-        hooks
-        or {}
-    )
+    hook_map = hooks or {}
 
-    dependency_map = (
-        dependencies
-        or {}
-    )
+    dependency_map = dependencies or {}
 
     for (
         name,
         service_config,
-    ) in sorted(
-        config.services.items()
-    ):
-        service_hooks = (
-            hook_map.get(
-                name,
-                {},
-            )
+    ) in sorted(config.services.items()):
+        service_hooks = hook_map.get(
+            name,
+            {},
         )
 
         registry.register(
@@ -1010,24 +679,10 @@ def registry_from_config(
                         (),
                     )
                 ),
-                start_hook=(
-                    service_hooks.get(
-                        "start"
-                    )
-                ),
-                stop_hook=(
-                    service_hooks.get(
-                        "stop"
-                    )
-                ),
-                readiness_probe=(
-                    service_hooks.get(
-                        "ready"
-                    )
-                ),
-                config=(
-                    service_config
-                ),
+                start_hook=(service_hooks.get("start")),
+                stop_hook=(service_hooks.get("stop")),
+                readiness_probe=(service_hooks.get("ready")),
+                config=(service_config),
             )
         )
 

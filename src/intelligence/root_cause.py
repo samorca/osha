@@ -94,52 +94,23 @@ class RootCauseConfig:
             self.evidence_weight,
         )
 
-        if any(
-            value < 0
-            for value in weights
-        ):
-            raise ValueError(
-                "root-cause weights "
-                "must be >= 0"
-            )
+        if any(value < 0 for value in weights):
+            raise ValueError("root-cause weights must be >= 0")
 
         if sum(weights) <= 0:
-            raise ValueError(
-                "at least one root-cause "
-                "weight must be > 0"
-            )
+            raise ValueError("at least one root-cause weight must be > 0")
 
-        if not (
-            0.0
-            <= self.minimum_score
-            <= 1.0
-        ):
-            raise ValueError(
-                "minimum_score must be "
-                "between 0 and 1"
-            )
+        if not (0.0 <= self.minimum_score <= 1.0):
+            raise ValueError("minimum_score must be between 0 and 1")
 
-        if not (
-            0.0
-            <= self.likely_threshold
-            <= 1.0
-        ):
-            raise ValueError(
-                "likely_threshold must be "
-                "between 0 and 1"
-            )
+        if not (0.0 <= self.likely_threshold <= 1.0):
+            raise ValueError("likely_threshold must be between 0 and 1")
 
         if self.maximum_candidates < 1:
-            raise ValueError(
-                "maximum_candidates must "
-                "be >= 1"
-            )
+            raise ValueError("maximum_candidates must be >= 1")
 
         if self.topology_depth < 1:
-            raise ValueError(
-                "topology_depth must "
-                "be >= 1"
-            )
+            raise ValueError("topology_depth must be >= 1")
 
 
 def parse_timestamp(
@@ -154,27 +125,18 @@ def parse_timestamp(
         return None
 
     if text.endswith("Z"):
-        text = (
-            text[:-1]
-            + "+00:00"
-        )
+        text = text[:-1] + "+00:00"
 
     try:
-        parsed = datetime.fromisoformat(
-            text
-        )
+        parsed = datetime.fromisoformat(text)
 
     except ValueError:
         return None
 
     if parsed.tzinfo is None:
-        parsed = parsed.replace(
-            tzinfo=timezone.utc
-        )
+        parsed = parsed.replace(tzinfo=timezone.utc)
 
-    return parsed.astimezone(
-        timezone.utc
-    )
+    return parsed.astimezone(timezone.utc)
 
 
 def severity_score(
@@ -183,9 +145,7 @@ def severity_score(
     return checked_score(
         SEVERITY_SCORES.get(
             value,
-            SEVERITY_SCORES[
-                Severity.UNKNOWN.value
-            ],
+            SEVERITY_SCORES[Severity.UNKNOWN.value],
         )
     )
 
@@ -193,17 +153,11 @@ def severity_score(
 def records_for_incident(
     incident: IncidentCandidate,
     registry: ResourceRegistry,
-) -> List[
-    TelemetryRecord
-]:
+) -> List[TelemetryRecord]:
     output = []
 
-    for record_id in (
-        incident.record_ids
-    ):
-        record = registry.get_record(
-            record_id
-        )
+    for record_id in incident.record_ids:
+        record = registry.get_record(record_id)
 
         if record is not None:
             output.append(record)
@@ -213,46 +167,28 @@ def records_for_incident(
 
 def anomalies_for_incident(
     incident: IncidentCandidate,
-    anomalies: Iterable[
-        Anomaly
-    ],
-) -> List[
-    Anomaly
-]:
-    wanted_ids = set(
-        incident.anomaly_ids
-    )
+    anomalies: Iterable[Anomaly],
+) -> List[Anomaly]:
+    wanted_ids = set(incident.anomaly_ids)
 
-    incident_records = set(
-        incident.record_ids
-    )
+    incident_records = set(incident.record_ids)
 
-    incident_resources = set(
-        incident.resource_ids
-    )
+    incident_resources = set(incident.resource_ids)
 
     output = []
 
     for anomaly in anomalies:
         anomaly.finalize()
 
-        if (
-            anomaly.anomaly_id
-            and anomaly.anomaly_id
-            in wanted_ids
-        ):
+        if anomaly.anomaly_id and anomaly.anomaly_id in wanted_ids:
             output.append(anomaly)
             continue
 
-        if incident_records.intersection(
-            anomaly.record_ids
-        ):
+        if incident_records.intersection(anomaly.record_ids):
             output.append(anomaly)
             continue
 
-        if incident_resources.intersection(
-            anomaly.resource_ids
-        ):
+        if incident_resources.intersection(anomaly.resource_ids):
             output.append(anomaly)
 
     return output
@@ -262,10 +198,9 @@ def anomalies_for_incident(
 # Evidence dimensions
 # ---------------------------------------------------------------
 
+
 def earliest_time_by_resource(
-    records: Iterable[
-        TelemetryRecord
-    ],
+    records: Iterable[TelemetryRecord],
 ) -> Dict[
     str,
     datetime,
@@ -276,36 +211,23 @@ def earliest_time_by_resource(
     ] = {}
 
     for record in records:
-        timestamp = parse_timestamp(
-            record.signal.timestamp
-        )
+        timestamp = parse_timestamp(record.signal.timestamp)
 
         if timestamp is None:
             continue
 
-        resource_id = (
-            record.resource.effective_id()
-        )
+        resource_id = record.resource.effective_id()
 
-        current = output.get(
-            resource_id
-        )
+        current = output.get(resource_id)
 
-        if (
-            current is None
-            or timestamp < current
-        ):
-            output[
-                resource_id
-            ] = timestamp
+        if current is None or timestamp < current:
+            output[resource_id] = timestamp
 
     return output
 
 
 def temporal_scores(
-    records: Iterable[
-        TelemetryRecord
-    ],
+    records: Iterable[TelemetryRecord],
 ) -> Dict[str, float]:
     """
     Earlier resources receive stronger temporal
@@ -314,60 +236,35 @@ def temporal_scores(
     Early occurrence is not proof of causation.
     """
 
-    earliest = (
-        earliest_time_by_resource(
-            records
-        )
-    )
+    earliest = earliest_time_by_resource(records)
 
     if not earliest:
         return {}
 
-    unique_times = sorted(
-        set(
-            earliest.values()
-        )
-    )
+    unique_times = sorted(set(earliest.values()))
 
     if len(unique_times) == 1:
-        return {
-            resource_id: 1.0
-            for resource_id
-            in earliest
-        }
+        return {resource_id: 1.0 for resource_id in earliest}
 
     start = unique_times[0]
 
     finish = unique_times[-1]
 
     duration = max(
-        (
-            finish
-            - start
-        ).total_seconds(),
+        (finish - start).total_seconds(),
         0.000001,
     )
 
     return {
         resource_id: checked_score(
-            1.0
-            - (
-                (
-                    timestamp
-                    - start
-                ).total_seconds()
-                / duration
-            )
+            1.0 - ((timestamp - start).total_seconds() / duration)
         )
-        for resource_id, timestamp
-        in earliest.items()
+        for resource_id, timestamp in earliest.items()
     }
 
 
 def anomaly_scores(
-    anomalies: Iterable[
-        Anomaly
-    ],
+    anomalies: Iterable[Anomaly],
 ) -> Dict[str, float]:
     scores: Dict[
         str,
@@ -375,14 +272,8 @@ def anomaly_scores(
     ] = defaultdict(list)
 
     for anomaly in anomalies:
-        for resource_id in (
-            anomaly.resource_ids
-        ):
-            scores[
-                resource_id
-            ].append(
-                anomaly.score
-            )
+        for resource_id in anomaly.resource_ids:
+            scores[resource_id].append(anomaly.score)
 
     output = {}
 
@@ -400,26 +291,13 @@ def anomaly_scores(
             len(values) / 3.0,
         )
 
-        output[
-            resource_id
-        ] = checked_score(
-            (
-                strongest
-                * 0.80
-            )
-            + (
-                density
-                * 0.20
-            )
-        )
+        output[resource_id] = checked_score((strongest * 0.80) + (density * 0.20))
 
     return output
 
 
 def severity_scores(
-    records: Iterable[
-        TelemetryRecord
-    ],
+    records: Iterable[TelemetryRecord],
 ) -> Dict[str, float]:
     output: Dict[
         str,
@@ -427,19 +305,11 @@ def severity_scores(
     ] = defaultdict(float)
 
     for record in records:
-        resource_id = (
-            record.resource.effective_id()
-        )
+        resource_id = record.resource.effective_id()
 
-        output[
-            resource_id
-        ] = max(
-            output[
-                resource_id
-            ],
-            severity_score(
-                record.signal.severity
-            ),
+        output[resource_id] = max(
+            output[resource_id],
+            severity_score(record.signal.severity),
         )
 
     return dict(output)
@@ -447,9 +317,7 @@ def severity_scores(
 
 def topology_scores(
     resource_ids: Iterable[str],
-    topology: Optional[
-        TopologyGraph
-    ],
+    topology: Optional[TopologyGraph],
     *,
     max_depth: int,
 ) -> Dict[str, float]:
@@ -463,16 +331,10 @@ def topology_scores(
     event causation.
     """
 
-    identifiers = set(
-        resource_ids
-    )
+    identifiers = set(resource_ids)
 
     if topology is None:
-        return {
-            resource_id: 0.0
-            for resource_id
-            in identifiers
-        }
+        return {resource_id: 0.0 for resource_id in identifiers}
 
     if not identifiers:
         return {}
@@ -502,16 +364,8 @@ def topology_scores(
 
                 distance_total += path.distance
 
-        for relationship in (
-            topology.outgoing(
-                resource_id
-            )
-        ):
-            if (
-                relationship.
-                target_resource_id
-                in identifiers
-            ):
+        for relationship in topology.outgoing(resource_id):
+            if relationship.target_resource_id in identifiers:
                 direct_outgoing += 1
 
         denominator = max(
@@ -519,67 +373,35 @@ def topology_scores(
             len(identifiers) - 1,
         )
 
-        reach_score = (
-            reachable
-            / denominator
-        )
+        reach_score = reachable / denominator
 
-        proximity = (
-            reachable
-            / distance_total
-            if distance_total > 0
-            else 0.0
-        )
+        proximity = reachable / distance_total if distance_total > 0 else 0.0
 
         direct_score = min(
             1.0,
-            direct_outgoing
-            / denominator,
+            direct_outgoing / denominator,
         )
 
-        output[
-            resource_id
-        ] = checked_score(
-            (
-                reach_score
-                * 0.50
-            )
-            + (
-                proximity
-                * 0.30
-            )
-            + (
-                direct_score
-                * 0.20
-            )
+        output[resource_id] = checked_score(
+            (reach_score * 0.50) + (proximity * 0.30) + (direct_score * 0.20)
         )
 
     return output
 
 
 def evidence_scores(
-    records: Iterable[
-        TelemetryRecord
-    ],
-    anomalies: Iterable[
-        Anomaly
-    ],
+    records: Iterable[TelemetryRecord],
+    anomalies: Iterable[Anomaly],
 ) -> Dict[str, float]:
     """
     Score how much direct incident evidence
     references each resource.
     """
 
-    record_counts = Counter(
-        record.resource.effective_id()
-        for record in records
-    )
+    record_counts = Counter(record.resource.effective_id() for record in records)
 
     anomaly_counts = Counter(
-        resource_id
-        for anomaly in anomalies
-        for resource_id
-        in anomaly.resource_ids
+        resource_id for anomaly in anomalies for resource_id in anomaly.resource_ids
     )
 
     max_records = max(
@@ -592,10 +414,7 @@ def evidence_scores(
         default=1,
     )
 
-    resource_ids = (
-        set(record_counts)
-        | set(anomaly_counts)
-    )
+    resource_ids = set(record_counts) | set(anomaly_counts)
 
     return {
         resource_id: checked_score(
@@ -616,8 +435,7 @@ def evidence_scores(
             )
             * 0.50
         )
-        for resource_id
-        in resource_ids
+        for resource_id in resource_ids
     }
 
 
@@ -625,84 +443,44 @@ def evidence_scores(
 # Candidate construction
 # ---------------------------------------------------------------
 
+
 def candidate_title(
     resource_id: str,
     registry: ResourceRegistry,
 ) -> str:
-    resource = registry.get_resource(
-        resource_id
-    )
+    resource = registry.get_resource(resource_id)
 
     if resource is None:
-        return (
-            "Possible originating resource "
-            f"{resource_id}"
-        )
+        return f"Possible originating resource {resource_id}"
 
-    label = (
-        resource.name
-        or resource.host
-        or resource.provider_id
-    )
+    label = resource.name or resource.host or resource.provider_id
 
-    return (
-        f"Possible {resource.resource_type} "
-        f"origin: {label}"
-    )
+    return f"Possible {resource.resource_type} origin: {label}"
 
 
 def build_evidence(
     resource_id: str,
-    records: List[
-        TelemetryRecord
-    ],
-    anomalies: List[
-        Anomaly
-    ],
+    records: List[TelemetryRecord],
+    anomalies: List[Anomaly],
     dimensions: Mapping[
         str,
         float,
     ],
-) -> List[
-    EvidenceReference
-]:
+) -> List[EvidenceReference]:
     resource_records = [
-        record
-        for record in records
-        if (
-            record.resource.effective_id()
-            == resource_id
-        )
+        record for record in records if (record.resource.effective_id() == resource_id)
     ]
 
     resource_anomalies = [
-        anomaly
-        for anomaly in anomalies
-        if resource_id
-        in anomaly.resource_ids
+        anomaly for anomaly in anomalies if resource_id in anomaly.resource_ids
     ]
 
     descriptions = {
-        "temporal": (
-            "This resource appears early in "
-            "the incident timeline"
-        ),
-        "anomaly": (
-            "Anomaly findings directly "
-            "reference this resource"
-        ),
-        "severity": (
-            "Elevated-severity signals "
-            "reference this resource"
-        ),
-        "topology": (
-            "Topology position can reach or "
-            "connect affected resources"
-        ),
-        "evidence": (
-            "Multiple incident observations "
-            "reference this resource"
-        ),
+        "temporal": ("This resource appears early in the incident timeline"),
+        "anomaly": ("Anomaly findings directly reference this resource"),
+        "severity": ("Elevated-severity signals reference this resource"),
+        "topology": ("Topology position can reach or connect affected resources"),
+        "evidence": ("Multiple incident observations reference this resource"),
     }
 
     output = []
@@ -717,26 +495,16 @@ def build_evidence(
         output.append(
             EvidenceReference(
                 evidence_type=dimension,
-                description=(
-                    descriptions[
-                        dimension
-                    ]
-                ),
+                description=(descriptions[dimension]),
                 score=score,
                 record_ids=[
-                    record.record_id
-                    for record
-                    in resource_records
-                    if record.record_id
+                    record.record_id for record in resource_records if record.record_id
                 ],
-                resource_ids=[
-                    resource_id
-                ],
+                resource_ids=[resource_id],
                 attributes={
                     "anomaly_ids": [
                         anomaly.anomaly_id
-                        for anomaly
-                        in resource_anomalies
+                        for anomaly in resource_anomalies
                         if anomaly.anomaly_id
                     ],
                 },
@@ -749,9 +517,7 @@ def build_evidence(
 def causal_path(
     resource_id: str,
     incident: IncidentCandidate,
-    topology: Optional[
-        TopologyGraph
-    ],
+    topology: Optional[TopologyGraph],
     *,
     max_depth: int,
 ) -> List[str]:
@@ -765,15 +531,11 @@ def causal_path(
     """
 
     if topology is None:
-        return [
-            resource_id
-        ]
+        return [resource_id]
 
     best_path = None
 
-    for target_id in (
-        incident.resource_ids
-    ):
+    for target_id in incident.resource_ids:
         if target_id == resource_id:
             continue
 
@@ -784,20 +546,13 @@ def causal_path(
             direction="out",
         )
 
-        if (
-            path is not None
-            and (
-                best_path is None
-                or path.distance
-                > best_path.distance
-            )
+        if path is not None and (
+            best_path is None or path.distance > best_path.distance
         ):
             best_path = path
 
     if best_path is None:
-        return [
-            resource_id
-        ]
+        return [resource_id]
 
     return best_path.resource_ids
 
@@ -805,28 +560,17 @@ def causal_path(
 def rank_root_causes(
     incident: IncidentCandidate,
     registry: ResourceRegistry,
-    anomalies: Iterable[
-        Anomaly
-    ],
+    anomalies: Iterable[Anomaly],
     *,
-    topology: Optional[
-        TopologyGraph
-    ] = None,
-    config: Optional[
-        RootCauseConfig
-    ] = None,
-) -> List[
-    RootCauseCandidate
-]:
+    topology: Optional[TopologyGraph] = None,
+    config: Optional[RootCauseConfig] = None,
+) -> List[RootCauseCandidate]:
     """
     Rank possible root-cause resources for one
     incident candidate.
     """
 
-    configuration = (
-        config
-        or RootCauseConfig()
-    )
+    configuration = config or RootCauseConfig()
 
     configuration.validate()
 
@@ -835,50 +579,29 @@ def rank_root_causes(
         registry,
     )
 
-    anomaly_list = (
-        anomalies_for_incident(
-            incident,
-            anomalies,
-        )
+    anomaly_list = anomalies_for_incident(
+        incident,
+        anomalies,
     )
 
-    resource_ids = set(
-        incident.resource_ids
-    )
+    resource_ids = set(incident.resource_ids)
+
+    resource_ids.update(record.resource.effective_id() for record in records)
 
     resource_ids.update(
-        record.resource.effective_id()
-        for record in records
+        resource_id for anomaly in anomaly_list for resource_id in anomaly.resource_ids
     )
 
-    resource_ids.update(
-        resource_id
-        for anomaly in anomaly_list
-        for resource_id
-        in anomaly.resource_ids
-    )
+    temporal = temporal_scores(records)
 
-    temporal = temporal_scores(
-        records
-    )
+    anomaly = anomaly_scores(anomaly_list)
 
-    anomaly = anomaly_scores(
-        anomaly_list
-    )
+    severity = severity_scores(records)
 
-    severity = severity_scores(
-        records
-    )
-
-    topology_dimension = (
-        topology_scores(
-            resource_ids,
-            topology,
-            max_depth=(
-                configuration.
-                topology_depth
-            ),
-        )
+    topology_dimension = topology_scores(
+        resource_ids,
+        topology,
+        max_depth=(configuration.topology_depth),
     )
 
     evidence = evidence_scores(
@@ -887,31 +610,14 @@ def rank_root_causes(
     )
 
     weights = {
-        "temporal": (
-            configuration.
-            temporal_weight
-        ),
-        "anomaly": (
-            configuration.
-            anomaly_weight
-        ),
-        "severity": (
-            configuration.
-            severity_weight
-        ),
-        "topology": (
-            configuration.
-            topology_weight
-        ),
-        "evidence": (
-            configuration.
-            evidence_weight
-        ),
+        "temporal": (configuration.temporal_weight),
+        "anomaly": (configuration.anomaly_weight),
+        "severity": (configuration.severity_weight),
+        "topology": (configuration.topology_weight),
+        "evidence": (configuration.evidence_weight),
     }
 
-    weight_total = sum(
-        weights.values()
-    )
+    weight_total = sum(weights.values())
 
     candidates = []
 
@@ -950,120 +656,69 @@ def rank_root_causes(
         }
 
         score = checked_score(
-            sum(
-                dimensions[
-                    dimension
-                ]
-                * weights[
-                    dimension
-                ]
-                for dimension
-                in weights
-            )
+            sum(dimensions[dimension] * weights[dimension] for dimension in weights)
             / weight_total
         )
 
-        if (
-            score
-            < configuration.
-            minimum_score
-        ):
+        if score < configuration.minimum_score:
             continue
 
-        if (
-            score
-            >= configuration.
-            likely_threshold
-        ):
-            status = (
-                RootCauseStatus.
-                LIKELY.value
-            )
+        if score >= configuration.likely_threshold:
+            status = RootCauseStatus.LIKELY.value
 
         else:
-            status = (
-                RootCauseStatus.
-                SUSPECTED.value
-            )
+            status = RootCauseStatus.SUSPECTED.value
 
         resource_records = [
             record
             for record in records
-            if (
-                record.resource.
-                effective_id()
-                == resource_id
-            )
+            if (record.resource.effective_id() == resource_id)
         ]
 
         resource_anomalies = [
-            item
-            for item
-            in anomaly_list
-            if resource_id
-            in item.resource_ids
+            item for item in anomaly_list if resource_id in item.resource_ids
         ]
 
-        candidate = (
-            RootCauseCandidate(
-                title=candidate_title(
-                    resource_id,
-                    registry,
-                ),
-                resource_id=(
-                    resource_id
-                ),
-                score=score,
-                status=status,
-                description=(
-                    "This resource is ranked "
-                    "as a root-cause hypothesis "
-                    "based on timeline, anomaly, "
-                    "severity, topology, and "
-                    "evidence coverage."
-                ),
-                contributing_record_ids=[
-                    record.record_id
-                    for record
-                    in resource_records
-                    if record.record_id
-                ],
-                contributing_anomaly_ids=[
-                    item.anomaly_id
-                    for item
-                    in resource_anomalies
-                    if item.anomaly_id
-                ],
-                evidence=build_evidence(
-                    resource_id,
-                    records,
-                    anomaly_list,
-                    dimensions,
-                ),
-                causal_path=causal_path(
-                    resource_id,
-                    incident,
-                    topology,
-                    max_depth=(
-                        configuration.
-                        topology_depth
-                    ),
-                ),
-                attributes={
-                    "dimension_scores": (
-                        dimensions
-                    ),
-                    "incident_id": (
-                        incident.
-                        incident_id
-                    ),
-                },
-            )
+        candidate = RootCauseCandidate(
+            title=candidate_title(
+                resource_id,
+                registry,
+            ),
+            resource_id=(resource_id),
+            score=score,
+            status=status,
+            description=(
+                "This resource is ranked "
+                "as a root-cause hypothesis "
+                "based on timeline, anomaly, "
+                "severity, topology, and "
+                "evidence coverage."
+            ),
+            contributing_record_ids=[
+                record.record_id for record in resource_records if record.record_id
+            ],
+            contributing_anomaly_ids=[
+                item.anomaly_id for item in resource_anomalies if item.anomaly_id
+            ],
+            evidence=build_evidence(
+                resource_id,
+                records,
+                anomaly_list,
+                dimensions,
+            ),
+            causal_path=causal_path(
+                resource_id,
+                incident,
+                topology,
+                max_depth=(configuration.topology_depth),
+            ),
+            attributes={
+                "dimension_scores": (dimensions),
+                "incident_id": (incident.incident_id),
+            },
         )
 
-        candidates.append(
-            candidate.finalize()
-        )
+        candidates.append(candidate.finalize())
 
     candidates.sort(
         key=lambda item: (
@@ -1072,60 +727,37 @@ def rank_root_causes(
         )
     )
 
-    return candidates[
-        :configuration.
-        maximum_candidates
-    ]
+    return candidates[: configuration.maximum_candidates]
 
 
 def analyze_incident_root_causes(
     incident: IncidentCandidate,
     registry: ResourceRegistry,
-    anomalies: Iterable[
-        Anomaly
-    ],
+    anomalies: Iterable[Anomaly],
     *,
-    topology: Optional[
-        TopologyGraph
-    ] = None,
-    config: Optional[
-        RootCauseConfig
-    ] = None,
+    topology: Optional[TopologyGraph] = None,
+    config: Optional[RootCauseConfig] = None,
 ) -> IncidentCandidate:
-    incident.root_causes = (
-        rank_root_causes(
-            incident,
-            registry,
-            anomalies,
-            topology=topology,
-            config=config,
-        )
+    incident.root_causes = rank_root_causes(
+        incident,
+        registry,
+        anomalies,
+        topology=topology,
+        config=config,
     )
 
     return incident.finalize()
 
 
 def analyze_root_causes(
-    incidents: Iterable[
-        IncidentCandidate
-    ],
+    incidents: Iterable[IncidentCandidate],
     registry: ResourceRegistry,
-    anomalies: Iterable[
-        Anomaly
-    ],
+    anomalies: Iterable[Anomaly],
     *,
-    topology: Optional[
-        TopologyGraph
-    ] = None,
-    config: Optional[
-        RootCauseConfig
-    ] = None,
-) -> List[
-    IncidentCandidate
-]:
-    anomaly_list = list(
-        anomalies
-    )
+    topology: Optional[TopologyGraph] = None,
+    config: Optional[RootCauseConfig] = None,
+) -> List[IncidentCandidate]:
+    anomaly_list = list(anomalies)
 
     return [
         analyze_incident_root_causes(
@@ -1135,56 +767,26 @@ def analyze_root_causes(
             topology=topology,
             config=config,
         )
-        for incident
-        in incidents
+        for incident in incidents
     ]
 
 
 def root_cause_summary(
-    incidents: Iterable[
-        IncidentCandidate
-    ],
+    incidents: Iterable[IncidentCandidate],
 ) -> Dict[str, Any]:
-    incident_list = list(
-        incidents
-    )
+    incident_list = list(incidents)
 
     candidates = [
-        candidate
-        for incident in incident_list
-        for candidate
-        in incident.root_causes
+        candidate for incident in incident_list for candidate in incident.root_causes
     ]
 
     return {
-        "incident_count": len(
-            incident_list
-        ),
-        "candidate_count": len(
-            candidates
-        ),
-        "statuses": dict(
-            Counter(
-                candidate.status
-                for candidate
-                in candidates
-            )
-        ),
-        "resources": dict(
-            Counter(
-                candidate.resource_id
-                for candidate
-                in candidates
-            )
-        ),
+        "incident_count": len(incident_list),
+        "candidate_count": len(candidates),
+        "statuses": dict(Counter(candidate.status for candidate in candidates)),
+        "resources": dict(Counter(candidate.resource_id for candidate in candidates)),
         "incidents_without_candidates": (
-            sum(
-                1
-                for incident
-                in incident_list
-                if not incident.
-                root_causes
-            )
+            sum(1 for incident in incident_list if not incident.root_causes)
         ),
     }
 
@@ -1198,35 +800,22 @@ class RootCauseAnalyzer:
         self,
         registry: ResourceRegistry,
         *,
-        topology: Optional[
-            TopologyGraph
-        ] = None,
-        config: Optional[
-            RootCauseConfig
-        ] = None,
+        topology: Optional[TopologyGraph] = None,
+        config: Optional[RootCauseConfig] = None,
     ) -> None:
         self.registry = registry
 
         self.topology = topology
 
-        self.config = (
-            config
-            or RootCauseConfig()
-        )
+        self.config = config or RootCauseConfig()
 
         self.config.validate()
 
     def analyze(
         self,
-        incidents: Iterable[
-            IncidentCandidate
-        ],
-        anomalies: Iterable[
-            Anomaly
-        ],
-    ) -> List[
-        IncidentCandidate
-    ]:
+        incidents: Iterable[IncidentCandidate],
+        anomalies: Iterable[Anomaly],
+    ) -> List[IncidentCandidate]:
         return analyze_root_causes(
             incidents,
             self.registry,

@@ -67,6 +67,7 @@ AI_SCHEMA_VERSION = "1"
 # Model family
 # ---------------------------------------------------------------
 
+
 class AIModelFamily(
     str,
     Enum,
@@ -81,6 +82,7 @@ class AIModelFamily(
 # ---------------------------------------------------------------
 # Model state
 # ---------------------------------------------------------------
+
 
 class AIModelState(
     str,
@@ -105,6 +107,7 @@ class AIModelState(
 # Inference state
 # ---------------------------------------------------------------
 
+
 class InferenceState(
     str,
     Enum,
@@ -126,6 +129,7 @@ class InferenceState(
 # Device family
 # ---------------------------------------------------------------
 
+
 class AIDeviceFamily(
     str,
     Enum,
@@ -143,6 +147,7 @@ class AIDeviceFamily(
 # Model identity
 # ---------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class AIModelIdentity:
     """
@@ -156,13 +161,9 @@ class AIModelIdentity:
 
     version: str
 
-    artifact_id: Optional[
-        str
-    ] = None
+    artifact_id: Optional[str] = None
 
-    checkpoint_id: Optional[
-        str
-    ] = None
+    checkpoint_id: Optional[str] = None
 
     def validate(
         self,
@@ -179,18 +180,8 @@ class AIModelIdentity:
             maximum_length=128,
         )
 
-        if (
-            self.family
-            not in {
-                item.value
-                for item
-                in AIModelFamily
-            }
-        ):
-            raise ValueError(
-                "Unknown AI model family: "
-                f"{self.family}"
-            )
+        if self.family not in {item.value for item in AIModelFamily}:
+            raise ValueError(f"Unknown AI model family: {self.family}")
 
     @property
     def model_id(
@@ -198,13 +189,7 @@ class AIModelIdentity:
     ) -> str:
         self.validate()
 
-        return (
-            self.family
-            + ":"
-            + self.model_name
-            + ":"
-            + self.version
-        )
+        return self.family + ":" + self.model_name + ":" + self.version
 
     def to_dict(
         self,
@@ -213,28 +198,18 @@ class AIModelIdentity:
 
         return {
             "model_id": self.model_id,
-
-            "model_name": (
-                self.model_name
-            ),
-
+            "model_name": (self.model_name),
             "family": self.family,
-
             "version": self.version,
-
-            "artifact_id": (
-                self.artifact_id
-            ),
-
-            "checkpoint_id": (
-                self.checkpoint_id
-            ),
+            "artifact_id": (self.artifact_id),
+            "checkpoint_id": (self.checkpoint_id),
         }
 
 
 # ---------------------------------------------------------------
 # Model descriptor
 # ---------------------------------------------------------------
+
 
 @dataclass
 class AIModelDescriptor:
@@ -249,50 +224,29 @@ class AIModelDescriptor:
 
     path: str
 
-    state: str = (
-        AIModelState.
-        REGISTERED.value
-    )
+    state: str = AIModelState.REGISTERED.value
 
-    device: str = (
-        AIDeviceFamily.AUTO.value
-    )
+    device: str = AIDeviceFamily.AUTO.value
 
-    checksum: Optional[
-        str
-    ] = None
+    checksum: Optional[str] = None
 
-    capabilities: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    capabilities: List[str] = field(default_factory=list)
 
     model_config: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    registered_at: str = field(
-        default_factory=utc_now
-    )
+    registered_at: str = field(default_factory=utc_now)
 
-    loaded_at: Optional[
-        str
-    ] = None
+    loaded_at: Optional[str] = None
 
-    error_type: Optional[
-        str
-    ] = None
+    error_type: Optional[str] = None
 
     def finalize(
         self,
@@ -305,44 +259,15 @@ class AIModelDescriptor:
             maximum_length=4096,
         )
 
-        if (
-            self.state
-            not in {
-                item.value
-                for item
-                in AIModelState
-            }
-        ):
-            raise ValueError(
-                "Unknown AI model state: "
-                f"{self.state}"
-            )
+        if self.state not in {item.value for item in AIModelState}:
+            raise ValueError(f"Unknown AI model state: {self.state}")
 
-        if (
-            self.device
-            not in {
-                item.value
-                for item
-                in AIDeviceFamily
-            }
-            and not (
-                str(
-                    self.device
-                ).startswith(
-                    "cuda:"
-                )
-            )
+        if self.device not in {item.value for item in AIDeviceFamily} and not (
+            str(self.device).startswith("cuda:")
         ):
-            raise ValueError(
-                "Unknown AI model device: "
-                f"{self.device}"
-            )
+            raise ValueError(f"Unknown AI model device: {self.device}")
 
-        self.capabilities = (
-            unique_strings(
-                self.capabilities
-            )
-        )
+        self.capabilities = unique_strings(self.capabilities)
 
         return self
 
@@ -352,53 +277,24 @@ class AIModelDescriptor:
         self.finalize()
 
         return {
-            "identity": (
-                self.identity.to_dict()
-            ),
-
+            "identity": (self.identity.to_dict()),
             "path": self.path,
-
             "state": self.state,
-
             "device": self.device,
-
-            "checksum": (
-                self.checksum
-            ),
-
-            "capabilities": list(
-                self.capabilities
-            ),
-
-            "model_config": (
-                to_json_safe(
-                    self.model_config
-                )
-            ),
-
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
-
-            "registered_at": (
-                self.registered_at
-            ),
-
-            "loaded_at": (
-                self.loaded_at
-            ),
-
-            "error_type": (
-                self.error_type
-            ),
+            "checksum": (self.checksum),
+            "capabilities": list(self.capabilities),
+            "model_config": (to_json_safe(self.model_config)),
+            "attributes": (to_json_safe(self.attributes)),
+            "registered_at": (self.registered_at),
+            "loaded_at": (self.loaded_at),
+            "error_type": (self.error_type),
         }
 
 
 # ---------------------------------------------------------------
 # Inference provenance
 # ---------------------------------------------------------------
+
 
 @dataclass
 class InferenceProvenance:
@@ -408,67 +304,35 @@ class InferenceProvenance:
     derived.
     """
 
-    provider: Optional[
-        str
-    ] = None
+    provider: Optional[str] = None
 
-    environment_id: Optional[
-        str
-    ] = None
+    environment_id: Optional[str] = None
 
-    resource_type: Optional[
-        str
-    ] = None
+    resource_type: Optional[str] = None
 
-    resource_id: Optional[
-        str
-    ] = None
+    resource_id: Optional[str] = None
 
-    incident_id: Optional[
-        str
-    ] = None
+    incident_id: Optional[str] = None
 
-    correlation_id: Optional[
-        str
-    ] = None
+    correlation_id: Optional[str] = None
 
-    source_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    source_ids: List[str] = field(default_factory=list)
 
-    reference_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    reference_ids: List[str] = field(default_factory=list)
 
-    observed_at: Optional[
-        str
-    ] = None
+    observed_at: Optional[str] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
     ) -> "InferenceProvenance":
-        self.source_ids = (
-            unique_strings(
-                self.source_ids
-            )
-        )
+        self.source_ids = unique_strings(self.source_ids)
 
-        self.reference_ids = (
-            unique_strings(
-                self.reference_ids
-            )
-        )
+        self.reference_ids = unique_strings(self.reference_ids)
 
         return self
 
@@ -479,50 +343,22 @@ class InferenceProvenance:
 
         return {
             "provider": self.provider,
-
-            "environment_id": (
-                self.environment_id
-            ),
-
-            "resource_type": (
-                self.resource_type
-            ),
-
-            "resource_id": (
-                self.resource_id
-            ),
-
-            "incident_id": (
-                self.incident_id
-            ),
-
-            "correlation_id": (
-                self.correlation_id
-            ),
-
-            "source_ids": list(
-                self.source_ids
-            ),
-
-            "reference_ids": list(
-                self.reference_ids
-            ),
-
-            "observed_at": (
-                self.observed_at
-            ),
-
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
+            "environment_id": (self.environment_id),
+            "resource_type": (self.resource_type),
+            "resource_id": (self.resource_id),
+            "incident_id": (self.incident_id),
+            "correlation_id": (self.correlation_id),
+            "source_ids": list(self.source_ids),
+            "reference_ids": list(self.reference_ids),
+            "observed_at": (self.observed_at),
+            "attributes": (to_json_safe(self.attributes)),
         }
 
 
 # ---------------------------------------------------------------
 # Inference request
 # ---------------------------------------------------------------
+
 
 @dataclass
 class InferenceRequest:
@@ -541,66 +377,35 @@ class InferenceRequest:
         Any,
     ]
 
-    model_name: Optional[
-        str
-    ] = None
+    model_name: Optional[str] = None
 
-    model_version: Optional[
-        str
-    ] = None
+    model_version: Optional[str] = None
 
-    provenance: InferenceProvenance = field(
-        default_factory=(
-            InferenceProvenance
-        )
-    )
+    provenance: InferenceProvenance = field(default_factory=(InferenceProvenance))
 
     options: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    request_id: Optional[
-        str
-    ] = None
+    request_id: Optional[str] = None
 
-    created_at: str = field(
-        default_factory=utc_now
-    )
+    created_at: str = field(default_factory=utc_now)
 
     def finalize(
         self,
     ) -> "InferenceRequest":
-        if (
-            self.family
-            not in {
-                item.value
-                for item
-                in AIModelFamily
-            }
-        ):
-            raise ValueError(
-                "Unknown inference family: "
-                f"{self.family}"
-            )
+        if self.family not in {item.value for item in AIModelFamily}:
+            raise ValueError(f"Unknown inference family: {self.family}")
 
         if not isinstance(
             self.payload,
             dict,
         ):
-            raise ValueError(
-                "Inference payload must "
-                "be a dictionary"
-            )
+            raise ValueError("Inference payload must be a dictionary")
 
         if not self.request_id:
-            self.request_id = (
-                random_id(
-                    "ai:request"
-                )
-            )
+            self.request_id = random_id("ai:request")
 
         self.provenance.finalize()
 
@@ -612,50 +417,22 @@ class InferenceRequest:
         self.finalize()
 
         return {
-            "schema_version": (
-                AI_SCHEMA_VERSION
-            ),
-
-            "request_id": (
-                self.request_id
-            ),
-
+            "schema_version": (AI_SCHEMA_VERSION),
+            "request_id": (self.request_id),
             "family": self.family,
-
-            "model_name": (
-                self.model_name
-            ),
-
-            "model_version": (
-                self.model_version
-            ),
-
-            "payload": (
-                to_json_safe(
-                    self.payload
-                )
-            ),
-
-            "provenance": (
-                self.provenance.
-                to_dict()
-            ),
-
-            "options": (
-                to_json_safe(
-                    self.options
-                )
-            ),
-
-            "created_at": (
-                self.created_at
-            ),
+            "model_name": (self.model_name),
+            "model_version": (self.model_version),
+            "payload": (to_json_safe(self.payload)),
+            "provenance": (self.provenance.to_dict()),
+            "options": (to_json_safe(self.options)),
+            "created_at": (self.created_at),
         }
 
 
 # ---------------------------------------------------------------
 # Generic prediction
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class Prediction:
@@ -666,20 +443,14 @@ class Prediction:
 
     label: str
 
-    score: Optional[
-        float
-    ] = None
+    score: Optional[float] = None
 
-    probability: Optional[
-        float
-    ] = None
+    probability: Optional[float] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def validate(
         self,
@@ -691,32 +462,14 @@ class Prediction:
         )
 
         if self.score is not None:
-            if not math.isfinite(
-                float(
-                    self.score
-                )
-            ):
-                raise ValueError(
-                    "Prediction score must "
-                    "be finite"
-                )
+            if not math.isfinite(float(self.score)):
+                raise ValueError("Prediction score must be finite")
 
         if self.probability is not None:
-            probability = float(
-                self.probability
-            )
+            probability = float(self.probability)
 
-            if (
-                not math.isfinite(
-                    probability
-                )
-                or probability < 0.0
-                or probability > 1.0
-            ):
-                raise ValueError(
-                    "Prediction probability "
-                    "must be between 0 and 1"
-                )
+            if not math.isfinite(probability) or probability < 0.0 or probability > 1.0:
+                raise ValueError("Prediction probability must be between 0 and 1")
 
     def to_dict(
         self,
@@ -725,24 +478,16 @@ class Prediction:
 
         return {
             "label": self.label,
-
             "score": self.score,
-
-            "probability": (
-                self.probability
-            ),
-
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
+            "probability": (self.probability),
+            "attributes": (to_json_safe(self.attributes)),
         }
 
 
 # ---------------------------------------------------------------
 # Event inference result
 # ---------------------------------------------------------------
+
 
 @dataclass
 class EventInference:
@@ -751,28 +496,18 @@ class EventInference:
     classification heads.
     """
 
-    source: Optional[
-        Prediction
-    ] = None
+    source: Optional[Prediction] = None
 
-    component: Optional[
-        Prediction
-    ] = None
+    component: Optional[Prediction] = None
 
-    event: Optional[
-        Prediction
-    ] = None
+    event: Optional[Prediction] = None
 
-    representation_dimension: Optional[
-        int
-    ] = None
+    representation_dimension: Optional[int] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
@@ -786,15 +521,10 @@ class EventInference:
                 prediction.validate()
 
         if (
-            self.representation_dimension
-            is not None
-            and self.representation_dimension
-            < 1
+            self.representation_dimension is not None
+            and self.representation_dimension < 1
         ):
-            raise ValueError(
-                "representation_dimension "
-                "must be >= 1"
-            )
+            raise ValueError("representation_dimension must be >= 1")
 
         return self
 
@@ -804,43 +534,20 @@ class EventInference:
         self.finalize()
 
         return {
-            "source": (
-                self.source.to_dict()
-                if self.source
-                is not None
-                else None
-            ),
-
+            "source": (self.source.to_dict() if self.source is not None else None),
             "component": (
-                self.component.to_dict()
-                if self.component
-                is not None
-                else None
+                self.component.to_dict() if self.component is not None else None
             ),
-
-            "event": (
-                self.event.to_dict()
-                if self.event
-                is not None
-                else None
-            ),
-
-            "representation_dimension": (
-                self.
-                representation_dimension
-            ),
-
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
+            "event": (self.event.to_dict() if self.event is not None else None),
+            "representation_dimension": (self.representation_dimension),
+            "attributes": (to_json_safe(self.attributes)),
         }
 
 
 # ---------------------------------------------------------------
 # Anomaly inference result
 # ---------------------------------------------------------------
+
 
 @dataclass
 class AnomalyInference:
@@ -858,79 +565,36 @@ class AnomalyInference:
 
     anomalous: bool
 
-    score: Optional[
-        float
-    ] = None
+    score: Optional[float] = None
 
-    representation_dimension: Optional[
-        int
-    ] = None
+    representation_dimension: Optional[int] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
     ) -> "AnomalyInference":
-        probability = float(
-            self.probability
-        )
+        probability = float(self.probability)
 
-        threshold = float(
-            self.threshold
-        )
+        threshold = float(self.threshold)
 
-        if (
-            not math.isfinite(
-                probability
-            )
-            or probability < 0.0
-            or probability > 1.0
-        ):
-            raise ValueError(
-                "Anomaly probability must "
-                "be between 0 and 1"
-            )
+        if not math.isfinite(probability) or probability < 0.0 or probability > 1.0:
+            raise ValueError("Anomaly probability must be between 0 and 1")
+
+        if not math.isfinite(threshold) or threshold < 0.0 or threshold > 1.0:
+            raise ValueError("Anomaly threshold must be between 0 and 1")
+
+        if self.score is not None and not math.isfinite(float(self.score)):
+            raise ValueError("Anomaly score must be finite")
 
         if (
-            not math.isfinite(
-                threshold
-            )
-            or threshold < 0.0
-            or threshold > 1.0
+            self.representation_dimension is not None
+            and self.representation_dimension < 1
         ):
-            raise ValueError(
-                "Anomaly threshold must "
-                "be between 0 and 1"
-            )
-
-        if (
-            self.score is not None
-            and not math.isfinite(
-                float(
-                    self.score
-                )
-            )
-        ):
-            raise ValueError(
-                "Anomaly score must be "
-                "finite"
-            )
-
-        if (
-            self.representation_dimension
-            is not None
-            and self.representation_dimension
-            < 1
-        ):
-            raise ValueError(
-                "representation_dimension "
-                "must be >= 1"
-            )
+            raise ValueError("representation_dimension must be >= 1")
 
         return self
 
@@ -940,36 +604,19 @@ class AnomalyInference:
         self.finalize()
 
         return {
-            "probability": float(
-                self.probability
-            ),
-
-            "threshold": float(
-                self.threshold
-            ),
-
-            "anomalous": bool(
-                self.anomalous
-            ),
-
+            "probability": float(self.probability),
+            "threshold": float(self.threshold),
+            "anomalous": bool(self.anomalous),
             "score": self.score,
-
-            "representation_dimension": (
-                self.
-                representation_dimension
-            ),
-
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
+            "representation_dimension": (self.representation_dimension),
+            "attributes": (to_json_safe(self.attributes)),
         }
 
 
 # ---------------------------------------------------------------
 # Inference result
 # ---------------------------------------------------------------
+
 
 @dataclass
 class InferenceResult:
@@ -979,48 +626,26 @@ class InferenceResult:
 
     state: str
 
-    event: Optional[
-        EventInference
-    ] = None
+    event: Optional[EventInference] = None
 
-    anomaly: Optional[
-        AnomalyInference
-    ] = None
+    anomaly: Optional[AnomalyInference] = None
 
-    predictions: List[
-        Prediction
-    ] = field(
-        default_factory=list
-    )
+    predictions: List[Prediction] = field(default_factory=list)
 
-    provenance: InferenceProvenance = field(
-        default_factory=(
-            InferenceProvenance
-        )
-    )
+    provenance: InferenceProvenance = field(default_factory=(InferenceProvenance))
 
-    latency_ms: Optional[
-        float
-    ] = None
+    latency_ms: Optional[float] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    error_type: Optional[
-        str
-    ] = None
+    error_type: Optional[str] = None
 
-    result_id: Optional[
-        str
-    ] = None
+    result_id: Optional[str] = None
 
-    completed_at: str = field(
-        default_factory=utc_now
-    )
+    completed_at: str = field(default_factory=utc_now)
 
     def finalize(
         self,
@@ -1033,50 +658,19 @@ class InferenceResult:
 
         self.model.validate()
 
-        if (
-            self.state
-            not in {
-                item.value
-                for item
-                in InferenceState
-            }
-        ):
+        if self.state not in {item.value for item in InferenceState}:
+            raise ValueError(f"Unknown inference state: {self.state}")
+
+        if self.event is not None and self.anomaly is not None:
             raise ValueError(
-                "Unknown inference state: "
-                f"{self.state}"
+                "Inference result cannot contain both event and anomaly result payloads"
             )
 
-        if (
-            self.event is not None
-            and self.anomaly is not None
-        ):
-            raise ValueError(
-                "Inference result cannot "
-                "contain both event and "
-                "anomaly result payloads"
-            )
+        if self.model.family == AIModelFamily.EVENT.value and self.anomaly is not None:
+            raise ValueError("Event model returned an anomaly result")
 
-        if (
-            self.model.family
-            == AIModelFamily.EVENT.value
-            and self.anomaly
-            is not None
-        ):
-            raise ValueError(
-                "Event model returned an "
-                "anomaly result"
-            )
-
-        if (
-            self.model.family
-            == AIModelFamily.ANOMALY.value
-            and self.event
-            is not None
-        ):
-            raise ValueError(
-                "Anomaly model returned "
-                "an event result"
-            )
+        if self.model.family == AIModelFamily.ANOMALY.value and self.event is not None:
+            raise ValueError("Anomaly model returned an event result")
 
         if self.event is not None:
             self.event.finalize()
@@ -1084,35 +678,19 @@ class InferenceResult:
         if self.anomaly is not None:
             self.anomaly.finalize()
 
-        for prediction in (
-            self.predictions
-        ):
+        for prediction in self.predictions:
             prediction.validate()
 
         self.provenance.finalize()
 
         if self.latency_ms is not None:
-            latency = float(
-                self.latency_ms
-            )
+            latency = float(self.latency_ms)
 
-            if (
-                not math.isfinite(
-                    latency
-                )
-                or latency < 0.0
-            ):
-                raise ValueError(
-                    "latency_ms must be "
-                    "finite and >= 0"
-                )
+            if not math.isfinite(latency) or latency < 0.0:
+                raise ValueError("latency_ms must be finite and >= 0")
 
         if not self.result_id:
-            self.result_id = (
-                random_id(
-                    "ai:result"
-                )
-            )
+            self.result_id = random_id("ai:result")
 
         return self
 
@@ -1120,11 +698,7 @@ class InferenceResult:
     def successful(
         self,
     ) -> bool:
-        return (
-            self.state
-            == InferenceState.
-            COMPLETED.value
-        )
+        return self.state == InferenceState.COMPLETED.value
 
     def to_dict(
         self,
@@ -1132,70 +706,20 @@ class InferenceResult:
         self.finalize()
 
         return {
-            "schema_version": (
-                AI_SCHEMA_VERSION
-            ),
-
-            "result_id": (
-                self.result_id
-            ),
-
-            "request_id": (
-                self.request_id
-            ),
-
-            "model": (
-                self.model.to_dict()
-            ),
-
+            "schema_version": (AI_SCHEMA_VERSION),
+            "result_id": (self.result_id),
+            "request_id": (self.request_id),
+            "model": (self.model.to_dict()),
             "state": self.state,
-
-            "successful": (
-                self.successful
-            ),
-
-            "event": (
-                self.event.to_dict()
-                if self.event
-                is not None
-                else None
-            ),
-
-            "anomaly": (
-                self.anomaly.to_dict()
-                if self.anomaly
-                is not None
-                else None
-            ),
-
-            "predictions": [
-                prediction.to_dict()
-                for prediction
-                in self.predictions
-            ],
-
-            "provenance": (
-                self.provenance.
-                to_dict()
-            ),
-
-            "latency_ms": (
-                self.latency_ms
-            ),
-
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
-
-            "error_type": (
-                self.error_type
-            ),
-
-            "completed_at": (
-                self.completed_at
-            ),
+            "successful": (self.successful),
+            "event": (self.event.to_dict() if self.event is not None else None),
+            "anomaly": (self.anomaly.to_dict() if self.anomaly is not None else None),
+            "predictions": [prediction.to_dict() for prediction in self.predictions],
+            "provenance": (self.provenance.to_dict()),
+            "latency_ms": (self.latency_ms),
+            "attributes": (to_json_safe(self.attributes)),
+            "error_type": (self.error_type),
+            "completed_at": (self.completed_at),
         }
 
 
@@ -1203,38 +727,26 @@ class InferenceResult:
 # Batch inference request
 # ---------------------------------------------------------------
 
+
 @dataclass
 class BatchInferenceRequest:
-    requests: List[
-        InferenceRequest
-    ]
+    requests: List[InferenceRequest]
 
-    batch_id: Optional[
-        str
-    ] = None
+    batch_id: Optional[str] = None
 
-    created_at: str = field(
-        default_factory=utc_now
-    )
+    created_at: str = field(default_factory=utc_now)
 
     def finalize(
         self,
     ) -> "BatchInferenceRequest":
         if not self.requests:
-            raise ValueError(
-                "Inference batch cannot "
-                "be empty"
-            )
+            raise ValueError("Inference batch cannot be empty")
 
         for request in self.requests:
             request.finalize()
 
         if not self.batch_id:
-            self.batch_id = (
-                random_id(
-                    "ai:batch"
-                )
-            )
+            self.batch_id = random_id("ai:batch")
 
         return self
 
@@ -1244,29 +756,11 @@ class BatchInferenceRequest:
         self.finalize()
 
         return {
-            "schema_version": (
-                AI_SCHEMA_VERSION
-            ),
-
-            "batch_id": (
-                self.batch_id
-            ),
-
-            "request_count": (
-                len(
-                    self.requests
-                )
-            ),
-
-            "requests": [
-                request.to_dict()
-                for request
-                in self.requests
-            ],
-
-            "created_at": (
-                self.created_at
-            ),
+            "schema_version": (AI_SCHEMA_VERSION),
+            "batch_id": (self.batch_id),
+            "request_count": (len(self.requests)),
+            "requests": [request.to_dict() for request in self.requests],
+            "created_at": (self.created_at),
         }
 
 
@@ -1274,17 +768,14 @@ class BatchInferenceRequest:
 # Batch inference result
 # ---------------------------------------------------------------
 
+
 @dataclass
 class BatchInferenceResult:
     batch_id: str
 
-    results: List[
-        InferenceResult
-    ]
+    results: List[InferenceResult]
 
-    completed_at: str = field(
-        default_factory=utc_now
-    )
+    completed_at: str = field(default_factory=utc_now)
 
     def finalize(
         self,
@@ -1304,23 +795,13 @@ class BatchInferenceResult:
     def success_count(
         self,
     ) -> int:
-        return sum(
-            1
-            for result
-            in self.results
-            if result.successful
-        )
+        return sum(1 for result in self.results if result.successful)
 
     @property
     def failure_count(
         self,
     ) -> int:
-        return (
-            len(
-                self.results
-            )
-            - self.success_count
-        )
+        return len(self.results) - self.success_count
 
     def to_dict(
         self,
@@ -1328,37 +809,13 @@ class BatchInferenceResult:
         self.finalize()
 
         return {
-            "schema_version": (
-                AI_SCHEMA_VERSION
-            ),
-
-            "batch_id": (
-                self.batch_id
-            ),
-
-            "result_count": (
-                len(
-                    self.results
-                )
-            ),
-
-            "success_count": (
-                self.success_count
-            ),
-
-            "failure_count": (
-                self.failure_count
-            ),
-
-            "results": [
-                result.to_dict()
-                for result
-                in self.results
-            ],
-
-            "completed_at": (
-                self.completed_at
-            ),
+            "schema_version": (AI_SCHEMA_VERSION),
+            "batch_id": (self.batch_id),
+            "result_count": (len(self.results)),
+            "success_count": (self.success_count),
+            "failure_count": (self.failure_count),
+            "results": [result.to_dict() for result in self.results],
+            "completed_at": (self.completed_at),
         }
 
 
@@ -1368,25 +825,18 @@ class BatchInferenceResult:
 
 __all__ = [
     "AI_SCHEMA_VERSION",
-
     "AIModelFamily",
     "AIModelState",
     "InferenceState",
     "AIDeviceFamily",
-
     "AIModelIdentity",
     "AIModelDescriptor",
-
     "InferenceProvenance",
     "InferenceRequest",
-
     "Prediction",
-
     "EventInference",
     "AnomalyInference",
-
     "InferenceResult",
-
     "BatchInferenceRequest",
     "BatchInferenceResult",
 ]

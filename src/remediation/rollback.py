@@ -34,6 +34,7 @@ from src.remediation.schema import (
 # Configuration
 # ---------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class RollbackConfig:
     """
@@ -50,22 +51,19 @@ class RollbackConfig:
 
     rollback_on_verification_failure: bool = True
 
-    rollback_on_inconclusive_verification: bool = (
-        False
-    )
+    rollback_on_inconclusive_verification: bool = False
 
     require_changed_state: bool = True
 
     require_declared_rollback: bool = True
 
-    preferred_adapter: Optional[
-        str
-    ] = None
+    preferred_adapter: Optional[str] = None
 
 
 # ---------------------------------------------------------------
 # Rollback decision
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class RollbackDecision:
@@ -97,13 +95,9 @@ class RollbackDecision:
 
     reason: str
 
-    adapter_name: Optional[
-        str
-    ] = None
+    adapter_name: Optional[str] = None
 
-    rollback_action_type: Optional[
-        str
-    ] = None
+    rollback_action_type: Optional[str] = None
 
     attributes: Dict[
         str,
@@ -114,27 +108,13 @@ class RollbackDecision:
         self,
     ) -> Dict[str, Any]:
         return {
-            "required": (
-                self.required
-            ),
-            "available": (
-                self.available
-            ),
-            "allowed": (
-                self.allowed
-            ),
+            "required": (self.required),
+            "available": (self.available),
+            "allowed": (self.allowed),
             "reason": self.reason,
-            "adapter_name": (
-                self.adapter_name
-            ),
-            "rollback_action_type": (
-                self.
-                rollback_action_type
-            ),
-            "attributes": dict(
-                self.attributes
-                or {}
-            ),
+            "adapter_name": (self.adapter_name),
+            "rollback_action_type": (self.rollback_action_type),
+            "attributes": dict(self.attributes or {}),
         }
 
 
@@ -142,15 +122,12 @@ class RollbackDecision:
 # State analysis
 # ---------------------------------------------------------------
 
+
 def rollback_required(
     execution: ExecutionResult,
-    verification: Optional[
-        VerificationResult
-    ] = None,
+    verification: Optional[VerificationResult] = None,
     *,
-    config: Optional[
-        RollbackConfig
-    ] = None,
+    config: Optional[RollbackConfig] = None,
 ) -> tuple[
     bool,
     str,
@@ -163,94 +140,54 @@ def rollback_required(
     rollback is actually available.
     """
 
-    configuration = (
-        config
-        or RollbackConfig()
-    )
+    configuration = config or RollbackConfig()
 
     execution.finalize()
 
-    if (
-        configuration.
-        require_changed_state
-        and not execution.changed
-    ):
+    if configuration.require_changed_state and not execution.changed:
         return (
             False,
-            (
-                "Execution did not report an "
-                "infrastructure state change."
-            ),
+            ("Execution did not report an infrastructure state change."),
         )
 
-    if (
-        configuration.
-        rollback_on_execution_failure
-        and execution.status
-        in {
-            ExecutionStatus.
-            FAILED.value,
-            ExecutionStatus.
-            TIMED_OUT.value,
-        }
-    ):
-      return (
+    if configuration.rollback_on_execution_failure and execution.status in {
+        ExecutionStatus.FAILED.value,
+        ExecutionStatus.TIMED_OUT.value,
+    }:
+        return (
             True,
-            (
-                "Execution failed after a "
-                "reported state change."
-            ),
+            ("Execution failed after a reported state change."),
         )
 
     if verification is None:
         return (
             False,
-            (
-                "No post-execution "
-                "verification result is "
-                "available."
-            ),
+            ("No post-execution verification result is available."),
         )
 
     verification.finalize()
 
     if (
-        configuration.
-        rollback_on_verification_failure
-        and verification.status
-        == VerificationStatus.
-        FAILED.value
+        configuration.rollback_on_verification_failure
+        and verification.status == VerificationStatus.FAILED.value
     ):
         return (
             True,
-            (
-                "Post-execution verification "
-                "failed."
-            ),
+            ("Post-execution verification failed."),
         )
 
     if (
-        configuration.
-        rollback_on_inconclusive_verification
-        and verification.status
-        == VerificationStatus.
-        INCONCLUSIVE.value
+        configuration.rollback_on_inconclusive_verification
+        and verification.status == VerificationStatus.INCONCLUSIVE.value
     ):
         return (
             True,
-            (
-                "Post-execution verification "
-                "was inconclusive."
-            ),
+            ("Post-execution verification was inconclusive."),
         )
 
     return (
         False,
-        (
-            "Current execution and "
-            "verification state does not "
-            "require rollback."
-        ),
+        ("Current execution and verification state does not require rollback."),
     )
 
 
@@ -258,13 +195,12 @@ def rollback_required(
 # Availability
 # ---------------------------------------------------------------
 
+
 def resolve_rollback_adapter(
     request: RemediationRequest,
     registry: AdapterRegistry,
     *,
-    preferred_adapter: Optional[
-        str
-    ] = None,
+    preferred_adapter: Optional[str] = None,
 ):
     """
     Resolve the adapter associated with rollback.
@@ -277,16 +213,10 @@ def resolve_rollback_adapter(
 
     adapter = registry.resolve(
         request,
-        preferred_adapter=(
-            preferred_adapter
-        ),
+        preferred_adapter=(preferred_adapter),
     )
 
-    if not (
-        adapter.supports_rollback(
-            request
-        )
-    ):
+    if not (adapter.supports_rollback(request)):
         raise AdapterNotFoundError(
             "Resolved adapter does not "
             "support rollback action "
@@ -299,61 +229,37 @@ def resolve_rollback_adapter(
 def evaluate_rollback(
     request: RemediationRequest,
     execution: ExecutionResult,
-    verification: Optional[
-        VerificationResult
-    ] = None,
+    verification: Optional[VerificationResult] = None,
     *,
-    registry: Optional[
-        AdapterRegistry
-    ] = None,
-    config: Optional[
-        RollbackConfig
-    ] = None,
+    registry: Optional[AdapterRegistry] = None,
+    config: Optional[RollbackConfig] = None,
 ) -> RollbackDecision:
     """
     Evaluate rollback requirement, availability
     and permission without executing anything.
     """
 
-    configuration = (
-        config
-        or RollbackConfig()
-    )
+    configuration = config or RollbackConfig()
 
-    adapters = (
-        registry
-        or default_adapter_registry()
-    )
+    adapters = registry or default_adapter_registry()
 
     request.finalize()
 
-    required, reason = (
-        rollback_required(
-            execution,
-            verification,
-            config=configuration,
-        )
+    required, reason = rollback_required(
+        execution,
+        verification,
+        config=configuration,
     )
 
-    if not (
-        request.
-        rollback_action_type
-    ):
+    if not (request.rollback_action_type):
         return RollbackDecision(
             required=required,
             available=False,
             allowed=False,
-            reason=(
-                reason
-                + " No rollback action "
-                "is declared."
-            ),
+            reason=(reason + " No rollback action is declared."),
             rollback_action_type=None,
             attributes={
-                "rollback_enabled": (
-                    configuration.
-                    rollback_enabled
-                ),
+                "rollback_enabled": (configuration.rollback_enabled),
                 "mode": request.mode,
             },
         )
@@ -363,21 +269,13 @@ def evaluate_rollback(
     available = False
 
     try:
-        adapter = (
-            resolve_rollback_adapter(
-                request,
-                adapters,
-                preferred_adapter=(
-                    configuration.
-                    preferred_adapter
-                ),
-            )
+        adapter = resolve_rollback_adapter(
+            request,
+            adapters,
+            preferred_adapter=(configuration.preferred_adapter),
         )
 
-        adapter_name = (
-            adapter.capability.
-            adapter_name
-        )
+        adapter_name = adapter.capability.adapter_name
 
         available = True
 
@@ -389,93 +287,44 @@ def evaluate_rollback(
 
     # Dry-run can evaluate rollback capability but
     # never performs infrastructure mutation.
-    if (
-        request.mode
-        == RemediationMode.
-        DRY_RUN.value
-    ):
-        allowed = (
-            required
-            and available
-        )
+    if request.mode == RemediationMode.DRY_RUN.value:
+        allowed = required and available
 
     else:
-        allowed = (
-            required
-            and available
-            and configuration.
-            rollback_enabled
-        )
+        allowed = required and available and configuration.rollback_enabled
 
     if not required:
         final_reason = reason
 
     elif not available:
-        final_reason = (
-            reason
-            + " No compatible rollback "
-            "adapter is available."
-        )
+        final_reason = reason + " No compatible rollback adapter is available."
 
     elif (
-        request.mode
-        == RemediationMode.
-        EXECUTE.value
-        and not configuration.
-        rollback_enabled
+        request.mode == RemediationMode.EXECUTE.value
+        and not configuration.rollback_enabled
     ):
-        final_reason = (
-            reason
-            + " Rollback execution is "
-            "disabled."
-        )
+        final_reason = reason + " Rollback execution is disabled."
 
-    elif (
-        request.mode
-        == RemediationMode.
-        DRY_RUN.value
-    ):
-        final_reason = (
-            reason
-            + " Rollback will be simulated "
-            "only."
-        )
+    elif request.mode == RemediationMode.DRY_RUN.value:
+        final_reason = reason + " Rollback will be simulated only."
 
     else:
-        final_reason = (
-            reason
-            + " Rollback is permitted."
-        )
+        final_reason = reason + " Rollback is permitted."
 
     return RollbackDecision(
         required=required,
         available=available,
         allowed=allowed,
         reason=final_reason,
-        adapter_name=(
-            adapter_name
-        ),
-        rollback_action_type=(
-            request.
-            rollback_action_type
-        ),
+        adapter_name=(adapter_name),
+        rollback_action_type=(request.rollback_action_type),
         attributes={
-            "rollback_enabled": (
-                configuration.
-                rollback_enabled
-            ),
+            "rollback_enabled": (configuration.rollback_enabled),
             "mode": request.mode,
-            "execution_status": (
-                execution.status
-            ),
-            "execution_changed": (
-                execution.changed
-            ),
+            "execution_status": (execution.status),
+            "execution_changed": (execution.changed),
             "verification_status": (
-                verification.status
-                if verification
-                is not None
-                else None
+                verification.status if verification is not None else None
             ),
         },
     )
@@ -484,6 +333,7 @@ def evaluate_rollback(
 # ---------------------------------------------------------------
 # Rollback handling
 # ---------------------------------------------------------------
+
 
 def no_rollback_result(
     request: RemediationRequest,
@@ -494,63 +344,31 @@ def no_rollback_result(
     """
 
     if not decision.required:
-        status = (
-            RollbackStatus.
-            NOT_REQUIRED.value
-        )
+        status = RollbackStatus.NOT_REQUIRED.value
 
     elif not decision.available:
-        status = (
-            RollbackStatus.
-            UNAVAILABLE.value
-        )
+        status = RollbackStatus.UNAVAILABLE.value
 
     elif not decision.allowed:
-        status = (
-            RollbackStatus.
-            REQUIRED.value
-        )
+        status = RollbackStatus.REQUIRED.value
 
     else:
-        status = (
-            RollbackStatus.
-            AVAILABLE.value
-        )
+        status = RollbackStatus.AVAILABLE.value
 
     return RollbackResult(
         status=status,
         success=False,
-        action_type=(
-            request.
-            rollback_action_type
-        ),
-        adapter_name=(
-            decision.adapter_name
-        ),
+        action_type=(request.rollback_action_type),
+        adapter_name=(decision.adapter_name),
         reason=decision.reason,
         evidence=[
             RemediationEvidence(
-                evidence_type=(
-                    "rollback_decision"
-                ),
-                description=(
-                    decision.reason
-                ),
-                score=(
-                    1.0
-                    if decision.available
-                    else 0.0
-                ),
-                source_id=(
-                    request.request_id
-                ),
-                resource_ids=list(
-                    request.
-                    target_resource_ids
-                ),
-                attributes=(
-                    decision.to_dict()
-                ),
+                evidence_type=("rollback_decision"),
+                description=(decision.reason),
+                score=(1.0 if decision.available else 0.0),
+                source_id=(request.request_id),
+                resource_ids=list(request.target_resource_ids),
+                attributes=(decision.to_dict()),
             )
         ],
     ).finalize()
@@ -559,16 +377,10 @@ def no_rollback_result(
 def perform_rollback(
     request: RemediationRequest,
     execution: ExecutionResult,
-    verification: Optional[
-        VerificationResult
-    ] = None,
+    verification: Optional[VerificationResult] = None,
     *,
-    registry: Optional[
-        AdapterRegistry
-    ] = None,
-    config: Optional[
-        RollbackConfig
-    ] = None,
+    registry: Optional[AdapterRegistry] = None,
+    config: Optional[RollbackConfig] = None,
 ) -> RollbackResult:
     """
     Evaluate and, when permitted, dispatch
@@ -579,15 +391,9 @@ def perform_rollback(
     rollback execution is possible.
     """
 
-    configuration = (
-        config
-        or RollbackConfig()
-    )
+    configuration = config or RollbackConfig()
 
-    adapters = (
-        registry
-        or default_adapter_registry()
-    )
+    adapters = registry or default_adapter_registry()
 
     decision = evaluate_rollback(
         request,
@@ -604,26 +410,17 @@ def perform_rollback(
         )
 
     try:
-        adapter = (
-            resolve_rollback_adapter(
-                request,
-                adapters,
-                preferred_adapter=(
-                    configuration.
-                    preferred_adapter
-                ),
-            )
+        adapter = resolve_rollback_adapter(
+            request,
+            adapters,
+            preferred_adapter=(configuration.preferred_adapter),
         )
 
         # In dry-run this routes to the
         # non-mutating DryRunAdapter.rollback().
-        result = adapter.rollback(
-            request
-        )
+        result = adapter.rollback(request)
 
-        result.attributes[
-            "rollback_decision"
-        ] = decision.to_dict()
+        result.attributes["rollback_decision"] = decision.to_dict()
 
         return result.finalize()
 
@@ -632,46 +429,24 @@ def perform_rollback(
         AdapterError,
     ) as exc:
         return RollbackResult(
-            status=(
-                RollbackStatus.
-                FAILED.value
-            ),
+            status=(RollbackStatus.FAILED.value),
             success=False,
-            action_type=(
-                request.
-                rollback_action_type
-            ),
-            adapter_name=(
-                decision.adapter_name
-            ),
+            action_type=(request.rollback_action_type),
+            adapter_name=(decision.adapter_name),
             started_at=utc_now(),
             finished_at=utc_now(),
-            reason=(
-                "Rollback adapter failed "
-                "or could not be resolved."
-            ),
+            reason=("Rollback adapter failed or could not be resolved."),
             evidence=[
                 RemediationEvidence(
-                    evidence_type=(
-                        "rollback_failure"
-                    ),
+                    evidence_type=("rollback_failure"),
                     description=(
-                        "Rollback could not "
-                        "be completed through "
-                        "the adapter boundary."
+                        "Rollback could not be completed through the adapter boundary."
                     ),
                     score=0.0,
-                    source_id=(
-                        request.request_id
-                    ),
-                    resource_ids=list(
-                        request.
-                        target_resource_ids
-                    ),
+                    source_id=(request.request_id),
+                    resource_ids=list(request.target_resource_ids),
                     attributes={
-                        "error_type": (
-                            type(exc).__name__
-                        ),
+                        "error_type": (type(exc).__name__),
                     },
                 )
             ],
@@ -681,45 +456,22 @@ def perform_rollback(
         # Avoid propagating provider internals or
         # arbitrary exception content.
         return RollbackResult(
-            status=(
-                RollbackStatus.
-                FAILED.value
-            ),
+            status=(RollbackStatus.FAILED.value),
             success=False,
-            action_type=(
-                request.
-                rollback_action_type
-            ),
-            adapter_name=(
-                decision.adapter_name
-            ),
+            action_type=(request.rollback_action_type),
+            adapter_name=(decision.adapter_name),
             started_at=utc_now(),
             finished_at=utc_now(),
-            reason=(
-                "Unexpected rollback "
-                "failure."
-            ),
+            reason=("Unexpected rollback failure."),
             evidence=[
                 RemediationEvidence(
-                    evidence_type=(
-                        "rollback_failure"
-                    ),
-                    description=(
-                        "Unexpected rollback "
-                        "adapter failure."
-                    ),
+                    evidence_type=("rollback_failure"),
+                    description=("Unexpected rollback adapter failure."),
                     score=0.0,
-                    source_id=(
-                        request.request_id
-                    ),
-                    resource_ids=list(
-                        request.
-                        target_resource_ids
-                    ),
+                    source_id=(request.request_id),
+                    resource_ids=list(request.target_resource_ids),
                     attributes={
-                        "error_type": (
-                            type(exc).__name__
-                        ),
+                        "error_type": (type(exc).__name__),
                     },
                 )
             ],
@@ -730,35 +482,22 @@ def perform_rollback(
 # Batch
 # ---------------------------------------------------------------
 
+
 def perform_rollbacks(
     items: Iterable[
         tuple[
             RemediationRequest,
             ExecutionResult,
-            Optional[
-                VerificationResult
-            ],
+            Optional[VerificationResult],
         ]
     ],
     *,
-    registry: Optional[
-        AdapterRegistry
-    ] = None,
-    config: Optional[
-        RollbackConfig
-    ] = None,
-) -> List[
-    RollbackResult
-]:
-    adapters = (
-        registry
-        or default_adapter_registry()
-    )
+    registry: Optional[AdapterRegistry] = None,
+    config: Optional[RollbackConfig] = None,
+) -> List[RollbackResult]:
+    adapters = registry or default_adapter_registry()
 
-    configuration = (
-        config
-        or RollbackConfig()
-    )
+    configuration = config or RollbackConfig()
 
     return [
         perform_rollback(
@@ -772,8 +511,7 @@ def perform_rollbacks(
             request,
             execution,
             verification,
-        )
-        in items
+        ) in items
     ]
 
 
@@ -781,14 +519,11 @@ def perform_rollbacks(
 # Summary
 # ---------------------------------------------------------------
 
+
 def rollback_summary(
-    results: Iterable[
-        RollbackResult
-    ],
+    results: Iterable[RollbackResult],
 ) -> Dict[str, Any]:
-    values = list(
-        results
-    )
+    values = list(results)
 
     statuses: Dict[
         str,
@@ -796,9 +531,7 @@ def rollback_summary(
     ] = {}
 
     for result in values:
-        statuses[
-            result.status
-        ] = (
+        statuses[result.status] = (
             statuses.get(
                 result.status,
                 0,
@@ -807,34 +540,16 @@ def rollback_summary(
         )
 
     return {
-        "rollback_count": len(
-            values
-        ),
-        "successful_count": sum(
-            1
-            for result in values
-            if result.success
-        ),
+        "rollback_count": len(values),
+        "successful_count": sum(1 for result in values if result.success),
         "required_count": sum(
-            1
-            for result in values
-            if result.status
-            == RollbackStatus.
-            REQUIRED.value
+            1 for result in values if result.status == RollbackStatus.REQUIRED.value
         ),
         "unavailable_count": sum(
-            1
-            for result in values
-            if result.status
-            == RollbackStatus.
-            UNAVAILABLE.value
+            1 for result in values if result.status == RollbackStatus.UNAVAILABLE.value
         ),
         "failed_count": sum(
-            1
-            for result in values
-            if result.status
-            == RollbackStatus.
-            FAILED.value
+            1 for result in values if result.status == RollbackStatus.FAILED.value
         ),
         "statuses": statuses,
     }
@@ -851,30 +566,18 @@ class RollbackManager:
     def __init__(
         self,
         *,
-        registry: Optional[
-            AdapterRegistry
-        ] = None,
-        config: Optional[
-            RollbackConfig
-        ] = None,
+        registry: Optional[AdapterRegistry] = None,
+        config: Optional[RollbackConfig] = None,
     ) -> None:
-        self.registry = (
-            registry
-            or default_adapter_registry()
-        )
+        self.registry = registry or default_adapter_registry()
 
-        self.config = (
-            config
-            or RollbackConfig()
-        )
+        self.config = config or RollbackConfig()
 
     def evaluate(
         self,
         request: RemediationRequest,
         execution: ExecutionResult,
-        verification: Optional[
-            VerificationResult
-        ] = None,
+        verification: Optional[VerificationResult] = None,
     ) -> RollbackDecision:
         return evaluate_rollback(
             request,
@@ -888,9 +591,7 @@ class RollbackManager:
         self,
         request: RemediationRequest,
         execution: ExecutionResult,
-        verification: Optional[
-            VerificationResult
-        ] = None,
+        verification: Optional[VerificationResult] = None,
     ) -> RollbackResult:
         return perform_rollback(
             request,

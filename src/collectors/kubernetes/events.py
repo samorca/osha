@@ -31,53 +31,25 @@ def collect_events(
     namespace: str | None,
 ) -> list[dict]:
     if namespace:
-        event_list = (
-            core_api.list_namespaced_event(
-                namespace=namespace
-            )
-        )
+        event_list = core_api.list_namespaced_event(namespace=namespace)
     else:
-        event_list = (
-            core_api.list_event_for_all_namespaces()
-        )
+        event_list = core_api.list_event_for_all_namespaces()
 
     output: list[dict] = []
 
     for event in event_list.items:
-        involved = (
-            event.involved_object
-        )
+        involved = event.involved_object
 
-        timestamp = (
-            event.event_time
-            or event.last_timestamp
-            or event.first_timestamp
-        )
+        timestamp = event.event_time or event.last_timestamp or event.first_timestamp
 
         identity = {
-            "environment_id": (
-                environment_id
-            ),
+            "environment_id": (environment_id),
             "cluster_id": cluster_id,
-            "namespace": (
-                involved.namespace
-                if involved
-                else event.metadata.namespace
-            ),
+            "namespace": (involved.namespace if involved else event.metadata.namespace),
             "pod_name": (
-                involved.name
-                if (
-                    involved
-                    and involved.kind
-                    == "Pod"
-                )
-                else None
+                involved.name if (involved and involved.kind == "Pod") else None
             ),
-            "pod_uid": (
-                involved.uid
-                if involved
-                else None
-            ),
+            "pod_uid": (involved.uid if involved else None),
             "node_name": None,
             "pod_ip": None,
             "phase": None,
@@ -86,30 +58,16 @@ def collect_events(
 
         output.append(
             make_record(
-                signal_type=(
-                    "kubernetes_event"
-                ),
-                timestamp=(
-                    _datetime_string(
-                        timestamp
-                    )
-                ),
+                signal_type=("kubernetes_event"),
+                timestamp=(_datetime_string(timestamp)),
                 identity=identity,
                 payload={
                     "type": event.type,
                     "reason": event.reason,
                     "message": event.message,
                     "count": event.count,
-                    "object_kind": (
-                        involved.kind
-                        if involved
-                        else None
-                    ),
-                    "object_name": (
-                        involved.name
-                        if involved
-                        else None
-                    ),
+                    "object_kind": (involved.kind if involved else None),
+                    "object_name": (involved.name if involved else None),
                 },
             )
         )

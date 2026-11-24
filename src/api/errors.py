@@ -65,9 +65,7 @@ from src.api.schema import (
 # Logging
 # ------------------------------------------------------------------
 
-logger = logging.getLogger(
-    __name__
-)
+logger = logging.getLogger(__name__)
 
 
 # ------------------------------------------------------------------
@@ -93,6 +91,7 @@ MAX_SAFE_DETAIL_TEXT_LENGTH = 1024
 # Public API error codes
 # ------------------------------------------------------------------
 
+
 class APIErrorCode(
     str,
     Enum,
@@ -113,9 +112,7 @@ class APIErrorCode(
     CONCURRENCY_LIMIT = "concurrency_limit"
 
     # Authentication / authorization
-    AUTHENTICATION_REQUIRED = (
-        "authentication_required"
-    )
+    AUTHENTICATION_REQUIRED = "authentication_required"
     INVALID_CREDENTIALS = "invalid_credentials"
     PERMISSION_DENIED = "permission_denied"
     FORBIDDEN = "forbidden"
@@ -129,88 +126,46 @@ class APIErrorCode(
 
     # Accelerator
     ACCELERATOR_ERROR = "accelerator_error"
-    ACCELERATOR_UNAVAILABLE = (
-        "accelerator_unavailable"
-    )
-    ACCELERATOR_NOT_FOUND = (
-        "accelerator_not_found"
-    )
-    ACCELERATOR_SELECTION_FAILED = (
-        "accelerator_selection_failed"
-    )
-    ACCELERATOR_MEMORY_INSUFFICIENT = (
-        "accelerator_memory_insufficient"
-    )
-    ACCELERATOR_PRECISION_UNSUPPORTED = (
-        "accelerator_precision_unsupported"
-    )
-    ACCELERATOR_CAPABILITY_MISSING = (
-        "accelerator_capability_missing"
-    )
-    ACCELERATOR_OPERATION_FAILED = (
-        "accelerator_operation_failed"
-    )
-    ACCELERATOR_METRICS_UNAVAILABLE = (
-        "accelerator_metrics_unavailable"
-    )
-    ACCELERATOR_OPTIMIZATION_FAILED = (
-        "accelerator_optimization_failed"
-    )
+    ACCELERATOR_UNAVAILABLE = "accelerator_unavailable"
+    ACCELERATOR_NOT_FOUND = "accelerator_not_found"
+    ACCELERATOR_SELECTION_FAILED = "accelerator_selection_failed"
+    ACCELERATOR_MEMORY_INSUFFICIENT = "accelerator_memory_insufficient"
+    ACCELERATOR_PRECISION_UNSUPPORTED = "accelerator_precision_unsupported"
+    ACCELERATOR_CAPABILITY_MISSING = "accelerator_capability_missing"
+    ACCELERATOR_OPERATION_FAILED = "accelerator_operation_failed"
+    ACCELERATOR_METRICS_UNAVAILABLE = "accelerator_metrics_unavailable"
+    ACCELERATOR_OPTIMIZATION_FAILED = "accelerator_optimization_failed"
 
     # AI / inference
     AI_ERROR = "ai_error"
     INFERENCE_FAILED = "inference_failed"
-    INFERENCE_INPUT_INVALID = (
-        "inference_input_invalid"
-    )
+    INFERENCE_INPUT_INVALID = "inference_input_invalid"
     INFERENCE_TIMEOUT = "inference_timeout"
     MODEL_NOT_FOUND = "model_not_found"
     MODEL_UNAVAILABLE = "model_unavailable"
     MODEL_LOAD_FAILED = "model_load_failed"
-    MODEL_OPERATION_FAILED = (
-        "model_operation_failed"
-    )
-    MODEL_CONFIGURATION_INVALID = (
-        "model_configuration_invalid"
-    )
+    MODEL_OPERATION_FAILED = "model_operation_failed"
+    MODEL_CONFIGURATION_INVALID = "model_configuration_invalid"
 
     # Incident
     INCIDENT_NOT_FOUND = "incident_not_found"
     INCIDENT_CONFLICT = "incident_conflict"
-    INCIDENT_OPERATION_FAILED = (
-        "incident_operation_failed"
-    )
+    INCIDENT_OPERATION_FAILED = "incident_operation_failed"
 
     # Decision
     DECISION_NOT_FOUND = "decision_not_found"
     DECISION_DENIED = "decision_denied"
     DECISION_EXPIRED = "decision_expired"
-    DECISION_EVALUATION_FAILED = (
-        "decision_evaluation_failed"
-    )
+    DECISION_EVALUATION_FAILED = "decision_evaluation_failed"
 
     # Remediation
-    REMEDIATION_NOT_FOUND = (
-        "remediation_not_found"
-    )
-    REMEDIATION_NOT_APPROVED = (
-        "remediation_not_approved"
-    )
-    REMEDIATION_CONFIRMATION_REQUIRED = (
-        "remediation_confirmation_required"
-    )
-    REMEDIATION_VERSION_CONFLICT = (
-        "remediation_version_conflict"
-    )
-    REMEDIATION_EXECUTION_DISABLED = (
-        "remediation_execution_disabled"
-    )
-    REMEDIATION_EXECUTION_FAILED = (
-        "remediation_execution_failed"
-    )
-    REMEDIATION_ROLLBACK_FAILED = (
-        "remediation_rollback_failed"
-    )
+    REMEDIATION_NOT_FOUND = "remediation_not_found"
+    REMEDIATION_NOT_APPROVED = "remediation_not_approved"
+    REMEDIATION_CONFIRMATION_REQUIRED = "remediation_confirmation_required"
+    REMEDIATION_VERSION_CONFLICT = "remediation_version_conflict"
+    REMEDIATION_EXECUTION_DISABLED = "remediation_execution_disabled"
+    REMEDIATION_EXECUTION_FAILED = "remediation_execution_failed"
+    REMEDIATION_ROLLBACK_FAILED = "remediation_rollback_failed"
 
 
 # ------------------------------------------------------------------
@@ -286,51 +241,31 @@ _SENSITIVE_KEY_PARTS = {
 # Helpers
 # ------------------------------------------------------------------
 
+
 def _clean_code(
     value: Any,
 ) -> str:
-    code = str(
-        value
-    ).strip().lower()
+    code = str(value).strip().lower()
 
     if not code:
-        return (
-            APIErrorCode.
-            INTERNAL_ERROR.value
-        )
+        return APIErrorCode.INTERNAL_ERROR.value
 
     normalized = []
 
     for character in code:
-        if (
-            character.isalnum()
-            or character
-            in {
-                "_",
-                "-",
-                ".",
-            }
-        ):
-            normalized.append(
-                character
-            )
+        if character.isalnum() or character in {
+            "_",
+            "-",
+            ".",
+        }:
+            normalized.append(character)
 
         else:
-            normalized.append(
-                "_"
-            )
+            normalized.append("_")
 
-    result = "".join(
-        normalized
-    )[
-        :MAX_ERROR_CODE_LENGTH
-    ]
+    result = "".join(normalized)[:MAX_ERROR_CODE_LENGTH]
 
-    return (
-        result
-        or APIErrorCode.
-        INTERNAL_ERROR.value
-    )
+    return result or APIErrorCode.INTERNAL_ERROR.value
 
 
 def _clean_message(
@@ -338,32 +273,20 @@ def _clean_message(
     *,
     fallback: str,
 ) -> str:
-    message = str(
-        value
-        if value is not None
-        else fallback
-    ).strip()
+    message = str(value if value is not None else fallback).strip()
 
     if not message:
         message = fallback
 
-    return message[
-        :MAX_PUBLIC_MESSAGE_LENGTH
-    ]
+    return message[:MAX_PUBLIC_MESSAGE_LENGTH]
 
 
 def _key_is_sensitive(
     key: str,
 ) -> bool:
-    normalized = str(
-        key
-    ).strip().lower()
+    normalized = str(key).strip().lower()
 
-    return any(
-        part in normalized
-        for part
-        in _SENSITIVE_KEY_PARTS
-    )
+    return any(part in normalized for part in _SENSITIVE_KEY_PARTS)
 
 
 def _safe_scalar(
@@ -392,12 +315,8 @@ def _safe_scalar(
             return None
 
         if value in {
-            float(
-                "inf"
-            ),
-            float(
-                "-inf"
-            ),
+            float("inf"),
+            float("-inf"),
         }:
             return None
 
@@ -407,15 +326,9 @@ def _safe_scalar(
         value,
         str,
     ):
-        return value[
-            :MAX_SAFE_DETAIL_TEXT_LENGTH
-        ]
+        return value[:MAX_SAFE_DETAIL_TEXT_LENGTH]
 
-    return str(
-        type(
-            value
-        ).__name__
-    )
+    return str(type(value).__name__)
 
 
 def safe_error_details(
@@ -426,9 +339,7 @@ def safe_error_details(
         ]
     ],
     *,
-    allow_keys: Optional[
-        Iterable[str]
-    ] = None,
+    allow_keys: Optional[Iterable[str]] = None,
 ) -> Dict[str, Any]:
     """
     Return bounded, public-safe error metadata.
@@ -441,49 +352,27 @@ def safe_error_details(
     if not details:
         return {}
 
-    allowed = set(
-        allow_keys
-        or _SAFE_DETAIL_KEYS
-    )
+    allowed = set(allow_keys or _SAFE_DETAIL_KEYS)
 
     output: Dict[
         str,
         Any,
     ] = {}
 
-    for raw_key, value in (
-        details.items()
-    ):
-        if (
-            len(
-                output
-            )
-            >= MAX_ERROR_DETAIL_COUNT
-        ):
+    for raw_key, value in details.items():
+        if len(output) >= MAX_ERROR_DETAIL_COUNT:
             break
 
-        key = str(
-            raw_key
-        ).strip()
+        key = str(raw_key).strip()
 
-        if (
-            not key
-            or key not in allowed
-            or _key_is_sensitive(
-                key
-            )
-        ):
+        if not key or key not in allowed or _key_is_sensitive(key):
             continue
 
         if isinstance(
             value,
             _SAFE_SCALAR_TYPES,
         ):
-            output[
-                key
-            ] = _safe_scalar(
-                value
-            )
+            output[key] = _safe_scalar(value)
 
             continue
 
@@ -497,24 +386,14 @@ def safe_error_details(
         ):
             safe_items = []
 
-            for item in list(
-                value
-            )[
-                :64
-            ]:
+            for item in list(value)[:64]:
                 if isinstance(
                     item,
                     _SAFE_SCALAR_TYPES,
                 ):
-                    safe_items.append(
-                        _safe_scalar(
-                            item
-                        )
-                    )
+                    safe_items.append(_safe_scalar(item))
 
-            output[
-                key
-            ] = safe_items
+            output[key] = safe_items
 
             continue
 
@@ -527,38 +406,21 @@ def safe_error_details(
                 Any,
             ] = {}
 
-            for nested_key, nested_value in list(
-                value.items()
-            )[
-                :32
-            ]:
-                safe_key = str(
-                    nested_key
-                ).strip()
+            for nested_key, nested_value in list(value.items())[:32]:
+                safe_key = str(nested_key).strip()
 
-                if (
-                    not safe_key
-                    or _key_is_sensitive(
-                        safe_key
-                    )
-                ):
+                if not safe_key or _key_is_sensitive(safe_key):
                     continue
 
                 if isinstance(
                     nested_value,
                     _SAFE_SCALAR_TYPES,
                 ):
-                    nested[
-                        safe_key[
-                            :MAX_ERROR_LOCATION_PART_LENGTH
-                        ]
-                    ] = _safe_scalar(
+                    nested[safe_key[:MAX_ERROR_LOCATION_PART_LENGTH]] = _safe_scalar(
                         nested_value
                     )
 
-            output[
-                key
-            ] = nested
+            output[key] = nested
 
     return output
 
@@ -566,26 +428,21 @@ def safe_error_details(
 def exception_type_name(
     error: BaseException,
 ) -> str:
-    return type(
-        error
-    ).__name__
+    return type(error).__name__
 
 
 def exception_module_name(
     error: BaseException,
 ) -> str:
-    return type(
-        error
-    ).__module__
+    return type(error).__module__
 
 
 # ------------------------------------------------------------------
 # Base API exception
 # ------------------------------------------------------------------
 
-class APIException(
-    Exception
-):
+
+class APIException(Exception):
     """
     Base exception intentionally safe to expose
     through the public API.
@@ -595,46 +452,28 @@ class APIException(
     error text.
     """
 
-    default_code = (
-        APIErrorCode.INTERNAL_ERROR.value
-    )
+    default_code = APIErrorCode.INTERNAL_ERROR.value
 
-    default_status_code = int(
-        HTTPStatus.INTERNAL_SERVER_ERROR
-    )
+    default_status_code = int(HTTPStatus.INTERNAL_SERVER_ERROR)
 
-    default_message = (
-        "An internal service error occurred."
-    )
+    default_message = "An internal service error occurred."
 
     default_retryable = False
 
     def __init__(
         self,
-        public_message: Optional[
-            str
-        ] = None,
+        public_message: Optional[str] = None,
         *,
-        code: Optional[
-            str
-        ] = None,
-        status_code: Optional[
-            int
-        ] = None,
-        retryable: Optional[
-            bool
-        ] = None,
+        code: Optional[str] = None,
+        status_code: Optional[int] = None,
+        retryable: Optional[bool] = None,
         details: Optional[
             Mapping[
                 str,
                 Any,
             ]
         ] = None,
-        fields: Optional[
-            Sequence[
-                APIErrorField
-            ]
-        ] = None,
+        fields: Optional[Sequence[APIErrorField]] = None,
         headers: Optional[
             Mapping[
                 str,
@@ -643,121 +482,58 @@ class APIException(
         ] = None,
         log_level: int = logging.WARNING,
     ) -> None:
-        self.code = _clean_code(
-            code
-            or self.default_code
-        )
+        self.code = _clean_code(code or self.default_code)
 
         self.status_code = int(
-            status_code
-            if status_code
-            is not None
-            else self.default_status_code
+            status_code if status_code is not None else self.default_status_code
         )
 
-        if (
-            self.status_code < 400
-            or self.status_code > 599
-        ):
-            raise ValueError(
-                "API exception status code "
-                "must be between 400 and 599"
-            )
+        if self.status_code < 400 or self.status_code > 599:
+            raise ValueError("API exception status code must be between 400 and 599")
 
-        self.public_message = (
-            _clean_message(
-                public_message,
-                fallback=(
-                    self.default_message
-                ),
-            )
+        self.public_message = _clean_message(
+            public_message,
+            fallback=(self.default_message),
         )
 
         self.retryable = bool(
-            self.default_retryable
-            if retryable is None
-            else retryable
+            self.default_retryable if retryable is None else retryable
         )
 
-        self.details = (
-            safe_error_details(
-                details
-            )
-        )
+        self.details = safe_error_details(details)
 
-        self.fields = tuple(
-            fields
-            or ()
-        )[
-            :MAX_ERROR_FIELD_COUNT
-        ]
+        self.fields = tuple(fields or ())[:MAX_ERROR_FIELD_COUNT]
 
         self.headers = {
-            str(
-                key
-            ): str(
-                value
-            )
-            for key, value
-            in dict(
-                headers
-                or {}
-            ).items()
-            if str(
-                key
-            ).strip()
+            str(key): str(value)
+            for key, value in dict(headers or {}).items()
+            if str(key).strip()
         }
 
-        self.log_level = int(
-            log_level
-        )
+        self.log_level = int(log_level)
 
-        super().__init__(
-            self.public_message
-        )
+        super().__init__(self.public_message)
 
     def to_api_error(
         self,
     ) -> APIError:
         return APIError(
             code=self.code,
-
-            message=(
-                self.public_message
-            ),
-
-            retryable=(
-                self.retryable
-            ),
-
-            details=dict(
-                self.details
-            ),
-
-            fields=list(
-                self.fields
-            ),
+            message=(self.public_message),
+            retryable=(self.retryable),
+            details=dict(self.details),
+            fields=list(self.fields),
         )
 
     def to_response(
         self,
         *,
-        request_id: Optional[
-            str
-        ] = None,
-        duration_ms: Optional[
-            float
-        ] = None,
+        request_id: Optional[str] = None,
+        duration_ms: Optional[float] = None,
     ) -> APIErrorResponse:
         return APIErrorResponse(
-            status=(
-                APIStatus.ERROR.value
-            ),
-
-            error=(
-                self.to_api_error()
-            ),
-
+            status=(APIStatus.ERROR.value),
+            error=(self.to_api_error()),
             metadata=(
                 APIResponseMetadata(
                     request_id=request_id,
@@ -771,248 +547,131 @@ class APIException(
 # Generic API exceptions
 # ------------------------------------------------------------------
 
-class BadRequestError(
-    APIException
-):
-    default_code = (
-        APIErrorCode.INVALID_REQUEST.value
-    )
 
-    default_status_code = int(
-        HTTPStatus.BAD_REQUEST
-    )
+class BadRequestError(APIException):
+    default_code = APIErrorCode.INVALID_REQUEST.value
 
-    default_message = (
-        "The request is invalid."
-    )
+    default_status_code = int(HTTPStatus.BAD_REQUEST)
+
+    default_message = "The request is invalid."
 
 
-class RequestValidationAPIError(
-    APIException
-):
-    default_code = (
-        APIErrorCode.VALIDATION_ERROR.value
-    )
+class RequestValidationAPIError(APIException):
+    default_code = APIErrorCode.VALIDATION_ERROR.value
 
-    default_status_code = int(
-        HTTPStatus.UNPROCESSABLE_ENTITY
-    )
+    default_status_code = int(HTTPStatus.UNPROCESSABLE_ENTITY)
 
-    default_message = (
-        "Request validation failed."
-    )
+    default_message = "Request validation failed."
 
 
-class AuthenticationRequiredError(
-    APIException
-):
-    default_code = (
-        APIErrorCode.
-        AUTHENTICATION_REQUIRED.value
-    )
+class AuthenticationRequiredError(APIException):
+    default_code = APIErrorCode.AUTHENTICATION_REQUIRED.value
 
-    default_status_code = int(
-        HTTPStatus.UNAUTHORIZED
-    )
+    default_status_code = int(HTTPStatus.UNAUTHORIZED)
 
-    default_message = (
-        "Authentication is required."
-    )
+    default_message = "Authentication is required."
 
 
-class PermissionDeniedError(
-    APIException
-):
-    default_code = (
-        APIErrorCode.PERMISSION_DENIED.value
-    )
+class PermissionDeniedError(APIException):
+    default_code = APIErrorCode.PERMISSION_DENIED.value
 
-    default_status_code = int(
-        HTTPStatus.FORBIDDEN
-    )
+    default_status_code = int(HTTPStatus.FORBIDDEN)
 
-    default_message = (
-        "Permission is denied."
-    )
+    default_message = "Permission is denied."
 
 
-class ResourceNotFoundError(
-    APIException
-):
-    default_code = (
-        APIErrorCode.NOT_FOUND.value
-    )
+class ResourceNotFoundError(APIException):
+    default_code = APIErrorCode.NOT_FOUND.value
 
-    default_status_code = int(
-        HTTPStatus.NOT_FOUND
-    )
+    default_status_code = int(HTTPStatus.NOT_FOUND)
 
-    default_message = (
-        "The requested resource was not found."
-    )
+    default_message = "The requested resource was not found."
 
 
-class ResourceConflictError(
-    APIException
-):
-    default_code = (
-        APIErrorCode.CONFLICT.value
-    )
+class ResourceConflictError(APIException):
+    default_code = APIErrorCode.CONFLICT.value
 
-    default_status_code = int(
-        HTTPStatus.CONFLICT
-    )
+    default_status_code = int(HTTPStatus.CONFLICT)
 
-    default_message = (
-        "The request conflicts with the "
-        "current resource state."
-    )
+    default_message = "The request conflicts with the current resource state."
 
 
-class PreconditionFailedError(
-    APIException
-):
-    default_code = (
-        APIErrorCode.
-        PRECONDITION_FAILED.value
-    )
+class PreconditionFailedError(APIException):
+    default_code = APIErrorCode.PRECONDITION_FAILED.value
 
-    default_status_code = int(
-        HTTPStatus.PRECONDITION_FAILED
-    )
+    default_status_code = int(HTTPStatus.PRECONDITION_FAILED)
 
-    default_message = (
-        "A request precondition failed."
-    )
+    default_message = "A request precondition failed."
 
 
-class FeatureDisabledError(
-    APIException
-):
-    default_code = (
-        APIErrorCode.FEATURE_DISABLED.value
-    )
+class FeatureDisabledError(APIException):
+    default_code = APIErrorCode.FEATURE_DISABLED.value
 
-    default_status_code = int(
-        HTTPStatus.NOT_FOUND
-    )
+    default_status_code = int(HTTPStatus.NOT_FOUND)
 
-    default_message = (
-        "The requested API feature is disabled."
-    )
+    default_message = "The requested API feature is disabled."
 
 
-class RequestTooLargeError(
-    APIException
-):
-    default_code = (
-        APIErrorCode.REQUEST_TOO_LARGE.value
-    )
+class RequestTooLargeError(APIException):
+    default_code = APIErrorCode.REQUEST_TOO_LARGE.value
 
-    default_status_code = int(
-        HTTPStatus.REQUEST_ENTITY_TOO_LARGE
-    )
+    default_status_code = int(HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
 
-    default_message = (
-        "The request body is too large."
-    )
+    default_message = "The request body is too large."
 
 
-class RequestTimeoutAPIError(
-    APIException
-):
-    default_code = (
-        APIErrorCode.REQUEST_TIMEOUT.value
-    )
+class RequestTimeoutAPIError(APIException):
+    default_code = APIErrorCode.REQUEST_TIMEOUT.value
 
-    default_status_code = int(
-        HTTPStatus.GATEWAY_TIMEOUT
-    )
+    default_status_code = int(HTTPStatus.GATEWAY_TIMEOUT)
 
-    default_message = (
-        "The request timed out."
-    )
+    default_message = "The request timed out."
 
     default_retryable = True
 
 
-class RateLimitExceededError(
-    APIException
-):
-    default_code = (
-        APIErrorCode.RATE_LIMITED.value
-    )
+class RateLimitExceededError(APIException):
+    default_code = APIErrorCode.RATE_LIMITED.value
 
-    default_status_code = int(
-        HTTPStatus.TOO_MANY_REQUESTS
-    )
+    default_status_code = int(HTTPStatus.TOO_MANY_REQUESTS)
 
-    default_message = (
-        "The request rate limit was exceeded."
-    )
+    default_message = "The request rate limit was exceeded."
 
     default_retryable = True
 
 
-class ConcurrencyLimitError(
-    APIException
-):
-    default_code = (
-        APIErrorCode.CONCURRENCY_LIMIT.value
-    )
+class ConcurrencyLimitError(APIException):
+    default_code = APIErrorCode.CONCURRENCY_LIMIT.value
 
-    default_status_code = int(
-        HTTPStatus.SERVICE_UNAVAILABLE
-    )
+    default_status_code = int(HTTPStatus.SERVICE_UNAVAILABLE)
 
-    default_message = (
-        "The service is currently at its "
-        "concurrency limit."
-    )
+    default_message = "The service is currently at its concurrency limit."
 
     default_retryable = True
 
 
-class ServiceUnavailableAPIError(
-    APIException
-):
-    default_code = (
-        APIErrorCode.SERVICE_UNAVAILABLE.value
-    )
+class ServiceUnavailableAPIError(APIException):
+    default_code = APIErrorCode.SERVICE_UNAVAILABLE.value
 
-    default_status_code = int(
-        HTTPStatus.SERVICE_UNAVAILABLE
-    )
+    default_status_code = int(HTTPStatus.SERVICE_UNAVAILABLE)
 
-    default_message = (
-        "The service is temporarily unavailable."
-    )
+    default_message = "The service is temporarily unavailable."
 
     default_retryable = True
 
 
-class InternalServerAPIError(
-    APIException
-):
-    default_code = (
-        APIErrorCode.INTERNAL_ERROR.value
-    )
+class InternalServerAPIError(APIException):
+    default_code = APIErrorCode.INTERNAL_ERROR.value
 
-    default_status_code = int(
-        HTTPStatus.INTERNAL_SERVER_ERROR
-    )
+    default_status_code = int(HTTPStatus.INTERNAL_SERVER_ERROR)
 
-    default_message = (
-        "An internal service error occurred."
-    )
+    default_message = "An internal service error occurred."
 
     default_retryable = False
 
     def __init__(
         self,
-        public_message: Optional[
-            str
-        ] = None,
+        public_message: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         kwargs.setdefault(
@@ -1030,359 +689,189 @@ class InternalServerAPIError(
 # Accelerator API exceptions
 # ------------------------------------------------------------------
 
-class AcceleratorAPIError(
-    APIException
-):
-    default_code = (
-        APIErrorCode.ACCELERATOR_ERROR.value
-    )
 
-    default_status_code = int(
-        HTTPStatus.INTERNAL_SERVER_ERROR
-    )
+class AcceleratorAPIError(APIException):
+    default_code = APIErrorCode.ACCELERATOR_ERROR.value
 
-    default_message = (
-        "The accelerator operation failed."
-    )
+    default_status_code = int(HTTPStatus.INTERNAL_SERVER_ERROR)
+
+    default_message = "The accelerator operation failed."
 
 
-class AcceleratorUnavailableAPIError(
-    AcceleratorAPIError
-):
-    default_code = (
-        APIErrorCode.
-        ACCELERATOR_UNAVAILABLE.value
-    )
+class AcceleratorUnavailableAPIError(AcceleratorAPIError):
+    default_code = APIErrorCode.ACCELERATOR_UNAVAILABLE.value
 
-    default_status_code = int(
-        HTTPStatus.SERVICE_UNAVAILABLE
-    )
+    default_status_code = int(HTTPStatus.SERVICE_UNAVAILABLE)
 
-    default_message = (
-        "No accelerator device satisfies "
-        "the request."
-    )
+    default_message = "No accelerator device satisfies the request."
 
     default_retryable = True
 
 
-class AcceleratorNotFoundAPIError(
-    AcceleratorAPIError
-):
-    default_code = (
-        APIErrorCode.
-        ACCELERATOR_NOT_FOUND.value
-    )
+class AcceleratorNotFoundAPIError(AcceleratorAPIError):
+    default_code = APIErrorCode.ACCELERATOR_NOT_FOUND.value
 
-    default_status_code = int(
-        HTTPStatus.NOT_FOUND
-    )
+    default_status_code = int(HTTPStatus.NOT_FOUND)
 
-    default_message = (
-        "The requested accelerator device "
-        "was not found."
-    )
+    default_message = "The requested accelerator device was not found."
 
 
-class AcceleratorMemoryAPIError(
-    AcceleratorAPIError
-):
-    default_code = (
-        APIErrorCode.
-        ACCELERATOR_MEMORY_INSUFFICIENT.value
-    )
+class AcceleratorMemoryAPIError(AcceleratorAPIError):
+    default_code = APIErrorCode.ACCELERATOR_MEMORY_INSUFFICIENT.value
 
-    default_status_code = int(
-        HTTPStatus.CONFLICT
-    )
+    default_status_code = int(HTTPStatus.CONFLICT)
 
-    default_message = (
-        "The accelerator does not have "
-        "sufficient available memory."
-    )
+    default_message = "The accelerator does not have sufficient available memory."
 
     default_retryable = True
 
 
-class AcceleratorOptimizationAPIError(
-    AcceleratorAPIError
-):
-    default_code = (
-        APIErrorCode.
-        ACCELERATOR_OPTIMIZATION_FAILED.value
-    )
+class AcceleratorOptimizationAPIError(AcceleratorAPIError):
+    default_code = APIErrorCode.ACCELERATOR_OPTIMIZATION_FAILED.value
 
-    default_status_code = int(
-        HTTPStatus.UNPROCESSABLE_ENTITY
-    )
+    default_status_code = int(HTTPStatus.UNPROCESSABLE_ENTITY)
 
-    default_message = (
-        "An accelerator optimization plan "
-        "could not be generated."
-    )
+    default_message = "An accelerator optimization plan could not be generated."
 
 
 # ------------------------------------------------------------------
 # AI and model API exceptions
 # ------------------------------------------------------------------
 
-class AIAPIError(
-    APIException
-):
-    default_code = (
-        APIErrorCode.AI_ERROR.value
-    )
 
-    default_status_code = int(
-        HTTPStatus.INTERNAL_SERVER_ERROR
-    )
+class AIAPIError(APIException):
+    default_code = APIErrorCode.AI_ERROR.value
 
-    default_message = (
-        "The AI operation failed."
-    )
+    default_status_code = int(HTTPStatus.INTERNAL_SERVER_ERROR)
+
+    default_message = "The AI operation failed."
 
 
-class InferenceAPIError(
-    AIAPIError
-):
-    default_code = (
-        APIErrorCode.INFERENCE_FAILED.value
-    )
+class InferenceAPIError(AIAPIError):
+    default_code = APIErrorCode.INFERENCE_FAILED.value
 
-    default_status_code = int(
-        HTTPStatus.INTERNAL_SERVER_ERROR
-    )
+    default_status_code = int(HTTPStatus.INTERNAL_SERVER_ERROR)
 
-    default_message = (
-        "Inference execution failed."
-    )
+    default_message = "Inference execution failed."
 
 
-class InferenceInputAPIError(
-    InferenceAPIError
-):
-    default_code = (
-        APIErrorCode.
-        INFERENCE_INPUT_INVALID.value
-    )
+class InferenceInputAPIError(InferenceAPIError):
+    default_code = APIErrorCode.INFERENCE_INPUT_INVALID.value
 
-    default_status_code = int(
-        HTTPStatus.UNPROCESSABLE_ENTITY
-    )
+    default_status_code = int(HTTPStatus.UNPROCESSABLE_ENTITY)
 
-    default_message = (
-        "The inference input is invalid."
-    )
+    default_message = "The inference input is invalid."
 
 
-class InferenceTimeoutAPIError(
-    InferenceAPIError
-):
-    default_code = (
-        APIErrorCode.INFERENCE_TIMEOUT.value
-    )
+class InferenceTimeoutAPIError(InferenceAPIError):
+    default_code = APIErrorCode.INFERENCE_TIMEOUT.value
 
-    default_status_code = int(
-        HTTPStatus.GATEWAY_TIMEOUT
-    )
+    default_status_code = int(HTTPStatus.GATEWAY_TIMEOUT)
 
-    default_message = (
-        "Inference execution timed out."
-    )
+    default_message = "Inference execution timed out."
 
     default_retryable = True
 
 
-class ModelNotFoundAPIError(
-    AIAPIError
-):
-    default_code = (
-        APIErrorCode.MODEL_NOT_FOUND.value
-    )
+class ModelNotFoundAPIError(AIAPIError):
+    default_code = APIErrorCode.MODEL_NOT_FOUND.value
 
-    default_status_code = int(
-        HTTPStatus.NOT_FOUND
-    )
+    default_status_code = int(HTTPStatus.NOT_FOUND)
 
-    default_message = (
-        "The requested model was not found."
-    )
+    default_message = "The requested model was not found."
 
 
-class ModelUnavailableAPIError(
-    AIAPIError
-):
-    default_code = (
-        APIErrorCode.MODEL_UNAVAILABLE.value
-    )
+class ModelUnavailableAPIError(AIAPIError):
+    default_code = APIErrorCode.MODEL_UNAVAILABLE.value
 
-    default_status_code = int(
-        HTTPStatus.SERVICE_UNAVAILABLE
-    )
+    default_status_code = int(HTTPStatus.SERVICE_UNAVAILABLE)
 
-    default_message = (
-        "The requested model is unavailable."
-    )
+    default_message = "The requested model is unavailable."
 
     default_retryable = True
 
 
-class ModelLoadAPIError(
-    AIAPIError
-):
-    default_code = (
-        APIErrorCode.MODEL_LOAD_FAILED.value
-    )
+class ModelLoadAPIError(AIAPIError):
+    default_code = APIErrorCode.MODEL_LOAD_FAILED.value
 
-    default_status_code = int(
-        HTTPStatus.INTERNAL_SERVER_ERROR
-    )
+    default_status_code = int(HTTPStatus.INTERNAL_SERVER_ERROR)
 
-    default_message = (
-        "The model could not be loaded."
-    )
+    default_message = "The model could not be loaded."
 
 
 # ------------------------------------------------------------------
 # Incident, decision, remediation exceptions
 # ------------------------------------------------------------------
 
-class IncidentNotFoundAPIError(
-    ResourceNotFoundError
-):
-    default_code = (
-        APIErrorCode.INCIDENT_NOT_FOUND.value
-    )
+
+class IncidentNotFoundAPIError(ResourceNotFoundError):
+    default_code = APIErrorCode.INCIDENT_NOT_FOUND.value
+
+    default_message = "The requested incident was not found."
+
+
+class DecisionNotFoundAPIError(ResourceNotFoundError):
+    default_code = APIErrorCode.DECISION_NOT_FOUND.value
+
+    default_message = "The requested decision was not found."
+
+
+class DecisionDeniedAPIError(APIException):
+    default_code = APIErrorCode.DECISION_DENIED.value
+
+    default_status_code = int(HTTPStatus.FORBIDDEN)
+
+    default_message = "The requested action was denied by policy."
+
+
+class RemediationNotFoundAPIError(ResourceNotFoundError):
+    default_code = APIErrorCode.REMEDIATION_NOT_FOUND.value
+
+    default_message = "The requested remediation plan was not found."
+
+
+class RemediationNotApprovedAPIError(APIException):
+    default_code = APIErrorCode.REMEDIATION_NOT_APPROVED.value
+
+    default_status_code = int(HTTPStatus.CONFLICT)
+
+    default_message = "The remediation plan is not approved."
+
+
+class RemediationConfirmationRequiredAPIError(APIException):
+    default_code = APIErrorCode.REMEDIATION_CONFIRMATION_REQUIRED.value
+
+    default_status_code = int(HTTPStatus.BAD_REQUEST)
+
+    default_message = "Explicit remediation confirmation is required."
+
+
+class RemediationVersionConflictAPIError(ResourceConflictError):
+    default_code = APIErrorCode.REMEDIATION_VERSION_CONFLICT.value
 
     default_message = (
-        "The requested incident was not found."
+        "The remediation plan version does not match the expected version."
     )
 
 
-class DecisionNotFoundAPIError(
-    ResourceNotFoundError
-):
-    default_code = (
-        APIErrorCode.DECISION_NOT_FOUND.value
-    )
+class RemediationExecutionDisabledAPIError(FeatureDisabledError):
+    default_code = APIErrorCode.REMEDIATION_EXECUTION_DISABLED.value
 
-    default_message = (
-        "The requested decision was not found."
-    )
+    default_message = "Remediation execution is disabled."
 
 
-class DecisionDeniedAPIError(
-    APIException
-):
-    default_code = (
-        APIErrorCode.DECISION_DENIED.value
-    )
+class RemediationExecutionAPIError(APIException):
+    default_code = APIErrorCode.REMEDIATION_EXECUTION_FAILED.value
 
-    default_status_code = int(
-        HTTPStatus.FORBIDDEN
-    )
+    default_status_code = int(HTTPStatus.INTERNAL_SERVER_ERROR)
 
-    default_message = (
-        "The requested action was denied "
-        "by policy."
-    )
-
-
-class RemediationNotFoundAPIError(
-    ResourceNotFoundError
-):
-    default_code = (
-        APIErrorCode.REMEDIATION_NOT_FOUND.value
-    )
-
-    default_message = (
-        "The requested remediation plan "
-        "was not found."
-    )
-
-
-class RemediationNotApprovedAPIError(
-    APIException
-):
-    default_code = (
-        APIErrorCode.
-        REMEDIATION_NOT_APPROVED.value
-    )
-
-    default_status_code = int(
-        HTTPStatus.CONFLICT
-    )
-
-    default_message = (
-        "The remediation plan is not approved."
-    )
-
-
-class RemediationConfirmationRequiredAPIError(
-    APIException
-):
-    default_code = (
-        APIErrorCode.
-        REMEDIATION_CONFIRMATION_REQUIRED.value
-    )
-
-    default_status_code = int(
-        HTTPStatus.BAD_REQUEST
-    )
-
-    default_message = (
-        "Explicit remediation confirmation "
-        "is required."
-    )
-
-
-class RemediationVersionConflictAPIError(
-    ResourceConflictError
-):
-    default_code = (
-        APIErrorCode.
-        REMEDIATION_VERSION_CONFLICT.value
-    )
-
-    default_message = (
-        "The remediation plan version "
-        "does not match the expected version."
-    )
-
-
-class RemediationExecutionDisabledAPIError(
-    FeatureDisabledError
-):
-    default_code = (
-        APIErrorCode.
-        REMEDIATION_EXECUTION_DISABLED.value
-    )
-
-    default_message = (
-        "Remediation execution is disabled."
-    )
-
-
-class RemediationExecutionAPIError(
-    APIException
-):
-    default_code = (
-        APIErrorCode.
-        REMEDIATION_EXECUTION_FAILED.value
-    )
-
-    default_status_code = int(
-        HTTPStatus.INTERNAL_SERVER_ERROR
-    )
-
-    default_message = (
-        "Remediation execution failed."
-    )
+    default_message = "Remediation execution failed."
 
 
 # ------------------------------------------------------------------
 # Pydantic validation translation
 # ------------------------------------------------------------------
+
 
 def validation_error_fields(
     error: ValidationError,
@@ -1395,41 +884,27 @@ def validation_error_fields(
     exposing raw input values.
     """
 
-    output: List[
-        APIErrorField
-    ] = []
+    output: List[APIErrorField] = []
 
     for item in error.errors(
         include_url=False,
         include_context=False,
         include_input=False,
-    )[
-        :MAX_ERROR_FIELD_COUNT
-    ]:
-        location = []
+    )[:MAX_ERROR_FIELD_COUNT]:
+        location: list[str | int] = []
 
         for part in item.get(
             "loc",
             (),
-        )[
-            :MAX_ERROR_LOCATION_PARTS
-        ]:
+        )[:MAX_ERROR_LOCATION_PARTS]:
             if isinstance(
                 part,
                 int,
             ):
-                location.append(
-                    part
-                )
+                location.append(part)
 
             else:
-                location.append(
-                    str(
-                        part
-                    )[
-                        :MAX_ERROR_LOCATION_PART_LENGTH
-                    ]
-                )
+                location.append(str(part)[:MAX_ERROR_LOCATION_PART_LENGTH])
 
         raw_type = item.get(
             "type",
@@ -1444,39 +919,24 @@ def validation_error_fields(
         output.append(
             APIErrorField(
                 location=location,
-
-                code=_clean_code(
-                    raw_type
-                ),
-
+                code=_clean_code(raw_type),
                 message=_clean_message(
                     message,
-                    fallback=(
-                        "Invalid value."
-                    ),
+                    fallback=("Invalid value."),
                 ),
             )
         )
 
-    return tuple(
-        output
-    )
+    return tuple(output)
 
 
 def from_validation_error(
     error: ValidationError,
 ) -> RequestValidationAPIError:
     return RequestValidationAPIError(
-        fields=validation_error_fields(
-            error
-        ),
-
+        fields=validation_error_fields(error),
         details={
-            "error_type": (
-                exception_type_name(
-                    error
-                )
-            ),
+            "error_type": (exception_type_name(error)),
         },
     )
 
@@ -1575,9 +1035,7 @@ def _internal_details(
 
     safe.setdefault(
         "error_type",
-        exception_type_name(
-            error
-        ),
+        exception_type_name(error),
     )
 
     return safe
@@ -1606,25 +1064,13 @@ def translate_exception(
         error,
         ValidationError,
     ):
-        return from_validation_error(
-            error
-        )
+        return from_validation_error(error)
 
-    error_type = (
-        exception_type_name(
-            error
-        )
-    )
+    error_type = exception_type_name(error)
 
-    module_name = (
-        exception_module_name(
-            error
-        )
-    )
+    module_name = exception_module_name(error)
 
-    details = _internal_details(
-        error
-    )
+    details = _internal_details(error)
 
     retryable = bool(
         getattr(
@@ -1638,81 +1084,40 @@ def translate_exception(
     # Accelerator errors
     # ------------------------------------------------------
 
-    if (
-        error_type
-        in _ACCELERATOR_NOT_FOUND_TYPES
-    ):
+    if error_type in _ACCELERATOR_NOT_FOUND_TYPES:
         return AcceleratorNotFoundAPIError(
             details=details,
         )
 
-    if (
-        error_type
-        in _ACCELERATOR_UNAVAILABLE_TYPES
-    ):
+    if error_type in _ACCELERATOR_UNAVAILABLE_TYPES:
         return AcceleratorUnavailableAPIError(
             retryable=True,
             details=details,
         )
 
-    if (
-        error_type
-        in _ACCELERATOR_MEMORY_TYPES
-    ):
+    if error_type in _ACCELERATOR_MEMORY_TYPES:
         return AcceleratorMemoryAPIError(
             retryable=retryable,
             details=details,
         )
 
-    if (
-        error_type
-        in _ACCELERATOR_PRECISION_TYPES
-    ):
+    if error_type in _ACCELERATOR_PRECISION_TYPES:
         return AcceleratorAPIError(
-            code=(
-                APIErrorCode.
-                ACCELERATOR_PRECISION_UNSUPPORTED.value
-            ),
-
-            status_code=int(
-                HTTPStatus.
-                UNPROCESSABLE_ENTITY
-            ),
-
-            public_message=(
-                "The requested accelerator "
-                "precision is unsupported."
-            ),
-
+            code=(APIErrorCode.ACCELERATOR_PRECISION_UNSUPPORTED.value),
+            status_code=int(HTTPStatus.UNPROCESSABLE_ENTITY),
+            public_message=("The requested accelerator precision is unsupported."),
             details=details,
         )
 
-    if (
-        error_type
-        in _ACCELERATOR_CAPABILITY_TYPES
-    ):
+    if error_type in _ACCELERATOR_CAPABILITY_TYPES:
         return AcceleratorAPIError(
-            code=(
-                APIErrorCode.
-                ACCELERATOR_CAPABILITY_MISSING.value
-            ),
-
-            status_code=int(
-                HTTPStatus.
-                UNPROCESSABLE_ENTITY
-            ),
-
-            public_message=(
-                "No accelerator device "
-                "provides the required capability."
-            ),
-
+            code=(APIErrorCode.ACCELERATOR_CAPABILITY_MISSING.value),
+            status_code=int(HTTPStatus.UNPROCESSABLE_ENTITY),
+            public_message=("No accelerator device provides the required capability."),
             details=details,
         )
 
-    if module_name.startswith(
-        "src.accelerators"
-    ):
+    if module_name.startswith("src.accelerators"):
         return AcceleratorAPIError(
             retryable=retryable,
             details=details,
@@ -1727,10 +1132,7 @@ def translate_exception(
             details=details,
         )
 
-    if (
-        error_type
-        in _MODEL_NOT_FOUND_TYPES
-    ):
+    if error_type in _MODEL_NOT_FOUND_TYPES:
         return ModelNotFoundAPIError(
             details=details,
         )
@@ -1741,26 +1143,11 @@ def translate_exception(
             details=details,
         )
 
-    if (
-        error_type
-        in _MODEL_CONFIGURATION_TYPES
-    ):
+    if error_type in _MODEL_CONFIGURATION_TYPES:
         return AIAPIError(
-            code=(
-                APIErrorCode.
-                MODEL_CONFIGURATION_INVALID.value
-            ),
-
-            status_code=int(
-                HTTPStatus.
-                UNPROCESSABLE_ENTITY
-            ),
-
-            public_message=(
-                "The model configuration "
-                "is invalid."
-            ),
-
+            code=(APIErrorCode.MODEL_CONFIGURATION_INVALID.value),
+            status_code=int(HTTPStatus.UNPROCESSABLE_ENTITY),
+            public_message=("The model configuration is invalid."),
             details=details,
         )
 
@@ -1770,9 +1157,7 @@ def translate_exception(
             details=details,
         )
 
-    if module_name.startswith(
-        "src.ai"
-    ):
+    if module_name.startswith("src.ai"):
         return AIAPIError(
             retryable=retryable,
             details=details,
@@ -1840,15 +1225,12 @@ def translate_exception(
 # Public response construction
 # ------------------------------------------------------------------
 
+
 def error_response(
     error: BaseException,
     *,
-    request_id: Optional[
-        str
-    ] = None,
-    duration_ms: Optional[
-        float
-    ] = None,
+    request_id: Optional[str] = None,
+    duration_ms: Optional[float] = None,
 ) -> Tuple[
     int,
     APIErrorResponse,
@@ -1860,9 +1242,7 @@ def error_response(
     exception handler.
     """
 
-    api_error = translate_exception(
-        error
-    )
+    api_error = translate_exception(error)
 
     response = api_error.to_response(
         request_id=request_id,
@@ -1872,9 +1252,7 @@ def error_response(
     return (
         api_error.status_code,
         response,
-        dict(
-            api_error.headers
-        ),
+        dict(api_error.headers),
     )
 
 
@@ -1882,18 +1260,13 @@ def error_response(
 # Safe logging
 # ------------------------------------------------------------------
 
+
 def log_api_exception(
     error: BaseException,
     *,
-    request_id: Optional[
-        str
-    ] = None,
-    method: Optional[
-        str
-    ] = None,
-    route: Optional[
-        str
-    ] = None,
+    request_id: Optional[str] = None,
+    method: Optional[str] = None,
+    route: Optional[str] = None,
 ) -> APIException:
     """
     Log bounded exception metadata.
@@ -1902,41 +1275,16 @@ def log_api_exception(
     in the structured log fields.
     """
 
-    translated = translate_exception(
-        error
-    )
+    translated = translate_exception(error)
 
     log_fields = {
-        "api_error_code": (
-            translated.code
-        ),
-
-        "status_code": (
-            translated.status_code
-        ),
-
-        "retryable": (
-            translated.retryable
-        ),
-
-        "internal_error_type": (
-            exception_type_name(
-                error
-            )
-        ),
-
-        "internal_error_module": (
-            exception_module_name(
-                error
-            )
-        ),
-
-        "request_id": (
-            request_id
-        ),
-
+        "api_error_code": (translated.code),
+        "status_code": (translated.status_code),
+        "retryable": (translated.retryable),
+        "internal_error_type": (exception_type_name(error)),
+        "internal_error_module": (exception_module_name(error)),
+        "request_id": (request_id),
         "method": method,
-
         "route": route,
     }
 
@@ -1944,18 +1292,12 @@ def log_api_exception(
         translated.log_level,
         "API request failed",
         extra={
-            "api_error": (
-                log_fields
-            ),
+            "api_error": (log_fields),
         },
-
         # Tracebacks should only be logged for
         # server-side failures. They are never
         # returned to the caller.
-        exc_info=(
-            translated.status_code
-            >= 500
-        ),
+        exc_info=(translated.status_code >= 500),
     )
 
     return translated
@@ -1970,69 +1312,49 @@ __all__ = [
     "MAX_PUBLIC_MESSAGE_LENGTH",
     "MAX_ERROR_DETAIL_COUNT",
     "MAX_ERROR_FIELD_COUNT",
-
     "APIErrorCode",
-
     "safe_error_details",
-
     "exception_type_name",
     "exception_module_name",
-
     "APIException",
-
     "BadRequestError",
     "RequestValidationAPIError",
-
     "AuthenticationRequiredError",
     "PermissionDeniedError",
-
     "ResourceNotFoundError",
     "ResourceConflictError",
     "PreconditionFailedError",
-
     "FeatureDisabledError",
-
     "RequestTooLargeError",
     "RequestTimeoutAPIError",
-
     "RateLimitExceededError",
     "ConcurrencyLimitError",
-
     "ServiceUnavailableAPIError",
     "InternalServerAPIError",
-
     "AcceleratorAPIError",
     "AcceleratorUnavailableAPIError",
     "AcceleratorNotFoundAPIError",
     "AcceleratorMemoryAPIError",
     "AcceleratorOptimizationAPIError",
-
     "AIAPIError",
     "InferenceAPIError",
     "InferenceInputAPIError",
     "InferenceTimeoutAPIError",
-
     "ModelNotFoundAPIError",
     "ModelUnavailableAPIError",
     "ModelLoadAPIError",
-
     "IncidentNotFoundAPIError",
-
     "DecisionNotFoundAPIError",
     "DecisionDeniedAPIError",
-
     "RemediationNotFoundAPIError",
     "RemediationNotApprovedAPIError",
     "RemediationConfirmationRequiredAPIError",
     "RemediationVersionConflictAPIError",
     "RemediationExecutionDisabledAPIError",
     "RemediationExecutionAPIError",
-
     "validation_error_fields",
     "from_validation_error",
-
     "translate_exception",
     "error_response",
-
     "log_api_exception",
 ]

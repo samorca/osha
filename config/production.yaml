@@ -1,0 +1,516 @@
+# =============================================================================
+# OSHA - Production Configuration Overrides
+# =============================================================================
+#
+# Production-specific overrides for config/base.yaml.
+#
+# IMPORTANT:
+#   - Do not store passwords, API keys, tokens, private keys, or credentials here.
+#   - Inject secrets through environment variables or a secrets manager.
+#   - Automatic infrastructure mutation remains disabled by default.
+# =============================================================================
+
+
+# -----------------------------------------------------------------------------
+# Application
+# -----------------------------------------------------------------------------
+
+application:
+  environment: "production"
+
+  debug: false
+
+  startup:
+    validate_configuration: true
+    validate_dependencies: true
+    fail_on_invalid_configuration: true
+
+
+# -----------------------------------------------------------------------------
+# Runtime
+# -----------------------------------------------------------------------------
+
+runtime:
+  mode: "production"
+
+  worker_count: 8
+
+  concurrency:
+    enabled: true
+    max_workers: 16
+
+  polling:
+    enabled: true
+    interval_seconds: 30
+
+  graceful_shutdown: true
+
+  health_check_interval_seconds: 30
+
+  state_directory: "./artifacts/runtime"
+
+
+# -----------------------------------------------------------------------------
+# Logging
+# -----------------------------------------------------------------------------
+
+logging:
+  enabled: true
+
+  level: "INFO"
+
+  format: "json"
+
+  console:
+    enabled: true
+
+  file:
+    enabled: true
+    directory: "./logs"
+    filename: "osha.log"
+
+  rotation:
+    enabled: true
+    max_bytes: 104857600
+    backup_count: 20
+
+  include_timestamp: true
+  include_component: true
+  include_process_id: true
+
+  redact_sensitive_values: true
+
+
+# -----------------------------------------------------------------------------
+# Artifacts
+# -----------------------------------------------------------------------------
+
+artifacts:
+  persist: true
+
+  retention:
+    enabled: true
+    days: 90
+
+
+# -----------------------------------------------------------------------------
+# Checkpoints
+# -----------------------------------------------------------------------------
+
+checkpoints:
+  save_enabled: true
+
+  load_latest: true
+
+  keep_last: 10
+
+
+# -----------------------------------------------------------------------------
+# Models
+# -----------------------------------------------------------------------------
+
+models:
+  device: "auto"
+
+  load_on_startup: true
+
+  fail_on_load_error: true
+
+  event_model:
+    enabled: true
+
+  anomaly_model:
+    enabled: true
+
+
+# -----------------------------------------------------------------------------
+# Data
+# -----------------------------------------------------------------------------
+
+data:
+  validate_on_load: true
+
+  normalize: true
+
+  reject_invalid_records: true
+
+
+# -----------------------------------------------------------------------------
+# Infrastructure Collectors
+# -----------------------------------------------------------------------------
+
+collectors:
+  enabled: true
+
+  default_interval_seconds: 30
+
+  timeout_seconds: 20
+
+  continue_on_collector_failure: true
+
+  providers:
+
+    linux:
+      enabled: true
+
+    kubernetes:
+      enabled: true
+
+    openstack:
+      enabled: true
+
+    ceph:
+      enabled: false
+
+    minio:
+      enabled: false
+
+
+# -----------------------------------------------------------------------------
+# Telemetry
+# -----------------------------------------------------------------------------
+
+telemetry:
+  enabled: true
+
+  collection_interval_seconds: 30
+
+  normalization:
+    enabled: true
+
+  validation:
+    enabled: true
+
+  buffering:
+    enabled: true
+    max_records: 50000
+
+  timestamps:
+    use_utc: true
+
+
+# -----------------------------------------------------------------------------
+# Events
+# -----------------------------------------------------------------------------
+
+events:
+  enabled: true
+
+  validation:
+    enabled: true
+
+  deduplication:
+    enabled: true
+
+  processing:
+    batch_size: 250
+    timeout_seconds: 30
+
+
+# -----------------------------------------------------------------------------
+# Correlation
+# -----------------------------------------------------------------------------
+
+correlation:
+  enabled: true
+
+  window_seconds: 300
+
+  deduplication:
+    enabled: true
+
+  grouping:
+    by_resource: true
+    by_provider: true
+
+  minimum_events: 2
+
+
+# -----------------------------------------------------------------------------
+# Incidents
+# -----------------------------------------------------------------------------
+
+incidents:
+  enabled: true
+
+  auto_create: true
+
+  default_severity: "warning"
+
+  persist: true
+
+
+# -----------------------------------------------------------------------------
+# AI / Inference
+# -----------------------------------------------------------------------------
+
+ai:
+  enabled: true
+
+  inference:
+    enabled: true
+
+    device: "auto"
+
+    batch_size: 64
+
+    timeout_seconds: 30
+
+  event_classification:
+    enabled: true
+
+  anomaly_detection:
+    enabled: true
+
+  confidence:
+    minimum: 0.80
+
+  fail_safe: true
+
+
+# -----------------------------------------------------------------------------
+# Decision Engine
+# -----------------------------------------------------------------------------
+
+decision:
+  enabled: true
+
+  minimum_confidence: 0.85
+
+  require_incident_context: true
+
+  reject_unknown_actions: true
+
+  fail_closed: true
+
+
+# -----------------------------------------------------------------------------
+# Remediation
+# -----------------------------------------------------------------------------
+
+remediation:
+  enabled: true
+
+  # Production default:
+  # OSHA may produce remediation recommendations, but it must not mutate
+  # infrastructure automatically.
+  execution_enabled: false
+
+  dry_run: true
+
+  require_approval: true
+
+  max_concurrent_actions: 1
+
+  timeout_seconds: 300
+
+  rollback:
+    enabled: true
+
+  verification:
+    enabled: true
+
+  audit:
+    enabled: true
+
+  safety:
+    fail_closed: true
+    block_unknown_actions: true
+    block_destructive_actions: true
+
+
+# -----------------------------------------------------------------------------
+# Recovery
+# -----------------------------------------------------------------------------
+
+recovery:
+  enabled: true
+
+  automatic_recovery: false
+
+  verify_after_action: true
+
+  rollback_on_failure: true
+
+  maximum_attempts: 3
+
+  retry_delay_seconds: 30
+
+
+# -----------------------------------------------------------------------------
+# Security
+# -----------------------------------------------------------------------------
+
+security:
+  enabled: true
+
+  fail_closed: true
+
+  secrets:
+    allow_plaintext: false
+
+  authentication:
+    required: true
+
+  authorization:
+    required: true
+
+  audit:
+    enabled: true
+
+  redact_credentials: true
+
+  allow_shell_execution: false
+
+  allow_privileged_operations: false
+
+
+# -----------------------------------------------------------------------------
+# Observability
+# -----------------------------------------------------------------------------
+
+observability:
+  enabled: true
+
+  metrics:
+    enabled: true
+
+  tracing:
+    enabled: true
+
+  health:
+    enabled: true
+
+  diagnostics:
+    enabled: true
+
+  include_internal_metrics: true
+
+
+# -----------------------------------------------------------------------------
+# Health
+# -----------------------------------------------------------------------------
+
+health:
+  enabled: true
+
+  interval_seconds: 30
+
+  checks:
+    models: true
+    collectors: true
+    storage: true
+    runtime: true
+
+  fail_on_critical_dependency: true
+
+
+# -----------------------------------------------------------------------------
+# Retry Policy
+# -----------------------------------------------------------------------------
+
+retry:
+  enabled: true
+
+  max_attempts: 5
+
+  initial_delay_seconds: 1
+
+  max_delay_seconds: 60
+
+  exponential_backoff: true
+
+
+# -----------------------------------------------------------------------------
+# Timeouts
+# -----------------------------------------------------------------------------
+
+timeouts:
+  default_seconds: 30
+
+  collector_seconds: 20
+
+  inference_seconds: 30
+
+  remediation_seconds: 300
+
+  shutdown_seconds: 60
+
+
+# -----------------------------------------------------------------------------
+# Feature Flags
+# -----------------------------------------------------------------------------
+
+features:
+  event_classification: true
+
+  anomaly_detection: true
+
+  correlation: true
+
+  incident_generation: true
+
+  decision_engine: true
+
+  remediation_recommendations: true
+
+  # Keep disabled until explicit production approval policies,
+  # rollback guarantees, and action allowlists are configured.
+  automatic_remediation: false
+
+  rollback: true
+
+  continuous_learning: false
+
+
+# -----------------------------------------------------------------------------
+# Safety Guardrails
+# -----------------------------------------------------------------------------
+
+safety:
+  fail_closed: true
+
+  require_validation: true
+
+  require_action_verification: true
+
+  prevent_destructive_actions: true
+
+  prevent_unknown_actions: true
+
+  require_human_approval_for_mutation: true
+
+  maximum_remediation_actions_per_incident: 3
+
+
+# -----------------------------------------------------------------------------
+# Audit
+# -----------------------------------------------------------------------------
+
+audit:
+  enabled: true
+
+  directory: "./logs/audit"
+
+  record_incidents: true
+  record_decisions: true
+  record_remediation: true
+  record_failures: true
+
+  include_sensitive_data: false
+
+
+# -----------------------------------------------------------------------------
+# Development Features
+# -----------------------------------------------------------------------------
+
+development:
+  debug: false
+
+  profiling: false
+
+  mock_collectors: false
+
+  synthetic_events: false
+
+  unsafe_actions: false

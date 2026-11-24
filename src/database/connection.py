@@ -48,9 +48,8 @@ from src.security.secrets import (
 # Database adapter contract
 # ---------------------------------------------------------------
 
-class DatabaseAdapter(
-    ABC
-):
+
+class DatabaseAdapter(ABC):
     """
     Backend adapter contract.
 
@@ -69,9 +68,7 @@ class DatabaseAdapter(
         self,
         *,
         config: DatabaseConfig,
-        credential: Optional[
-            SecretValue
-        ],
+        credential: Optional[SecretValue],
     ) -> Any:
         raise NotImplementedError
 
@@ -94,9 +91,8 @@ class DatabaseAdapter(
 # Development memory adapter
 # ---------------------------------------------------------------
 
-class MemoryDatabaseAdapter(
-    DatabaseAdapter
-):
+
+class MemoryDatabaseAdapter(DatabaseAdapter):
     """
     Development adapter providing a process-local
     database handle.
@@ -109,9 +105,7 @@ class MemoryDatabaseAdapter(
         self,
         *,
         config: DatabaseConfig,
-        credential: Optional[
-            SecretValue
-        ],
+        credential: Optional[SecretValue],
     ) -> Dict[str, Any]:
         config.validate()
 
@@ -119,21 +113,10 @@ class MemoryDatabaseAdapter(
         # the memory backend.
 
         return {
-            "backend": (
-                DatabaseBackend.
-                MEMORY.value
-            ),
-
-            "database": (
-                config.database
-            ),
-
-            "environment_id": (
-                config.environment_id
-            ),
-
+            "backend": (DatabaseBackend.MEMORY.value),
+            "database": (config.database),
+            "environment_id": (config.environment_id),
             "open": True,
-
             # repository.py can eventually use
             # this process-local store.
             "store": {},
@@ -146,9 +129,7 @@ class MemoryDatabaseAdapter(
             Any,
         ],
     ) -> None:
-        handle[
-            "open"
-        ] = False
+        handle["open"] = False
 
     def ping(
         self,
@@ -168,6 +149,7 @@ class MemoryDatabaseAdapter(
 # ---------------------------------------------------------------
 # Database connection
 # ---------------------------------------------------------------
+
 
 class DatabaseConnection:
     """
@@ -193,20 +175,11 @@ class DatabaseConnection:
     def __init__(
         self,
         *,
-        config: Optional[
-            DatabaseConfig
-        ] = None,
-        adapter: Optional[
-            DatabaseAdapter
-        ] = None,
-        secrets: Optional[
-            SecretManager
-        ] = None,
+        config: Optional[DatabaseConfig] = None,
+        adapter: Optional[DatabaseAdapter] = None,
+        secrets: Optional[SecretManager] = None,
     ) -> None:
-        self.config = (
-            config
-            or DatabaseConfig()
-        )
+        self.config = config or DatabaseConfig()
 
         self.config.validate()
 
@@ -215,14 +188,8 @@ class DatabaseConnection:
         # -----------------------------------------------------
 
         if adapter is None:
-            if (
-                self.config.backend
-                == DatabaseBackend.
-                MEMORY.value
-            ):
-                adapter = (
-                    MemoryDatabaseAdapter()
-                )
+            if self.config.backend == DatabaseBackend.MEMORY.value:
+                adapter = MemoryDatabaseAdapter()
 
             else:
                 raise (
@@ -238,13 +205,7 @@ class DatabaseConnection:
 
         self.secrets = secrets
 
-        self.status = (
-            ConnectionStatus(
-                identity=(
-                    self.config.identity()
-                )
-            ).finalize()
-        )
+        self.status = ConnectionStatus(identity=(self.config.identity())).finalize()
 
         self._handle: Any = None
 
@@ -268,16 +229,8 @@ class DatabaseConnection:
         """
 
         with self._lock:
-            if (
-                self.status.state
-                != ConnectionState.
-                READY.value
-                or self._handle is None
-            ):
-                raise DatabaseUnavailableError(
-                    "Database connection is "
-                    "not ready."
-                )
+            if self.status.state != ConnectionState.READY.value or self._handle is None:
+                raise DatabaseUnavailableError("Database connection is not ready.")
 
             return self._handle
 
@@ -290,11 +243,8 @@ class DatabaseConnection:
         self,
     ) -> bool:
         return bool(
-            self.status.state
-            == ConnectionState.
-            READY.value
-            and self._handle
-            is not None
+            self.status.state == ConnectionState.READY.value
+            and self._handle is not None
         )
 
     # ---------------------------------------------------------
@@ -303,9 +253,7 @@ class DatabaseConnection:
 
     def _credential(
         self,
-    ) -> Optional[
-        SecretValue
-    ]:
+    ) -> Optional[SecretValue]:
         """
         Resolve credentials only when a reference
         is configured.
@@ -315,10 +263,7 @@ class DatabaseConnection:
         ConnectionStatus.
         """
 
-        if (
-            self.config.credential
-            is None
-        ):
+        if self.config.credential is None:
             return None
 
         if self.secrets is None:
@@ -329,9 +274,7 @@ class DatabaseConnection:
                 "available."
             )
 
-        return self.secrets.resolve(
-            self.config.credential
-        )
+        return self.secrets.resolve(self.config.credential)
 
     # ---------------------------------------------------------
     # Open
@@ -341,29 +284,15 @@ class DatabaseConnection:
         self,
     ) -> ConnectionStatus:
         with self._lock:
-            if (
-                self.status.state
-                == ConnectionState.
-                READY.value
-            ):
+            if self.status.state == ConnectionState.READY.value:
                 return self.status
 
-            if (
-                self.status.state
-                not in {
-                    ConnectionState.
-                    CREATED.value,
-
-                    ConnectionState.
-                    CLOSED.value,
-
-                    ConnectionState.
-                    FAILED.value,
-
-                    ConnectionState.
-                    DEGRADED.value,
-                }
-            ):
+            if self.status.state not in {
+                ConnectionState.CREATED.value,
+                ConnectionState.CLOSED.value,
+                ConnectionState.FAILED.value,
+                ConnectionState.DEGRADED.value,
+            }:
                 raise (
                     DatabaseConnectionError(
                         "Database connection "
@@ -373,14 +302,9 @@ class DatabaseConnection:
                     )
                 )
 
-            self.status.state = (
-                ConnectionState.
-                CONNECTING.value
-            )
+            self.status.state = ConnectionState.CONNECTING.value
 
-            self.status.last_error_type = (
-                None
-            )
+            self.status.last_error_type = None
 
             self.status.finalize()
 
@@ -389,42 +313,30 @@ class DatabaseConnection:
         # -----------------------------------------------------
 
         try:
-            credential = (
-                self._credential()
-            )
+            credential = self._credential()
 
-            handle = (
-                self.adapter.connect(
-                    config=self.config,
-                    credential=credential,
-                )
+            handle = self.adapter.connect(
+                config=self.config,
+                credential=credential,
             )
 
             if handle is None:
                 raise (
                     DatabaseConnectionError(
-                        "Database adapter "
-                        "returned no "
-                        "connection handle."
+                        "Database adapter returned no connection handle."
                     )
                 )
 
             # Initial readiness check.
-            if not self.adapter.ping(
-                handle
-            ):
+            if not self.adapter.ping(handle):
                 try:
-                    self.adapter.close(
-                        handle
-                    )
+                    self.adapter.close(handle)
                 except Exception:
                     pass
 
                 raise (
                     DatabaseUnavailableError(
-                        "Database connection "
-                        "did not pass "
-                        "readiness ping."
+                        "Database connection did not pass readiness ping."
                     )
                 )
 
@@ -432,14 +344,9 @@ class DatabaseConnection:
             with self._lock:
                 self._handle = None
 
-                self.status.state = (
-                    ConnectionState.
-                    FAILED.value
-                )
+                self.status.state = ConnectionState.FAILED.value
 
-                self.status.last_error_type = (
-                    type(exc).__name__
-                )
+                self.status.last_error_type = type(exc).__name__
 
                 self.status.finalize()
 
@@ -448,27 +355,17 @@ class DatabaseConnection:
         except Exception as exc:
             wrapped = wrap_driver_error(
                 exc,
-                message=(
-                    "Database connection "
-                    "failed."
-                ),
+                message=("Database connection failed."),
                 retryable=True,
-                code=(
-                    "database_connection_failed"
-                ),
+                code=("database_connection_failed"),
             )
 
             with self._lock:
                 self._handle = None
 
-                self.status.state = (
-                    ConnectionState.
-                    FAILED.value
-                )
+                self.status.state = ConnectionState.FAILED.value
 
-                self.status.last_error_type = (
-                    type(exc).__name__
-                )
+                self.status.last_error_type = type(exc).__name__
 
                 self.status.finalize()
 
@@ -481,22 +378,13 @@ class DatabaseConnection:
         with self._lock:
             self._handle = handle
 
-            self.status.state = (
-                ConnectionState.
-                READY.value
-            )
+            self.status.state = ConnectionState.READY.value
 
-            self.status.opened_at = (
-                utc_now()
-            )
+            self.status.opened_at = utc_now()
 
-            self.status.closed_at = (
-                None
-            )
+            self.status.closed_at = None
 
-            self.status.last_error_type = (
-                None
-            )
+            self.status.last_error_type = None
 
             self.status.finalize()
 
@@ -524,22 +412,13 @@ class DatabaseConnection:
             handle = self._handle
 
         try:
-            healthy = bool(
-                self.adapter.ping(
-                    handle
-                )
-            )
+            healthy = bool(self.adapter.ping(handle))
 
         except Exception as exc:
             with self._lock:
-                self.status.state = (
-                    ConnectionState.
-                    DEGRADED.value
-                )
+                self.status.state = ConnectionState.DEGRADED.value
 
-                self.status.last_error_type = (
-                    type(exc).__name__
-                )
+                self.status.last_error_type = type(exc).__name__
 
                 self.status.finalize()
 
@@ -547,19 +426,13 @@ class DatabaseConnection:
 
         with self._lock:
             self.status.state = (
-                ConnectionState.
-                READY.value
+                ConnectionState.READY.value
                 if healthy
-                else (
-                    ConnectionState.
-                    DEGRADED.value
-                )
+                else (ConnectionState.DEGRADED.value)
             )
 
             if healthy:
-                self.status.last_error_type = (
-                    None
-                )
+                self.status.last_error_type = None
 
             self.status.finalize()
 
@@ -573,50 +446,31 @@ class DatabaseConnection:
         self,
     ) -> ConnectionStatus:
         with self._lock:
-            if (
-                self.status.state
-                == ConnectionState.
-                CLOSED.value
-            ):
+            if self.status.state == ConnectionState.CLOSED.value:
                 return self.status
 
             handle = self._handle
 
-            self.status.state = (
-                ConnectionState.
-                CLOSING.value
-            )
+            self.status.state = ConnectionState.CLOSING.value
 
             self.status.finalize()
 
         if handle is not None:
             try:
-                self.adapter.close(
-                    handle
-                )
+                self.adapter.close(handle)
 
             except Exception as exc:
                 wrapped = wrap_driver_error(
                     exc,
-                    message=(
-                        "Database connection "
-                        "close failed."
-                    ),
+                    message=("Database connection close failed."),
                     retryable=False,
-                    code=(
-                        "database_close_failed"
-                    ),
+                    code=("database_close_failed"),
                 )
 
                 with self._lock:
-                    self.status.state = (
-                        ConnectionState.
-                        FAILED.value
-                    )
+                    self.status.state = ConnectionState.FAILED.value
 
-                    self.status.last_error_type = (
-                        type(exc).__name__
-                    )
+                    self.status.last_error_type = type(exc).__name__
 
                     self.status.finalize()
 
@@ -625,14 +479,9 @@ class DatabaseConnection:
         with self._lock:
             self._handle = None
 
-            self.status.state = (
-                ConnectionState.
-                CLOSED.value
-            )
+            self.status.state = ConnectionState.CLOSED.value
 
-            self.status.closed_at = (
-                utc_now()
-            )
+            self.status.closed_at = utc_now()
 
             self.status.finalize()
 
@@ -668,28 +517,11 @@ class DatabaseConnection:
         self,
     ) -> Dict[str, Any]:
         return {
-            "connection": (
-                self.status.to_dict()
-            ),
-
-            "ready": (
-                self.ready
-            ),
-
-            "adapter": (
-                type(
-                    self.adapter
-                ).__name__
-            ),
-
-            "credential_reference_configured": (
-                self.config.credential
-                is not None
-            ),
-
-            "credential_value_exposed": (
-                False
-            ),
+            "connection": (self.status.to_dict()),
+            "ready": (self.ready),
+            "adapter": (type(self.adapter).__name__),
+            "credential_reference_configured": (self.config.credential is not None),
+            "credential_value_exposed": (False),
         }
 
 
@@ -699,8 +531,6 @@ class DatabaseConnection:
 
 __all__ = [
     "DatabaseAdapter",
-
     "MemoryDatabaseAdapter",
-
     "DatabaseConnection",
 ]

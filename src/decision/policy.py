@@ -28,6 +28,7 @@ from src.decision.schema import (
 # Policy actions
 # ---------------------------------------------------------------
 
+
 class PolicyEffect:
     """
     Policy evaluation effects.
@@ -39,9 +40,7 @@ class PolicyEffect:
 
     ALLOW = "allow"
 
-    ALLOW_WITH_APPROVAL = (
-        "allow_with_approval"
-    )
+    ALLOW_WITH_APPROVAL = "allow_with_approval"
 
     DENY = "deny"
 
@@ -49,6 +48,7 @@ class PolicyEffect:
 # ---------------------------------------------------------------
 # Policy rule
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class PolicyRule:
@@ -91,13 +91,9 @@ class PolicyRule:
 
     require_reversible: bool = False
 
-    maximum_target_resources: Optional[
-        int
-    ] = None
+    maximum_target_resources: Optional[int] = None
 
-    required_approval_mode: Optional[
-        str
-    ] = None
+    required_approval_mode: Optional[str] = None
 
     priority: int = 100
 
@@ -106,50 +102,32 @@ class PolicyRule:
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def validate(
         self,
     ) -> None:
         if self.effect not in {
             PolicyEffect.ALLOW,
-            PolicyEffect.
-            ALLOW_WITH_APPROVAL,
+            PolicyEffect.ALLOW_WITH_APPROVAL,
             PolicyEffect.DENY,
         }:
-            raise ValueError(
-                "Unsupported policy "
-                f"effect: {self.effect}"
-            )
+            raise ValueError(f"Unsupported policy effect: {self.effect}")
 
-        if not (
-            0.0
-            <= self.minimum_confidence
-            <= 1.0
-        ):
-            raise ValueError(
-                "minimum_confidence must "
-                "be between 0 and 1"
-            )
+        if not (0.0 <= self.minimum_confidence <= 1.0):
+            raise ValueError("minimum_confidence must be between 0 and 1")
 
         if (
-            self.maximum_target_resources
-            is not None
-            and self.
-            maximum_target_resources
-            < 1
+            self.maximum_target_resources is not None
+            and self.maximum_target_resources < 1
         ):
-            raise ValueError(
-                "maximum_target_resources "
-                "must be >= 1"
-            )
+            raise ValueError("maximum_target_resources must be >= 1")
 
 
 # ---------------------------------------------------------------
 # Evaluation result
 # ---------------------------------------------------------------
+
 
 @dataclass
 class PolicyEvaluation:
@@ -162,62 +140,29 @@ class PolicyEvaluation:
 
     effect: str
 
-    matched_policy_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    matched_policy_ids: List[str] = field(default_factory=list)
 
-    approval_mode: str = (
-        ApprovalMode.HUMAN.value
-    )
+    approval_mode: str = ApprovalMode.HUMAN.value
 
-    reasons: List[str] = field(
-        default_factory=list
-    )
+    reasons: List[str] = field(default_factory=list)
 
-    blocking_reasons: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    blocking_reasons: List[str] = field(default_factory=list)
 
-    evidence: List[
-        DecisionEvidence
-    ] = field(
-        default_factory=list
-    )
+    evidence: List[DecisionEvidence] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
     ) -> "PolicyEvaluation":
-        self.matched_policy_ids = (
-            sorted(
-                set(
-                    self.
-                    matched_policy_ids
-                )
-            )
-        )
+        self.matched_policy_ids = sorted(set(self.matched_policy_ids))
 
-        self.reasons = list(
-            dict.fromkeys(
-                self.reasons
-            )
-        )
+        self.reasons = list(dict.fromkeys(self.reasons))
 
-        self.blocking_reasons = list(
-            dict.fromkeys(
-                self.blocking_reasons
-            )
-        )
+        self.blocking_reasons = list(dict.fromkeys(self.blocking_reasons))
 
         return self
 
@@ -229,26 +174,12 @@ class PolicyEvaluation:
         return {
             "allowed": self.allowed,
             "effect": self.effect,
-            "matched_policy_ids": (
-                self.
-                matched_policy_ids
-            ),
-            "approval_mode": (
-                self.approval_mode
-            ),
-            "reasons": (
-                self.reasons
-            ),
-            "blocking_reasons": (
-                self.blocking_reasons
-            ),
-            "evidence": [
-                item.to_dict()
-                for item in self.evidence
-            ],
-            "attributes": dict(
-                self.attributes
-            ),
+            "matched_policy_ids": (self.matched_policy_ids),
+            "approval_mode": (self.approval_mode),
+            "reasons": (self.reasons),
+            "blocking_reasons": (self.blocking_reasons),
+            "evidence": [item.to_dict() for item in self.evidence],
+            "attributes": dict(self.attributes),
         }
 
 
@@ -256,10 +187,8 @@ class PolicyEvaluation:
 # Default policy
 # ---------------------------------------------------------------
 
-def default_policy_rules(
-) -> List[
-    PolicyRule
-]:
+
+def default_policy_rules() -> List[PolicyRule]:
     """
     Conservative OSHA development defaults.
 
@@ -272,309 +201,135 @@ def default_policy_rules(
 
     return [
         PolicyRule(
-            policy_id=(
-                "osha.observe.default"
-            ),
-            name=(
-                "Allow observation"
-            ),
-            description=(
-                "Permit read-only observation "
-                "and evidence collection."
-            ),
-            effect=(
-                PolicyEffect.ALLOW
-            ),
-            categories=(
-                ActionCategory.
-                OBSERVATION.value,
-            ),
-            required_approval_mode=(
-                ApprovalMode.NONE.value
-            ),
+            policy_id=("osha.observe.default"),
+            name=("Allow observation"),
+            description=("Permit read-only observation and evidence collection."),
+            effect=(PolicyEffect.ALLOW),
+            categories=(ActionCategory.OBSERVATION.value,),
+            required_approval_mode=(ApprovalMode.NONE.value),
             priority=10,
         ),
-
         PolicyRule(
-            policy_id=(
-                "osha.investigate.default"
-            ),
-            name=(
-                "Allow investigation"
-            ),
-            description=(
-                "Permit non-mutating "
-                "investigation steps."
-            ),
-            effect=(
-                PolicyEffect.ALLOW
-            ),
-            categories=(
-                ActionCategory.
-                INVESTIGATION.value,
-            ),
-            required_approval_mode=(
-                ApprovalMode.NONE.value
-            ),
+            policy_id=("osha.investigate.default"),
+            name=("Allow investigation"),
+            description=("Permit non-mutating investigation steps."),
+            effect=(PolicyEffect.ALLOW),
+            categories=(ActionCategory.INVESTIGATION.value,),
+            required_approval_mode=(ApprovalMode.NONE.value),
             priority=10,
         ),
-
         PolicyRule(
-            policy_id=(
-                "osha.notification.default"
-            ),
-            name=(
-                "Allow notification"
-            ),
+            policy_id=("osha.notification.default"),
+            name=("Allow notification"),
             description=(
-                "Permit creation of "
-                "operator-facing "
-                "recommendations or "
-                "notifications."
+                "Permit creation of operator-facing recommendations or notifications."
             ),
-            effect=(
-                PolicyEffect.ALLOW
-            ),
-            categories=(
-                ActionCategory.
-                NOTIFICATION.value,
-            ),
-            required_approval_mode=(
-                ApprovalMode.NONE.value
-            ),
+            effect=(PolicyEffect.ALLOW),
+            categories=(ActionCategory.NOTIFICATION.value,),
+            required_approval_mode=(ApprovalMode.NONE.value),
             priority=10,
         ),
-
         PolicyRule(
-            policy_id=(
-                "osha.configuration."
-                "human-approval"
-            ),
-            name=(
-                "Configuration changes "
-                "require human approval"
-            ),
+            policy_id=("osha.configuration.human-approval"),
+            name=("Configuration changes require human approval"),
             description=(
                 "Configuration mutations may "
                 "be considered but require "
                 "explicit human approval."
             ),
-            effect=(
-                PolicyEffect.
-                ALLOW_WITH_APPROVAL
-            ),
-            categories=(
-                ActionCategory.
-                CONFIGURATION.value,
-            ),
+            effect=(PolicyEffect.ALLOW_WITH_APPROVAL),
+            categories=(ActionCategory.CONFIGURATION.value,),
             minimum_confidence=0.70,
             require_reversible=True,
-            required_approval_mode=(
-                ApprovalMode.HUMAN.value
-            ),
+            required_approval_mode=(ApprovalMode.HUMAN.value),
             priority=20,
         ),
-
         PolicyRule(
-            policy_id=(
-                "osha.service-control."
-                "human-approval"
-            ),
-            name=(
-                "Service control requires "
-                "human approval"
-            ),
-            description=(
-                "Service mutations require "
-                "explicit human approval."
-            ),
-            effect=(
-                PolicyEffect.
-                ALLOW_WITH_APPROVAL
-            ),
-            categories=(
-                ActionCategory.
-                SERVICE_CONTROL.value,
-            ),
+            policy_id=("osha.service-control.human-approval"),
+            name=("Service control requires human approval"),
+            description=("Service mutations require explicit human approval."),
+            effect=(PolicyEffect.ALLOW_WITH_APPROVAL),
+            categories=(ActionCategory.SERVICE_CONTROL.value,),
             minimum_confidence=0.75,
             require_reversible=True,
-            required_approval_mode=(
-                ApprovalMode.HUMAN.value
-            ),
+            required_approval_mode=(ApprovalMode.HUMAN.value),
             priority=20,
         ),
-
         PolicyRule(
-            policy_id=(
-                "osha.resource-control."
-                "human-approval"
-            ),
-            name=(
-                "Resource control requires "
-                "human approval"
-            ),
+            policy_id=("osha.resource-control.human-approval"),
+            name=("Resource control requires human approval"),
             description=(
                 "Host, VM, container or other "
                 "resource mutations require "
                 "human approval."
             ),
-            effect=(
-                PolicyEffect.
-                ALLOW_WITH_APPROVAL
-            ),
-            categories=(
-                ActionCategory.
-                RESOURCE_CONTROL.value,
-            ),
+            effect=(PolicyEffect.ALLOW_WITH_APPROVAL),
+            categories=(ActionCategory.RESOURCE_CONTROL.value,),
             minimum_confidence=0.80,
             require_verified_root_cause=True,
             require_reversible=True,
-            required_approval_mode=(
-                ApprovalMode.HUMAN.value
-            ),
+            required_approval_mode=(ApprovalMode.HUMAN.value),
             priority=20,
         ),
-
         PolicyRule(
-            policy_id=(
-                "osha.network-control."
-                "human-approval"
-            ),
-            name=(
-                "Network control requires "
-                "human approval"
-            ),
+            policy_id=("osha.network-control.human-approval"),
+            name=("Network control requires human approval"),
             description=(
                 "Network mutations require a "
                 "verified root-cause context "
                 "and explicit human approval."
             ),
-            effect=(
-                PolicyEffect.
-                ALLOW_WITH_APPROVAL
-            ),
-            categories=(
-                ActionCategory.
-                NETWORK_CONTROL.value,
-            ),
+            effect=(PolicyEffect.ALLOW_WITH_APPROVAL),
+            categories=(ActionCategory.NETWORK_CONTROL.value,),
             minimum_confidence=0.80,
             require_verified_root_cause=True,
             require_reversible=True,
-            required_approval_mode=(
-                ApprovalMode.HUMAN.value
-            ),
+            required_approval_mode=(ApprovalMode.HUMAN.value),
             priority=20,
         ),
-
         PolicyRule(
-            policy_id=(
-                "osha.security-control."
-                "human-approval"
-            ),
-            name=(
-                "Security control requires "
-                "human approval"
-            ),
+            policy_id=("osha.security-control.human-approval"),
+            name=("Security control requires human approval"),
             description=(
-                "Security-affecting changes "
-                "require explicit operator "
-                "approval."
+                "Security-affecting changes require explicit operator approval."
             ),
-            effect=(
-                PolicyEffect.
-                ALLOW_WITH_APPROVAL
-            ),
-            categories=(
-                ActionCategory.
-                SECURITY_CONTROL.value,
-            ),
+            effect=(PolicyEffect.ALLOW_WITH_APPROVAL),
+            categories=(ActionCategory.SECURITY_CONTROL.value,),
             minimum_confidence=0.80,
-            required_approval_mode=(
-                ApprovalMode.HUMAN.value
-            ),
+            required_approval_mode=(ApprovalMode.HUMAN.value),
             priority=20,
         ),
-
         PolicyRule(
-            policy_id=(
-                "osha.capacity."
-                "human-approval"
-            ),
-            name=(
-                "Capacity changes require "
-                "human approval"
-            ),
-            description=(
-                "Capacity-affecting actions "
-                "require operator approval."
-            ),
-            effect=(
-                PolicyEffect.
-                ALLOW_WITH_APPROVAL
-            ),
-            categories=(
-                ActionCategory.
-                CAPACITY.value,
-            ),
+            policy_id=("osha.capacity.human-approval"),
+            name=("Capacity changes require human approval"),
+            description=("Capacity-affecting actions require operator approval."),
+            effect=(PolicyEffect.ALLOW_WITH_APPROVAL),
+            categories=(ActionCategory.CAPACITY.value,),
             minimum_confidence=0.75,
             require_reversible=True,
-            required_approval_mode=(
-                ApprovalMode.HUMAN.value
-            ),
+            required_approval_mode=(ApprovalMode.HUMAN.value),
             priority=20,
         ),
-
         PolicyRule(
-            policy_id=(
-                "osha.recovery."
-                "human-approval"
-            ),
-            name=(
-                "Recovery operations require "
-                "human approval"
-            ),
+            policy_id=("osha.recovery.human-approval"),
+            name=("Recovery operations require human approval"),
             description=(
-                "Recovery actions may be "
-                "planned but require explicit "
-                "human approval."
+                "Recovery actions may be planned but require explicit human approval."
             ),
-            effect=(
-                PolicyEffect.
-                ALLOW_WITH_APPROVAL
-            ),
-            categories=(
-                ActionCategory.
-                RECOVERY.value,
-            ),
+            effect=(PolicyEffect.ALLOW_WITH_APPROVAL),
+            categories=(ActionCategory.RECOVERY.value,),
             minimum_confidence=0.75,
             require_reversible=True,
-            required_approval_mode=(
-                ApprovalMode.HUMAN.value
-              ),
+            required_approval_mode=(ApprovalMode.HUMAN.value),
             priority=20,
         ),
-
         PolicyRule(
-            policy_id=(
-                "osha.other.deny"
-            ),
-            name=(
-                "Deny unknown actions"
-            ),
-            description=(
-                "Unknown or uncategorized "
-                "actions are denied."
-            ),
-            effect=(
-                PolicyEffect.DENY           ),
-            categories=(
-                ActionCategory.
-                OTHER.value,
-            ),
-            required_approval_mode=(
-                ApprovalMode.
-                FORBIDDEN.value
-            ),
+            policy_id=("osha.other.deny"),
+            name=("Deny unknown actions"),
+            description=("Unknown or uncategorized actions are denied."),
+            effect=(PolicyEffect.DENY),
+            categories=(ActionCategory.OTHER.value,),
+            required_approval_mode=(ApprovalMode.FORBIDDEN.value),
             priority=1,
         ),
     ]
@@ -583,6 +338,7 @@ def default_policy_rules(
 # ---------------------------------------------------------------
 # Matching
 # ---------------------------------------------------------------
+
 
 def rule_matches_action(
     rule: PolicyRule,
@@ -600,25 +356,13 @@ def rule_matches_action(
     if not rule.enabled:
         return False
 
-    if (
-        rule.categories
-        and action.category
-        not in rule.categories
-    ):
+    if rule.categories and action.category not in rule.categories:
         return False
 
-    if (
-        rule.action_types
-        and action.action_type
-        not in rule.action_types
-    ):
+    if rule.action_types and action.action_type not in rule.action_types:
         return False
 
-    if (
-        rule.environments
-        and context.environment_id
-        not in rule.environments
-    ):
+    if rule.environments and context.environment_id not in rule.environments:
         return False
 
     return True
@@ -638,10 +382,7 @@ def requirement_failures(
 
     failures = []
 
-    if (
-        context.incident_confidence
-        < rule.minimum_confidence
-    ):
+    if context.incident_confidence < rule.minimum_confidence:
         failures.append(
             "Incident confidence "
             f"{context.incident_confidence:.2f} "
@@ -649,48 +390,23 @@ def requirement_failures(
             f"{rule.minimum_confidence:.2f}."
         )
 
-    if (
-        rule.require_verified_root_cause
-        and not context.
-        root_cause_verified
-    ):
-        failures.append(
-            "Policy requires a verified "
-            "root-cause conclusion."
-        )
+    if rule.require_verified_root_cause and not context.root_cause_verified:
+        failures.append("Policy requires a verified root-cause conclusion.")
 
-    if (
-        rule.require_known_user_impact
-        and not context.
-        user_impact_known
-    ):
-        failures.append(
-            "Policy requires independently "
-            "known user impact."
-        )
+    if rule.require_known_user_impact and not context.user_impact_known:
+        failures.append("Policy requires independently known user impact.")
 
     if rule.require_reversible:
         if action.reversibility not in {
             Reversibility.FULL.value,
         }:
-            failures.append(
-                "Policy requires the action "
-                "to be fully reversible."
-            )
+            failures.append("Policy requires the action to be fully reversible.")
 
     if (
-        rule.maximum_target_resources
-        is not None
-        and len(
-            action.target_resource_ids
-        )
-        > rule.
-        maximum_target_resources
+        rule.maximum_target_resources is not None
+        and len(action.target_resource_ids) > rule.maximum_target_resources
     ):
-        failures.append(
-            "Action affects more resources "
-            "than this policy allows."
-        )
+        failures.append("Action affects more resources than this policy allows.")
 
     return failures
 
@@ -699,15 +415,12 @@ def requirement_failures(
 # Policy evaluation
 # ---------------------------------------------------------------
 
+
 def evaluate_action_policy(
     action: ActionCandidate,
     context: DecisionContext,
     *,
-    rules: Optional[
-        Iterable[
-            PolicyRule
-        ]
-    ] = None,
+    rules: Optional[Iterable[PolicyRule]] = None,
 ) -> PolicyEvaluation:
     """
     Evaluate one proposed action.
@@ -733,19 +446,14 @@ def evaluate_action_policy(
 
     context.finalize()
 
-    configured_rules = list(
-        rules
-        if rules is not None
-        else default_policy_rules()
-    )
+    configured_rules = list(rules if rules is not None else default_policy_rules())
 
     for rule in configured_rules:
         rule.validate()
 
     matching = [
         rule
-        for rule
-        in configured_rules
+        for rule in configured_rules
         if rule_matches_action(
             rule,
             action,
@@ -764,93 +472,42 @@ def evaluate_action_policy(
         return PolicyEvaluation(
             allowed=False,
             effect=PolicyEffect.DENY,
-            approval_mode=(
-                ApprovalMode.
-                FORBIDDEN.value
-            ),
-            blocking_reasons=[
-                (
-                    "No policy rule explicitly "
-                    "allows this action."
-                )
-            ],
+            approval_mode=(ApprovalMode.FORBIDDEN.value),
+            blocking_reasons=[("No policy rule explicitly allows this action.")],
             evidence=[
                 DecisionEvidence(
-                    evidence_type=(
-                        "policy"
-                    ),
+                    evidence_type=("policy"),
                     description=(
-                        "Default-deny policy "
-                        "applied because no "
-                        "allowing rule matched."
+                        "Default-deny policy applied because no allowing rule matched."
                     ),
                     score=1.0,
-                    incident_id=(
-                        context.incident_id
-                    ),
-                    resource_ids=list(
-                        action.
-                        target_resource_ids
-                    ),
+                    incident_id=(context.incident_id),
+                    resource_ids=list(action.target_resource_ids),
                 )
             ],
         ).finalize()
 
-    deny_rules = [
-        rule
-        for rule in matching
-        if (
-            rule.effect
-            == PolicyEffect.DENY
-        )
-    ]
+    deny_rules = [rule for rule in matching if (rule.effect == PolicyEffect.DENY)]
 
     if deny_rules:
         return PolicyEvaluation(
             allowed=False,
             effect=PolicyEffect.DENY,
-            matched_policy_ids=[
-                rule.policy_id
-                for rule
-                in deny_rules
-            ],
-            approval_mode=(
-                ApprovalMode.
-                FORBIDDEN.value
-            ),
+            matched_policy_ids=[rule.policy_id for rule in deny_rules],
+            approval_mode=(ApprovalMode.FORBIDDEN.value),
             blocking_reasons=[
-                (
-                    "Action is explicitly "
-                    f"denied by policy "
-                    f"{rule.policy_id}."
-                )
-                for rule
-                in deny_rules
+                (f"Action is explicitly denied by policy {rule.policy_id}.")
+                for rule in deny_rules
             ],
             evidence=[
                 DecisionEvidence(
-                    evidence_type=(
-                        "policy"
-                    ),
-                    description=(
-                        "An explicit deny "
-                        "policy matched the "
-                        "action."
-                    ),
+                    evidence_type=("policy"),
+                    description=("An explicit deny policy matched the action."),
                     score=1.0,
-                    incident_id=(
-                        context.incident_id
-                    ),
-                    resource_ids=list(
-                        action.
-                        target_resource_ids
-                    ),
+                    incident_id=(context.incident_id),
+                    resource_ids=list(action.target_resource_ids),
                     attributes={
-                        "policy_ids": [
-                            rule.policy_id
-                            for rule
-                            in deny_rules
-                        ],
+                        "policy_ids": [rule.policy_id for rule in deny_rules],
                     },
                 )
             ],
@@ -862,8 +519,7 @@ def evaluate_action_policy(
         if rule.effect
         in {
             PolicyEffect.ALLOW,
-            PolicyEffect.
-            ALLOW_WITH_APPROVAL,
+            PolicyEffect.ALLOW_WITH_APPROVAL,
         }
     ]
 
@@ -871,13 +527,8 @@ def evaluate_action_policy(
         return PolicyEvaluation(
             allowed=False,
             effect=PolicyEffect.DENY,
-            approval_mode=(
-                ApprovalMode.
-                FORBIDDEN.value
-            ),
-            blocking_reasons=[
-                "No allow rule matched."
-            ],
+            approval_mode=(ApprovalMode.FORBIDDEN.value),
+            blocking_reasons=["No allow rule matched."],
         ).finalize()
 
     failures_by_rule: Dict[
@@ -895,14 +546,10 @@ def evaluate_action_policy(
         )
 
         if failures:
-            failures_by_rule[
-                rule.policy_id
-            ] = failures
+            failures_by_rule[rule.policy_id] = failures
 
         else:
-            passing_rules.append(
-                rule
-            )
+            passing_rules.append(rule)
 
     if not passing_rules:
         blocking = []
@@ -911,35 +558,17 @@ def evaluate_action_policy(
             policy_id,
             failures,
         ) in failures_by_rule.items():
-            blocking.extend(
-                (
-                    f"{policy_id}: "
-                    f"{failure}"
-                )
-                for failure
-                in failures
-            )
+            blocking.extend((f"{policy_id}: {failure}") for failure in failures)
 
         return PolicyEvaluation(
             allowed=False,
             effect=PolicyEffect.DENY,
-            matched_policy_ids=[
-                rule.policy_id
-                for rule
-                in allow_rules
-            ],
-            approval_mode=(
-                ApprovalMode.
-                FORBIDDEN.value
-            ),
-            blocking_reasons=(
-                blocking
-            ),
+            matched_policy_ids=[rule.policy_id for rule in allow_rules],
+            approval_mode=(ApprovalMode.FORBIDDEN.value),
+            blocking_reasons=(blocking),
             evidence=[
                 DecisionEvidence(
-                    evidence_type=(
-                        "policy_requirements"
-                    ),
+                    evidence_type=("policy_requirements"),
                     description=(
                         "Policy matched but "
                         "required evidence or "
@@ -947,17 +576,10 @@ def evaluate_action_policy(
                         "not satisfied."
                     ),
                     score=1.0,
-                    incident_id=(
-                        context.incident_id
-                    ),
-                    resource_ids=list(
-                        action.
-                        target_resource_ids
-                    ),
+                    incident_id=(context.incident_id),
+                    resource_ids=list(action.target_resource_ids),
                     attributes={
-                        "failures": (
-                            failures_by_rule
-                        ),
+                        "failures": (failures_by_rule),
                     },
                 )
             ],
@@ -976,99 +598,50 @@ def evaluate_action_policy(
         ApprovalMode.FORBIDDEN.value: 4,
     }
 
-    selected_approval = (
-        ApprovalMode.NONE.value
-    )
+    selected_approval = ApprovalMode.NONE.value
 
     effect = PolicyEffect.ALLOW
 
     for rule in passing_rules:
-        mode = (
-            rule.required_approval_mode
-            or (
-                ApprovalMode.HUMAN.value
-                if rule.effect
-                == PolicyEffect.
-                ALLOW_WITH_APPROVAL
-                else ApprovalMode.NONE.value
-            )
+        mode = rule.required_approval_mode or (
+            ApprovalMode.HUMAN.value
+            if rule.effect == PolicyEffect.ALLOW_WITH_APPROVAL
+            else ApprovalMode.NONE.value
         )
 
-        if (
-            approval_rank.get(
-                mode,
-                4,
-            )
-            > approval_rank.get(
-                selected_approval,
-                0,
-            )
+        if approval_rank.get(
+            mode,
+            4,
+        ) > approval_rank.get(
+            selected_approval,
+            0,
         ):
-            selected_approval = (
-                mode
-            )
+            selected_approval = mode
 
-        if (
-            rule.effect
-            == PolicyEffect.
-            ALLOW_WITH_APPROVAL
-        ):
-            effect = (
-                PolicyEffect.
-                ALLOW_WITH_APPROVAL
-            )
+        if rule.effect == PolicyEffect.ALLOW_WITH_APPROVAL:
+            effect = PolicyEffect.ALLOW_WITH_APPROVAL
 
     evaluation = PolicyEvaluation(
         allowed=True,
         effect=effect,
-        matched_policy_ids=[
-            rule.policy_id
-            for rule
-            in passing_rules
-        ],
-        approval_mode=(
-            selected_approval
-        ),
-        reasons=[
-            (
-                "Action is explicitly allowed "
-                "by configured policy."
-            )
-        ],
+        matched_policy_ids=[rule.policy_id for rule in passing_rules],
+        approval_mode=(selected_approval),
+        reasons=[("Action is explicitly allowed by configured policy.")],
         evidence=[
             DecisionEvidence(
-                evidence_type=(
-                    "policy"
-                ),
-                description=(
-                    "Action matched one or "
-                    "more allowing policy "
-                    "rules."
-                ),
+                evidence_type=("policy"),
+                description=("Action matched one or more allowing policy rules."),
                 score=1.0,
-                incident_id=(
-                    context.incident_id
-                ),
-                resource_ids=list(
-                    action.
-                    target_resource_ids
-                ),
+                incident_id=(context.incident_id),
+                resource_ids=list(action.target_resource_ids),
                 attributes={
-                    "policy_ids": [
-                        rule.policy_id
-                        for rule
-                        in passing_rules
-                    ],
-                    "approval_mode": (
-                        selected_approval
-                    ),
+                    "policy_ids": [rule.policy_id for rule in passing_rules],
+                    "approval_mode": (selected_approval),
                 },
             )
         ],
         attributes={
-            "failed_matching_rules": (
-                failures_by_rule
-            ),
+            "failed_matching_rules": (failures_by_rule),
         },
     )
 
@@ -1079,15 +652,12 @@ def evaluate_action_policy(
 # Apply policy metadata to ActionCandidate
 # ---------------------------------------------------------------
 
+
 def apply_policy(
     action: ActionCandidate,
     context: DecisionContext,
     *,
-    rules: Optional[
-        Iterable[
-            PolicyRule
-        ]
-    ] = None,
+    rules: Optional[Iterable[PolicyRule]] = None,
 ) -> ActionCandidate:
     """
     Attach policy evaluation to an
@@ -1097,77 +667,39 @@ def apply_policy(
     the action.
     """
 
-    evaluation = (
-        evaluate_action_policy(
-            action,
-            context,
-            rules=rules,
-        )
+    evaluation = evaluate_action_policy(
+        action,
+        context,
+        rules=rules,
     )
 
-    action.policy_ids = (
-        evaluation.
-        matched_policy_ids
-    )
+    action.policy_ids = evaluation.matched_policy_ids
 
-    action.evidence.extend(
-        evaluation.evidence
-    )
+    action.evidence.extend(evaluation.evidence)
 
-    action.attributes[
-        "policy_evaluation"
-    ] = evaluation.to_dict()
+    action.attributes["policy_evaluation"] = evaluation.to_dict()
 
     if not evaluation.allowed:
-        action.approval.required = (
-            True
-        )
+        action.approval.required = True
 
-        action.approval.mode = (
-            ApprovalMode.
-            FORBIDDEN.value
-        )
+        action.approval.mode = ApprovalMode.FORBIDDEN.value
 
-        action.approval.reason = (
-            "; ".join(
-                evaluation.
-                blocking_reasons
-            )
-        )
+        action.approval.reason = "; ".join(evaluation.blocking_reasons)
 
         return action.finalize()
 
-    action.approval.mode = (
-        evaluation.approval_mode
-    )
+    action.approval.mode = evaluation.approval_mode
 
-    if (
-        evaluation.approval_mode
-        == ApprovalMode.NONE.value
-    ):
-        action.approval.required = (
-            False
-        )
+    if evaluation.approval_mode == ApprovalMode.NONE.value:
+        action.approval.required = False
 
-    elif (
-        evaluation.approval_mode
-        == ApprovalMode.
-        AUTOMATIC.value
-    ):
-        action.approval.required = (
-            False
-        )
+    elif evaluation.approval_mode == ApprovalMode.AUTOMATIC.value:
+        action.approval.required = False
 
     else:
-        action.approval.required = (
-            True
-        )
+        action.approval.required = True
 
-    action.approval.reason = (
-        "; ".join(
-            evaluation.reasons
-        )
-    )
+    action.approval.reason = "; ".join(evaluation.reasons)
 
     return action.finalize()
 
@@ -1176,42 +708,29 @@ def apply_policy(
 # Batch evaluation
 # ---------------------------------------------------------------
 
+
 def evaluate_actions(
-    actions: Iterable[
-        ActionCandidate
-    ],
+    actions: Iterable[ActionCandidate],
     context: DecisionContext,
     *,
-    rules: Optional[
-        Iterable[
-            PolicyRule
-        ]
-    ] = None,
-) -> List[
-    ActionCandidate
-]:
-    configured_rules = (
-        list(rules)
-        if rules is not None
-        else default_policy_rules()
-    )
+    rules: Optional[Iterable[PolicyRule]] = None,
+) -> List[ActionCandidate]:
+    configured_rules = list(rules) if rules is not None else default_policy_rules()
 
     return [
         apply_policy(
             action,
             context,
-            rules=(
-                configured_rules
-            ),
+            rules=(configured_rules),
         )
-        for action
-        in actions
+        for action in actions
     ]
 
 
 # ---------------------------------------------------------------
 # Policy configuration from mappings
 # ---------------------------------------------------------------
+
 
 def rule_from_mapping(
     value: Mapping[
@@ -1227,17 +746,11 @@ def rule_from_mapping(
     """
 
     rule = PolicyRule(
-        policy_id=str(
-            value[
-                "policy_id"
-            ]
-        ),
+        policy_id=str(value["policy_id"]),
         name=str(
             value.get(
                 "name",
-                value[
-                    "policy_id"
-                ],
+                value["policy_id"],
             )
         ),
         description=str(
@@ -1254,24 +767,21 @@ def rule_from_mapping(
         ),
         categories=tuple(
             str(item)
-            for item
-            in value.get(
+            for item in value.get(
                 "categories",
                 (),
             )
         ),
         action_types=tuple(
             str(item)
-            for item
-            in value.get(
+            for item in value.get(
                 "action_types",
                 (),
             )
         ),
         environments=tuple(
             str(item)
-            for item
-            in value.get(
+            for item in value.get(
                 "environments",
                 (),
             )
@@ -1301,27 +811,13 @@ def rule_from_mapping(
             )
         ),
         maximum_target_resources=(
-            int(
-                value[
-                    "maximum_target_resources"
-                ]
-            )
-            if value.get(
-                "maximum_target_resources"
-            )
-            is not None
+            int(value["maximum_target_resources"])
+            if value.get("maximum_target_resources") is not None
             else None
         ),
         required_approval_mode=(
-            str(
-                value[
-                    "required_approval_mode"
-                ]
-            )
-            if value.get(
-                "required_approval_mode"
-            )
-            is not None
+            str(value["required_approval_mode"])
+            if value.get("required_approval_mode") is not None
             else None
         ),
         priority=int(
@@ -1356,21 +852,14 @@ def rules_from_mapping(
             Any,
         ]
     ],
-) -> List[
-    PolicyRule
-]:
-    return [
-        rule_from_mapping(
-            value
-        )
-        for value
-        in values
-    ]
+) -> List[PolicyRule]:
+    return [rule_from_mapping(value) for value in values]
 
 
 # ---------------------------------------------------------------
 # Policy engine
 # ---------------------------------------------------------------
+
 
 class PolicyEngine:
     """
@@ -1382,17 +871,9 @@ class PolicyEngine:
     def __init__(
         self,
         *,
-        rules: Optional[
-            Iterable[
-                PolicyRule
-            ]
-        ] = None,
+        rules: Optional[Iterable[PolicyRule]] = None,
     ) -> None:
-        self.rules = list(
-            rules
-            if rules is not None
-            else default_policy_rules()
-        )
+        self.rules = list(rules if rules is not None else default_policy_rules())
 
         for rule in self.rules:
             rule.validate()
@@ -1421,13 +902,9 @@ class PolicyEngine:
 
     def apply_many(
         self,
-        actions: Iterable[
-            ActionCandidate
-        ],
+        actions: Iterable[ActionCandidate],
         context: DecisionContext,
-    ) -> List[
-        ActionCandidate
-    ]:
+    ) -> List[ActionCandidate]:
         return evaluate_actions(
             actions,
             context,
@@ -1436,11 +913,5 @@ class PolicyEngine:
 
     def enabled_rules(
         self,
-    ) -> List[
-        PolicyRule
-    ]:
-        return [
-            rule
-            for rule in self.rules
-            if rule.enabled
-        ]
+    ) -> List[PolicyRule]:
+        return [rule for rule in self.rules if rule.enabled]

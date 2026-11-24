@@ -45,41 +45,15 @@ def normalize_endpoint(
     """
 
     payload = {
-        "id": optional_string(
-            endpoint.get("id")
-        ),
-        "interface": (
-            optional_string(
-                endpoint.get(
-                    "interface"
-                )
-            )
-        ),
-        "region": (
-            optional_string(
-                endpoint.get(
-                    "region"
-                )
-            )
-        ),
-        "region_id": (
-            optional_string(
-                endpoint.get(
-                    "region_id"
-                )
-            )
-        ),
-        "url": optional_string(
-            endpoint.get("url")
-        ),
-        "enabled": endpoint.get(
-            "enabled"
-        ),
+        "id": optional_string(endpoint.get("id")),
+        "interface": (optional_string(endpoint.get("interface"))),
+        "region": (optional_string(endpoint.get("region"))),
+        "region_id": (optional_string(endpoint.get("region_id"))),
+        "url": optional_string(endpoint.get("url")),
+        "enabled": endpoint.get("enabled"),
     }
 
-    return sanitize(
-        payload
-    )
+    return sanitize(payload)
 
 
 def service_catalog_items(
@@ -96,17 +70,11 @@ def service_catalog_items(
     records: List[dict] = []
 
     try:
-        auth = (
-            ctx.conn.session.auth
-        )
+        auth = ctx.conn.session.auth
 
-        access = auth.get_access(
-            ctx.conn.session
-        )
+        access = auth.get_access(ctx.conn.session)
 
-        catalog_object = (
-            access.service_catalog
-        )
+        catalog_object = access.service_catalog
 
         catalog = getattr(
             catalog_object,
@@ -127,34 +95,13 @@ def service_catalog_items(
             ):
                 continue
 
-            service_id = (
-                optional_string(
-                    service.get("id")
-                )
-            )
+            service_id = optional_string(service.get("id"))
 
-            service_name = (
-                optional_string(
-                    service.get(
-                        "name"
-                    )
-                )
-            )
+            service_name = optional_string(service.get("name"))
 
-            service_type = (
-                optional_string(
-                    service.get(
-                        "type"
-                    )
-                )
-            )
+            service_type = optional_string(service.get("type"))
 
-            raw_endpoints = (
-                service.get(
-                    "endpoints"
-                )
-                or []
-            )
+            raw_endpoints = service.get("endpoints") or []
 
             endpoints = []
 
@@ -162,76 +109,43 @@ def service_catalog_items(
                 raw_endpoints,
                 list,
             ):
-                for endpoint in (
-                    raw_endpoints
-                ):
+                for endpoint in raw_endpoints:
                     if not isinstance(
                         endpoint,
                         Mapping,
                     ):
                         continue
 
-                    endpoints.append(
-                        normalize_endpoint(
-                            endpoint
-                        )
-                    )
+                    endpoints.append(normalize_endpoint(endpoint))
 
             regions = sorted(
                 {
-                    str(
-                        endpoint[
-                            "region"
-                        ]
-                    )
-                    for endpoint
-                    in endpoints
-                    if endpoint.get(
-                        "region"
-                    )
+                    str(endpoint["region"])
+                    for endpoint in endpoints
+                    if endpoint.get("region")
                 }
             )
 
             interfaces = sorted(
                 {
-                    str(
-                        endpoint[
-                            "interface"
-                        ]
-                    )
-                    for endpoint
-                    in endpoints
-                    if endpoint.get(
-                        "interface"
-                    )
+                    str(endpoint["interface"])
+                    for endpoint in endpoints
+                    if endpoint.get("interface")
                 }
             )
 
             payload = {
-                "service_id": (
-                    service_id
-                ),
-                "service_name": (
-                    service_name
-                ),
-                "service_type": (
-                    service_type
-                ),
-                "endpoint_count": (
-                    len(endpoints)
-                ),
+                "service_id": (service_id),
+                "service_name": (service_name),
+                "service_type": (service_type),
+                "endpoint_count": (len(endpoints)),
                 "regions": regions,
-                "interfaces": (
-                    interfaces
-                ),
+                "interfaces": (interfaces),
                 "endpoints": endpoints,
             }
 
             resource_id = (
-                service_id
-                or service_type
-                or service_name
-                or "unknown-service"
+                service_id or service_type or service_name or "unknown-service"
             )
 
             records.append(
@@ -239,18 +153,10 @@ def service_catalog_items(
                     "service_catalog",
                     "openstack_service",
                     payload,
-                    cloud_id=(
-                        ctx.cloud_id
-                    ),
-                    region=(
-                        ctx.region
-                    ),
-                    environment_id=(
-                        ctx.environment_id
-                    ),
-                    resource_id=(
-                        resource_id
-                    ),
+                    cloud_id=(ctx.cloud_id),
+                    region=(ctx.region),
+                    environment_id=(ctx.environment_id),
+                    resource_id=(resource_id),
                     source="keystone",
                 )
             )
@@ -260,16 +166,10 @@ def service_catalog_items(
             error(
                 "service_catalog",
                 exc,
-                cloud_id=(
-                    ctx.cloud_id
-                ),
+                cloud_id=(ctx.cloud_id),
                 region=ctx.region,
-                environment_id=(
-                    ctx.environment_id
-                ),
-                operation=(
-                    "read_service_catalog"
-                ),
+                environment_id=(ctx.environment_id),
+                operation=("read_service_catalog"),
             )
         )
 
@@ -284,26 +184,18 @@ def compute_service_payload(
     resource into an OSHA representation.
     """
 
-    raw = as_dict(
-        service
+    raw = as_dict(service)
+
+    service_id = raw.get("id") or getattr(
+        service,
+        "id",
+        None,
     )
 
-    service_id = (
-        raw.get("id")
-        or getattr(
-            service,
-            "id",
-            None,
-        )
-    )
-
-    host = (
-        raw.get("host")
-        or getattr(
-            service,
-            "host",
-            None,
-        )
+    host = raw.get("host") or getattr(
+        service,
+        "host",
+        None,
     )
 
     binary = (
@@ -311,7 +203,7 @@ def compute_service_payload(
         or raw.get("name")
         or getattr(
             service,
-                "binary",
+            "binary",
             None,
         )
         or getattr(
@@ -321,27 +213,19 @@ def compute_service_payload(
         )
     )
 
-    state = (
-        raw.get("state")
-        or getattr(
-            service,
-            "state",
-          )
+    state = raw.get("state") or getattr(
+        service,
+        "state",
     )
 
-    status = (
-        raw.get("status")
-        or getattr(
-            service,
-            "status",
-            None,
-        )
+    status = raw.get("status") or getattr(
+        service,
+        "status",
+        None,
     )
 
     availability_zone = (
-        raw.get(
-            "availability_zone"
-        )
+        raw.get("availability_zone")
         or raw.get("zone")
         or getattr(
             service,
@@ -350,20 +234,13 @@ def compute_service_payload(
         )
     )
 
-    disabled_reason = (
-        raw.get(
-            "disabled_reason"
-        )
-        or getattr(
-            service,
-            "disabled_reason",
-            None,
-        )
+    disabled_reason = raw.get("disabled_reason") or getattr(
+        service,
+        "disabled_reason",
+        None,
     )
 
-    forced_down = raw.get(
-        "is_forced_down"
-    )
+    forced_down = raw.get("is_forced_down")
 
     if forced_down is None:
         forced_down = getattr(
@@ -372,42 +249,21 @@ def compute_service_payload(
             None,
         )
 
-    updated_at = (
-        raw.get("updated_at")
-        or getattr(
-            service,
-            "updated_at",
-            None,
-        )
+    updated_at = raw.get("updated_at") or getattr(
+        service,
+        "updated_at",
+        None,
     )
 
-    state_text = (
-        optional_string(
-            state
-        )
-    )
+    state_text = optional_string(state)
 
-    status_text = (
-        optional_string(
-            status
-        )
-    )
+    status_text = optional_string(status)
 
-    normalized_state = (
-        state_text.lower()
-        if state_text
-        else None
-    )
+    normalized_state = state_text.lower() if state_text else None
 
-    normalized_status = (
-        status_text.lower()
-        if status_text
-        else None
-    )
+    normalized_status = status_text.lower() if status_text else None
 
-    healthy: Optional[bool] = (
-        None
-    )
+    healthy: Optional[bool] = None
 
     if (
         normalized_state == "up"
@@ -416,67 +272,31 @@ def compute_service_payload(
             None,
             "enabled",
         }
-        and forced_down
-        is not True
+        and forced_down is not True
     ):
         healthy = True
 
     elif (
         normalized_state == "down"
-        or normalized_status
-        == "disabled"
-        or forced_down
-        is True
+        or normalized_status == "disabled"
+        or forced_down is True
     ):
         healthy = False
 
     payload = {
-        "service_id": (
-            optional_string(
-                service_id
-            )
-        ),
-        "host": (
-            optional_string(
-                host
-            )
-        ),
-        "binary": (
-            optional_string(
-                binary
-            )
-        ),
-        "state": (
-            state_text
-        ),
-        "status": (
-            status_text
-        ),
+        "service_id": (optional_string(service_id)),
+        "host": (optional_string(host)),
+        "binary": (optional_string(binary)),
+        "state": (state_text),
+        "status": (status_text),
         "healthy": healthy,
-        "availability_zone": (
-            optional_string(
-                availability_zone
-            )
-        ),
-        "disabled_reason": (
-            optional_string(
-                disabled_reason
-            )
-        ),
-        "is_forced_down": (
-            forced_down
-        ),
-        "updated_at": (
-            str(updated_at)
-            if updated_at
-            is not None
-            else None
-        ),
+        "availability_zone": (optional_string(availability_zone)),
+        "disabled_reason": (optional_string(disabled_reason)),
+        "is_forced_down": (forced_down),
+        "updated_at": (str(updated_at) if updated_at is not None else None),
     }
 
-    return sanitize(
-        payload
-    )
+    return sanitize(payload)
 
 
 def compute_service_id(
@@ -490,26 +310,14 @@ def compute_service_id(
     service ID is not available.
     """
 
-    service_id = (
-        optional_string(
-            payload.get(
-                "service_id"
-            )
-        )
-    )
+    service_id = optional_string(payload.get("service_id"))
 
     if service_id:
         return service_id
 
-    host = optional_string(
-        payload.get("host")
-    )
+    host = optional_string(payload.get("host"))
 
-    binary = optional_string(
-        payload.get(
-            "binary"
-        )
-    )
+    binary = optional_string(payload.get("binary"))
 
     pieces = [
         piece
@@ -521,13 +329,9 @@ def compute_service_id(
     ]
 
     if pieces:
-        return ":".join(
-            pieces
-        )
+        return ":".join(pieces)
 
-    return (
-        "unknown-compute-service"
-    )
+    return "unknown-compute-service"
 
 
 def nova_service_items(
@@ -550,60 +354,31 @@ def nova_service_items(
         records.append(
             unavailable(
                 "compute",
-                (
-                    "Compute service endpoint "
-                    "is unavailable"
-                ),
-                cloud_id=(
-                    ctx.cloud_id
-                ),
+                ("Compute service endpoint is unavailable"),
+                cloud_id=(ctx.cloud_id),
                 region=ctx.region,
-                environment_id=(
-                    ctx.environment_id
-                ),
+                environment_id=(ctx.environment_id),
             )
         )
 
         return records
 
     try:
-        for service in (
-            ctx.conn.compute.services()
-        ):
-            payload = (
-                compute_service_payload(
-                    service
-                )
-            )
+        for service in ctx.conn.compute.services():
+            payload = compute_service_payload(service)
 
-            resource_id = (
-                compute_service_id(
-                    payload
-                )
-            )
+            resource_id = compute_service_id(payload)
 
             records.append(
                 record(
                     "compute",
                     "compute_service",
                     payload,
-                    cloud_id=(
-                        ctx.cloud_id
-                    ),
-                    region=(
-                        ctx.region
-                    ),
-                    environment_id=(
-                        ctx.environment_id
-                    ),
-                    resource_id=(
-                        resource_id
-                    ),
-                    timestamp=(
-                        payload.get(
-                            "updated_at"
-                        )
-                    ),
+                    cloud_id=(ctx.cloud_id),
+                    region=(ctx.region),
+                    environment_id=(ctx.environment_id),
+                    resource_id=(resource_id),
+                    timestamp=(payload.get("updated_at")),
                     source="nova",
                 )
             )
@@ -613,16 +388,10 @@ def nova_service_items(
             error(
                 "compute",
                 exc,
-                cloud_id=(
-                    ctx.cloud_id
-                ),
+                cloud_id=(ctx.cloud_id),
                 region=ctx.region,
-                environment_id=(
-                    ctx.environment_id
-                ),
-                operation=(
-                    "list_compute_services"
-                ),
+                environment_id=(ctx.environment_id),
+                operation=("list_compute_services"),
             )
         )
 
@@ -651,53 +420,25 @@ def service_summary(
     regions = set()
 
     for item in records:
-        signal_type = item.get(
-            "signal_type"
-        )
+        signal_type = item.get("signal_type")
 
-        payload = (
-            item.get("payload")
-            or {}
-        )
+        payload = item.get("payload") or {}
 
-        if (
-            signal_type
-            == "openstack_service"
-        ):
+        if signal_type == "openstack_service":
             catalog_services += 1
 
-            service_type = (
-                payload.get(
-                    "service_type"
-                )
-            )
+            service_type = payload.get("service_type")
 
             if service_type:
-                service_types.add(
-                    str(service_type)
-                )
+                service_types.add(str(service_type))
 
-            for region in (
-                payload.get(
-                    "regions"
-                )
-                or []
-            ):
-                regions.add(
-                    str(region)
-                )
+            for region in payload.get("regions") or []:
+                regions.add(str(region))
 
-        elif (
-            signal_type
-            == "compute_service"
-        ):
+        elif signal_type == "compute_service":
             compute_services += 1
 
-            healthy = (
-                payload.get(
-                    "healthy"
-                )
-            )
+            healthy = payload.get("healthy")
 
             if healthy is True:
                 healthy_compute += 1
@@ -706,37 +447,18 @@ def service_summary(
             else:
                 unknown_compute += 1
 
-        elif (
-            signal_type
-            == "collector_error"
-        ):
+        elif signal_type == "collector_error":
             errors += 1
 
     return {
-        "catalog_service_count": (
-            catalog_services
-        ),
-        "service_types": sorted(
-            service_types
-        ),
-        "regions": sorted(
-            regions
-        ),
-        "compute_service_count": (
-            compute_services
-        ),
-        "healthy_compute_services": (
-            healthy_compute
-        ),
-        "unhealthy_compute_services": (
-            unhealthy_compute
-        ),
-        "unknown_compute_services": (
-            unknown_compute
-        ),
-        "collector_error_count": (
-            errors
-        ),
+        "catalog_service_count": (catalog_services),
+        "service_types": sorted(service_types),
+        "regions": sorted(regions),
+        "compute_service_count": (compute_services),
+        "healthy_compute_services": (healthy_compute),
+        "unhealthy_compute_services": (unhealthy_compute),
+        "unknown_compute_services": (unknown_compute),
+        "collector_error_count": (errors),
     }
 
 
@@ -753,37 +475,21 @@ def collect(
 
     records: List[dict] = []
 
-    records.extend(
-        service_catalog_items(
-            ctx
-        )
-    )
+    records.extend(service_catalog_items(ctx))
 
-    records.extend(
-        nova_service_items(
-            ctx
-        )
-    )
+    records.extend(nova_service_items(ctx))
 
-    summary = service_summary(
-        records
-    )
+    summary = service_summary(records)
 
     records.append(
         record(
             "services",
             "service_summary",
             summary,
-            cloud_id=(
-                ctx.cloud_id
-            ),
+            cloud_id=(ctx.cloud_id),
             region=ctx.region,
-            environment_id=(
-                ctx.environment_id
-            ),
-            resource_id=(
-                ctx.cloud_id
-            ),
+            environment_id=(ctx.environment_id),
+            resource_id=(ctx.cloud_id),
             source="osha",
         )
     )

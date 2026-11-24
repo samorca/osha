@@ -36,12 +36,7 @@ def optional_string(
 
 
 def openstack_cli_available() -> bool:
-    return (
-        shutil.which(
-            "openstack"
-        )
-        is not None
-    )
+    return shutil.which("openstack") is not None
 
 
 def safe_environment() -> Dict[str, str]:
@@ -77,10 +72,7 @@ def run_openstack_json(
         return (
             False,
             None,
-            (
-                "openstack CLI is not "
-                "installed"
-            ),
+            ("openstack CLI is not installed"),
         )
 
     command = [
@@ -103,27 +95,18 @@ def run_openstack_json(
         return (
             False,
             None,
-            (
-                "OpenStack command "
-                "timed out"
-            ),
+            ("OpenStack command timed out"),
         )
 
     except OSError as exc:
         return (
-         False,
+            False,
             None,
-            (
-                "Unable to execute "
-                f"OpenStack CLI: {exc}"
-            ),
+            (f"Unable to execute OpenStack CLI: {exc}"),
         )
 
     if result.returncode != 0:
-        message = (
-            result.stderr.strip()
-            or "OpenStack event query failed"
-        )
+        message = result.stderr.strip() or "OpenStack event query failed"
 
         return (
             False,
@@ -141,17 +124,12 @@ def run_openstack_json(
         )
 
     try:
-        parsed = json.loads(
-            output
-        )
+        parsed = json.loads(output)
     except json.JSONDecodeError:
         return (
             False,
             None,
-            (
-                "OpenStack event query did not "
-                "return valid JSON"
-            ),
+            ("OpenStack event query did not return valid JSON"),
         )
 
     return (
@@ -173,9 +151,7 @@ def normalize_rows(
         list,
     ):
         return [
-            sanitize(
-                dict(item)
-            )
+            sanitize(dict(item))
             for item in value
             if isinstance(
                 item,
@@ -187,11 +163,7 @@ def normalize_rows(
         value,
         Mapping,
     ):
-        return [
-            sanitize(
-                dict(value)
-            )
-        ]
+        return [sanitize(dict(value))]
 
     return []
 
@@ -204,19 +176,13 @@ def lookup(
     Case-insensitive lookup for CLI columns.
     """
 
-    lowered = {
-        str(key).lower(): value
-        for key, value
-        in payload.items()
-    }
+    lowered = {str(key).lower(): value for key, value in payload.items()}
 
     for name in names:
         if name in payload:
             return payload[name]
 
-        value = lowered.get(
-            name.lower()
-        )
+        value = lowered.get(name.lower())
 
         if value is not None:
             return value
@@ -284,44 +250,25 @@ def determine_service(
         "compute.": "compute",
         "instance.": "compute",
         "server.": "compute",
-
         "network.": "network",
         "port.": "network",
         "subnet.": "network",
         "router.": "network",
         "floatingip.": "network",
-
-        "volume.": (
-            "block_storage"
-        ),
-        "snapshot.": (
-            "block_storage"
-        ),
-        "backup.": (
-            "block_storage"
-        ),
-
+        "volume.": ("block_storage"),
+        "snapshot.": ("block_storage"),
+        "backup.": ("block_storage"),
         "image.": "image",
-
         "identity.": "identity",
         "user.": "identity",
         "project.": "identity",
         "role.": "identity",
-
-        "orchestration.": (
-            "orchestration"
-        ),
-        "stack.": (
-            "orchestration"
-        ),
+        "orchestration.": ("orchestration"),
+        "stack.": ("orchestration"),
     }
 
-    for prefix, service in (
-        prefixes.items()
-    ):
-        if value.startswith(
-            prefix
-        ):
+    for prefix, service in prefixes.items():
+        if value.startswith(prefix):
             return service
 
     return None
@@ -377,9 +324,7 @@ def determine_action(
         "disassociate",
     )
 
-    for action in (
-        known_actions
-    ):
+    for action in known_actions:
         if action in tokens:
             return action
 
@@ -402,15 +347,13 @@ def collect_event_list(
 
     records: List[dict] = []
 
-    success, data, message = (
-        run_openstack_json(
-            [
-                "event",
-                "list",
-                "-f",
-                "json",
-            ]
-        )
+    success, data, message = run_openstack_json(
+        [
+            "event",
+            "list",
+            "-f",
+            "json",
+        ]
     )
 
     if not success:
@@ -419,22 +362,14 @@ def collect_event_list(
                 "events",
                 "collector_status",
                 {
-                    "component": (
-                        "ceilometer"
-                    ),
-                    "capability": (
-                        "events"
-                    ),
+                    "component": ("ceilometer"),
+                    "capability": ("events"),
                     "available": False,
                     "reason": message,
                 },
-                cloud_id=(
-                    ctx.cloud_id
-                ),
+                cloud_id=(ctx.cloud_id),
                 region=ctx.region,
-                environment_id=(
-                    ctx.environment_id
-                ),
+                environment_id=(ctx.environment_id),
                 source="ceilometer",
             )
         )
@@ -444,30 +379,20 @@ def collect_event_list(
             [],
         )
 
-    rows = normalize_rows(
-        data
-    )
+    rows = normalize_rows(data)
 
     records.append(
         record(
             "events",
             "collector_status",
             {
-                "component": (
-                    "ceilometer"
-                ),
-                "capability": (
-                    "events"
-                ),
+                "component": ("ceilometer"),
+                "capability": ("events"),
                 "available": True,
             },
-            cloud_id=(
-                ctx.cloud_id
-            ),
+            cloud_id=(ctx.cloud_id),
             region=ctx.region,
-            environment_id=(
-                ctx.environment_id
-            ),
+            environment_id=(ctx.environment_id),
             source="ceilometer",
         )
     )
@@ -489,16 +414,14 @@ def show_event(
     exposed by the CLI/API.
     """
 
-    success, data, _ = (
-        run_openstack_json(
-            [
-                "event",
-                "show",
-                message_id,
-                "-f",
-                "json",
-            ]
-        )
+    success, data, _ = run_openstack_json(
+        [
+            "event",
+            "show",
+            message_id,
+            "-f",
+            "json",
+        ]
     )
 
     if not success:
@@ -510,9 +433,7 @@ def show_event(
     ):
         return None
 
-    return sanitize(
-        dict(data)
-    )
+    return sanitize(dict(data))
 
 
 def strip_raw_payload(
@@ -538,26 +459,15 @@ def strip_raw_payload(
         "notification payload",
     }
 
-    for key, value in (
-        event.items()
-    ):
-        key_text = str(
-            key
-        )
+    for key, value in event.items():
+        key_text = str(key)
 
-        if (
-            key_text.lower()
-            in sensitive_raw_names
-        ):
+        if key_text.lower() in sensitive_raw_names:
             continue
 
-        output[
-            key_text
-        ] = value
+        output[key_text] = value
 
-    return sanitize(
-        output
-    )
+    return sanitize(output)
 
 
 def extract_traits(
@@ -593,44 +503,22 @@ def collect_events(
     be expanded with event show to obtain traits.
     """
 
-    records, rows = (
-        collect_event_list(
-            ctx
-        )
-    )
+    records, rows = collect_event_list(ctx)
 
     if not rows:
         return records
 
-    for index, row in enumerate(
-        rows
-    ):
-        message_id = (
-            event_message_id(
-                row
-            )
-        )
+    for index, row in enumerate(rows):
+        message_id = event_message_id(row)
 
-        base_type = event_type(
-            row
-        )
+        base_type = event_type(row)
 
-        generated = (
-            event_timestamp(
-                row
-            )
-        )
+        generated = event_timestamp(row)
 
         detail = None
 
-        if (
-            message_id
-            and index
-            < maximum_event_details
-        ):
-            detail = show_event(
-                message_id
-            )
+        if message_id and index < maximum_event_details:
+            detail = show_event(message_id)
 
         combined = dict(row)
 
@@ -638,62 +526,28 @@ def collect_events(
             detail,
             Mapping,
         ):
-            combined.update(
-                detail
-            )
+            combined.update(detail)
 
-        combined = (
-            strip_raw_payload(
-                combined
-            )
-        )
+        combined = strip_raw_payload(combined)
 
-        final_type = (
-            event_type(
-                combined
-            )
-            or base_type
-        )
+        final_type = event_type(combined) or base_type
 
-        final_timestamp = (
-            event_timestamp(
-                combined
-            )
-            or generated
-        )
+        final_timestamp = event_timestamp(combined) or generated
 
-        service_family = (
-            determine_service(
-                final_type
-            )
-        )
+        service_family = determine_service(final_type)
 
-        action = (
-            determine_action(
-                final_type
-            )
-        )
+        action = determine_action(final_type)
 
-        traits = extract_traits(
-            combined
-        )
+        traits = extract_traits(combined)
 
         payload = {
-            "message_id": (
-                message_id
-            ),
-            "event_type": (
-                final_type
-            ),
-            "service_family": (
-                service_family
-            ),
+            "message_id": (message_id),
+            "event_type": (final_type),
+            "service_family": (service_family),
             "action": action,
             "traits": traits,
             "event": combined,
-            "raw_payload_collected": (
-                False
-            ),
+            "raw_payload_collected": (False),
         }
 
         records.append(
@@ -701,21 +555,11 @@ def collect_events(
                 "events",
                 "openstack_event",
                 payload,
-                cloud_id=(
-                    ctx.cloud_id
-                ),
+                cloud_id=(ctx.cloud_id),
                 region=ctx.region,
-                environment_id=(
-                    ctx.environment_id
-                ),
-                resource_id=(
-                    message_id
-                    or final_type
-                    or "unknown-event"
-                ),
-                timestamp=(
-                    final_timestamp
-                ),
+                environment_id=(ctx.environment_id),
+                resource_id=(message_id or final_type or "unknown-event"),
+                timestamp=(final_timestamp),
                 source="ceilometer",
             )
         )
@@ -733,65 +577,30 @@ def event_summary(
     event_count = 0
 
     for item in records:
-        if (
-            item.get("signal_type")
-            != "openstack_event"
-        ):
+        if item.get("signal_type") != "openstack_event":
             continue
 
         event_count += 1
 
-        payload = (
-            item.get("payload")
-            or {}
-        )
+        payload = item.get("payload") or {}
 
-        event_name = (
-            payload.get(
-                "event_type"
-            )
-            or "unknown"
-        )
+        event_name = payload.get("event_type") or "unknown"
 
-        service = (
-            payload.get(
-                "service_family"
-            )
-            or "unknown"
-        )
+        service = payload.get("service_family") or "unknown"
 
-        action = (
-            payload.get("action")
-            or "unknown"
-        )
+        action = payload.get("action") or "unknown"
 
-        event_types[
-            str(event_name)
-        ] += 1
+        event_types[str(event_name)] += 1
 
-        services[
-            str(service)
-        ] += 1
+        services[str(service)] += 1
 
-        actions[
-            str(action)
-        ] += 1
+        actions[str(action)] += 1
 
     return {
-        "event_count": (
-            event_count
-        ),
-        "event_types": (
-            dict(
-                event_types
-            )
-        ),
-        "service_families": (
-            dict(services)
-        ),
-        "actions": (
-            dict(actions)
-        ),
+        "event_count": (event_count),
+        "event_types": (dict(event_types)),
+        "service_families": (dict(services)),
+        "actions": (dict(actions)),
     }
 
 
@@ -820,50 +629,31 @@ def collect(
                 "events",
                 "collector_status",
                 {
-                    "component": (
-                        "openstack_cli"
-                    ),
+                    "component": ("openstack_cli"),
                     "available": False,
-                    "reason": (
-                        "openstack CLI is not "
-                        "installed"
-                    ),
+                    "reason": ("openstack CLI is not installed"),
                 },
-                cloud_id=(
-                    ctx.cloud_id
-                ),
+                cloud_id=(ctx.cloud_id),
                 region=ctx.region,
-                environment_id=(
-                    ctx.environment_id
-                ),
+                environment_id=(ctx.environment_id),
                 source="collector",
             )
         ]
 
     records = collect_events(
         ctx,
-        maximum_event_details=(
-            maximum_event_details
-        ),
+        maximum_event_details=(maximum_event_details),
     )
 
     records.append(
         record(
             "events",
             "event_summary",
-            event_summary(
-                records
-            ),
-            cloud_id=(
-                ctx.cloud_id
-            ),
+            event_summary(records),
+            cloud_id=(ctx.cloud_id),
             region=ctx.region,
-            environment_id=(
-                ctx.environment_id
-            ),
-            resource_id=(
-                ctx.cloud_id
-            ),
+            environment_id=(ctx.environment_id),
+            resource_id=(ctx.cloud_id),
             source="osha",
         )
     )

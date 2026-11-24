@@ -45,6 +45,7 @@ SECURITY_SCHEMA_VERSION = "1"
 # Principal types
 # ---------------------------------------------------------------
 
+
 class PrincipalType(
     str,
     Enum,
@@ -61,6 +62,7 @@ class PrincipalType(
 # ---------------------------------------------------------------
 # Authentication state
 # ---------------------------------------------------------------
+
 
 class AuthenticationStatus(
     str,
@@ -81,6 +83,7 @@ class AuthenticationStatus(
 # Authorization decisions
 # ---------------------------------------------------------------
 
+
 class AuthorizationDecision(
     str,
     Enum,
@@ -89,9 +92,7 @@ class AuthorizationDecision(
 
     DENY = "deny"
 
-    REQUIRE_APPROVAL = (
-        "require_approval"
-    )
+    REQUIRE_APPROVAL = "require_approval"
 
     ABSTAIN = "abstain"
 
@@ -99,6 +100,7 @@ class AuthorizationDecision(
 # ---------------------------------------------------------------
 # Policy effect
 # ---------------------------------------------------------------
+
 
 class PolicyEffect(
     str,
@@ -108,14 +110,13 @@ class PolicyEffect(
 
     DENY = "deny"
 
-    REQUIRE_APPROVAL = (
-        "require_approval"
-    )
+    REQUIRE_APPROVAL = "require_approval"
 
 
 # ---------------------------------------------------------------
 # Audit outcome
 # ---------------------------------------------------------------
+
 
 class AuditOutcome(
     str,
@@ -133,6 +134,7 @@ class AuditOutcome(
 # ---------------------------------------------------------------
 # Security principal
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class SecurityPrincipal:
@@ -152,28 +154,16 @@ class SecurityPrincipal:
 
     principal_type: str
 
-    display_name: Optional[
-        str
-    ] = None
+    display_name: Optional[str] = None
 
-    roles: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    roles: List[str] = field(default_factory=list)
 
-    groups: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    groups: List[str] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
@@ -184,33 +174,19 @@ class SecurityPrincipal:
             maximum_length=512,
         )
 
-        if (
-            self.principal_type
-            not in {
-                item.value
-                for item
-                in PrincipalType
-            }
-        ):
-            raise ValueError(
-                "Unknown principal type: "
-                f"{self.principal_type}"
-            )
+        if self.principal_type not in {item.value for item in PrincipalType}:
+            raise ValueError(f"Unknown principal type: {self.principal_type}")
 
         object.__setattr__(
             self,
             "roles",
-            unique_strings(
-                self.roles
-            ),
+            unique_strings(self.roles),
         )
 
         object.__setattr__(
             self,
             "groups",
-            unique_strings(
-                self.groups
-            ),
+            unique_strings(self.groups),
         )
 
         return self
@@ -221,32 +197,19 @@ class SecurityPrincipal:
         self.finalize()
 
         return {
-            "principal_id": (
-                self.principal_id
-            ),
-            "principal_type": (
-                self.principal_type
-            ),
-            "display_name": (
-                self.display_name
-            ),
-            "roles": list(
-                self.roles
-            ),
-            "groups": list(
-                self.groups
-            ),
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
+            "principal_id": (self.principal_id),
+            "principal_type": (self.principal_type),
+            "display_name": (self.display_name),
+            "roles": list(self.roles),
+            "groups": list(self.groups),
+            "attributes": (to_json_safe(self.attributes)),
         }
 
 
 # ---------------------------------------------------------------
 # Authentication context
 # ---------------------------------------------------------------
+
 
 @dataclass
 class AuthenticationContext:
@@ -258,74 +221,40 @@ class AuthenticationContext:
     in this object.
     """
 
-    status: str = (
-        AuthenticationStatus.
-        UNKNOWN.value
-    )
+    status: str = AuthenticationStatus.UNKNOWN.value
 
-    principal: Optional[
-        SecurityPrincipal
-    ] = None
+    principal: Optional[SecurityPrincipal] = None
 
-    method: Optional[
-        str
-    ] = None
+    method: Optional[str] = None
 
-    authenticated_at: Optional[
-        str
-    ] = None
+    authenticated_at: Optional[str] = None
 
-    expires_at: Optional[
-        str
-    ] = None
+    expires_at: Optional[str] = None
 
-    session_id: Optional[
-        str
-    ] = None
+    session_id: Optional[str] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
     ) -> "AuthenticationContext":
-        if (
-            self.status
-            not in {
-                item.value
-                for item
-                in AuthenticationStatus
-            }
-        ):
-            raise ValueError(
-                "Unknown authentication "
-                f"status: {self.status}"
-            )
+        if self.status not in {item.value for item in AuthenticationStatus}:
+            raise ValueError(f"Unknown authentication status: {self.status}")
 
         if self.principal is not None:
             self.principal.finalize()
 
         if (
-            self.status
-            == AuthenticationStatus.
-            AUTHENTICATED.value
+            self.status == AuthenticationStatus.AUTHENTICATED.value
             and self.principal is None
         ):
-            raise ValueError(
-                "Authenticated context "
-                "requires a principal"
-            )
+            raise ValueError("Authenticated context requires a principal")
 
         if not self.session_id:
-            self.session_id = (
-                random_id(
-                    "security:session"
-                )
-            )
+            self.session_id = random_id("security:session")
 
         return self
 
@@ -336,38 +265,19 @@ class AuthenticationContext:
 
         return {
             "status": self.status,
-
-            "principal": (
-                self.principal.to_dict()
-                if self.principal
-                else None
-            ),
-
+            "principal": (self.principal.to_dict() if self.principal else None),
             "method": self.method,
-
-            "authenticated_at": (
-                self.authenticated_at
-            ),
-
-            "expires_at": (
-                self.expires_at
-            ),
-
-            "session_id": (
-                self.session_id
-            ),
-
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
+            "authenticated_at": (self.authenticated_at),
+            "expires_at": (self.expires_at),
+            "session_id": (self.session_id),
+            "attributes": (to_json_safe(self.attributes)),
         }
 
 
 # ---------------------------------------------------------------
 # Permission
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class Permission:
@@ -385,47 +295,32 @@ class Permission:
 
     action: str
 
-    scope: Optional[
-        str
-    ] = None
+    scope: Optional[str] = None
 
-    environment_id: Optional[
-        str
-    ] = None
+    environment_id: Optional[str] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
     ) -> "Permission":
         required_string(
             self.resource,
-            name=(
-                "permission resource"
-            ),
+            name=("permission resource"),
             maximum_length=256,
         )
 
         required_string(
             self.action,
-            name=(
-                "permission action"
-            ),
+            name=("permission action"),
             maximum_length=128,
         )
 
-        if (
-            self.environment_id
-            is not None
-        ):
-            environment_id(
-                self.environment_id
-            )
+        if self.environment_id is not None:
+            environment_id(self.environment_id)
 
         return self
 
@@ -436,17 +331,11 @@ class Permission:
 
         return ":".join(
             part
-            for part
-            in (
-                self.environment_id
-                or "*",
-
+            for part in (
+                self.environment_id or "*",
                 self.resource,
-
                 self.action,
-
-                self.scope
-                or "*",
+                self.scope or "*",
             )
         )
 
@@ -456,19 +345,11 @@ class Permission:
         self.finalize()
 
         return {
-            "resource": (
-                self.resource
-            ),
+            "resource": (self.resource),
             "action": self.action,
             "scope": self.scope,
-            "environment_id": (
-                self.environment_id
-            ),
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
+            "environment_id": (self.environment_id),
+            "attributes": (to_json_safe(self.attributes)),
         }
 
 
@@ -476,30 +357,23 @@ class Permission:
 # Authorization request
 # ---------------------------------------------------------------
 
+
 @dataclass
 class AuthorizationRequest:
     principal: SecurityPrincipal
 
     permission: Permission
 
-    resource_id: Optional[
-        str
-    ] = None
+    resource_id: Optional[str] = None
 
-    requested_at: str = field(
-        default_factory=utc_now
-    )
+    requested_at: str = field(default_factory=utc_now)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    request_id: Optional[
-        str
-    ] = None
+    request_id: Optional[str] = None
 
     def finalize(
         self,
@@ -508,12 +382,7 @@ class AuthorizationRequest:
         self.permission.finalize()
 
         if not self.request_id:
-            self.request_id = (
-                random_id(
-                    "security:"
-                    "authorization-request"
-                )
-            )
+            self.request_id = random_id("security:authorization-request")
 
         return self
 
@@ -523,28 +392,12 @@ class AuthorizationRequest:
         self.finalize()
 
         return {
-            "request_id": (
-                self.request_id
-            ),
-            "principal": (
-                self.principal.
-                to_dict()
-            ),
-            "permission": (
-                self.permission.
-                to_dict()
-            ),
-            "resource_id": (
-                self.resource_id
-            ),
-            "requested_at": (
-                self.requested_at
-            ),
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
+            "request_id": (self.request_id),
+            "principal": (self.principal.to_dict()),
+            "permission": (self.permission.to_dict()),
+            "resource_id": (self.resource_id),
+            "requested_at": (self.requested_at),
+            "attributes": (to_json_safe(self.attributes)),
         }
 
 
@@ -552,81 +405,40 @@ class AuthorizationRequest:
 # Authorization result
 # ---------------------------------------------------------------
 
+
 @dataclass
 class AuthorizationResult:
     decision: str
 
-    request_id: Optional[
-        str
-    ] = None
+    request_id: Optional[str] = None
 
-    reason: Optional[
-        str
-    ] = None
+    reason: Optional[str] = None
 
-    policy_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    policy_ids: List[str] = field(default_factory=list)
 
-    required_approval_roles: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    required_approval_roles: List[str] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    decided_at: str = field(
-        default_factory=utc_now
-    )
+    decided_at: str = field(default_factory=utc_now)
 
-    decision_id: Optional[
-        str
-    ] = None
+    decision_id: Optional[str] = None
 
     def finalize(
         self,
     ) -> "AuthorizationResult":
-        if (
-            self.decision
-            not in {
-                item.value
-                for item
-                in AuthorizationDecision
-            }
-        ):
-            raise ValueError(
-                "Unknown authorization "
-                f"decision: {self.decision}"
-            )
+        if self.decision not in {item.value for item in AuthorizationDecision}:
+            raise ValueError(f"Unknown authorization decision: {self.decision}")
 
-        self.policy_ids = (
-            unique_strings(
-                self.policy_ids
-            )
-        )
+        self.policy_ids = unique_strings(self.policy_ids)
 
-        self.required_approval_roles = (
-            unique_strings(
-                self.
-                required_approval_roles
-            )
-        )
+        self.required_approval_roles = unique_strings(self.required_approval_roles)
 
         if not self.decision_id:
-            self.decision_id = (
-                random_id(
-                    "security:"
-                    "authorization-decision"
-                )
-            )
+            self.decision_id = random_id("security:authorization-decision")
 
         return self
 
@@ -634,11 +446,7 @@ class AuthorizationResult:
     def allowed(
         self,
     ) -> bool:
-        return (
-            self.decision
-            == AuthorizationDecision.
-            ALLOW.value
-        )
+        return self.decision == AuthorizationDecision.ALLOW.value
 
     def to_dict(
         self,
@@ -646,42 +454,22 @@ class AuthorizationResult:
         self.finalize()
 
         return {
-            "decision_id": (
-                self.decision_id
-            ),
-            "request_id": (
-                self.request_id
-            ),
-            "decision": (
-                self.decision
-            ),
-            "allowed": (
-                self.allowed
-            ),
+            "decision_id": (self.decision_id),
+            "request_id": (self.request_id),
+            "decision": (self.decision),
+            "allowed": (self.allowed),
             "reason": self.reason,
-            "policy_ids": list(
-                self.policy_ids
-            ),
-            "required_approval_roles": (
-                list(
-                    self.
-                    required_approval_roles
-                )
-            ),
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
-            "decided_at": (
-                self.decided_at
-            ),
+            "policy_ids": list(self.policy_ids),
+            "required_approval_roles": (list(self.required_approval_roles)),
+            "attributes": (to_json_safe(self.attributes)),
+            "decided_at": (self.decided_at),
         }
 
 
 # ---------------------------------------------------------------
 # Security policy
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class SecurityPolicy:
@@ -700,23 +488,11 @@ class SecurityPolicy:
 
     resource: str
 
-    actions: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    actions: List[str] = field(default_factory=list)
 
-    roles: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    roles: List[str] = field(default_factory=list)
 
-    environments: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    environments: List[str] = field(default_factory=list)
 
     enabled: bool = True
 
@@ -725,9 +501,7 @@ class SecurityPolicy:
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
@@ -746,47 +520,29 @@ class SecurityPolicy:
 
         required_string(
             self.resource,
-            name=(
-                "policy resource"
-            ),
+            name=("policy resource"),
             maximum_length=256,
         )
 
-        if (
-            self.effect
-            not in {
-                item.value
-                for item
-                in PolicyEffect
-            }
-        ):
-            raise ValueError(
-                "Unknown policy effect: "
-                f"{self.effect}"
-            )
+        if self.effect not in {item.value for item in PolicyEffect}:
+            raise ValueError(f"Unknown policy effect: {self.effect}")
 
         object.__setattr__(
             self,
             "actions",
-            unique_strings(
-                self.actions
-            ),
+            unique_strings(self.actions),
         )
 
         object.__setattr__(
             self,
             "roles",
-            unique_strings(
-                self.roles
-            ),
+            unique_strings(self.roles),
         )
 
         object.__setattr__(
             self,
             "environments",
-            unique_strings(
-                self.environments
-            ),
+            unique_strings(self.environments),
         )
 
         return self
@@ -797,38 +553,23 @@ class SecurityPolicy:
         self.finalize()
 
         return {
-            "policy_id": (
-                self.policy_id
-            ),
+            "policy_id": (self.policy_id),
             "name": self.name,
-            "effect": (
-                self.effect
-            ),
-            "resource": (
-                self.resource
-            ),
-            "actions": list(
-                self.actions
-            ),
-            "roles": list(
-                self.roles
-            ),
-            "environments": list(
-                self.environments
-            ),
+            "effect": (self.effect),
+            "resource": (self.resource),
+            "actions": list(self.actions),
+            "roles": list(self.roles),
+            "environments": list(self.environments),
             "enabled": self.enabled,
             "priority": self.priority,
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
+            "attributes": (to_json_safe(self.attributes)),
         }
 
 
 # ---------------------------------------------------------------
 # Secret reference
 # ---------------------------------------------------------------
+
 
 @dataclass
 class SecretReference:
@@ -843,24 +584,16 @@ class SecretReference:
 
     provider: str
 
-    key: Optional[
-        str
-    ] = None
+    key: Optional[str] = None
 
-    version: Optional[
-        str
-    ] = None
+    version: Optional[str] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    reference_id: Optional[
-        str
-    ] = None
+    reference_id: Optional[str] = None
 
     def finalize(
         self,
@@ -878,12 +611,7 @@ class SecretReference:
         )
 
         if not self.reference_id:
-            self.reference_id = (
-                random_id(
-                    "security:"
-                    "secret-reference"
-                )
-            )
+            self.reference_id = random_id("security:secret-reference")
 
         return self
 
@@ -893,20 +621,12 @@ class SecretReference:
         self.finalize()
 
         return {
-            "reference_id": (
-                self.reference_id
-            ),
+            "reference_id": (self.reference_id),
             "name": self.name,
-            "provider": (
-                self.provider
-            ),
+            "provider": (self.provider),
             "key": self.key,
             "version": self.version,
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
+            "attributes": (to_json_safe(self.attributes)),
         }
 
 
@@ -914,93 +634,51 @@ class SecretReference:
 # Security audit record
 # ---------------------------------------------------------------
 
+
 @dataclass
 class SecurityAuditRecord:
     event: str
 
     outcome: str
 
-    principal_id: Optional[
-        str
-    ] = None
+    principal_id: Optional[str] = None
 
-    environment_id: Optional[
-        str
-    ] = None
+    environment_id: Optional[str] = None
 
-    resource: Optional[
-        str
-    ] = None
+    resource: Optional[str] = None
 
-    action: Optional[
-        str
-    ] = None
+    action: Optional[str] = None
 
-    reference_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    reference_ids: List[str] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    occurred_at: str = field(
-        default_factory=utc_now
-    )
+    occurred_at: str = field(default_factory=utc_now)
 
-    audit_id: Optional[
-        str
-    ] = None
+    audit_id: Optional[str] = None
 
     def finalize(
         self,
     ) -> "SecurityAuditRecord":
         required_string(
             self.event,
-            name=(
-                "security audit event"
-            ),
+            name=("security audit event"),
             maximum_length=256,
         )
 
-        if (
-            self.outcome
-            not in {
-                item.value
-                for item
-                in AuditOutcome
-            }
-        ):
-            raise ValueError(
-                "Unknown audit outcome: "
-                f"{self.outcome}"
-            )
+        if self.outcome not in {item.value for item in AuditOutcome}:
+            raise ValueError(f"Unknown audit outcome: {self.outcome}")
 
-        if (
-            self.environment_id
-            is not None
-        ):
-            environment_id(
-                self.environment_id
-            )
+        if self.environment_id is not None:
+            environment_id(self.environment_id)
 
-        self.reference_ids = (
-            unique_strings(
-                self.reference_ids
-            )
-        )
+        self.reference_ids = unique_strings(self.reference_ids)
 
         if not self.audit_id:
-            self.audit_id = (
-                random_id(
-                    "security:audit"
-                )
-            )
+            self.audit_id = random_id("security:audit")
 
         return self
 
@@ -1010,41 +688,24 @@ class SecurityAuditRecord:
         self.finalize()
 
         return {
-            "schema_version": (
-                SECURITY_SCHEMA_VERSION
-            ),
-            "audit_id": (
-                self.audit_id
-            ),
+            "schema_version": (SECURITY_SCHEMA_VERSION),
+            "audit_id": (self.audit_id),
             "event": self.event,
             "outcome": self.outcome,
-            "principal_id": (
-                self.principal_id
-            ),
-            "environment_id": (
-                self.environment_id
-            ),
-            "resource": (
-                self.resource
-            ),
+            "principal_id": (self.principal_id),
+            "environment_id": (self.environment_id),
+            "resource": (self.resource),
             "action": self.action,
-            "reference_ids": list(
-                self.reference_ids
-            ),
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
-            "occurred_at": (
-                self.occurred_at
-            ),
+            "reference_ids": list(self.reference_ids),
+            "attributes": (to_json_safe(self.attributes)),
+            "occurred_at": (self.occurred_at),
         }
 
 
 # ---------------------------------------------------------------
 # Security context
 # ---------------------------------------------------------------
+
 
 @dataclass
 class SecurityContext:
@@ -1059,67 +720,41 @@ class SecurityContext:
 
     environment_id: str
 
-    authentication: AuthenticationContext = (
-        field(
-            default_factory=(
-                AuthenticationContext
-            )
-        )
+    authentication: AuthenticationContext = field(
+        default_factory=(AuthenticationContext)
     )
 
-    authorization: Optional[
-        AuthorizationResult
-    ] = None
+    authorization: Optional[AuthorizationResult] = None
 
-    correlation_id: Optional[
-        str
-    ] = None
+    correlation_id: Optional[str] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    context_id: Optional[
-        str
-    ] = None
+    context_id: Optional[str] = None
 
     def finalize(
         self,
     ) -> "SecurityContext":
-        environment_id(
-            self.environment_id
-        )
+        environment_id(self.environment_id)
 
         self.authentication.finalize()
 
-        if (
-            self.authorization
-            is not None
-        ):
+        if self.authorization is not None:
             self.authorization.finalize()
 
         if not self.context_id:
-            self.context_id = (
-                random_id(
-                    "security:context"
-                )
-            )
+            self.context_id = random_id("security:context")
 
         return self
 
     @property
     def principal(
         self,
-    ) -> Optional[
-        SecurityPrincipal
-    ]:
-        return (
-            self.authentication.
-            principal
-        )
+    ) -> Optional[SecurityPrincipal]:
+        return self.authentication.principal
 
     def to_dict(
         self,
@@ -1127,33 +762,15 @@ class SecurityContext:
         self.finalize()
 
         return {
-            "schema_version": (
-                SECURITY_SCHEMA_VERSION
-            ),
-            "context_id": (
-                self.context_id
-            ),
-            "environment_id": (
-                self.environment_id
-            ),
-            "authentication": (
-                self.authentication.
-                to_dict()
-            ),
+            "schema_version": (SECURITY_SCHEMA_VERSION),
+            "context_id": (self.context_id),
+            "environment_id": (self.environment_id),
+            "authentication": (self.authentication.to_dict()),
             "authorization": (
-                self.authorization.
-                to_dict()
-                if self.authorization
-                else None
+                self.authorization.to_dict() if self.authorization else None
             ),
-            "correlation_id": (
-                self.correlation_id
-            ),
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
+            "correlation_id": (self.correlation_id),
+            "attributes": (to_json_safe(self.attributes)),
         }
 
 
@@ -1163,26 +780,18 @@ class SecurityContext:
 
 __all__ = [
     "SECURITY_SCHEMA_VERSION",
-
     "PrincipalType",
     "AuthenticationStatus",
     "AuthorizationDecision",
     "PolicyEffect",
     "AuditOutcome",
-
     "SecurityPrincipal",
     "AuthenticationContext",
-
     "Permission",
-
     "AuthorizationRequest",
     "AuthorizationResult",
-
     "SecurityPolicy",
-
     "SecretReference",
-
     "SecurityAuditRecord",
-
     "SecurityContext",
 ]

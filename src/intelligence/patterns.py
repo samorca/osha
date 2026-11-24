@@ -66,14 +66,10 @@ UUID_PATTERN = re.compile(
 )
 
 
-HEX_PATTERN = re.compile(
-    r"\b0x[0-9a-fA-F]+\b"
-)
+HEX_PATTERN = re.compile(r"\b0x[0-9a-fA-F]+\b")
 
 
-LONG_HEX_PATTERN = re.compile(
-    r"\b[0-9a-fA-F]{16,}\b"
-)
+LONG_HEX_PATTERN = re.compile(r"\b[0-9a-fA-F]{16,}\b")
 
 
 INTEGER_PATTERN = re.compile(
@@ -109,14 +105,10 @@ MAC_PATTERN = re.compile(
 )
 
 
-PATH_NUMBER_PATTERN = re.compile(
-    r"(?<=/)\d+(?=/|$)"
-)
+PATH_NUMBER_PATTERN = re.compile(r"(?<=/)\d+(?=/|$)")
 
 
-WHITESPACE_PATTERN = re.compile(
-    r"\s+"
-)
+WHITESPACE_PATTERN = re.compile(r"\s+")
 
 
 @dataclass(frozen=True)
@@ -130,13 +122,9 @@ class PatternConfig:
     before model integration.
     """
 
-    minimum_occurrences: int = (
-        DEFAULT_MINIMUM_OCCURRENCES
-    )
+    minimum_occurrences: int = DEFAULT_MINIMUM_OCCURRENCES
 
-    maximum_template_length: int = (
-        DEFAULT_MAX_TEMPLATE_LENGTH
-    )
+    maximum_template_length: int = DEFAULT_MAX_TEMPLATE_LENGTH
 
     include_singletons: bool = False
 
@@ -158,16 +146,10 @@ class PatternConfig:
         self,
     ) -> None:
         if self.minimum_occurrences < 1:
-            raise ValueError(
-                "minimum_occurrences "
-                "must be >= 1"
-            )
+            raise ValueError("minimum_occurrences must be >= 1")
 
         if self.maximum_template_length < 1:
-            raise ValueError(
-                "maximum_template_length "
-                "must be >= 1"
-            )
+            raise ValueError("maximum_template_length must be >= 1")
 
 
 @dataclass
@@ -201,9 +183,7 @@ class PatternObservation:
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
 
 @dataclass
@@ -224,33 +204,20 @@ class PatternStatistics:
 
     def to_dict(self) -> dict:
         return {
-            "observations": (
-                self.observations
-            ),
-            "patterns": (
-                self.patterns
-            ),
-            "repeated_patterns": (
-                self.repeated_patterns
-            ),
-            "singleton_patterns": (
-                self.singleton_patterns
-            ),
-            "environments": (
-                self.environments
-            ),
-            "providers": (
-                self.providers
-            ),
-            "signal_types": (
-                self.signal_types
-            ),
+            "observations": (self.observations),
+            "patterns": (self.patterns),
+            "repeated_patterns": (self.repeated_patterns),
+            "singleton_patterns": (self.singleton_patterns),
+            "environments": (self.environments),
+            "providers": (self.providers),
+            "signal_types": (self.signal_types),
         }
 
 
 # ---------------------------------------------------------------
 # Basic normalization
 # ---------------------------------------------------------------
+
 
 def optional_string(
     value: Any,
@@ -272,27 +239,18 @@ def parse_timestamp(
         return None
 
     if text.endswith("Z"):
-        text = (
-            text[:-1]
-            + "+00:00"
-        )
+        text = text[:-1] + "+00:00"
 
     try:
-        parsed = datetime.fromisoformat(
-            text
-        )
+        parsed = datetime.fromisoformat(text)
 
     except ValueError:
         return None
 
     if parsed.tzinfo is None:
-        parsed = parsed.replace(
-            tzinfo=timezone.utc
-        )
+        parsed = parsed.replace(tzinfo=timezone.utc)
 
-    return parsed.astimezone(
-        timezone.utc
-    )
+    return parsed.astimezone(timezone.utc)
 
 
 def stable_fingerprint(
@@ -309,9 +267,7 @@ def stable_fingerprint(
         default=str,
     ).encode("utf-8")
 
-    return hashlib.sha256(
-        encoded
-    ).hexdigest()
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def normalize_ip_tokens(
@@ -335,65 +291,35 @@ def normalize_ip_tokens(
 
         candidate = token
 
-        while (
-            candidate
-            and candidate[0]
-            in "([{<\"'"
-        ):
+        while candidate and candidate[0] in "([{<\"'":
             prefix += candidate[0]
 
             candidate = candidate[1:]
 
-        while (
-            candidate
-            and candidate[-1]
-            in ")]}>\"',;"
-        ):
-            suffix = (
-                candidate[-1]
-                + suffix
-            )
+        while candidate and candidate[-1] in ")]}>\"',;":
+            suffix = candidate[-1] + suffix
 
             candidate = candidate[:-1]
 
         # Handle common host:port forms.
         address_candidate = candidate
 
-        if (
-            candidate.count(":") == 1
-            and "." in candidate
-        ):
-            possible_ip, possible_port = (
-                candidate.rsplit(
-                    ":",
-                    1,
-                )
+        if candidate.count(":") == 1 and "." in candidate:
+            possible_ip, possible_port = candidate.rsplit(
+                ":",
+                1,
             )
 
             if possible_port.isdigit():
-                address_candidate = (
-                    possible_ip
-                )
+                address_candidate = possible_ip
 
         try:
-            ipaddress.ip_address(
-                address_candidate
-            )
+            ipaddress.ip_address(address_candidate)
 
-            if (
-                address_candidate
-                != candidate
-            ):
-                port = candidate[
-                    len(
-                        address_candidate
-                    ):
-                ]
+            if address_candidate != candidate:
+                port = candidate[len(address_candidate) :]
 
-                candidate = (
-                    "<IP>"
-                    + port
-                )
+                candidate = "<IP>" + port
 
             else:
                 candidate = "<IP>"
@@ -401,11 +327,7 @@ def normalize_ip_tokens(
         except ValueError:
             pass
 
-        output.append(
-            prefix
-            + candidate
-            + suffix
-        )
+        output.append(prefix + candidate + suffix)
 
     return " ".join(output)
 
@@ -429,9 +351,7 @@ def normalize_log_template(
         text = text.lower()
 
     if config.mask_ip_addresses:
-        text = normalize_ip_tokens(
-            text
-        )
+        text = normalize_ip_tokens(text)
 
     if config.mask_uuids:
         text = UUID_PATTERN.sub(
@@ -483,17 +403,8 @@ def normalize_log_template(
         text,
     ).strip()
 
-    if (
-        len(text)
-        > config.maximum_template_length
-    ):
-        text = (
-            text[
-                :config.
-                maximum_template_length
-            ]
-            + "[TRUNCATED]"
-        )
+    if len(text) > config.maximum_template_length:
+        text = text[: config.maximum_template_length] + "[TRUNCATED]"
 
     return text
 
@@ -501,16 +412,12 @@ def normalize_log_template(
 def normalized_signal_name(
     telemetry: TelemetryRecord,
 ) -> str:
-    name = optional_string(
-        telemetry.signal.signal_name
-    )
+    name = optional_string(telemetry.signal.signal_name)
 
     if name:
         return name.lower()
 
-    return (
-        telemetry.signal.signal_type
-    )
+    return telemetry.signal.signal_type
 
 
 def selected_state(
@@ -521,10 +428,7 @@ def selected_state(
     if signal.value is not None:
         return signal.value
 
-    attributes = (
-        signal.attributes
-        or {}
-    )
+    attributes = signal.attributes or {}
 
     for key in (
         "state",
@@ -537,9 +441,7 @@ def selected_state(
         "enabled",
     ):
         if key in attributes:
-            return attributes.get(
-                key
-            )
+            return attributes.get(key)
 
     return None
 
@@ -548,16 +450,13 @@ def selected_state(
 # Observation builders
 # ---------------------------------------------------------------
 
+
 def log_observation(
     telemetry: TelemetryRecord,
     *,
     config: PatternConfig,
-) -> Optional[
-    PatternObservation
-]:
-    message = optional_string(
-        telemetry.signal.message
-    )
+) -> Optional[PatternObservation]:
+    message = optional_string(telemetry.signal.message)
 
     if message is None:
         return None
@@ -573,16 +472,9 @@ def log_observation(
     fingerprint = stable_fingerprint(
         {
             "pattern_type": "log",
-            "provider": (
-                telemetry.resource.provider
-            ),
-            "service": (
-                telemetry.resource.service
-            ),
-            "resource_type": (
-                telemetry.resource.
-                resource_type
-            ),
+            "provider": (telemetry.resource.provider),
+            "service": (telemetry.resource.service),
+            "resource_type": (telemetry.resource.resource_type),
             "template": template,
         }
     )
@@ -595,37 +487,17 @@ def log_observation(
     return PatternObservation(
         fingerprint=fingerprint,
         pattern_type="log",
-        name=template[
-            :160
-        ],
+        name=template[:160],
         template=template,
-        record_id=(
-            telemetry.record_id
-        ),
-        resource_id=(
-            telemetry.resource.
-            effective_id()
-        ),
-        environment_id=(
-            telemetry.resource.
-            environment_id
-        ),
-        provider=(
-            telemetry.resource.provider
-        ),
-        signal_type=(
-            telemetry.signal.signal_type
-        ),
-        timestamp=(
-            telemetry.signal.timestamp
-        ),
+        record_id=(telemetry.record_id),
+        resource_id=(telemetry.resource.effective_id()),
+        environment_id=(telemetry.resource.environment_id),
+        provider=(telemetry.resource.provider),
+        signal_type=(telemetry.signal.signal_type),
+        timestamp=(telemetry.signal.timestamp),
         attributes={
-            "severity": (
-                telemetry.signal.severity
-            ),
-            "service": (
-                telemetry.resource.service
-            ),
+            "severity": (telemetry.signal.severity),
+            "service": (telemetry.resource.service),
         },
     )
 
@@ -634,54 +506,32 @@ def metric_observation(
     telemetry: TelemetryRecord,
     *,
     config: PatternConfig,
-) -> Optional[
-    PatternObservation
-]:
-    signal_name = optional_string(
-        telemetry.signal.signal_name
-    )
+) -> Optional[PatternObservation]:
+    signal_name = optional_string(telemetry.signal.signal_name)
 
     if signal_name is None:
         return None
 
     body: Dict[str, Any] = {
         "pattern_type": "metric",
-        "provider": (
-            telemetry.resource.provider
-        ),
-        "resource_type": (
-            telemetry.resource.
-            resource_type
-        ),
-        "metric_name": (
-            signal_name.lower()
-        ),
-        "unit": (
-            telemetry.signal.unit
-        ),
+        "provider": (telemetry.resource.provider),
+        "resource_type": (telemetry.resource.resource_type),
+        "metric_name": (signal_name.lower()),
+        "unit": (telemetry.signal.unit),
     }
 
     if config.include_metric_values:
-        body["value"] = (
-            telemetry.signal.value
-        )
+        body["value"] = telemetry.signal.value
 
-    fingerprint = stable_fingerprint(
-        body
-    )
+    fingerprint = stable_fingerprint(body)
 
     telemetry.finalize()
 
     if not telemetry.record_id:
         return None
 
-    template = (
-        f"{signal_name}"
-        + (
-            f" [{telemetry.signal.unit}]"
-            if telemetry.signal.unit
-            else ""
-        )
+    template = f"{signal_name}" + (
+        f" [{telemetry.signal.unit}]" if telemetry.signal.unit else ""
     )
 
     return PatternObservation(
@@ -689,71 +539,36 @@ def metric_observation(
         pattern_type="metric",
         name=signal_name,
         template=template,
-        record_id=(
-            telemetry.record_id
-        ),
-        resource_id=(
-            telemetry.resource.
-            effective_id()
-        ),
-        environment_id=(
-            telemetry.resource.
-            environment_id
-        ),
-        provider=(
-            telemetry.resource.provider
-        ),
-        signal_type=(
-            telemetry.signal.signal_type
-        ),
-        timestamp=(
-            telemetry.signal.timestamp
-        ),
+        record_id=(telemetry.record_id),
+        resource_id=(telemetry.resource.effective_id()),
+        environment_id=(telemetry.resource.environment_id),
+        provider=(telemetry.resource.provider),
+        signal_type=(telemetry.signal.signal_type),
+        timestamp=(telemetry.signal.timestamp),
         attributes={
-            "unit": (
-                telemetry.signal.unit
-            ),
+            "unit": (telemetry.signal.unit),
         },
     )
 
 
 def state_observation(
     telemetry: TelemetryRecord,
-) -> Optional[
-    PatternObservation
-]:
-    state = selected_state(
-        telemetry
-    )
+) -> Optional[PatternObservation]:
+    state = selected_state(telemetry)
 
-    signal_name = (
-        normalized_signal_name(
-            telemetry
-        )
-    )
+    signal_name = normalized_signal_name(telemetry)
 
     if state is None:
         state_text = "<UNKNOWN>"
     else:
-        state_text = str(
-            state
-        ).strip().lower()
+        state_text = str(state).strip().lower()
 
     fingerprint = stable_fingerprint(
         {
-            "pattern_type": (
-                "state"
-            ),
-            "provider": (
-                telemetry.resource.provider
-            ),
-            "resource_type": (
-                telemetry.resource.
-                resource_type
-            ),
-            "signal_name": (
-                signal_name
-            ),
+            "pattern_type": ("state"),
+            "provider": (telemetry.resource.provider),
+            "resource_type": (telemetry.resource.resource_type),
+            "signal_name": (signal_name),
             "state": state_text,
         }
     )
@@ -763,75 +578,40 @@ def state_observation(
     if not telemetry.record_id:
         return None
 
-    template = (
-        f"{signal_name}:"
-        f"{state_text}"
-    )
+    template = f"{signal_name}:{state_text}"
 
     return PatternObservation(
         fingerprint=fingerprint,
         pattern_type="state",
         name=template,
         template=template,
-        record_id=(
-            telemetry.record_id
-        ),
-        resource_id=(
-            telemetry.resource.
-            effective_id()
-        ),
-        environment_id=(
-            telemetry.resource.
-            environment_id
-        ),
-        provider=(
-            telemetry.resource.provider
-        ),
-        signal_type=(
-            telemetry.signal.signal_type
-        ),
-        timestamp=(
-            telemetry.signal.timestamp
-        ),
+        record_id=(telemetry.record_id),
+        resource_id=(telemetry.resource.effective_id()),
+        environment_id=(telemetry.resource.environment_id),
+        provider=(telemetry.resource.provider),
+        signal_type=(telemetry.signal.signal_type),
+        timestamp=(telemetry.signal.timestamp),
         attributes={
             "state": state,
-            "severity": (
-                telemetry.signal.severity
-            ),
+            "severity": (telemetry.signal.severity),
         },
     )
 
 
 def named_signal_observation(
     telemetry: TelemetryRecord,
-) -> Optional[
-    PatternObservation
-]:
-    signal_name = (
-        normalized_signal_name(
-            telemetry
-        )
-    )
+) -> Optional[PatternObservation]:
+    signal_name = normalized_signal_name(telemetry)
 
     if not signal_name:
         return None
 
     fingerprint = stable_fingerprint(
         {
-            "pattern_type": (
-                telemetry.signal.
-                signal_type
-            ),
-            "provider": (
-                telemetry.resource.provider
-            ),
-            "resource_type": (
-                telemetry.resource.
-                resource_type
-            ),
-            "signal_name": (
-                signal_name
-            ),
+            "pattern_type": (telemetry.signal.signal_type),
+            "provider": (telemetry.resource.provider),
+            "resource_type": (telemetry.resource.resource_type),
+            "signal_name": (signal_name),
         }
     )
 
@@ -842,35 +622,17 @@ def named_signal_observation(
 
     return PatternObservation(
         fingerprint=fingerprint,
-        pattern_type=(
-            telemetry.signal.signal_type
-        ),
+        pattern_type=(telemetry.signal.signal_type),
         name=signal_name,
         template=signal_name,
-        record_id=(
-            telemetry.record_id
-        ),
-        resource_id=(
-            telemetry.resource.
-            effective_id()
-        ),
-        environment_id=(
-            telemetry.resource.
-            environment_id
-        ),
-        provider=(
-            telemetry.resource.provider
-        ),
-        signal_type=(
-            telemetry.signal.signal_type
-        ),
-        timestamp=(
-            telemetry.signal.timestamp
-        ),
+        record_id=(telemetry.record_id),
+        resource_id=(telemetry.resource.effective_id()),
+        environment_id=(telemetry.resource.environment_id),
+        provider=(telemetry.resource.provider),
+        signal_type=(telemetry.signal.signal_type),
+        timestamp=(telemetry.signal.timestamp),
         attributes={
-            "severity": (
-                telemetry.signal.severity
-            ),
+            "severity": (telemetry.signal.severity),
         },
     )
 
@@ -878,49 +640,30 @@ def named_signal_observation(
 def observation_from_record(
     telemetry: TelemetryRecord,
     *,
-    config: Optional[
-        PatternConfig
-    ] = None,
-) -> Optional[
-    PatternObservation
-]:
-    configuration = (
-        config
-        or PatternConfig()
-    )
+    config: Optional[PatternConfig] = None,
+) -> Optional[PatternObservation]:
+    configuration = config or PatternConfig()
 
-    signal_type = (
-        telemetry.signal.signal_type
-    )
+    signal_type = telemetry.signal.signal_type
 
-    if (
-        signal_type
-        == SignalType.LOG.value
-    ):
+    if signal_type == SignalType.LOG.value:
         return log_observation(
             telemetry,
             config=configuration,
         )
 
-    if (
-        signal_type
-        == SignalType.METRIC.value
-    ):
+    if signal_type == SignalType.METRIC.value:
         return metric_observation(
             telemetry,
             config=configuration,
         )
 
     if signal_type in {
-        SignalType.
-        RESOURCE_STATE.value,
-        SignalType.
-        STATE_CHANGE.value,
+        SignalType.RESOURCE_STATE.value,
+        SignalType.STATE_CHANGE.value,
         SignalType.HEALTH.value,
     }:
-        return state_observation(
-            telemetry
-        )
+        return state_observation(telemetry)
 
     if signal_type in {
         SignalType.EVENT.value,
@@ -928,25 +671,18 @@ def observation_from_record(
         SignalType.SECURITY.value,
         SignalType.CONFIGURATION.value,
     }:
-        return (
-            named_signal_observation(
-                telemetry
-            )
-        )
+        return named_signal_observation(telemetry)
 
-    return named_signal_observation(
-        telemetry
-    )
+    return named_signal_observation(telemetry)
 
 
 # ---------------------------------------------------------------
 # Pattern construction
 # ---------------------------------------------------------------
 
+
 def observation_time_range(
-    observations: Sequence[
-        PatternObservation
-    ],
+    observations: Sequence[PatternObservation],
 ) -> Tuple[
     Optional[str],
     Optional[str],
@@ -954,9 +690,7 @@ def observation_time_range(
     ordered = []
 
     for observation in observations:
-        timestamp = parse_timestamp(
-            observation.timestamp
-        )
+        timestamp = parse_timestamp(observation.timestamp)
 
         if timestamp is not None:
             ordered.append(
@@ -972,9 +706,7 @@ def observation_time_range(
             None,
         )
 
-    ordered.sort(
-        key=lambda item: item[0]
-    )
+    ordered.sort(key=lambda item: item[0])
 
     return (
         ordered[0][1],
@@ -1000,53 +732,26 @@ def novelty_from_count(
     if count <= 0:
         return 1.0
 
-    return checked_score(
-        1.0 / float(count)
-    )
+    return checked_score(1.0 / float(count))
 
 
 def pattern_from_observations(
-    observations: Sequence[
-        PatternObservation
-    ],
+    observations: Sequence[PatternObservation],
 ) -> Pattern:
     if not observations:
-        raise ValueError(
-            "Cannot create Pattern from "
-            "an empty observation set"
-        )
+        raise ValueError("Cannot create Pattern from an empty observation set")
 
     first = observations[0]
 
-    first_seen, last_seen = (
-        observation_time_range(
-            observations
-        )
-    )
+    first_seen, last_seen = observation_time_range(observations)
 
-    providers = sorted(
-        {
-            item.provider
-            for item in observations
-        }
-    )
+    providers = sorted({item.provider for item in observations})
 
-    signal_types = sorted(
-        {
-            item.signal_type
-            for item in observations
-        }
-    )
+    signal_types = sorted({item.signal_type for item in observations})
 
-    record_ids = [
-        item.record_id
-        for item in observations
-    ]
+    record_ids = [item.record_id for item in observations]
 
-    resource_ids = [
-        item.resource_id
-        for item in observations
-    ]
+    resource_ids = [item.resource_id for item in observations]
 
     severity_counts = Counter(
         str(
@@ -1059,41 +764,21 @@ def pattern_from_observations(
     )
 
     pattern = Pattern(
-        pattern_type=(
-            first.pattern_type
-        ),
+        pattern_type=(first.pattern_type),
         name=first.name,
-        fingerprint=(
-            first.fingerprint
-        ),
-        environment_id=(
-            first.environment_id
-        ),
-        occurrence_count=(
-            len(observations)
-        ),
+        fingerprint=(first.fingerprint),
+        environment_id=(first.environment_id),
+        occurrence_count=(len(observations)),
         record_ids=record_ids,
         resource_ids=resource_ids,
         providers=providers,
-        signal_types=(
-            signal_types
-        ),
+        signal_types=(signal_types),
         first_seen=first_seen,
         last_seen=last_seen,
-        novelty_score=(
-            novelty_from_count(
-                len(observations)
-            )
-        ),
+        novelty_score=(novelty_from_count(len(observations))),
         attributes={
-            "template": (
-                first.template
-            ),
-            "severity_counts": (
-                dict(
-                    severity_counts
-                )
-            ),
+            "template": (first.template),
+            "severity_counts": (dict(severity_counts)),
         },
     )
 
@@ -1101,16 +786,10 @@ def pattern_from_observations(
 
 
 def extract_patterns(
-    records: Iterable[
-        TelemetryRecord
-    ],
+    records: Iterable[TelemetryRecord],
     *,
-    config: Optional[
-        PatternConfig
-    ] = None,
-) -> List[
-    Pattern
-]:
+    config: Optional[PatternConfig] = None,
+) -> List[Pattern]:
     """
     Extract deterministic patterns from
     canonical telemetry.
@@ -1118,26 +797,19 @@ def extract_patterns(
     Patterns are grouped inside each environment.
     """
 
-    configuration = (
-        config
-        or PatternConfig()
-    )
+    configuration = config or PatternConfig()
 
     configuration.validate()
 
     buckets: Dict[
         Tuple[str, str],
-        List[
-            PatternObservation
-        ],
+        List[PatternObservation],
     ] = defaultdict(list)
 
     for telemetry in records:
-        observation = (
-            observation_from_record(
-                telemetry,
-                config=configuration,
-            )
+        observation = observation_from_record(
+            telemetry,
+            config=configuration,
         )
 
         if observation is None:
@@ -1148,33 +820,20 @@ def extract_patterns(
             observation.fingerprint,
         )
 
-        buckets[
-            bucket_key
-        ].append(
-            observation
-        )
+        buckets[bucket_key].append(observation)
 
     output = []
 
     for observations in buckets.values():
-        count = len(
-            observations
-        )
+        count = len(observations)
 
         if (
-            not configuration.
-            include_singletons
-            and count
-            < configuration.
-            minimum_occurrences
+            not configuration.include_singletons
+            and count < configuration.minimum_occurrences
         ):
             continue
 
-        output.append(
-            pattern_from_observations(
-                observations
-            )
-        )
+        output.append(pattern_from_observations(observations))
 
     output.sort(
         key=lambda pattern: (
@@ -1191,27 +850,18 @@ def extract_patterns(
 # Correlation-group pattern extraction
 # ---------------------------------------------------------------
 
+
 def records_for_group(
     group: CorrelationGroup,
     registry: ResourceRegistry,
-) -> List[
-    TelemetryRecord
-]:
+) -> List[TelemetryRecord]:
     output = []
 
-    for record_identifier in (
-        group.record_ids
-    ):
-        telemetry = (
-            registry.get_record(
-                record_identifier
-            )
-        )
+    for record_identifier in group.record_ids:
+        telemetry = registry.get_record(record_identifier)
 
         if telemetry is not None:
-            output.append(
-                telemetry
-            )
+            output.append(telemetry)
 
     return output
 
@@ -1220,12 +870,8 @@ def patterns_for_group(
     group: CorrelationGroup,
     registry: ResourceRegistry,
     *,
-    config: Optional[
-        PatternConfig
-    ] = None,
-) -> List[
-    Pattern
-]:
+    config: Optional[PatternConfig] = None,
+) -> List[Pattern]:
     """
     Discover patterns specifically within one
     correlation group.
@@ -1236,11 +882,8 @@ def patterns_for_group(
         registry,
     )
 
-    configuration = (
-        config
-        or PatternConfig(
-            include_singletons=True,
-        )
+    configuration = config or PatternConfig(
+        include_singletons=True,
     )
 
     return extract_patterns(
@@ -1252,6 +895,7 @@ def patterns_for_group(
 # ---------------------------------------------------------------
 # Cross-group sequence patterns
 # ---------------------------------------------------------------
+
 
 def group_signature(
     group: CorrelationGroup,
@@ -1265,18 +909,10 @@ def group_signature(
     """
 
     body = {
-        "providers": sorted(
-            group.providers
-        ),
-        "signal_types": sorted(
-            group.signal_types
-        ),
-        "record_count": len(
-            group.record_ids
-        ),
-        "resource_count": len(
-            group.resource_ids
-        ),
+        "providers": sorted(group.providers),
+        "signal_types": sorted(group.signal_types),
+        "record_count": len(group.record_ids),
+        "resource_count": len(group.resource_ids),
         "decision_counts": (
             group.attributes.get(
                 "decision_counts",
@@ -1312,18 +948,12 @@ def group_signature(
         ),
     }
 
-    return stable_fingerprint(
-        body
-    )
+    return stable_fingerprint(body)
 
 
 def extract_group_patterns(
-    groups: Iterable[
-        CorrelationGroup
-    ],
-) -> List[
-    Pattern
-]:
+    groups: Iterable[CorrelationGroup],
+) -> List[Pattern]:
     """
     Find repeated correlated-episode structures.
 
@@ -1333,17 +963,11 @@ def extract_group_patterns(
 
     buckets: Dict[
         Tuple[str, str],
-        List[
-            CorrelationGroup
-        ],
+        List[CorrelationGroup],
     ] = defaultdict(list)
 
     for group in groups:
-        signature = (
-            group_signature(
-                group
-            )
-        )
+        signature = group_signature(group)
 
         buckets[
             (
@@ -1361,12 +985,7 @@ def extract_group_patterns(
         ),
         matching_groups,
     ) in buckets.items():
-        group_ids = [
-            group.group_id
-            for group
-            in matching_groups
-            if group.group_id
-        ]
+        group_ids = [group.group_id for group in matching_groups if group.group_id]
 
         resource_ids = []
 
@@ -1378,28 +997,16 @@ def extract_group_patterns(
 
         end_values = []
 
-        for group in (
-            matching_groups
-        ):
-            resource_ids.extend(
-                group.resource_ids
-            )
+        for group in matching_groups:
+            resource_ids.extend(group.resource_ids)
 
-            providers.extend(
-                group.providers
-            )
+            providers.extend(group.providers)
 
-            signal_types.extend(
-                group.signal_types
-            )
+            signal_types.extend(group.signal_types)
 
-            start_values.append(
-                group.start_timestamp
-            )
+            start_values.append(group.start_timestamp)
 
-            end_values.append(
-                group.end_timestamp
-            )
+            end_values.append(group.end_timestamp)
 
         starts = [
             (
@@ -1407,10 +1014,7 @@ def extract_group_patterns(
                 value,
             )
             for value in start_values
-            if parse_timestamp(
-                value
-            )
-            is not None
+            if parse_timestamp(value) is not None
         ]
 
         ends = [
@@ -1419,72 +1023,32 @@ def extract_group_patterns(
                 value,
             )
             for value in end_values
-            if parse_timestamp(
-                value
-            )
-            is not None
+            if parse_timestamp(value) is not None
         ]
 
-        starts.sort(
-            key=lambda item: item[0]
-        )
+        starts.sort(key=lambda item: item[0])
 
-        ends.sort(
-            key=lambda item: item[0]
-        )
+        ends.sort(key=lambda item: item[0])
 
         pattern = Pattern(
-            pattern_type=(
-                "correlation_group"
-            ),
-            name=(
-                "Repeated correlation "
-                "group structure"
-            ),
+            pattern_type=("correlation_group"),
+            name=("Repeated correlation group structure"),
             fingerprint=signature,
-            environment_id=(
-                environment_id
-            ),
-            occurrence_count=(
-                len(
-                    matching_groups
-                )
-            ),
+            environment_id=(environment_id),
+            occurrence_count=(len(matching_groups)),
             record_ids=[],
-            resource_ids=(
-                resource_ids
-            ),
+            resource_ids=(resource_ids),
             providers=providers,
-            signal_types=(
-                signal_types
-            ),
-            first_seen=(
-                starts[0][1]
-                if starts
-                else None
-            ),
-            last_seen=(
-                ends[-1][1]
-                if ends
-                else None
-            ),
-            novelty_score=(
-                novelty_from_count(
-                    len(
-                        matching_groups
-                    )
-                )
-            ),
+            signal_types=(signal_types),
+            first_seen=(starts[0][1] if starts else None),
+            last_seen=(ends[-1][1] if ends else None),
+            novelty_score=(novelty_from_count(len(matching_groups))),
             attributes={
-                "correlation_group_ids": (
-                    group_ids
-                ),
+                "correlation_group_ids": (group_ids),
             },
         )
 
-        patterns.append(
-            pattern.finalize()
-        )
+        patterns.append(pattern.finalize())
 
     patterns.sort(
         key=lambda pattern: (
@@ -1500,10 +1064,9 @@ def extract_group_patterns(
 # Pattern lookup and statistics
 # ---------------------------------------------------------------
 
+
 def patterns_by_resource(
-    patterns: Iterable[
-        Pattern
-    ],
+    patterns: Iterable[Pattern],
 ) -> Dict[
     str,
     List[Pattern],
@@ -1514,20 +1077,14 @@ def patterns_by_resource(
     ] = defaultdict(list)
 
     for pattern in patterns:
-        for resource_id in (
-            pattern.resource_ids
-        ):
-            output[
-                resource_id
-            ].append(pattern)
+        for resource_id in pattern.resource_ids:
+            output[resource_id].append(pattern)
 
     return dict(output)
 
 
 def patterns_by_type(
-    patterns: Iterable[
-        Pattern
-    ],
+    patterns: Iterable[Pattern],
 ) -> Dict[
     str,
     List[Pattern],
@@ -1538,84 +1095,37 @@ def patterns_by_type(
     ] = defaultdict(list)
 
     for pattern in patterns:
-        output[
-            pattern.pattern_type
-        ].append(pattern)
+        output[pattern.pattern_type].append(pattern)
 
     return dict(output)
 
 
 def pattern_statistics(
-    records: Iterable[
-        TelemetryRecord
-    ],
-    patterns: Iterable[
-        Pattern
-    ],
+    records: Iterable[TelemetryRecord],
+    patterns: Iterable[Pattern],
 ) -> PatternStatistics:
-    records_list = list(
-        records
-    )
+    records_list = list(records)
 
-    patterns_list = list(
-        patterns
-    )
+    patterns_list = list(patterns)
 
-    providers = {
-        telemetry.resource.provider
-        for telemetry
-        in records_list
-    }
+    providers = {telemetry.resource.provider for telemetry in records_list}
 
-    environments = {
-        telemetry.resource.
-        environment_id
-        for telemetry
-        in records_list
-    }
+    environments = {telemetry.resource.environment_id for telemetry in records_list}
 
-    signal_types = {
-        telemetry.signal.signal_type
-        for telemetry
-        in records_list
-    }
+    signal_types = {telemetry.signal.signal_type for telemetry in records_list}
 
-    repeated = sum(
-        1
-        for pattern in patterns_list
-        if pattern.occurrence_count
-        > 1
-    )
+    repeated = sum(1 for pattern in patterns_list if pattern.occurrence_count > 1)
 
-    singletons = sum(
-        1
-        for pattern in patterns_list
-        if pattern.occurrence_count
-        == 1
-    )
+    singletons = sum(1 for pattern in patterns_list if pattern.occurrence_count == 1)
 
     return PatternStatistics(
-        observations=len(
-            records_list
-        ),
-        patterns=len(
-            patterns_list
-        ),
-        repeated_patterns=(
-            repeated
-        ),
-        singleton_patterns=(
-            singletons
-        ),
-        environments=len(
-            environments
-        ),
-        providers=len(
-            providers
-        ),
-        signal_types=len(
-            signal_types
-        ),
+        observations=len(records_list),
+        patterns=len(patterns_list),
+        repeated_patterns=(repeated),
+        singleton_patterns=(singletons),
+        environments=len(environments),
+        providers=len(providers),
+        signal_types=len(signal_types),
     )
 
 
@@ -1628,14 +1138,9 @@ class PatternEngine:
     def __init__(
         self,
         *,
-        config: Optional[
-            PatternConfig
-        ] = None,
+        config: Optional[PatternConfig] = None,
     ) -> None:
-        self.config = (
-            config
-            or PatternConfig()
-        )
+        self.config = config or PatternConfig()
 
         self.config.validate()
 
@@ -1646,9 +1151,7 @@ class PatternEngine:
 
     def analyze(
         self,
-        records: Iterable[
-            TelemetryRecord
-        ],
+        records: Iterable[TelemetryRecord],
     ) -> List[Pattern]:
         discovered = extract_patterns(
             records,
@@ -1659,31 +1162,21 @@ class PatternEngine:
             pattern.finalize()
 
             if pattern.pattern_id:
-                self._patterns[
-                    pattern.pattern_id
-                ] = pattern
+                self._patterns[pattern.pattern_id] = pattern
 
         return discovered
 
     def analyze_groups(
         self,
-        groups: Iterable[
-            CorrelationGroup
-        ],
+        groups: Iterable[CorrelationGroup],
     ) -> List[Pattern]:
-        discovered = (
-            extract_group_patterns(
-                groups
-            )
-        )
+        discovered = extract_group_patterns(groups)
 
         for pattern in discovered:
             pattern.finalize()
 
             if pattern.pattern_id:
-                self._patterns[
-                    pattern.pattern_id
-                ] = pattern
+                self._patterns[pattern.pattern_id] = pattern
 
         return discovered
 
@@ -1693,8 +1186,7 @@ class PatternEngine:
         return sorted(
             self._patterns.values(),
             key=lambda pattern: (
-                -pattern.
-                occurrence_count,
+                -pattern.occurrence_count,
                 pattern.pattern_type,
             ),
         )
@@ -1703,9 +1195,7 @@ class PatternEngine:
         self,
         pattern_id: str,
     ) -> Optional[Pattern]:
-        return self._patterns.get(
-            pattern_id
-        )
+        return self._patterns.get(pattern_id)
 
     def clear(
         self,

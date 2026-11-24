@@ -97,6 +97,7 @@ from src.ai.schema import (
 # AI pipeline
 # ---------------------------------------------------------------
 
+
 class AIPipeline:
     """
     Public facade for OSHA AI model serving.
@@ -116,71 +117,39 @@ class AIPipeline:
     def __init__(
         self,
         *,
-        config: Optional[
-            AIConfig
-        ] = None,
-        registry: Optional[
-            AIModelRegistry
-        ] = None,
-        loader: Optional[
-            AIModelLoader
-        ] = None,
-        router: Optional[
-            AIModelRouter
-        ] = None,
-        inference: Optional[
-            AIInferenceEngine
-        ] = None,
-        health: Optional[
-            AIHealthChecker
-        ] = None,
+        config: Optional[AIConfig] = None,
+        registry: Optional[AIModelRegistry] = None,
+        loader: Optional[AIModelLoader] = None,
+        router: Optional[AIModelRouter] = None,
+        inference: Optional[AIInferenceEngine] = None,
+        health: Optional[AIHealthChecker] = None,
     ) -> None:
-        self.config = (
-            config
-            or AIConfig()
-        )
+        self.config = config or AIConfig()
 
         self.config.validate()
 
-        self.registry = (
-            registry
-            or AIModelRegistry(
-                config=self.config
-            )
+        self.registry = registry or AIModelRegistry(config=self.config)
+
+        self.loader = loader or AIModelLoader(
+            config=self.config,
+            registry=self.registry,
         )
 
-        self.loader = (
-            loader
-            or AIModelLoader(
-                config=self.config,
-                registry=self.registry,
-            )
+        self.router = router or AIModelRouter(
+            config=self.config,
+            registry=self.registry,
         )
 
-        self.router = (
-            router
-            or AIModelRouter(
-                config=self.config,
-                registry=self.registry,
-            )
+        self.inference = inference or AIInferenceEngine(
+            config=self.config,
+            registry=self.registry,
+            router=self.router,
         )
 
-        self.inference = (
-            inference
-            or AIInferenceEngine(
-                config=self.config,
-                registry=self.registry,
-                router=self.router,
-            )
-        )
-
-        self.health = (
-            health
-            or AIHealthChecker(
-                config=self.config,
-                registry=self.registry,
-                loader=self.loader,
-            )
+        self.health = health or AIHealthChecker(
+            config=self.config,
+            registry=self.registry,
+            loader=self.loader,
         )
 
         self._started = False
@@ -193,9 +162,7 @@ class AIPipeline:
         self,
     ) -> None:
         if not self.config.enabled:
-            raise AIConfigurationError(
-                "AI serving is disabled."
-            )
+            raise AIConfigurationError("AI serving is disabled.")
 
     def _require_family(
         self,
@@ -203,16 +170,11 @@ class AIPipeline:
     ) -> str:
         self._require_enabled()
 
-        normalized = str(
-            family
-        ).strip().lower()
+        normalized = str(family).strip().lower()
 
-        if not self.config.family_allowed(
-            normalized
-        ):
+        if not self.config.family_allowed(normalized):
             raise AIConfigurationError(
-                "AI model family is not "
-                "enabled.",
+                "AI model family is not enabled.",
                 details={
                     "family": normalized,
                 },
@@ -237,59 +199,31 @@ class AIPipeline:
 
         self._require_enabled()
 
-        paths = (
-            self.config.
-            paths.resolved()
-        )
+        paths = self.config.paths.resolved()
 
         try:
-            Path(
-                paths[
-                    "cache"
-                ]
-            ).mkdir(
+            Path(paths["cache"]).mkdir(
                 parents=True,
                 exist_ok=True,
             )
 
-            Path(
-                paths[
-                    "logs"
-                ]
-            ).mkdir(
+            Path(paths["logs"]).mkdir(
                 parents=True,
                 exist_ok=True,
             )
 
         except OSError as exc:
             raise AIConfigurationError(
-                "AI runtime directories "
-                "could not be initialized.",
+                "AI runtime directories could not be initialized.",
                 details={
-                    "error_type": (
-                        type(exc).__name__
-                    ),
+                    "error_type": (type(exc).__name__),
                 },
             ) from exc
 
         return {
-            "models": (
-                paths[
-                    "models"
-                ]
-            ),
-
-            "cache": (
-                paths[
-                    "cache"
-                ]
-            ),
-
-            "logs": (
-                paths[
-                    "logs"
-                ]
-            ),
+            "models": (paths["models"]),
+            "cache": (paths["cache"]),
+            "logs": (paths["logs"]),
         }
 
     # ---------------------------------------------------------
@@ -303,9 +237,7 @@ class AIPipeline:
     ) -> AIModelDiscoveryResult:
         self._require_enabled()
 
-        return self.loader.discover(
-            fail_fast=fail_fast
-        )
+        return self.loader.discover(fail_fast=fail_fast)
 
     # ---------------------------------------------------------
     # Discover + register
@@ -316,22 +248,17 @@ class AIPipeline:
         *,
         fail_fast: bool = False,
         replace: bool = False,
-        eager_load: Optional[
-            bool
-        ] = None,
+        eager_load: Optional[bool] = None,
     ) -> AIModelDiscoveryResult:
         self._require_enabled()
 
         (
             result,
             _entries,
-        ) = (
-            self.loader.
-            discover_and_register(
-                fail_fast=fail_fast,
-                replace=replace,
-                eager_load=eager_load,
-            )
+        ) = self.loader.discover_and_register(
+            fail_fast=fail_fast,
+            replace=replace,
+            eager_load=eager_load,
         )
 
         return result
@@ -410,26 +337,16 @@ class AIPipeline:
     def models(
         self,
         *,
-        family: Optional[
-            str
-        ] = None,
-    ) -> List[
-        AIModelDescriptor
-    ]:
+        family: Optional[str] = None,
+    ) -> List[AIModelDescriptor]:
         self._require_enabled()
 
         normalized_family = None
 
         if family is not None:
-            normalized_family = (
-                self._require_family(
-                    family
-                )
-            )
+            normalized_family = self._require_family(family)
 
-        return self.registry.descriptors(
-            family=normalized_family
-        )
+        return self.registry.descriptors(family=normalized_family)
 
     # ---------------------------------------------------------
     # Route inventory
@@ -438,9 +355,7 @@ class AIPipeline:
     def routes(
         self,
         *,
-        family: Optional[
-            str
-        ] = None,
+        family: Optional[str] = None,
     ) -> List[
         Dict[
             str,
@@ -452,20 +367,9 @@ class AIPipeline:
         normalized_family = None
 
         if family is not None:
-            normalized_family = (
-                self._require_family(
-                    family
-                )
-            )
+            normalized_family = self._require_family(family)
 
-        return (
-            self.router.
-            available_routes(
-                family=(
-                    normalized_family
-                )
-            )
-        )
+        return self.router.available_routes(family=(normalized_family))
 
     # ---------------------------------------------------------
     # Route one request
@@ -479,9 +383,7 @@ class AIPipeline:
 
         request.finalize()
 
-        return self.router.route(
-            request
-        )
+        return self.router.route(request)
 
     # ---------------------------------------------------------
     # Explicit load
@@ -493,9 +395,7 @@ class AIPipeline:
     ):
         self._require_enabled()
 
-        return self.registry.load(
-            model_id
-        )
+        return self.registry.load(model_id)
 
     # ---------------------------------------------------------
     # Explicit unload
@@ -511,9 +411,7 @@ class AIPipeline:
 
         self.registry.unload(
             model_id,
-            drop_adapter=(
-                drop_adapter
-            ),
+            drop_adapter=(drop_adapter),
         )
 
     # ---------------------------------------------------------
@@ -527,14 +425,7 @@ class AIPipeline:
     ) -> List[str]:
         self._require_enabled()
 
-        return (
-            self.registry.
-            unload_all(
-                drop_adapters=(
-                    drop_adapters
-                )
-            )
-        )
+        return self.registry.unload_all(drop_adapters=(drop_adapters))
 
     # ---------------------------------------------------------
     # Remove model
@@ -563,9 +454,7 @@ class AIPipeline:
     ) -> InferenceResult:
         self._require_enabled()
 
-        return self.inference.infer(
-            request
-        )
+        return self.inference.infer(request)
 
     # ---------------------------------------------------------
     # Detailed inference
@@ -577,9 +466,7 @@ class AIPipeline:
     ) -> InferenceExecution:
         self._require_enabled()
 
-        return self.inference.execute(
-            request
-        )
+        return self.inference.execute(request)
 
     # ---------------------------------------------------------
     # Safe inference
@@ -591,9 +478,7 @@ class AIPipeline:
     ) -> InferenceResult:
         self._require_enabled()
 
-        return self.inference.infer_safe(
-            request
-        )
+        return self.inference.infer_safe(request)
 
     # ---------------------------------------------------------
     # Event request builder
@@ -603,15 +488,9 @@ class AIPipeline:
         self,
         *,
         content: str,
-        model_name: Optional[
-            str
-        ] = None,
-        model_version: Optional[
-            str
-        ] = None,
-        provenance: Optional[
-            InferenceProvenance
-        ] = None,
+        model_name: Optional[str] = None,
+        model_version: Optional[str] = None,
+        provenance: Optional[InferenceProvenance] = None,
         options: Optional[
             Mapping[
                 str,
@@ -625,53 +504,24 @@ class AIPipeline:
             ]
         ] = None,
     ) -> InferenceRequest:
-        self._require_family(
-            AIModelFamily.EVENT.value
-        )
+        self._require_family(AIModelFamily.EVENT.value)
 
-        text = str(
-            content
-        ).strip()
+        text = str(content).strip()
 
         if not text:
-            raise AIInferenceRequestError(
-                "Event inference content "
-                "cannot be empty."
-            )
+            raise AIInferenceRequestError("Event inference content cannot be empty.")
 
-        body = dict(
-            payload
-            or {}
-        )
+        body = dict(payload or {})
 
-        body[
-            "content"
-        ] = text
+        body["content"] = text
 
         return InferenceRequest(
-            family=(
-                AIModelFamily.EVENT.value
-            ),
-
+            family=(AIModelFamily.EVENT.value),
             payload=body,
-
-            model_name=(
-                model_name
-            ),
-
-            model_version=(
-                model_version
-            ),
-
-            provenance=(
-                provenance
-                or InferenceProvenance()
-            ),
-
-            options=dict(
-                options
-                or {}
-            ),
+            model_name=(model_name),
+            model_version=(model_version),
+            provenance=(provenance or InferenceProvenance()),
+            options=dict(options or {}),
         ).finalize()
 
     # ---------------------------------------------------------
@@ -682,15 +532,9 @@ class AIPipeline:
         self,
         *,
         content: str,
-        model_name: Optional[
-            str
-        ] = None,
-        model_version: Optional[
-            str
-        ] = None,
-        provenance: Optional[
-            InferenceProvenance
-        ] = None,
+        model_name: Optional[str] = None,
+        model_version: Optional[str] = None,
+        provenance: Optional[InferenceProvenance] = None,
         options: Optional[
             Mapping[
                 str,
@@ -712,22 +556,16 @@ class AIPipeline:
         request = self.event_request(
             content=content,
             model_name=model_name,
-            model_version=(
-                model_version
-            ),
+            model_version=(model_version),
             provenance=provenance,
             options=options,
             payload=payload,
         )
 
         if safe:
-            return self.infer_safe(
-                request
-            )
+            return self.infer_safe(request)
 
-        return self.infer(
-            request
-        )
+        return self.infer(request)
 
     # ---------------------------------------------------------
     # Anomaly request builder
@@ -736,21 +574,11 @@ class AIPipeline:
     def anomaly_request(
         self,
         *,
-        features: Iterable[
-            float
-        ],
-        model_name: Optional[
-            str
-        ] = None,
-        model_version: Optional[
-            str
-        ] = None,
-        provenance: Optional[
-            InferenceProvenance
-        ] = None,
-        threshold: Optional[
-            float
-        ] = None,
+        features: Iterable[float],
+        model_name: Optional[str] = None,
+        model_version: Optional[str] = None,
+        provenance: Optional[InferenceProvenance] = None,
+        threshold: Optional[float] = None,
         options: Optional[
             Mapping[
                 str,
@@ -764,65 +592,29 @@ class AIPipeline:
             ]
         ] = None,
     ) -> InferenceRequest:
-        self._require_family(
-            AIModelFamily.ANOMALY.value
-        )
+        self._require_family(AIModelFamily.ANOMALY.value)
 
-        values = list(
-            features
-        )
+        values = list(features)
 
         if not values:
-            raise AIInferenceRequestError(
-                "Anomaly feature vector "
-                "cannot be empty."
-            )
+            raise AIInferenceRequestError("Anomaly feature vector cannot be empty.")
 
-        body = dict(
-            payload
-            or {}
-        )
+        body = dict(payload or {})
 
-        body[
-            "features"
-        ] = values
+        body["features"] = values
 
-        request_options = dict(
-            options
-            or {}
-        )
+        request_options = dict(options or {})
 
         if threshold is not None:
-            request_options[
-                "threshold"
-            ] = float(
-                threshold
-            )
+            request_options["threshold"] = float(threshold)
 
         return InferenceRequest(
-            family=(
-                AIModelFamily.
-                ANOMALY.value
-            ),
-
+            family=(AIModelFamily.ANOMALY.value),
             payload=body,
-
-            model_name=(
-                model_name
-            ),
-
-            model_version=(
-                model_version
-            ),
-
-            provenance=(
-                provenance
-                or InferenceProvenance()
-            ),
-
-            options=(
-                request_options
-            ),
+            model_name=(model_name),
+            model_version=(model_version),
+            provenance=(provenance or InferenceProvenance()),
+            options=(request_options),
         ).finalize()
 
     # ---------------------------------------------------------
@@ -832,21 +624,11 @@ class AIPipeline:
     def infer_anomaly(
         self,
         *,
-        features: Iterable[
-            float
-        ],
-        model_name: Optional[
-            str
-        ] = None,
-        model_version: Optional[
-            str
-        ] = None,
-        provenance: Optional[
-            InferenceProvenance
-        ] = None,
-        threshold: Optional[
-            float
-        ] = None,
+        features: Iterable[float],
+        model_name: Optional[str] = None,
+        model_version: Optional[str] = None,
+        provenance: Optional[InferenceProvenance] = None,
+        threshold: Optional[float] = None,
         options: Optional[
             Mapping[
                 str,
@@ -868,9 +650,7 @@ class AIPipeline:
         request = self.anomaly_request(
             features=features,
             model_name=model_name,
-            model_version=(
-                model_version
-            ),
+            model_version=(model_version),
             provenance=provenance,
             threshold=threshold,
             options=options,
@@ -878,13 +658,9 @@ class AIPipeline:
         )
 
         if safe:
-            return self.infer_safe(
-                request
-            )
+            return self.infer_safe(request)
 
-        return self.infer(
-            request
-        )
+        return self.infer(request)
 
     # ---------------------------------------------------------
     # Explicit batch
@@ -902,9 +678,7 @@ class AIPipeline:
         return self.inference.infer_batch(
             batch,
             fail_fast=fail_fast,
-            require_same_family=(
-                require_same_family
-            ),
+            require_same_family=(require_same_family),
         )
 
     # ---------------------------------------------------------
@@ -913,9 +687,7 @@ class AIPipeline:
 
     def infer_many(
         self,
-        requests: Iterable[
-            InferenceRequest
-        ],
+        requests: Iterable[InferenceRequest],
         *,
         fail_fast: bool = False,
         require_same_family: bool = False,
@@ -925,9 +697,7 @@ class AIPipeline:
         return self.inference.infer_many(
             requests,
             fail_fast=fail_fast,
-            require_same_family=(
-                require_same_family
-            ),
+            require_same_family=(require_same_family),
         )
 
     # ---------------------------------------------------------
@@ -939,9 +709,7 @@ class AIPipeline:
         *,
         deep: bool = False,
     ) -> AIHealth:
-        return self.health.check(
-            deep=deep
-        )
+        return self.health.check(deep=deep)
 
     # ---------------------------------------------------------
     # Ready
@@ -952,9 +720,7 @@ class AIPipeline:
         *,
         deep: bool = False,
     ) -> bool:
-        return self.health.ready(
-            deep=deep
-        )
+        return self.health.ready(deep=deep)
 
     # ---------------------------------------------------------
     # Start
@@ -965,9 +731,7 @@ class AIPipeline:
         *,
         discover_models: bool = True,
         fail_fast: bool = False,
-        eager_load: Optional[
-            bool
-        ] = None,
+        eager_load: Optional[bool] = None,
     ) -> Dict[str, Any]:
         """
         Initialize AI model serving.
@@ -988,85 +752,39 @@ class AIPipeline:
 
             return {
                 "enabled": False,
-
                 "started": False,
-
                 "registered_models": 0,
-
                 "loaded_models": 0,
-
-                "inference_executed": (
-                    False
-                ),
+                "inference_executed": (False),
             }
 
-        paths = (
-            self.
-            initialize_directories()
-        )
+        paths = self.initialize_directories()
 
         discovery = None
 
         if discover_models:
-            discovery = (
-                self.
-                register_promoted_models(
-                    fail_fast=fail_fast,
-                    replace=False,
-                    eager_load=(
-                        eager_load
-                    ),
-                )
+            discovery = self.register_promoted_models(
+                fail_fast=fail_fast,
+                replace=False,
+                eager_load=(eager_load),
             )
 
         self._started = True
 
-        health = self.health_check(
-            deep=False
-        )
+        health = self.health_check(deep=False)
 
         return {
             "enabled": True,
-
             "started": True,
-
             "paths": paths,
-
-            "discovery": (
-                discovery.to_dict()
-                if discovery
-                is not None
-                else None
-            ),
-
-            "registered_models": len(
-                self.registry
-            ),
-
-            "loaded_models": (
-                self.registry.
-                loaded_count()
-            ),
-
-            "health": (
-                health.to_dict()
-            ),
-
-            "inference_executed": (
-                False
-            ),
-
-            "training_executed": (
-                False
-            ),
-
-            "artifact_promotion_executed": (
-                False
-            ),
-
-            "remediation_executed": (
-                False
-            ),
+            "discovery": (discovery.to_dict() if discovery is not None else None),
+            "registered_models": len(self.registry),
+            "loaded_models": (self.registry.loaded_count()),
+            "health": (health.to_dict()),
+            "inference_executed": (False),
+            "training_executed": (False),
+            "artifact_promotion_executed": (False),
+            "remediation_executed": (False),
         }
 
     # ---------------------------------------------------------
@@ -1085,43 +803,18 @@ class AIPipeline:
         this AIPipeline instance.
         """
 
-        unloaded = (
-            self.registry.
-            unload_all(
-                drop_adapters=(
-                    drop_adapters
-                )
-            )
-        )
+        unloaded = self.registry.unload_all(drop_adapters=(drop_adapters))
 
         self._started = False
 
         return {
             "stopped": True,
-
-            "unloaded_models": (
-                unloaded
-            ),
-
-            "unloaded_model_count": len(
-                unloaded
-            ),
-
-            "registered_models": len(
-                self.registry
-            ),
-
-            "inference_cancelled": (
-                False
-            ),
-
-            "training_executed": (
-                False
-            ),
-
-            "remediation_executed": (
-                False
-            ),
+            "unloaded_models": (unloaded),
+            "unloaded_model_count": len(unloaded),
+            "registered_models": len(self.registry),
+            "inference_cancelled": (False),
+            "training_executed": (False),
+            "remediation_executed": (False),
         }
 
     # ---------------------------------------------------------
@@ -1168,89 +861,31 @@ class AIPipeline:
             str,
             Any,
         ] = {
-            "started": (
-                self._started
-            ),
-
-            "config": (
-                safe_config_summary(
-                    self.config
-                )
-            ),
-
-            "loader": (
-                self.loader.summary()
-            ),
-
-            "registry": (
-                self.registry.summary()
-            ),
-
-            "routing": (
-                self.router.summary()
-            ),
-
-            "inference": (
-                self.inference.summary()
-            ),
-
+            "started": (self._started),
+            "config": (safe_config_summary(self.config)),
+            "loader": (self.loader.summary()),
+            "registry": (self.registry.summary()),
+            "routing": (self.router.summary()),
+            "inference": (self.inference.summary()),
             "public_operations": {
                 "event_inference": True,
-
                 "anomaly_inference": True,
-
-                "batch_inference": (
-                    self.config.
-                    inference.
-                    enable_batch_inference
-                ),
-
+                "batch_inference": (self.config.inference.enable_batch_inference),
                 "model_discovery": True,
-
                 "model_refresh": True,
-
-                "explicit_model_load": (
-                    True
-                ),
-
-                "explicit_model_unload": (
-                    True
-                ),
+                "explicit_model_load": (True),
+                "explicit_model_unload": (True),
             },
-
-            "training_supported_here": (
-                False
-            ),
-
-            "checkpoint_creation_supported_here": (
-                False
-            ),
-
-            "artifact_promotion_supported_here": (
-                False
-            ),
-
-            "incident_interpretation_supported_here": (
-                False
-            ),
-
-            "decision_authorization_supported_here": (
-                False
-            ),
-
-            "remediation_supported_here": (
-                False
-            ),
+            "training_supported_here": (False),
+            "checkpoint_creation_supported_here": (False),
+            "artifact_promotion_supported_here": (False),
+            "incident_interpretation_supported_here": (False),
+            "decision_authorization_supported_here": (False),
+            "remediation_supported_here": (False),
         }
 
         if include_health:
-            result[
-                "health"
-            ] = (
-                self.health.summary(
-                    deep=False
-                )
-            )
+            result["health"] = self.health.summary(deep=False)
 
         return result
 
@@ -1259,25 +894,20 @@ class AIPipeline:
 # Convenience construction
 # ---------------------------------------------------------------
 
+
 def create_ai_pipeline(
     *,
-    config: Optional[
-        AIConfig
-    ] = None,
+    config: Optional[AIConfig] = None,
     start: bool = False,
     fail_fast: bool = False,
-    eager_load: Optional[
-        bool
-    ] = None,
+    eager_load: Optional[bool] = None,
 ) -> AIPipeline:
     """
     Construct an AIPipeline and optionally start
     model discovery/registration immediately.
     """
 
-    pipeline = AIPipeline(
-        config=config
-    )
+    pipeline = AIPipeline(config=config)
 
     if start:
         pipeline.start(

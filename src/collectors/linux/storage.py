@@ -48,31 +48,17 @@ def filesystem_usage(
     mountpoint: str,
 ) -> dict:
     try:
-        stats = os.statvfs(
-            mountpoint
-        )
+        stats = os.statvfs(mountpoint)
     except OSError:
         return {}
 
-    block_size = (
-        stats.f_frsize
-        or stats.f_bsize
-    )
+    block_size = stats.f_frsize or stats.f_bsize
 
-    total = (
-        stats.f_blocks
-        * block_size
-    )
+    total = stats.f_blocks * block_size
 
-    free = (
-        stats.f_bfree
-        * block_size
-    )
+    free = stats.f_bfree * block_size
 
-    available = (
-        stats.f_bavail
-        * block_size
-    )
+    available = stats.f_bavail * block_size
 
     used = total - free
 
@@ -80,20 +66,10 @@ def filesystem_usage(
         "total_bytes": total,
         "used_bytes": used,
         "free_bytes": free,
-        "available_bytes": (
-            available
-        ),
-        "usage_percent": (
-            used / total * 100.0
-            if total > 0
-            else 0.0
-        ),
-        "inode_total": (
-            stats.f_files
-        ),
-        "inode_free": (
-            stats.f_ffree
-        ),
+        "available_bytes": (available),
+        "usage_percent": (used / total * 100.0 if total > 0 else 0.0),
+        "inode_total": (stats.f_files),
+        "inode_free": (stats.f_ffree),
     }
 
 
@@ -122,9 +98,7 @@ def collect_block_devices() -> List[dict]:
         return []
 
     try:
-        data = json.loads(
-            result.stdout
-        )
+        data = json.loads(result.stdout)
     except json.JSONDecodeError:
         return []
 
@@ -135,79 +109,38 @@ def collect_block_devices() -> List[dict]:
         parent: str | None = None,
     ) -> None:
         payload = {
-            "name": device.get(
-                "name"
-            ),
-            "kernel_name": (
-                device.get("kname")
-            ),
-            "path": device.get(
-                "path"
-            ),
-            "device_type": (
-                device.get("type")
-            ),
-            "size_bytes": (
-                device.get("size")
-            ),
-            "filesystem_type": (
-                device.get("fstype")
-            ),
-            "filesystem_version": (
-                device.get("fsver")
-            ),
-            "label": device.get(
-                "label"
-            ),
-            "uuid": device.get(
-                "uuid"
-            ),
-            "mountpoints": (
-                device.get(
-                    "mountpoints"
-                )
-                or []
-            ),
-            "read_only": (
-                device.get("ro")
-            ),
-            "removable": (
-                device.get("rm")
-            ),
-            "model": device.get(
-                "model"
-            ),
-            "serial": device.get(
-                "serial"
-            ),
-            "transport": (
-                device.get("tran")
-            ),
+            "name": device.get("name"),
+            "kernel_name": (device.get("kname")),
+            "path": device.get("path"),
+            "device_type": (device.get("type")),
+            "size_bytes": (device.get("size")),
+            "filesystem_type": (device.get("fstype")),
+            "filesystem_version": (device.get("fsver")),
+            "label": device.get("label"),
+            "uuid": device.get("uuid"),
+            "mountpoints": (device.get("mountpoints") or []),
+            "read_only": (device.get("ro")),
+            "removable": (device.get("rm")),
+            "model": device.get("model"),
+            "serial": device.get("serial"),
+            "transport": (device.get("tran")),
             "parent": parent,
         }
 
         records.append(
             build_record(
-                signal_type=(
-                    "block_device"
-                ),
+                signal_type=("block_device"),
                 payload=payload,
             )
         )
 
-        for child in (
-            device.get("children")
-            or []
-        ):
+        for child in device.get("children") or []:
             visit(
                 child,
                 device.get("name"),
             )
 
-    for device in (
-        data.get("blockdevices")
-        or []
-    ):
+    for device in data.get("blockdevices") or []:
         visit(device)
 
     return records
@@ -216,9 +149,7 @@ def collect_block_devices() -> List[dict]:
 def collect_mounts() -> List[dict]:
     records: List[dict] = []
 
-    path = Path(
-        "/proc/self/mounts"
-    )
+    path = Path("/proc/self/mounts")
 
     try:
         lines = path.read_text(
@@ -237,16 +168,9 @@ def collect_mounts() -> List[dict]:
             continue
 
         source = parts[0]
-        mountpoint = (
-            parts[1]
-            .replace("\\040", " ")
-        )
-        filesystem_type = (
-            parts[2]
-        )
-        options = (
-            parts[3].split(",")
-        )
+        mountpoint = parts[1].replace("\\040", " ")
+        filesystem_type = parts[2]
+        options = parts[3].split(",")
 
         identity = (
             source,
@@ -259,34 +183,21 @@ def collect_mounts() -> List[dict]:
 
         seen.add(identity)
 
-        usage = filesystem_usage(
-            mountpoint
-        )
+        usage = filesystem_usage(mountpoint)
 
         payload = {
             "source": source,
-            "mountpoint": (
-                mountpoint
-            ),
-            "filesystem_type": (
-                filesystem_type
-            ),
+            "mountpoint": (mountpoint),
+            "filesystem_type": (filesystem_type),
             "options": options,
-            "read_only": (
-                "ro" in options
-            ),
-            "pseudo_filesystem": (
-                filesystem_type
-                in PSEUDO_FILESYSTEMS
-            ),
+            "read_only": ("ro" in options),
+            "pseudo_filesystem": (filesystem_type in PSEUDO_FILESYSTEMS),
             **usage,
         }
 
         records.append(
             build_record(
-                signal_type=(
-                    "filesystem_state"
-                ),
+                signal_type=("filesystem_state"),
                 payload=payload,
             )
         )
@@ -295,9 +206,7 @@ def collect_mounts() -> List[dict]:
 
 
 def collect_swap() -> List[dict]:
-    path = Path(
-        "/proc/swaps"
-    )
+    path = Path("/proc/swaps")
 
     try:
         lines = path.read_text(
@@ -339,11 +248,7 @@ def collect_swap() -> List[dict]:
 
 
 def collect_storage() -> List[dict]:
-    return (
-        collect_block_devices()
-        + collect_mounts()
-        + collect_swap()
-    )
+    return collect_block_devices() + collect_mounts() + collect_swap()
 
 
 if __name__ == "__main__":

@@ -29,23 +29,17 @@ INTELLIGENCE_SCHEMA_VERSION = "1"
 class AnomalyType(str, Enum):
     LOG_PATTERN = "log_pattern"
 
-    METRIC_DEVIATION = (
-        "metric_deviation"
-    )
+    METRIC_DEVIATION = "metric_deviation"
 
     STATE_CHANGE = "state_change"
 
     EVENT_BURST = "event_burst"
 
-    RESOURCE_HEALTH = (
-        "resource_health"
-    )
+    RESOURCE_HEALTH = "resource_health"
 
     SECURITY = "security"
 
-    TOPOLOGY_CHANGE = (
-        "topology_change"
-    )
+    TOPOLOGY_CHANGE = "topology_change"
 
     UNKNOWN = "unknown"
 
@@ -55,9 +49,7 @@ class IncidentStatus(str, Enum):
 
     OPEN = "open"
 
-    INVESTIGATING = (
-        "investigating"
-    )
+    INVESTIGATING = "investigating"
 
     MITIGATING = "mitigating"
 
@@ -119,9 +111,7 @@ class ConfidenceLevel(str, Enum):
 
 
 def utc_now() -> str:
-    return datetime.now(
-        timezone.utc
-    ).isoformat()
+    return datetime.now(timezone.utc).isoformat()
 
 
 def checked_score(
@@ -144,9 +134,7 @@ def checked_score(
     ):
         return 0.0
 
-    if not math.isfinite(
-        number
-    ):
+    if not math.isfinite(number):
         return 0.0
 
     return min(
@@ -181,20 +169,15 @@ def json_safe(
     """
 
     if depth > maximum_depth:
-        return (
-            "[MAX_DEPTH_REACHED]"
-        )
+        return "[MAX_DEPTH_REACHED]"
 
-    if (
-        value is None
-        or isinstance(
-            value,
-            (
-                bool,
-                int,
-                str,
-            ),
-        )
+    if value is None or isinstance(
+        value,
+        (
+            bool,
+            int,
+            str,
+        ),
     ):
         return value
 
@@ -202,9 +185,7 @@ def json_safe(
         value,
         float,
     ):
-        if math.isfinite(
-            value
-        ):
+        if math.isfinite(value):
             return value
 
         return None
@@ -214,9 +195,7 @@ def json_safe(
         datetime,
     ):
         if value.tzinfo is None:
-            value = value.replace(
-                tzinfo=timezone.utc
-            )
+            value = value.replace(tzinfo=timezone.utc)
 
         return value.isoformat()
 
@@ -237,12 +216,9 @@ def json_safe(
             str(key): json_safe(
                 item,
                 depth=depth + 1,
-                maximum_depth=(
-                    maximum_depth
-                ),
+                maximum_depth=(maximum_depth),
             )
-            for key, item
-            in value.items()
+            for key, item in value.items()
         }
 
     if isinstance(
@@ -258,9 +234,7 @@ def json_safe(
             json_safe(
                 item,
                 depth=depth + 1,
-                maximum_depth=(
-                    maximum_depth
-                ),
+                maximum_depth=(maximum_depth),
             )
             for item in value
         ]
@@ -272,9 +246,7 @@ def json_safe(
         return json_safe(
             asdict(value),
             depth=depth + 1,
-            maximum_depth=(
-                maximum_depth
-            ),
+            maximum_depth=(maximum_depth),
         )
 
     return str(value)
@@ -294,9 +266,7 @@ def stable_hash(
         default=str,
     ).encode("utf-8")
 
-    return hashlib.sha256(
-        encoded
-    ).hexdigest()
+    return hashlib.sha256(encoded).hexdigest()
 
 
 @dataclass(frozen=True)
@@ -312,45 +282,23 @@ class EvidenceReference:
 
     score: float = 0.0
 
-    record_ids: List[str] = field(
-        default_factory=list
-    )
+    record_ids: List[str] = field(default_factory=list)
 
-    resource_ids: List[str] = field(
-        default_factory=list
-    )
+    resource_ids: List[str] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return {
-            "evidence_type": (
-                self.evidence_type
-            ),
-            "description": (
-                self.description
-            ),
-            "score": checked_score(
-                self.score
-            ),
-            "record_ids": sorted(
-                set(
-                    self.record_ids
-                )
-            ),
-            "resource_ids": sorted(
-                set(
-                    self.resource_ids
-                )
-            ),
-            "attributes": json_safe(
-                self.attributes
-            ),
+            "evidence_type": (self.evidence_type),
+            "description": (self.description),
+            "score": checked_score(self.score),
+            "record_ids": sorted(set(self.record_ids)),
+            "resource_ids": sorted(set(self.resource_ids)),
+            "attributes": json_safe(self.attributes),
         }
 
 
@@ -373,21 +321,13 @@ class Pattern:
 
     occurrence_count: int = 1
 
-    record_ids: List[str] = field(
-        default_factory=list
-    )
+    record_ids: List[str] = field(default_factory=list)
 
-    resource_ids: List[str] = field(
-        default_factory=list
-    )
+    resource_ids: List[str] = field(default_factory=list)
 
-    providers: List[str] = field(
-        default_factory=list
-    )
+    providers: List[str] = field(default_factory=list)
 
-    signal_types: List[str] = field(
-        default_factory=list
-    )
+    signal_types: List[str] = field(default_factory=list)
 
     first_seen: Optional[str] = None
 
@@ -398,60 +338,35 @@ class Pattern:
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     pattern_id: Optional[str] = None
 
     def finalize(
         self,
     ) -> "Pattern":
-        self.record_ids = sorted(
-            set(self.record_ids)
-        )
+        self.record_ids = sorted(set(self.record_ids))
 
-        self.resource_ids = sorted(
-            set(self.resource_ids)
-        )
+        self.resource_ids = sorted(set(self.resource_ids))
 
-        self.providers = sorted(
-            set(self.providers)
-        )
+        self.providers = sorted(set(self.providers))
 
-        self.signal_types = sorted(
-            set(self.signal_types)
-        )
+        self.signal_types = sorted(set(self.signal_types))
 
-        self.novelty_score = (
-            checked_score(
-                self.novelty_score
-            )
-        )
+        self.novelty_score = checked_score(self.novelty_score)
 
         self.occurrence_count = max(
             0,
-            int(
-                self.occurrence_count
-            ),
+            int(self.occurrence_count),
         )
 
         if not self.pattern_id:
-            self.pattern_id = (
-                "intel:pattern:"
-                + stable_hash(
-                    {
-                        "pattern_type": (
-                            self.pattern_type
-                        ),
-                        "fingerprint": (
-                            self.fingerprint
-                        ),
-                        "environment_id": (
-                            self.environment_id
-                        ),
-                    }
-                )
+            self.pattern_id = "intel:pattern:" + stable_hash(
+                {
+                    "pattern_type": (self.pattern_type),
+                    "fingerprint": (self.fingerprint),
+                    "environment_id": (self.environment_id),
+                }
             )
 
         return self
@@ -459,9 +374,7 @@ class Pattern:
     def to_dict(self) -> dict:
         self.finalize()
 
-        return json_safe(
-            asdict(self)
-        )
+        return json_safe(asdict(self))
 
 
 @dataclass
@@ -481,84 +394,47 @@ class Anomaly:
 
     score: float
 
-    severity: str = (
-        IncidentSeverity.UNKNOWN.value
-    )
+    severity: str = IncidentSeverity.UNKNOWN.value
 
     description: Optional[str] = None
 
-    record_ids: List[str] = field(
-        default_factory=list
-    )
+    record_ids: List[str] = field(default_factory=list)
 
-    resource_ids: List[str] = field(
-        default_factory=list
-    )
+    resource_ids: List[str] = field(default_factory=list)
 
-    pattern_ids: List[str] = field(
-        default_factory=list
-    )
+    pattern_ids: List[str] = field(default_factory=list)
 
-    evidence: List[
-        EvidenceReference
-    ] = field(
-        default_factory=list
-    )
+    evidence: List[EvidenceReference] = field(default_factory=list)
 
-    detected_at: str = field(
-        default_factory=utc_now
-    )
+    detected_at: str = field(default_factory=utc_now)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     anomaly_id: Optional[str] = None
 
     def finalize(
         self,
     ) -> "Anomaly":
-        self.score = checked_score(
-            self.score
-        )
+        self.score = checked_score(self.score)
 
-        self.record_ids = sorted(
-            set(self.record_ids)
-        )
+        self.record_ids = sorted(set(self.record_ids))
 
-        self.resource_ids = sorted(
-            set(self.resource_ids)
-        )
+        self.resource_ids = sorted(set(self.resource_ids))
 
-        self.pattern_ids = sorted(
-            set(self.pattern_ids)
-        )
+        self.pattern_ids = sorted(set(self.pattern_ids))
 
         if not self.anomaly_id:
-            self.anomaly_id = (
-                "intel:anomaly:"
-                + stable_hash(
-                    {
-                        "anomaly_type": (
-                            self.anomaly_type
-                        ),
-                        "environment_id": (
-                            self.environment_id
-                        ),
-                        "record_ids": (
-                            self.record_ids
-                        ),
-                        "resource_ids": (
-                            self.resource_ids
-                        ),
-                        "detected_at": (
-                             self.detected_at
-                        ),
-                    }
-                )
+            self.anomaly_id = "intel:anomaly:" + stable_hash(
+                {
+                    "anomaly_type": (self.anomaly_type),
+                    "environment_id": (self.environment_id),
+                    "record_ids": (self.record_ids),
+                    "resource_ids": (self.resource_ids),
+                    "detected_at": (self.detected_at),
+                }
             )
 
         return self
@@ -568,10 +444,7 @@ class Anomaly:
 
         data = asdict(self)
 
-        data["evidence"] = [
-            item.to_dict()
-            for item in self.evidence
-        ]
+        data["evidence"] = [item.to_dict() for item in self.evidence]
 
         return json_safe(data)
 
@@ -591,85 +464,41 @@ class RootCauseCandidate:
 
     score: float
 
-    status: str = (
-        RootCauseStatus.SUSPECTED.value
-    )
+    status: str = RootCauseStatus.SUSPECTED.value
 
     description: Optional[str] = None
 
-    contributing_record_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    contributing_record_ids: List[str] = field(default_factory=list)
 
-    contributing_anomaly_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    contributing_anomaly_ids: List[str] = field(default_factory=list)
 
-    evidence: List[
-        EvidenceReference
-    ] = field(
-        default_factory=list
-    )
+    evidence: List[EvidenceReference] = field(default_factory=list)
 
-    causal_path: List[str] = field(
-        default_factory=list
-    )
+    causal_path: List[str] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     candidate_id: Optional[str] = None
 
     def finalize(
         self,
     ) -> "RootCauseCandidate":
-        self.score = checked_score(
-            self.score
-        )
+        self.score = checked_score(self.score)
 
-        self.contributing_record_ids = (
-            sorted(
-               set(
-                    self.
-                    contributing_record_ids
-                )
-            )
-        )
+        self.contributing_record_ids = sorted(set(self.contributing_record_ids))
 
-        self.contributing_anomaly_ids = (
-            sorted(
-                set(
-                    self.
-                    contributing_anomaly_ids
-                )
-            )
-        )
+        self.contributing_anomaly_ids = sorted(set(self.contributing_anomaly_ids))
 
         if not self.candidate_id:
-            self.candidate_id = (
-                "intel:root-cause:"
-                + stable_hash(
-                    {
-                        "resource_id": (
-                            self.resource_id
-                        ),
-                        "title": (
-                            self.title
-                        ),
-                        "records": (
-                            self.
-                            contributing_record_ids
-                        ),
-                    }
-                )
+            self.candidate_id = "intel:root-cause:" + stable_hash(
+                {
+                    "resource_id": (self.resource_id),
+                    "title": (self.title),
+                    "records": (self.contributing_record_ids),
+                }
             )
 
         return self
@@ -679,10 +508,7 @@ class RootCauseCandidate:
 
         data = asdict(self)
 
-        data["evidence"] = [
-            item.to_dict()
-            for item in self.evidence
-        ]
+        data["evidence"] = [item.to_dict() for item in self.evidence]
 
         return json_safe(data)
 
@@ -696,25 +522,15 @@ class ImpactAssessment:
     interpreted as confirmed user impact.
     """
 
-    level: str = (
-        ImpactLevel.UNKNOWN.value
-    )
+    level: str = ImpactLevel.UNKNOWN.value
 
     score: float = 0.0
 
-    affected_resource_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    affected_resource_ids: List[str] = field(default_factory=list)
 
-    affected_services: List[str] = field(
-        default_factory=list
-    )
+    affected_services: List[str] = field(default_factory=list)
 
-    affected_providers: List[str] = field(
-        default_factory=list
-    )
+    affected_providers: List[str] = field(default_factory=list)
 
     blast_radius_hops: Optional[int] = None
 
@@ -722,46 +538,23 @@ class ImpactAssessment:
 
     summary: Optional[str] = None
 
-    evidence: List[
-        EvidenceReference
-    ] = field(
-        default_factory=list
-    )
+    evidence: List[EvidenceReference] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
     ) -> "ImpactAssessment":
-        self.score = checked_score(
-            self.score
-        )
+        self.score = checked_score(self.score)
 
-        self.affected_resource_ids = (
-            sorted(
-                set(
-                    self.
-                    affected_resource_ids
-                )
-            )
-        )
+        self.affected_resource_ids = sorted(set(self.affected_resource_ids))
 
-        self.affected_services = sorted(
-            set(
-                self.affected_services
-            )
-        )
+        self.affected_services = sorted(set(self.affected_services))
 
-        self.affected_providers = sorted(
-            set(
-                self.affected_providers
-            )
-        )
+        self.affected_providers = sorted(set(self.affected_providers))
 
         return self
 
@@ -770,10 +563,7 @@ class ImpactAssessment:
 
         data = asdict(self)
 
-        data["evidence"] = [
-            item.to_dict()
-            for item in self.evidence
-        ]
+        data["evidence"] = [item.to_dict() for item in self.evidence]
 
         return json_safe(data)
 
@@ -791,9 +581,7 @@ class ConfidenceAssessment:
 
     overall: float = 0.0
 
-    level: str = (
-        ConfidenceLevel.NONE.value
-    )
+    level: str = ConfidenceLevel.NONE.value
 
     data_quality: float = 0.0
 
@@ -807,68 +595,36 @@ class ConfidenceAssessment:
 
     explanation: Optional[str] = None
 
-    limitations: List[str] = field(
-        default_factory=list
-    )
+    limitations: List[str] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
     ) -> "ConfidenceAssessment":
-        self.overall = checked_score(
-            self.overall
-        )
+        self.overall = checked_score(self.overall)
 
-        self.data_quality = checked_score(
-            self.data_quality
-        )
+        self.data_quality = checked_score(self.data_quality)
 
-        self.correlation_strength = (
-            checked_score(
-                self.
-                correlation_strength
-            )
-        )
+        self.correlation_strength = checked_score(self.correlation_strength)
 
-        self.anomaly_strength = (
-            checked_score(
-                self.anomaly_strength
-            )
-        )
+        self.anomaly_strength = checked_score(self.anomaly_strength)
 
-        self.root_cause_strength = (
-            checked_score(
-                self.
-                root_cause_strength
-            )
-        )
+        self.root_cause_strength = checked_score(self.root_cause_strength)
 
-        self.impact_strength = (
-            checked_score(
-                self.impact_strength
-            )
-        )
+        self.impact_strength = checked_score(self.impact_strength)
 
-        self.limitations = sorted(
-            set(
-                self.limitations
-            )
-        )
+        self.limitations = sorted(set(self.limitations))
 
         return self
 
     def to_dict(self) -> dict:
         self.finalize()
 
-        return json_safe(
-            asdict(self)
-        )
+        return json_safe(asdict(self))
 
 
 @dataclass
@@ -887,109 +643,56 @@ class IncidentCandidate:
 
     severity: str
 
-    status: str = (
-        IncidentStatus.CANDIDATE.value
-    )
+    status: str = IncidentStatus.CANDIDATE.value
 
     summary: Optional[str] = None
 
-    correlation_group_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    correlation_group_ids: List[str] = field(default_factory=list)
 
-    record_ids: List[str] = field(
-        default_factory=list
-    )
+    record_ids: List[str] = field(default_factory=list)
 
-    resource_ids: List[str] = field(
-        default_factory=list
-    )
+    resource_ids: List[str] = field(default_factory=list)
 
-    anomaly_ids: List[str] = field(
-        default_factory=list
-    )
+    anomaly_ids: List[str] = field(default_factory=list)
 
-    pattern_ids: List[str] = field(
-        default_factory=list
-    )
+    pattern_ids: List[str] = field(default_factory=list)
 
-    root_causes: List[
-        RootCauseCandidate
-    ] = field(
-        default_factory=list
-    )
+    root_causes: List[RootCauseCandidate] = field(default_factory=list)
 
-    impact: ImpactAssessment = field(
-        default_factory=(
-            ImpactAssessment
-        )
-    )
+    impact: ImpactAssessment = field(default_factory=(ImpactAssessment))
 
-    confidence: ConfidenceAssessment = field(
-        default_factory=(
-            ConfidenceAssessment
-        )
-    )
+    confidence: ConfidenceAssessment = field(default_factory=(ConfidenceAssessment))
 
     started_at: Optional[str] = None
 
-    last_observed_at: Optional[
-        str
-    ] = None
+    last_observed_at: Optional[str] = None
 
-    detected_at: str = field(
-        default_factory=utc_now
-    )
+    detected_at: str = field(default_factory=utc_now)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     incident_id: Optional[str] = None
 
     def finalize(
         self,
     ) -> "IncidentCandidate":
-        self.correlation_group_ids = (
-            sorted(
-                set(
-                    self.
-                    correlation_group_ids
-                )
-            )
-        )
+        self.correlation_group_ids = sorted(set(self.correlation_group_ids))
 
-        self.record_ids = sorted(
-            set(self.record_ids)
-        )
+        self.record_ids = sorted(set(self.record_ids))
 
-        self.resource_ids = sorted(
-            set(self.resource_ids)
-        )
+        self.resource_ids = sorted(set(self.resource_ids))
 
-        self.anomaly_ids = sorted(
-            set(self.anomaly_ids)
-        )
+        self.anomaly_ids = sorted(set(self.anomaly_ids))
 
-        self.pattern_ids = sorted(
-            set(self.pattern_ids)
-        )
+        self.pattern_ids = sorted(set(self.pattern_ids))
 
-        self.root_causes = [
-            item.finalize()
-            for item
-            in self.root_causes
-        ]
+        self.root_causes = [item.finalize() for item in self.root_causes]
 
         self.root_causes.sort(
-            key=lambda item: (
-                item.score
-            ),
+            key=lambda item: item.score,
             reverse=True,
         )
 
@@ -998,26 +701,13 @@ class IncidentCandidate:
         self.confidence.finalize()
 
         if not self.incident_id:
-            self.incident_id = (
-                "intel:incident:"
-                + stable_hash(
-                    {
-                        "environment_id": (
-                            self.
-                            environment_id
-                        ),
-                        "groups": (
-                            self.
-                            correlation_group_ids
-                        ),
-                        "records": (
-                            self.record_ids
-                        ),
-                        "started_at": (
-                            self.started_at
-                        ),
-                    }
-                )
+            self.incident_id = "intel:incident:" + stable_hash(
+                {
+                    "environment_id": (self.environment_id),
+                    "groups": (self.correlation_group_ids),
+                    "records": (self.record_ids),
+                    "started_at": (self.started_at),
+                }
             )
 
         return self
@@ -1026,57 +716,24 @@ class IncidentCandidate:
         self.finalize()
 
         return {
-            "incident_id": (
-                self.incident_id
-            ),
+            "incident_id": (self.incident_id),
             "title": self.title,
-            "environment_id": (
-                self.environment_id
-            ),
-            "severity": (
-                self.severity
-            ),
+            "environment_id": (self.environment_id),
+            "severity": (self.severity),
             "status": self.status,
             "summary": self.summary,
-            "correlation_group_ids": (
-                self.
-                correlation_group_ids
-            ),
-            "record_ids": (
-                self.record_ids
-            ),
-            "resource_ids": (
-                self.resource_ids
-            ),
-            "anomaly_ids": (
-                self.anomaly_ids
-            ),
-            "pattern_ids": (
-                self.pattern_ids
-            ),
-            "root_causes": [
-                item.to_dict()
-                for item
-                in self.root_causes
-            ],
-            "impact": (
-                self.impact.to_dict()
-            ),
-            "confidence": (
-                self.confidence.to_dict()
-            ),
-            "started_at": (
-                self.started_at
-            ),
-            "last_observed_at": (
-                self.last_observed_at
-            ),
-            "detected_at": (
-                self.detected_at
-            ),
-            "attributes": json_safe(
-                self.attributes
-            ),
+            "correlation_group_ids": (self.correlation_group_ids),
+            "record_ids": (self.record_ids),
+            "resource_ids": (self.resource_ids),
+            "anomaly_ids": (self.anomaly_ids),
+            "pattern_ids": (self.pattern_ids),
+            "root_causes": [item.to_dict() for item in self.root_causes],
+            "impact": (self.impact.to_dict()),
+            "confidence": (self.confidence.to_dict()),
+            "started_at": (self.started_at),
+            "last_observed_at": (self.last_observed_at),
+            "detected_at": (self.detected_at),
+            "attributes": json_safe(self.attributes),
         }
 
 
@@ -1096,57 +753,26 @@ class Explanation:
 
     incident_id: Optional[str] = None
 
-    findings: List[str] = field(
-        default_factory=list
-    )
+    findings: List[str] = field(default_factory=list)
 
-    evidence: List[
-        EvidenceReference
-    ] = field(
-        default_factory=list
-    )
+    evidence: List[EvidenceReference] = field(default_factory=list)
 
-    limitations: List[str] = field(
-        default_factory=list
-    )
+    limitations: List[str] = field(default_factory=list)
 
-    recommended_investigations: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    recommended_investigations: List[str] = field(default_factory=list)
 
-    generated_at: str = field(
-        default_factory=utc_now
-    )
+    generated_at: str = field(default_factory=utc_now)
 
     def to_dict(self) -> dict:
         return {
             "headline": self.headline,
             "summary": self.summary,
-            "incident_id": (
-                self.incident_id
-            ),
-            "findings": list(
-                self.findings
-            ),
-            "evidence": [
-                item.to_dict()
-                for item
-                in self.evidence
-            ],
-            "limitations": list(
-                self.limitations
-            ),
-            "recommended_investigations": (
-                list(
-                    self.
-                    recommended_investigations
-                )
-            ),
-            "generated_at": (
-                self.generated_at
-            ),
+            "incident_id": (self.incident_id),
+            "findings": list(self.findings),
+            "evidence": [item.to_dict() for item in self.evidence],
+            "limitations": list(self.limitations),
+            "recommended_investigations": (list(self.recommended_investigations)),
+            "generated_at": (self.generated_at),
         }
 
 
@@ -1156,80 +782,35 @@ class IntelligenceResult:
     Final output of the OSHA intelligence layer.
     """
 
-    incidents: List[
-        IncidentCandidate
-    ] = field(
-        default_factory=list
-    )
+    incidents: List[IncidentCandidate] = field(default_factory=list)
 
-    anomalies: List[
-        Anomaly
-    ] = field(
-        default_factory=list
-    )
+    anomalies: List[Anomaly] = field(default_factory=list)
 
-    patterns: List[
-        Pattern
-    ] = field(
-        default_factory=list
-    )
+    patterns: List[Pattern] = field(default_factory=list)
 
-    explanations: List[
-        Explanation
-    ] = field(
-        default_factory=list
-    )
+    explanations: List[Explanation] = field(default_factory=list)
 
-    unclassified_group_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    unclassified_group_ids: List[str] = field(default_factory=list)
 
-    schema_version: str = (
-        INTELLIGENCE_SCHEMA_VERSION
-    )
+    schema_version: str = INTELLIGENCE_SCHEMA_VERSION
 
-    generated_at: str = field(
-        default_factory=utc_now
-    )
+    generated_at: str = field(default_factory=utc_now)
 
     metadata: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
     ) -> "IntelligenceResult":
-        self.incidents = [
-            item.finalize()
-            for item
-            in self.incidents
-        ]
+        self.incidents = [item.finalize() for item in self.incidents]
 
-        self.anomalies = [
-            item.finalize()
-            for item
-            in self.anomalies
-        ]
+        self.anomalies = [item.finalize() for item in self.anomalies]
 
-        self.patterns = [
-            item.finalize()
-            for item
-            in self.patterns
-        ]
+        self.patterns = [item.finalize() for item in self.patterns]
 
-        self.unclassified_group_ids = (
-            sorted(
-                set(
-                    self.
-                    unclassified_group_ids
-                )
-            )
-        )
+        self.unclassified_group_ids = sorted(set(self.unclassified_group_ids))
 
         return self
 
@@ -1237,39 +818,14 @@ class IntelligenceResult:
         self.finalize()
 
         return {
-            "schema_version": (
-                self.schema_version
-            ),
-            "generated_at": (
-                self.generated_at
-            ),
-            "incidents": [
-                item.to_dict()
-                for item
-                in self.incidents
-            ],
-            "anomalies": [
-                item.to_dict()
-                for item
-                in self.anomalies
-            ],
-            "patterns": [
-                item.to_dict()
-                for item
-                in self.patterns
-            ],
-            "explanations": [
-                item.to_dict()
-                for item
-                in self.explanations
-            ],
-            "unclassified_group_ids": (
-                self.
-                unclassified_group_ids
-            ),
-            "metadata": json_safe(
-                self.metadata
-            ),
+            "schema_version": (self.schema_version),
+            "generated_at": (self.generated_at),
+            "incidents": [item.to_dict() for item in self.incidents],
+            "anomalies": [item.to_dict() for item in self.anomalies],
+            "patterns": [item.to_dict() for item in self.patterns],
+            "explanations": [item.to_dict() for item in self.explanations],
+            "unclassified_group_ids": (self.unclassified_group_ids),
+            "metadata": json_safe(self.metadata),
         }
 
     def to_json(self) -> str:
@@ -1295,30 +851,19 @@ def confidence_level(
     calibrated probabilities.
     """
 
-    value = checked_score(
-        score
-    )
+    value = checked_score(score)
 
     if value >= 0.90:
-        return (
-            ConfidenceLevel.
-            VERY_HIGH.value
-        )
+        return ConfidenceLevel.VERY_HIGH.value
 
     if value >= 0.75:
-        return (
-            ConfidenceLevel.HIGH.value
-        )
+        return ConfidenceLevel.HIGH.value
 
     if value >= 0.50:
-        return (
-            ConfidenceLevel.MEDIUM.value
-        )
+        return ConfidenceLevel.MEDIUM.value
 
     if value > 0.0:
-        return (
-            ConfidenceLevel.LOW.value
-        )
+        return ConfidenceLevel.LOW.value
 
     return ConfidenceLevel.NONE.value
 
@@ -1347,9 +892,7 @@ def highest_severity(
     values_list = list(values)
 
     if not values_list:
-        return (
-            IncidentSeverity.UNKNOWN.value
-        )
+        return IncidentSeverity.UNKNOWN.value
 
     return max(
         values_list,

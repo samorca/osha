@@ -5,9 +5,7 @@ from typing import Any
 
 
 def utc_now() -> str:
-    return datetime.now(
-        timezone.utc
-    ).isoformat()
+    return datetime.now(timezone.utc).isoformat()
 
 
 def pod_identity(
@@ -19,11 +17,7 @@ def pod_identity(
     spec = pod.spec
     status = pod.status
 
-    labels = (
-        dict(metadata.labels)
-        if metadata.labels
-        else {}
-    )
+    labels = dict(metadata.labels) if metadata.labels else {}
 
     return {
         "environment_id": environment_id,
@@ -47,9 +41,7 @@ def make_record(
 ) -> dict:
     return {
         "schema_version": "1",
-        "record_type": (
-            "kubernetes_telemetry"
-        ),
+        "record_type": ("kubernetes_telemetry"),
         "signal_type": signal_type,
         "timestamp": timestamp,
         **identity,

@@ -11,9 +11,7 @@ from src.collectors.linux.schema import (
 
 
 def read_os_release() -> dict[str, str]:
-    path = Path(
-        "/etc/os-release"
-    )
+    path = Path("/etc/os-release")
 
     result: dict[str, str] = {}
 
@@ -28,11 +26,7 @@ def read_os_release() -> dict[str, str]:
         for line in handle:
             line = line.strip()
 
-            if (
-                not line
-                or line.startswith("#")
-                or "=" not in line
-            ):
+            if not line or line.startswith("#") or "=" not in line:
                 continue
 
             key, value = line.split(
@@ -40,11 +34,7 @@ def read_os_release() -> dict[str, str]:
                 1,
             )
 
-            result[key] = (
-                value.strip().strip(
-                    '"'
-                )
-            )
+            result[key] = value.strip().strip('"')
 
     return result
 
@@ -52,19 +42,12 @@ def read_os_release() -> dict[str, str]:
 def machine_id() -> str | None:
     paths = (
         Path("/etc/machine-id"),
-        Path(
-            "/var/lib/dbus/machine-id"
-        ),
+        Path("/var/lib/dbus/machine-id"),
     )
 
     for path in paths:
         try:
-            value = (
-                path.read_text(
-                    encoding="utf-8"
-                )
-                .strip()
-            )
+            value = path.read_text(encoding="utf-8").strip()
 
             if value:
                 return value
@@ -79,42 +62,18 @@ def collect_system_identity() -> dict:
 
     payload = {
         "machine_id": machine_id(),
-        "hostname": (
-            socket.gethostname()
-        ),
+        "hostname": (socket.gethostname()),
         "fqdn": socket.getfqdn(),
-        "os_name": os_release.get(
-            "NAME"
-        ),
-        "os_id": os_release.get(
-            "ID"
-        ),
-        "os_version": os_release.get(
-            "VERSION_ID"
-        ),
-        "os_pretty_name": (
-            os_release.get(
-                "PRETTY_NAME"
-            )
-        ),
-        "kernel_system": (
-            platform.system()
-        ),
-        "kernel_release": (
-            platform.release()
-        ),
-        "kernel_version": (
-            platform.version()
-        ),
-        "architecture": (
-            platform.machine()
-        ),
-        "processor": (
-            platform.processor()
-        ),
-        "cpu_count": (
-            os.cpu_count()
-        ),
+        "os_name": os_release.get("NAME"),
+        "os_id": os_release.get("ID"),
+        "os_version": os_release.get("VERSION_ID"),
+        "os_pretty_name": (os_release.get("PRETTY_NAME")),
+        "kernel_system": (platform.system()),
+        "kernel_release": (platform.release()),
+        "kernel_version": (platform.version()),
+        "architecture": (platform.machine()),
+        "processor": (platform.processor()),
+        "cpu_count": (os.cpu_count()),
     }
 
     return build_record(
@@ -142,9 +101,7 @@ def collect_interfaces() -> dict:
 
             seen.add(address)
 
-            addresses.append(
-                address
-            )
+            addresses.append(address)
     except OSError:
         pass
 

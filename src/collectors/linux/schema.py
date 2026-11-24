@@ -6,9 +6,7 @@ from typing import Any
 
 
 def utc_now() -> str:
-    return datetime.now(
-        timezone.utc
-    ).isoformat()
+    return datetime.now(timezone.utc).isoformat()
 
 
 def hostname() -> str:
@@ -27,14 +25,8 @@ def build_record(
         "record_type": "linux_telemetry",
         "provider": "linux",
         "signal_type": signal_type,
-        "timestamp": (
-            timestamp
-            if timestamp
-            else utc_now()
-        ),
-        "environment_id": (
-            environment_id
-        ),
+        "timestamp": (timestamp if timestamp else utc_now()),
+        "environment_id": (environment_id),
         "host_name": hostname(),
         "payload": payload,
         "collected_at": utc_now(),

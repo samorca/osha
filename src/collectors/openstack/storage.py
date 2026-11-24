@@ -56,9 +56,7 @@ def resource_identifier(
     )
 
     for key in keys:
-        value = optional_string(
-            payload.get(key)
-        )
+        value = optional_string(payload.get(key))
 
         if value:
             return value
@@ -76,33 +74,15 @@ def normalize_volume(
 
     raw = as_dict(volume)
 
-    volume_id = (
-        raw.get("id")
-    )
+    volume_id = raw.get("id")
 
-    project_id = (
-        raw.get("project_id")
-        or raw.get(
-            "os-vol-tenant-attr:"
-            "tenant_id"
-        )
-    )
+    project_id = raw.get("project_id") or raw.get("os-vol-tenant-attr:tenant_id")
 
-    status = (
-        optional_string(
-            raw.get("status")
-        )
-    )
+    status = optional_string(raw.get("status"))
 
-    status_normalized = (
-        status.lower()
-        if status
-        else None
-    )
+    status_normalized = status.lower() if status else None
 
-    healthy: Optional[bool] = (
-        None
-    )
+    healthy: Optional[bool] = None
 
     if status_normalized in {
         "available",
@@ -121,136 +101,46 @@ def normalize_volume(
     }:
         healthy = False
 
-    attachments = (
-        raw.get("attachments")
-        or raw.get(
-            "volume_attachment"
-        )
-        or []
-    )
+    attachments = raw.get("attachments") or raw.get("volume_attachment") or []
 
-    metadata = (
-        raw.get("metadata")
-        or {}
-    )
+    metadata = raw.get("metadata") or {}
 
     return sanitize(
         {
-            "volume_id": (
-                volume_id
-            ),
-            "name": raw.get(
-                "name"
-            ),
-            "description": (
-                raw.get(
-                    "description"
-                )
-            ),
+            "volume_id": (volume_id),
+            "name": raw.get("name"),
+            "description": (raw.get("description")),
             "status": status,
             "healthy": healthy,
-            "size_gb": (
-                raw.get("size")
-            ),
-            "project_id": (
-                project_id
-            ),
-            "user_id": (
-                raw.get("user_id")
-            ),
-            "volume_type": (
-                raw.get(
-                    "volume_type"
-                )
-            ),
-            "volume_type_id": (
-                raw.get(
-                    "volume_type_id"
-                )
-            ),
-            "availability_zone": (
-                raw.get(
-                    "availability_zone"
-                )
-            ),
+            "size_gb": (raw.get("size")),
+            "project_id": (project_id),
+            "user_id": (raw.get("user_id")),
+            "volume_type": (raw.get("volume_type")),
+            "volume_type_id": (raw.get("volume_type_id")),
+            "availability_zone": (raw.get("availability_zone")),
             "bootable": (
-                raw.get(
-                    "is_bootable"
-                )
-                if (
-                    "is_bootable"
-                    in raw
-                )
-                else raw.get(
-                    "bootable"
-                )
+                raw.get("is_bootable")
+                if ("is_bootable" in raw)
+                else raw.get("bootable")
             ),
             "encrypted": (
-                raw.get(
-                    "is_encrypted"
-                )
-                if (
-                    "is_encrypted"
-                    in raw
-                )
-                else raw.get(
-                    "encrypted"
-                )
+                raw.get("is_encrypted")
+                if ("is_encrypted" in raw)
+                else raw.get("encrypted")
             ),
             "multiattach": (
-                raw.get(
-                    "is_multiattach"
-                )
-                if (
-                    "is_multiattach"
-                    in raw
-                )
-                else raw.get(
-                    "multiattach"
-                )
+                raw.get("is_multiattach")
+                if ("is_multiattach" in raw)
+                else raw.get("multiattach")
             ),
-            "snapshot_id": (
-                raw.get(
-                    "snapshot_id"
-                )
-            ),
-            "source_volume_id": (
-                raw.get(
-                    "source_volume_id"
-                )
-            ),
-            "consistency_group_id": (
-                raw.get(
-                    "consistency_group_id"
-                )
-            ),
-            "group_id": (
-                raw.get(
-                    "group_id"
-                )
-            ),
-            "host": (
-                raw.get(
-                    "host"
-                )
-                or raw.get(
-                    "os-vol-host-attr:"
-                    "host"
-                )
-            ),
-            "migration_status": (
-                raw.get(
-                    "migration_status"
-                )
-            ),
-            "replication_status": (
-                raw.get(
-                    "replication_status"
-                )
-            ),
-            "attachments": (
-                attachments
-            ),
+            "snapshot_id": (raw.get("snapshot_id")),
+            "source_volume_id": (raw.get("source_volume_id")),
+            "consistency_group_id": (raw.get("consistency_group_id")),
+            "group_id": (raw.get("group_id")),
+            "host": (raw.get("host") or raw.get("os-vol-host-attr:host")),
+            "migration_status": (raw.get("migration_status")),
+            "replication_status": (raw.get("replication_status")),
+            "attachments": (attachments),
             "attachment_count": (
                 len(attachments)
                 if isinstance(
@@ -260,16 +150,8 @@ def normalize_volume(
                 else None
             ),
             "metadata": metadata,
-            "created_at": (
-                raw.get(
-                    "created_at"
-                )
-            ),
-            "updated_at": (
-                raw.get(
-                    "updated_at"
-                )
-            ),
+            "created_at": (raw.get("created_at")),
+            "updated_at": (raw.get("updated_at")),
         }
     )
 
@@ -284,19 +166,11 @@ def normalize_snapshot(
 
     raw = as_dict(snapshot)
 
-    status = optional_string(
-        raw.get("status")
-    )
+    status = optional_string(raw.get("status"))
 
-    normalized_status = (
-        status.lower()
-        if status
-        else None
-    )
+    normalized_status = status.lower() if status else None
 
-    healthy: Optional[bool] = (
-        None
-    )
+    healthy: Optional[bool] = None
 
     if normalized_status in {
         "available",
@@ -312,58 +186,21 @@ def normalize_snapshot(
 
     return sanitize(
         {
-            "snapshot_id": (
-                raw.get("id")
-            ),
-            "name": raw.get(
-                "name"
-            ),
-            "description": (
-                raw.get(
-                    "description"
-                )
-            ),
+            "snapshot_id": (raw.get("id")),
+            "name": raw.get("name"),
+            "description": (raw.get("description")),
             "status": status,
             "healthy": healthy,
-            "volume_id": (
-                raw.get(
-                    "volume_id"
-                )
-            ),
-            "size_gb": (
-                raw.get("size")
-            ),
+            "volume_id": (raw.get("volume_id")),
+            "size_gb": (raw.get("size")),
             "project_id": (
-                raw.get(
-                    "project_id"
-                )
-                or raw.get(
-                    "os-extended-snapshot-"
-                    "attributes:"
-                    "project_id"
-                )
+                raw.get("project_id")
+                or raw.get("os-extended-snapshot-attributes:project_id")
             ),
-            "progress": (
-                raw.get(
-                    "progress"
-                )
-            ),
-            "metadata": (
-                raw.get(
-                    "metadata"
-                )
-                or {}
-            ),
-            "created_at": (
-                raw.get(
-                    "created_at"
-                )
-            ),
-            "updated_at": (
-                raw.get(
-                    "updated_at"
-                )
-            ),
+            "progress": (raw.get("progress")),
+            "metadata": (raw.get("metadata") or {}),
+            "created_at": (raw.get("created_at")),
+            "updated_at": (raw.get("updated_at")),
         }
     )
 
@@ -373,19 +210,11 @@ def normalize_backup(
 ) -> dict:
     raw = as_dict(backup)
 
-    status = optional_string(
-        raw.get("status")
-    )
+    status = optional_string(raw.get("status"))
 
-    normalized_status = (
-        status.lower()
-        if status
-        else None
-    )
+    normalized_status = status.lower() if status else None
 
-    healthy: Optional[bool] = (
-        None
-    )
+    healthy: Optional[bool] = None
 
     if normalized_status in {
         "available",
@@ -402,84 +231,27 @@ def normalize_backup(
 
     return sanitize(
         {
-            "backup_id": (
-                raw.get("id")
-            ),
-            "name": raw.get(
-                "name"
-            ),
-            "description": (
-                raw.get(
-                    "description"
-                )
-            ),
+            "backup_id": (raw.get("id")),
+            "name": raw.get("name"),
+            "description": (raw.get("description")),
             "status": status,
             "healthy": healthy,
-            "volume_id": (
-                raw.get(
-                    "volume_id"
-                )
-            ),
-            "snapshot_id": (
-                raw.get(
-                    "snapshot_id"
-                )
-            ),
-            "parent_id": (
-                raw.get(
-                    "parent_id"
-                )
-            ),
-            "project_id": (
-                raw.get(
-                    "project_id"
-                )
-            ),
-            "size_gb": (
-                raw.get("size")
-            ),
-            "object_count": (
-                raw.get(
-                    "object_count"
-                )
-            ),
-            "container": (
-                raw.get(
-                    "container"
-                )
-            ),
-            "availability_zone": (
-                raw.get(
-                    "availability_zone"
-                )
-            ),
+            "volume_id": (raw.get("volume_id")),
+            "snapshot_id": (raw.get("snapshot_id")),
+            "parent_id": (raw.get("parent_id")),
+            "project_id": (raw.get("project_id")),
+            "size_gb": (raw.get("size")),
+            "object_count": (raw.get("object_count")),
+            "container": (raw.get("container")),
+            "availability_zone": (raw.get("availability_zone")),
             "is_incremental": (
-                raw.get(
-                    "is_incremental"
-                )
-                if (
-                    "is_incremental"
-                    in raw
-                )
-                else raw.get(
-                    "incremental"
-                )
+                raw.get("is_incremental")
+                if ("is_incremental" in raw)
+                else raw.get("incremental")
             ),
-            "has_dependent_backups": (
-                raw.get(
-                    "has_dependent_backups"
-                )
-            ),
-            "created_at": (
-                raw.get(
-                    "created_at"
-                )
-            ),
-            "updated_at": (
-                raw.get(
-                    "updated_at"
-                )
-            ),
+            "has_dependent_backups": (raw.get("has_dependent_backups")),
+            "created_at": (raw.get("created_at")),
+            "updated_at": (raw.get("updated_at")),
         }
     )
 
@@ -487,46 +259,18 @@ def normalize_backup(
 def normalize_volume_type(
     volume_type: Any,
 ) -> dict:
-    raw = as_dict(
-        volume_type
-    )
+    raw = as_dict(volume_type)
 
-    extra_specs = (
-        raw.get(
-            "extra_specs"
-        )
-        or raw.get(
-            "extra_specs_properties"
-        )
-        or {}
-    )
+    extra_specs = raw.get("extra_specs") or raw.get("extra_specs_properties") or {}
 
     return sanitizee(
         {
-            "volume_typeid": (
-                raw.get("id")
-            ),
-            "name": (
-                raw.get("name")
-            ),
-            "description": (
-                raw.get(
-                    "description"
-                )
-            ),
-            "is_public": (
-                raw.get(
-                    "is_public"
-                )
-            ),
-            "extra_specs": (
-                extra_specs
-            ),
-            "qos_specs_id": (
-                raw.get(
-                    "qos_specs_id"
-                )
-            ),
+            "volume_typeid": (raw.get("id")),
+            "name": (raw.get("name")),
+            "description": (raw.get("description")),
+            "is_public": (raw.get("is_public")),
+            "extra_specs": (extra_specs),
+            "qos_specs_id": (raw.get("qos_specs_id")),
         }
     )
 
@@ -540,95 +284,39 @@ def normalize_service(
 
     raw = as_dict(service)
 
-    state = optional_string(
-        raw.get("state")
-    )
+    state = optional_string(raw.get("state"))
 
-    status = optional_string(
-        raw.get("status")
-    )
+    status = optional_string(raw.get("status"))
 
-    state_normalized = (
-        state.lower()
-        if state
-        else None
-    )
+    state_normalized = state.lower() if state else None
 
-    status_normalized = (
-        status.lower()
-        if status
-        else None
-    )
+    status_normalized = status.lower() if status else None
 
-    healthy: Optional[bool] = (
-        None
-    )
+    healthy: Optional[bool] = None
 
-    if (
-        state_normalized == "up"
-        and status_normalized
-        in {
-            None,
-            "enabled",
-        }
-    ):
+    if state_normalized == "up" and status_normalized in {
+        None,
+        "enabled",
+    }:
         healthy = True
 
-    elif (
-        state_normalized == "down"
-        or status_normalized
-        == "disabled"
-    ):
+    elif state_normalized == "down" or status_normalized == "disabled":
         healthy = False
 
     return sanitize(
         {
-            "service_id": (
-                raw.get("id")
-            ),
-            "binary": (
-                raw.get("binary")
-            ),
-            "host": (
-                raw.get("host")
-            ),
-            "zone": (
-                raw.get("zone")
-                or raw.get(
-                    "availability_zone"
-                )
-            ),
+            "service_id": (raw.get("id")),
+            "binary": (raw.get("binary")),
+            "host": (raw.get("host")),
+            "zone": (raw.get("zone") or raw.get("availability_zone")),
             "state": state,
             "status": status,
             "healthy": healthy,
-            "disabled_reason": (
-                raw.get(
-                    "disabled_reason"
-                )
-            ),
-            "replication_status": (
-                raw.get(
-                    "replication_status"
-                )
-            ),
-            "active_backend_id": (
-                raw.get(
-                    "active_backend_id"
-                )
-            ),
-            "cluster_name": (
-                raw.get(
-                    "cluster"
-                )
-                or raw.get(
-                    "cluster_name"
-                )
-            ),
-            "updated_at": (
-                raw.get(
-                    "updated_at"
-                )
-            ),
+            "disabled_reason": (raw.get("disabled_reason")),
+            "replication_status": (raw.get("replication_status")),
+            "active_backend_id": (raw.get("active_backend_id")),
+            "cluster_name": (raw.get("cluster") or raw.get("cluster_name")),
+            "updated_at": (raw.get("updated_at")),
         }
     )
 
@@ -640,26 +328,10 @@ def normalize_availability_zone(
 
     return sanitize(
         {
-            "name": (
-                raw.get("name")
-                or raw.get(
-                    "zone_name"
-                )
-            ),
-            "state": (
-                raw.get("state")
-            ),
+            "name": (raw.get("name") or raw.get("zone_name")),
+            "state": (raw.get("state")),
             "available": (
-                raw.get(
-                    "available"
-                )
-                if (
-                    "available"
-                    in raw
-                )
-                else raw.get(
-                    "zone_state"
-                )
+                raw.get("available") if ("available" in raw) else raw.get("zone_state")
             ),
         }
     )
@@ -692,44 +364,24 @@ def collect_resource_list(
 
     try:
         for resource in loader():
-            payload = normalizer(
-                resource
+            payload = normalizer(resource)
+
+            identifier = resource_identifier(
+                payload,
+                fallback=(f"unknown-{signal_type}"),
             )
 
-            identifier = (
-                resource_identifier(
-                    payload,
-                    fallback=(
-                        f"unknown-"
-                        f"{signal_type}"
-                    ),
-                )
-            )
-
-            timestamp = (
-                payload.get(
-                    "updated_at"
-                )
-                or payload.get(
-                    "created_at"
-                )
-            )
+            timestamp = payload.get("updated_at") or payload.get("created_at")
 
             records.append(
                 record(
                     "block_storage",
                     signal_type,
                     payload,
-                    cloud_id=(
-                        ctx.cloud_id
-                    ),
+                    cloud_id=(ctx.cloud_id),
                     region=ctx.region,
-                    environment_id=(
-                        ctx.environment_id
-                    ),
-                    resource_id=(
-                        identifier
-                    ),
+                    environment_id=(ctx.environment_id),
+                    resource_id=(identifier),
                     timestamp=timestamp,
                     source="cinder",
                 )
@@ -740,13 +392,9 @@ def collect_resource_list(
             error(
                 "block_storage",
                 exc,
-                cloud_id=(
-                    ctx.cloud_id
-                ),
+                cloud_id=(ctx.cloud_id),
                 region=ctx.region,
-                environment_id=(
-                    ctx.environment_id
-                ),
+                environment_id=(ctx.environment_id),
                 operation=operation,
             )
         )
@@ -777,38 +425,23 @@ def collect_volumes(
         records = []
 
         for volume in volumes:
-            payload = normalize_volume(
-                volume
-            )
+            payload = normalize_volume(volume)
 
             records.append(
                 record(
                     "block_storage",
                     "volume",
                     payload,
-                    cloud_id=(
-                        ctx.cloud_id
-                    ),
+                    cloud_id=(ctx.cloud_id),
                     region=ctx.region,
-                    environment_id=(
-                        ctx.environment_id
-                    ),
+                    environment_id=(ctx.environment_id),
                     resource_id=(
                         resource_identifier(
                             payload,
-                            fallback=(
-                                "unknown-volume"
-                            ),
+                            fallback=("unknown-volume"),
                         )
                     ),
-                    timestamp=(
-                        payload.get(
-                            "updated_at"
-                        )
-                        or payload.get(
-                            "created_at"
-                        )
-                    ),
+                    timestamp=(payload.get("updated_at") or payload.get("created_at")),
                     source="cinder",
                 )
             )
@@ -819,18 +452,12 @@ def collect_volumes(
         return collect_resource_list(
             ctx,
             signal_type="volume",
-            operation=(
-                "list_project_volumes"
+            operation=("list_project_volumes"),
+            loader=lambda: ctx.conn.block_storage.volumes(
+                details=True,
+                all_projects=False,
             ),
-            loader=lambda: (
-                ctx.conn.block_storage.volumes(
-                    details=True,
-                    all_projects=False,
-                )
-            ),
-            normalizer=(
-                normalize_volume
-            ),
+            normalizer=(normalize_volume),
         )
 
 
@@ -861,76 +488,39 @@ def storage_summary(
 
         counts[signal] += 1
 
-        payload = (
-            item.get("payload")
-            or {}
-        )
+        payload = item.get("payload") or {}
 
         if signal == "volume":
-            status = (
-                payload.get("status")
-                or "unknown"
-            )
+            status = payload.get("status") or "unknown"
 
-            volume_statuses[
-                str(status)
-            ] += 1
+            volume_statuses[str(status)] += 1
 
             try:
-                volume_total_gb += int(
-                    payload.get(
-                        "size_gb"
-                    )
-                    or 0
-                )
+                volume_total_gb += int(payload.get("size_gb") or 0)
             except (
                 TypeError,
                 ValueError,
             ):
                 pass
 
-            if (
-                payload.get(
-                    "attachment_count"
-                )
-                or 0
-            ) > 0:
+            if (payload.get("attachment_count") or 0) > 0:
                 volume_attached_count += 1
 
-            if (
-                payload.get("healthy")
-                is False
-            ):
+            if payload.get("healthy") is False:
                 unhealthy_volumes += 1
 
         elif signal == "snapshot":
-            status = (
-                payload.get("status")
-                or "unknown"
-            )
+            status = payload.get("status") or "unknown"
 
-            snapshot_statuses[
-                str(status)
-            ] += 1
+            snapshot_statuses[str(status)] += 1
 
         elif signal == "backup":
-            status = (
-                payload.get("status")
-                or "unknown"
-            )
+            status = payload.get("status") or "unknown"
 
-            backup_statuses[
-                str(status)
-            ] += 1
+            backup_statuses[str(status)] += 1
 
-        elif signal == (
-            "block_storage_service"
-        ):
-            healthy = (
-                payload.get(
-                    "healthy"
-                )
-            )
+        elif signal == ("block_storage_service"):
+            healthy = payload.get("healthy")
 
             if healthy is True:
                 healthy_services += 1
@@ -940,45 +530,19 @@ def storage_summary(
                 unknown_services += 1
 
     return {
-        "record_counts": (
-            dict(counts)
-        ),
-        "volume_statuses": (
-            dict(
-                volume_statuses
-            )
-        ),
-        "snapshot_statuses": (
-            dict(
-                snapshot_statuses
-            )
-        ),
-        "backup_statuses": (
-            dict(
-                backup_statuses
-            )
-        ),
+        "record_counts": (dict(counts)),
+        "volume_statuses": (dict(volume_statuses)),
+        "snapshot_statuses": (dict(snapshot_statuses)),
+        "backup_statuses": (dict(backup_statuses)),
         "volume_capacity": {
-            "provisioned_gb": (
-                volume_total_gb
-            ),
-            "attached_volume_count": (
-                volume_attached_count
-            ),
-            "unhealthy_volume_count": (
-                unhealthy_volumes
-            ),
+            "provisioned_gb": (volume_total_gb),
+            "attached_volume_count": (volume_attached_count),
+            "unhealthy_volume_count": (unhealthy_volumes),
         },
         "cinder_services": {
-            "healthy": (
-                healthy_services
-            ),
-            "unhealthy": (
-                unhealthy_services
-            ),
-            "unknown": (
-                unknown_services
-            ),
+            "healthy": (healthy_services),
+            "unhealthy": (unhealthy_services),
+            "unknown": (unknown_services),
         },
     }
 
@@ -1005,44 +569,26 @@ def collect(
         return [
             unavailable(
                 "block_storage",
-                (
-                    "Block Storage service "
-                    "endpoint is unavailable"
-                ),
-                cloud_id=(
-                    ctx.cloud_id
-                ),
+                ("Block Storage service endpoint is unavailable"),
+                cloud_id=(ctx.cloud_id),
                 region=ctx.region,
-                environment_id=(
-                    ctx.environment_id
-                ),
+                environment_id=(ctx.environment_id),
             )
         ]
 
     records: List[dict] = []
 
-    records.extend(
-        collect_volumes(
-            ctx
-        )
-    )
+    records.extend(collect_volumes(ctx))
 
     records.extend(
         collect_resource_list(
             ctx,
             signal_type="snapshot",
-            operation=(
-                "list_snapshots"
+            operation=("list_snapshots"),
+            loader=lambda: ctx.conn.block_storage.snapshots(
+                details=True,
             ),
-            loader=lambda: (
-                ctx.conn.block_storage.
-                snapshots(
-                    details=True,
-                )
-            ),
-            normalizer=(
-                normalize_snapshot
-            ),
+            normalizer=(normalize_snapshot),
         )
     )
 
@@ -1050,76 +596,41 @@ def collect(
         collect_resource_list(
             ctx,
             signal_type="backup",
-            operation=(
-                "list_backups"
+            operation=("list_backups"),
+            loader=lambda: ctx.conn.block_storage.backups(
+                details=True,
             ),
-            loader=lambda: (
-                ctx.conn.block_storage.
-                backups(
-                    details=True,
-                )
-            ),
-            normalizer=(
-                normalize_backup
-            ),
+            normalizer=(normalize_backup),
         )
     )
 
     records.extend(
         collect_resource_list(
             ctx,
-            signal_type=(
-                "volume_type"
-            ),
-            operation=(
-                "list_volume_types"
-            ),
-            loader=lambda: (
-                ctx.conn.block_storage.
-                types()
-            ),
-            normalizer=(
-                normalize_volume_type
-            ),
+            signal_type=("volume_type"),
+            operation=("list_volume_types"),
+            loader=lambda: ctx.conn.block_storage.types(),
+            normalizer=(normalize_volume_type),
         )
     )
 
     records.extend(
         collect_resource_list(
             ctx,
-            signal_type=(
-                "block_storage_service"
-            ),
-            operation=(
-                "list_cinder_services"
-            ),
-            loader=lambda: (
-                ctx.conn.block_storage.
-                services()
-            ),
-            normalizer=(
-                normalize_service
-            ),
+            signal_type=("block_storage_service"),
+            operation=("list_cinder_services"),
+            loader=lambda: ctx.conn.block_storage.services(),
+            normalizer=(normalize_service),
         )
     )
 
     records.extend(
         collect_resource_list(
             ctx,
-            signal_type=(
-                "storage_availability_zone"
-            ),
-            operation=(
-                "list_storage_"
-                "availability_zones"
-            ),
-            loader=lambda: (
-                ctx.conn.block_storage.
-                availability_zones()
-            ),
-            normalizer=(
-                normalize_availability_zone
-            ),
+            signal_type=("storage_availability_zone"),
+            operation=("list_storage_availability_zones"),
+            loader=lambda: ctx.conn.block_storage.availability_zones(),
+            normalizer=(normalize_availability_zone),
         )
     )
 
@@ -1127,19 +638,11 @@ def collect(
         record(
             "block_storage",
             "storage_summary",
-            storage_summary(
-                records
-            ),
-            cloud_id=(
-                ctx.cloud_id
-            ),
+            storage_summary(records),
+            cloud_id=(ctx.cloud_id),
             region=ctx.region,
-            environment_id=(
-                ctx.environment_id
-            ),
-            resource_id=(
-                ctx.cloud_id
-            ),
+            environment_id=(ctx.environment_id),
+            resource_id=(ctx.cloud_id),
             source="osha",
         )
     )

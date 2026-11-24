@@ -76,6 +76,7 @@ OPTIMIZATION_SCHEMA_VERSION = "1"
 # Workload kind
 # ------------------------------------------------------------------
 
+
 class WorkloadKind(
     str,
     Enum,
@@ -92,6 +93,7 @@ class WorkloadKind(
 # Optimization level
 # ------------------------------------------------------------------
 
+
 class OptimizationLevel(
     str,
     Enum,
@@ -105,6 +107,7 @@ class OptimizationLevel(
 # ------------------------------------------------------------------
 # Recommendation severity
 # ------------------------------------------------------------------
+
 
 class RecommendationPriority(
     str,
@@ -120,6 +123,7 @@ class RecommendationPriority(
 # Recommendation type
 # ------------------------------------------------------------------
 
+
 class RecommendationKind(
     str,
     Enum,
@@ -129,9 +133,7 @@ class RecommendationKind(
     BATCH_SIZE = "batch_size"
     DATA_LOADER = "data_loader"
     PIN_MEMORY = "pin_memory"
-    NON_BLOCKING_TRANSFER = (
-        "non_blocking_transfer"
-    )
+    NON_BLOCKING_TRANSFER = "non_blocking_transfer"
     COMPILATION = "compilation"
     THREADING = "threading"
     MEMORY = "memory"
@@ -146,6 +148,7 @@ class RecommendationKind(
 # Recommendation confidence
 # ------------------------------------------------------------------
 
+
 class RecommendationConfidence(
     str,
     Enum,
@@ -158,6 +161,7 @@ class RecommendationConfidence(
 # ------------------------------------------------------------------
 # Optimization application state
 # ------------------------------------------------------------------
+
 
 class RecommendationDisposition(
     str,
@@ -173,6 +177,7 @@ class RecommendationDisposition(
 # Helpers
 # ------------------------------------------------------------------
 
+
 def _required_text(
     value: Any,
     *,
@@ -180,26 +185,15 @@ def _required_text(
     maximum_length: int = 2048,
 ) -> str:
     if value is None:
-        raise ValueError(
-            f"{name} is required"
-        )
+        raise ValueError(f"{name} is required")
 
-    text = str(
-        value
-    ).strip()
+    text = str(value).strip()
 
     if not text:
-        raise ValueError(
-            f"{name} cannot be empty"
-        )
+        raise ValueError(f"{name} cannot be empty")
 
-    if len(
-        text
-    ) > maximum_length:
-        raise ValueError(
-            f"{name} exceeds maximum "
-            f"length {maximum_length}"
-        )
+    if len(text) > maximum_length:
+        raise ValueError(f"{name} exceeds maximum length {maximum_length}")
 
     return text
 
@@ -216,27 +210,19 @@ def _optional_non_negative_int(
         value,
         bool,
     ):
-        raise ValueError(
-            f"{name} must be an integer"
-        )
+        raise ValueError(f"{name} must be an integer")
 
     try:
-        result = int(
-            value
-        )
+        result = int(value)
 
     except (
         TypeError,
         ValueError,
     ) as exc:
-        raise ValueError(
-            f"{name} must be an integer"
-        ) from exc
+        raise ValueError(f"{name} must be an integer") from exc
 
     if result < 0:
-        raise ValueError(
-            f"{name} must be >= 0"
-        )
+        raise ValueError(f"{name} must be >= 0")
 
     return result
 
@@ -251,13 +237,8 @@ def _optional_positive_int(
         name=name,
     )
 
-    if (
-        result is not None
-        and result < 1
-    ):
-        raise ValueError(
-            f"{name} must be >= 1"
-        )
+    if result is not None and result < 1:
+        raise ValueError(f"{name} must be >= 1")
 
     return result
 
@@ -266,9 +247,7 @@ def _optional_finite_number(
     value: Any,
     *,
     name: str,
-    minimum: Optional[
-        float
-    ] = None,
+    minimum: Optional[float] = None,
 ) -> Optional[float]:
     if value is None:
         return None
@@ -277,53 +256,34 @@ def _optional_finite_number(
         value,
         bool,
     ):
-        raise ValueError(
-            f"{name} must be numeric"
-        )
+        raise ValueError(f"{name} must be numeric")
 
     try:
-        result = float(
-            value
-        )
+        result = float(value)
 
     except (
         TypeError,
         ValueError,
     ) as exc:
-        raise ValueError(
-            f"{name} must be numeric"
-        ) from exc
+        raise ValueError(f"{name} must be numeric") from exc
 
-    if not math.isfinite(
-        result
-    ):
-        raise ValueError(
-            f"{name} must be finite"
-        )
+    if not math.isfinite(result):
+        raise ValueError(f"{name} must be finite")
 
-    if (
-        minimum is not None
-        and result < minimum
-    ):
-        raise ValueError(
-            f"{name} must be >= {minimum}"
-        )
+    if minimum is not None and result < minimum:
+        raise ValueError(f"{name} must be >= {minimum}")
 
     return result
 
 
 def _unique_strings(
-    values: Iterable[
-        Any
-    ],
+    values: Iterable[Any],
 ) -> Tuple[str, ...]:
     output = []
     seen = set()
 
     for value in values:
-        text = str(
-            value
-        ).strip()
+        text = str(value).strip()
 
         if not text:
             continue
@@ -331,22 +291,17 @@ def _unique_strings(
         if text in seen:
             continue
 
-        seen.add(
-            text
-        )
+        seen.add(text)
 
-        output.append(
-            text
-        )
+        output.append(text)
 
-    return tuple(
-        output
-    )
+    return tuple(output)
 
 
 # ------------------------------------------------------------------
 # Workload description
 # ------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class AcceleratorWorkload:
@@ -362,49 +317,29 @@ class AcceleratorWorkload:
 
     kind: str
 
-    batch_size: Optional[
-        int
-    ] = None
+    batch_size: Optional[int] = None
 
-    model_parameter_count: Optional[
-        int
-    ] = None
+    model_parameter_count: Optional[int] = None
 
-    estimated_model_bytes: Optional[
-        int
-    ] = None
+    estimated_model_bytes: Optional[int] = None
 
-    estimated_input_bytes: Optional[
-        int
-    ] = None
+    estimated_input_bytes: Optional[int] = None
 
-    estimated_peak_memory_bytes: Optional[
-        int
-    ] = None
+    estimated_peak_memory_bytes: Optional[int] = None
 
-    sequence_length: Optional[
-        int
-    ] = None
+    sequence_length: Optional[int] = None
 
-    precision: str = (
-        AcceleratorPrecision.FLOAT32.value
-    )
+    precision: str = AcceleratorPrecision.FLOAT32.value
 
     mixed_precision_enabled: bool = False
 
     gradient_accumulation_steps: int = 1
 
-    data_loader_workers: Optional[
-        int
-    ] = None
+    data_loader_workers: Optional[int] = None
 
-    pin_memory_enabled: Optional[
-        bool
-    ] = None
+    pin_memory_enabled: Optional[bool] = None
 
-    non_blocking_transfers: Optional[
-        bool
-    ] = None
+    non_blocking_transfers: Optional[bool] = None
 
     compiled: bool = False
 
@@ -417,25 +352,13 @@ class AcceleratorWorkload:
     attributes: Mapping[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def validate(
         self,
     ) -> None:
-        if (
-            self.kind
-            not in {
-                item.value
-                for item
-                in WorkloadKind
-            }
-        ):
-            raise ValueError(
-                "Unsupported accelerator "
-                f"workload kind: {self.kind}"
-            )
+        if self.kind not in {item.value for item in WorkloadKind}:
+            raise ValueError(f"Unsupported accelerator workload kind: {self.kind}")
 
         _optional_positive_int(
             self.batch_size,
@@ -459,9 +382,7 @@ class AcceleratorWorkload:
 
         _optional_non_negative_int(
             self.estimated_peak_memory_bytes,
-            name=(
-                "estimated_peak_memory_bytes"
-            ),
+            name=("estimated_peak_memory_bytes"),
         )
 
         _optional_positive_int(
@@ -469,31 +390,17 @@ class AcceleratorWorkload:
             name="sequence_length",
         )
 
-        if (
-            self.precision
-            not in {
-                item.value
-                for item
-                in AcceleratorPrecision
-            }
-        ):
-            raise ValueError(
-                "Unsupported workload "
-                f"precision: {self.precision}"
-            )
+        if self.precision not in {item.value for item in AcceleratorPrecision}:
+            raise ValueError(f"Unsupported workload precision: {self.precision}")
 
         if (
             isinstance(
                 self.gradient_accumulation_steps,
                 bool,
             )
-            or self.gradient_accumulation_steps
-            < 1
+            or self.gradient_accumulation_steps < 1
         ):
-            raise ValueError(
-                "gradient_accumulation_steps "
-                "must be >= 1"
-            )
+            raise ValueError("gradient_accumulation_steps must be >= 1")
 
         if self.data_loader_workers is not None:
             _optional_non_negative_int(
@@ -505,19 +412,13 @@ class AcceleratorWorkload:
     def training(
         self,
     ) -> bool:
-        return (
-            self.kind
-            == WorkloadKind.TRAINING.value
-        )
+        return self.kind == WorkloadKind.TRAINING.value
 
     @property
     def inference(
         self,
     ) -> bool:
-        return (
-            self.kind
-            == WorkloadKind.INFERENCE.value
-        )
+        return self.kind == WorkloadKind.INFERENCE.value
 
     def to_dict(
         self,
@@ -526,82 +427,30 @@ class AcceleratorWorkload:
 
         return {
             "kind": self.kind,
-
-            "batch_size": (
-                self.batch_size
-            ),
-
-            "model_parameter_count": (
-                self.model_parameter_count
-            ),
-
-            "estimated_model_bytes": (
-                self.estimated_model_bytes
-            ),
-
-            "estimated_input_bytes": (
-                self.estimated_input_bytes
-            ),
-
-            "estimated_peak_memory_bytes": (
-                self.
-                estimated_peak_memory_bytes
-            ),
-
-            "sequence_length": (
-                self.sequence_length
-            ),
-
+            "batch_size": (self.batch_size),
+            "model_parameter_count": (self.model_parameter_count),
+            "estimated_model_bytes": (self.estimated_model_bytes),
+            "estimated_input_bytes": (self.estimated_input_bytes),
+            "estimated_peak_memory_bytes": (self.estimated_peak_memory_bytes),
+            "sequence_length": (self.sequence_length),
             "precision": self.precision,
-
-            "mixed_precision_enabled": (
-                self.mixed_precision_enabled
-            ),
-
-            "gradient_accumulation_steps": (
-                self.
-                gradient_accumulation_steps
-            ),
-
-            "data_loader_workers": (
-                self.data_loader_workers
-            ),
-
-            "pin_memory_enabled": (
-                self.pin_memory_enabled
-            ),
-
-            "non_blocking_transfers": (
-                self.non_blocking_transfers
-            ),
-
+            "mixed_precision_enabled": (self.mixed_precision_enabled),
+            "gradient_accumulation_steps": (self.gradient_accumulation_steps),
+            "data_loader_workers": (self.data_loader_workers),
+            "pin_memory_enabled": (self.pin_memory_enabled),
+            "non_blocking_transfers": (self.non_blocking_transfers),
             "compiled": self.compiled,
-
-            "latency_sensitive": (
-                self.latency_sensitive
-            ),
-
-            "throughput_sensitive": (
-                self.throughput_sensitive
-            ),
-
-            "deterministic": (
-                self.deterministic
-            ),
-
-            "attributes": (
-                to_json_safe(
-                    dict(
-                        self.attributes
-                    )
-                )
-            ),
+            "latency_sensitive": (self.latency_sensitive),
+            "throughput_sensitive": (self.throughput_sensitive),
+            "deterministic": (self.deterministic),
+            "attributes": (to_json_safe(dict(self.attributes))),
         }
 
 
 # ------------------------------------------------------------------
 # Optimization constraints
 # ------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class OptimizationConstraints:
@@ -613,9 +462,7 @@ class OptimizationConstraints:
     caller-controlled limits.
     """
 
-    level: str = (
-        OptimizationLevel.BALANCED.value
-    )
+    level: str = OptimizationLevel.BALANCED.value
 
     allow_precision_change: bool = True
 
@@ -631,44 +478,24 @@ class OptimizationConstraints:
 
     allow_memory_tuning: bool = True
 
-    minimum_batch_size: Optional[
-        int
-    ] = None
+    minimum_batch_size: Optional[int] = None
 
-    maximum_batch_size: Optional[
-        int
-    ] = None
+    maximum_batch_size: Optional[int] = None
 
-    maximum_memory_fraction: Optional[
-        float
-    ] = None
+    maximum_memory_fraction: Optional[float] = None
 
-    required_precision: Optional[
-        str
-    ] = None
+    required_precision: Optional[str] = None
 
     attributes: Mapping[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def validate(
         self,
     ) -> None:
-        if (
-            self.level
-            not in {
-                item.value
-                for item
-                in OptimizationLevel
-            }
-        ):
-            raise ValueError(
-                "Unknown optimization level: "
-                f"{self.level}"
-            )
+        if self.level not in {item.value for item in OptimizationLevel}:
+            raise ValueError(f"Unknown optimization level: {self.level}")
 
         minimum = _optional_positive_int(
             self.minimum_batch_size,
@@ -680,15 +507,8 @@ class OptimizationConstraints:
             name="maximum_batch_size",
         )
 
-        if (
-            minimum is not None
-            and maximum is not None
-            and minimum > maximum
-        ):
-            raise ValueError(
-                "minimum_batch_size cannot "
-                "exceed maximum_batch_size"
-            )
+        if minimum is not None and maximum is not None and minimum > maximum:
+            raise ValueError("minimum_batch_size cannot exceed maximum_batch_size")
 
         fraction = _optional_finite_number(
             self.maximum_memory_fraction,
@@ -696,28 +516,14 @@ class OptimizationConstraints:
             minimum=0.0,
         )
 
-        if (
-            fraction is not None
-            and fraction > 1.0
-        ):
-            raise ValueError(
-                "maximum_memory_fraction "
-                "must be <= 1"
-            )
+        if fraction is not None and fraction > 1.0:
+            raise ValueError("maximum_memory_fraction must be <= 1")
 
         if self.required_precision is not None:
-            if (
-                self.required_precision
-                not in {
-                    item.value
-                    for item
-                    in AcceleratorPrecision
-                }
-            ):
-                raise ValueError(
-                    "Unsupported required "
-                    "precision."
-                )
+            if self.required_precision not in {
+                item.value for item in AcceleratorPrecision
+            }:
+                raise ValueError("Unsupported required precision.")
 
     def to_dict(
         self,
@@ -726,64 +532,25 @@ class OptimizationConstraints:
 
         return {
             "level": self.level,
-
-            "allow_precision_change": (
-                self.allow_precision_change
-            ),
-
-            "allow_mixed_precision": (
-                self.allow_mixed_precision
-            ),
-
-            "allow_batch_size_change": (
-                self.allow_batch_size_change
-            ),
-
-            "allow_compilation": (
-                self.allow_compilation
-            ),
-
-            "allow_thread_change": (
-                self.allow_thread_change
-            ),
-
-            "allow_data_loader_change": (
-                self.allow_data_loader_change
-            ),
-
-            "allow_memory_tuning": (
-                self.allow_memory_tuning
-            ),
-
-            "minimum_batch_size": (
-                self.minimum_batch_size
-            ),
-
-            "maximum_batch_size": (
-                self.maximum_batch_size
-            ),
-
-            "maximum_memory_fraction": (
-                self.maximum_memory_fraction
-            ),
-
-            "required_precision": (
-                self.required_precision
-            ),
-
-            "attributes": (
-                to_json_safe(
-                    dict(
-                        self.attributes
-                    )
-                )
-            ),
+            "allow_precision_change": (self.allow_precision_change),
+            "allow_mixed_precision": (self.allow_mixed_precision),
+            "allow_batch_size_change": (self.allow_batch_size_change),
+            "allow_compilation": (self.allow_compilation),
+            "allow_thread_change": (self.allow_thread_change),
+            "allow_data_loader_change": (self.allow_data_loader_change),
+            "allow_memory_tuning": (self.allow_memory_tuning),
+            "minimum_batch_size": (self.minimum_batch_size),
+            "maximum_batch_size": (self.maximum_batch_size),
+            "maximum_memory_fraction": (self.maximum_memory_fraction),
+            "required_precision": (self.required_precision),
+            "attributes": (to_json_safe(dict(self.attributes))),
         }
 
 
 # ------------------------------------------------------------------
 # Optimization recommendation
 # ------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class OptimizationRecommendation:
@@ -807,21 +574,13 @@ class OptimizationRecommendation:
 
     current_value: Any = None
 
-    priority: str = (
-        RecommendationPriority.MEDIUM.value
-    )
+    priority: str = RecommendationPriority.MEDIUM.value
 
-    confidence: str = (
-        RecommendationConfidence.MEDIUM.value
-    )
+    confidence: str = RecommendationConfidence.MEDIUM.value
 
-    disposition: str = (
-        RecommendationDisposition.RECOMMENDED.value
-    )
+    disposition: str = RecommendationDisposition.RECOMMENDED.value
 
-    expected_effect: Optional[
-        str
-    ] = None
+    expected_effect: Optional[str] = None
 
     risks: Tuple[
         str,
@@ -843,25 +602,13 @@ class OptimizationRecommendation:
     attributes: Mapping[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def validate(
         self,
     ) -> None:
-        if (
-            self.kind
-            not in {
-                item.value
-                for item
-                in RecommendationKind
-            }
-        ):
-            raise ValueError(
-                "Unsupported recommendation "
-                f"kind: {self.kind}"
-            )
+        if self.kind not in {item.value for item in RecommendationKind}:
+            raise ValueError(f"Unsupported recommendation kind: {self.kind}")
 
         _required_text(
             self.title,
@@ -874,57 +621,24 @@ class OptimizationRecommendation:
             maximum_length=4096,
         )
 
-        if (
-            self.priority
-            not in {
-                item.value
-                for item
-                in RecommendationPriority
-            }
-        ):
+        if self.priority not in {item.value for item in RecommendationPriority}:
+            raise ValueError(f"Unsupported recommendation priority: {self.priority}")
+
+        if self.confidence not in {item.value for item in RecommendationConfidence}:
             raise ValueError(
-                "Unsupported recommendation "
-                f"priority: {self.priority}"
+                f"Unsupported recommendation confidence: {self.confidence}"
             )
 
-        if (
-            self.confidence
-            not in {
-                item.value
-                for item
-                in RecommendationConfidence
-            }
-        ):
+        if self.disposition not in {item.value for item in RecommendationDisposition}:
             raise ValueError(
-                "Unsupported recommendation "
-                f"confidence: {self.confidence}"
+                f"Unsupported recommendation disposition: {self.disposition}"
             )
 
-        if (
-            self.disposition
-            not in {
-                item.value
-                for item
-                in RecommendationDisposition
-            }
-        ):
-            raise ValueError(
-                "Unsupported recommendation "
-                "disposition: "
-                f"{self.disposition}"
-            )
+        _unique_strings(self.risks)
 
-        _unique_strings(
-            self.risks
-        )
+        _unique_strings(self.prerequisites)
 
-        _unique_strings(
-            self.prerequisites
-        )
-
-        _unique_strings(
-            self.evidence
-        )
+        _unique_strings(self.evidence)
 
     def to_dict(
         self,
@@ -933,67 +647,26 @@ class OptimizationRecommendation:
 
         return {
             "kind": self.kind,
-
             "title": self.title,
-
             "reason": self.reason,
-
-            "current_value": (
-                to_json_safe(
-                    self.current_value
-                )
-            ),
-
-            "recommended_value": (
-                to_json_safe(
-                    self.recommended_value
-                )
-            ),
-
+            "current_value": (to_json_safe(self.current_value)),
+            "recommended_value": (to_json_safe(self.recommended_value)),
             "priority": self.priority,
-
-            "confidence": (
-                self.confidence
-            ),
-
-            "disposition": (
-                self.disposition
-            ),
-
-            "expected_effect": (
-                self.expected_effect
-            ),
-
-            "risks": list(
-                self.risks
-            ),
-
-            "prerequisites": list(
-                self.prerequisites
-            ),
-
-            "evidence": list(
-                self.evidence
-            ),
-
-            "automatically_applicable": (
-                self.
-                automatically_applicable
-            ),
-
-            "attributes": (
-                to_json_safe(
-                    dict(
-                        self.attributes
-                    )
-                )
-            ),
+            "confidence": (self.confidence),
+            "disposition": (self.disposition),
+            "expected_effect": (self.expected_effect),
+            "risks": list(self.risks),
+            "prerequisites": list(self.prerequisites),
+            "evidence": list(self.evidence),
+            "automatically_applicable": (self.automatically_applicable),
+            "attributes": (to_json_safe(dict(self.attributes))),
         }
 
 
 # ------------------------------------------------------------------
 # Optimization profile
 # ------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class AcceleratorOptimizationProfile:
@@ -1006,21 +679,13 @@ class AcceleratorOptimizationProfile:
 
     workload: AcceleratorWorkload
 
-    free_memory_bytes: Optional[
-        int
-    ] = None
+    free_memory_bytes: Optional[int] = None
 
-    total_memory_bytes: Optional[
-        int
-    ] = None
+    total_memory_bytes: Optional[int] = None
 
-    utilization_percent: Optional[
-        float
-    ] = None
+    utilization_percent: Optional[float] = None
 
-    temperature_celsius: Optional[
-        float
-    ] = None
+    temperature_celsius: Optional[float] = None
 
     capabilities: Tuple[
         str,
@@ -1030,9 +695,7 @@ class AcceleratorOptimizationProfile:
     attributes: Mapping[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def validate(
         self,
@@ -1051,22 +714,14 @@ class AcceleratorOptimizationProfile:
             name="total_memory_bytes",
         )
 
-        utilization = (
-            _optional_finite_number(
-                self.utilization_percent,
-                name="utilization_percent",
-                minimum=0.0,
-            )
+        utilization = _optional_finite_number(
+            self.utilization_percent,
+            name="utilization_percent",
+            minimum=0.0,
         )
 
-        if (
-            utilization is not None
-            and utilization > 100.0
-        ):
-            raise ValueError(
-                "utilization_percent "
-                "must be <= 100"
-            )
+        if utilization is not None and utilization > 100.0:
+            raise ValueError("utilization_percent must be <= 100")
 
         _optional_finite_number(
             self.temperature_celsius,
@@ -1079,47 +734,21 @@ class AcceleratorOptimizationProfile:
         self.validate()
 
         return {
-            "device": (
-                self.device.to_dict()
-            ),
-
-            "workload": (
-                self.workload.to_dict()
-            ),
-
-            "free_memory_bytes": (
-                self.free_memory_bytes
-            ),
-
-            "total_memory_bytes": (
-                self.total_memory_bytes
-            ),
-
-            "utilization_percent": (
-                self.utilization_percent
-            ),
-
-            "temperature_celsius": (
-                self.temperature_celsius
-            ),
-
-            "capabilities": list(
-                self.capabilities
-            ),
-
-            "attributes": (
-                to_json_safe(
-                    dict(
-                        self.attributes
-                    )
-                )
-            ),
+            "device": (self.device.to_dict()),
+            "workload": (self.workload.to_dict()),
+            "free_memory_bytes": (self.free_memory_bytes),
+            "total_memory_bytes": (self.total_memory_bytes),
+            "utilization_percent": (self.utilization_percent),
+            "temperature_celsius": (self.temperature_celsius),
+            "capabilities": list(self.capabilities),
+            "attributes": (to_json_safe(dict(self.attributes))),
         }
 
 
 # ------------------------------------------------------------------
 # Optimization plan
 # ------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class OptimizationPlan:
@@ -1143,28 +772,18 @@ class OptimizationPlan:
         ...,
     ]
 
-    profile: Optional[
-        AcceleratorOptimizationProfile
-    ] = None
+    profile: Optional[AcceleratorOptimizationProfile] = None
 
-    optimizer_name: Optional[
-        str
-    ] = None
+    optimizer_name: Optional[str] = None
 
-    optimizer_version: str = (
-        OPTIMIZATION_SCHEMA_VERSION
-    )
+    optimizer_version: str = OPTIMIZATION_SCHEMA_VERSION
 
-    generated_at: str = field(
-        default_factory=utc_now
-    )
+    generated_at: str = field(default_factory=utc_now)
 
     attributes: Mapping[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def validate(
         self,
@@ -1175,24 +794,15 @@ class OptimizationPlan:
 
         self.constraints.validate()
 
-        if (
-            self.profile is not None
-        ):
+        if self.profile is not None:
             self.profile.validate()
 
-            if (
-                self.profile.device.device_id
-                != self.selection.device_id
-            ):
+            if self.profile.device.device_id != self.selection.device_id:
                 raise ValueError(
-                    "Optimization profile "
-                    "device does not match "
-                    "the selected device."
+                    "Optimization profile device does not match the selected device."
                 )
 
-        for recommendation in (
-            self.recommendations
-        ):
+        for recommendation in self.recommendations:
             recommendation.validate()
 
         _required_text(
@@ -1223,9 +833,7 @@ class OptimizationPlan:
     def recommendation_count(
         self,
     ) -> int:
-        return len(
-            self.recommendations
-        )
+        return len(self.recommendations)
 
     @property
     def high_priority_count(
@@ -1233,8 +841,7 @@ class OptimizationPlan:
     ) -> int:
         return sum(
             1
-            for recommendation
-            in self.recommendations
+            for recommendation in self.recommendations
             if recommendation.priority
             in {
                 RecommendationPriority.HIGH.value,
@@ -1251,10 +858,8 @@ class OptimizationPlan:
     ]:
         return tuple(
             recommendation
-            for recommendation
-            in self.recommendations
-            if recommendation.kind
-            == kind
+            for recommendation in self.recommendations
+            if recommendation.kind == kind
         )
 
     def to_dict(
@@ -1263,80 +868,30 @@ class OptimizationPlan:
         self.validate()
 
         return {
-            "schema_version": (
-                OPTIMIZATION_SCHEMA_VERSION
-            ),
-
-            "device_id": (
-                self.device_id
-            ),
-
-            "backend": (
-                self.backend
-            ),
-
-            "selection": (
-                self.selection.to_dict()
-            ),
-
-            "workload": (
-                self.workload.to_dict()
-            ),
-
-            "constraints": (
-                self.constraints.to_dict()
-            ),
-
-            "profile": (
-                self.profile.to_dict()
-                if self.profile
-                is not None
-                else None
-            ),
-
-            "recommendation_count": (
-                self.recommendation_count
-            ),
-
-            "high_priority_count": (
-                self.high_priority_count
-            ),
-
+            "schema_version": (OPTIMIZATION_SCHEMA_VERSION),
+            "device_id": (self.device_id),
+            "backend": (self.backend),
+            "selection": (self.selection.to_dict()),
+            "workload": (self.workload.to_dict()),
+            "constraints": (self.constraints.to_dict()),
+            "profile": (self.profile.to_dict() if self.profile is not None else None),
+            "recommendation_count": (self.recommendation_count),
+            "high_priority_count": (self.high_priority_count),
             "recommendations": [
-                recommendation.to_dict()
-                for recommendation
-                in self.recommendations
+                recommendation.to_dict() for recommendation in self.recommendations
             ],
-
-            "optimizer_name": (
-                self.optimizer_name
-            ),
-
-            "optimizer_version": (
-                self.optimizer_version
-            ),
-
-            "generated_at": (
-                self.generated_at
-            ),
-
-            "attributes": (
-                to_json_safe(
-                    dict(
-                        self.attributes
-                    )
-                )
-            ),
-
-            "automatically_applied": (
-                False
-            ),
+            "optimizer_name": (self.optimizer_name),
+            "optimizer_version": (self.optimizer_version),
+            "generated_at": (self.generated_at),
+            "attributes": (to_json_safe(dict(self.attributes))),
+            "automatically_applied": (False),
         }
 
 
 # ------------------------------------------------------------------
 # Optimization outcome
 # ------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class OptimizationOutcome:
@@ -1368,30 +923,20 @@ class OptimizationOutcome:
     attributes: Mapping[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    completed_at: str = field(
-        default_factory=utc_now
-    )
+    completed_at: str = field(default_factory=utc_now)
 
     def validate(
         self,
     ) -> None:
         self.plan.validate()
 
-        _unique_strings(
-            self.applied_recommendations
-        )
+        _unique_strings(self.applied_recommendations)
 
-        _unique_strings(
-            self.skipped_recommendations
-        )
+        _unique_strings(self.skipped_recommendations)
 
-        _unique_strings(
-            self.failed_recommendations
-        )
+        _unique_strings(self.failed_recommendations)
 
         _required_text(
             self.completed_at,
@@ -1405,37 +950,13 @@ class OptimizationOutcome:
         self.validate()
 
         return {
-            "schema_version": (
-                OPTIMIZATION_SCHEMA_VERSION
-            ),
-
-            "plan": (
-                self.plan.to_dict()
-            ),
-
-            "applied_recommendations": list(
-                self.applied_recommendations
-            ),
-
-            "skipped_recommendations": list(
-                self.skipped_recommendations
-            ),
-
-            "failed_recommendations": list(
-                self.failed_recommendations
-            ),
-
-            "completed_at": (
-                self.completed_at
-            ),
-
-            "attributes": (
-                to_json_safe(
-                    dict(
-                        self.attributes
-                    )
-                )
-            ),
+            "schema_version": (OPTIMIZATION_SCHEMA_VERSION),
+            "plan": (self.plan.to_dict()),
+            "applied_recommendations": list(self.applied_recommendations),
+            "skipped_recommendations": list(self.skipped_recommendations),
+            "failed_recommendations": list(self.failed_recommendations),
+            "completed_at": (self.completed_at),
+            "attributes": (to_json_safe(dict(self.attributes))),
         }
 
 
@@ -1443,22 +964,15 @@ class OptimizationOutcome:
 # Plan builder
 # ------------------------------------------------------------------
 
+
 def build_optimization_plan(
     *,
     selection: AcceleratorSelection,
     workload: AcceleratorWorkload,
-    recommendations: Iterable[
-        OptimizationRecommendation
-    ],
-    constraints: Optional[
-        OptimizationConstraints
-    ] = None,
-    profile: Optional[
-        AcceleratorOptimizationProfile
-    ] = None,
-    optimizer_name: Optional[
-        str
-    ] = None,
+    recommendations: Iterable[OptimizationRecommendation],
+    constraints: Optional[OptimizationConstraints] = None,
+    profile: Optional[AcceleratorOptimizationProfile] = None,
+    optimizer_name: Optional[str] = None,
     attributes: Optional[
         Mapping[
             str,
@@ -1468,28 +982,12 @@ def build_optimization_plan(
 ) -> OptimizationPlan:
     plan = OptimizationPlan(
         selection=selection,
-
         workload=workload,
-
-        constraints=(
-            constraints
-            or OptimizationConstraints()
-        ),
-
-        recommendations=tuple(
-            recommendations
-        ),
-
+        constraints=(constraints or OptimizationConstraints()),
+        recommendations=tuple(recommendations),
         profile=profile,
-
-        optimizer_name=(
-            optimizer_name
-        ),
-
-        attributes=dict(
-            attributes
-            or {}
-        ),
+        optimizer_name=(optimizer_name),
+        attributes=dict(attributes or {}),
     )
 
     plan.validate()
@@ -1500,6 +998,7 @@ def build_optimization_plan(
 # ------------------------------------------------------------------
 # Backend compatibility
 # ------------------------------------------------------------------
+
 
 def require_optimizer_backend(
     selection: AcceleratorSelection,
@@ -1512,19 +1011,14 @@ def require_optimizer_backend(
 
     selection.validate()
 
-    expected = str(
-        expected_kind
-    ).strip().lower()
+    expected = str(expected_kind).strip().lower()
 
     if expected not in {
         AcceleratorKind.CPU.value,
         AcceleratorKind.CUDA.value,
         AcceleratorKind.ROCM.value,
     }:
-        raise ValueError(
-            "Unsupported optimizer backend: "
-            f"{expected}"
-        )
+        raise ValueError(f"Unsupported optimizer backend: {expected}")
 
     if selection.kind != expected:
         raise ValueError(
@@ -1540,24 +1034,18 @@ def require_optimizer_backend(
 
 __all__ = [
     "OPTIMIZATION_SCHEMA_VERSION",
-
     "WorkloadKind",
     "OptimizationLevel",
-
     "RecommendationPriority",
     "RecommendationKind",
     "RecommendationConfidence",
     "RecommendationDisposition",
-
     "AcceleratorWorkload",
     "OptimizationConstraints",
-
     "OptimizationRecommendation",
     "AcceleratorOptimizationProfile",
-
     "OptimizationPlan",
     "OptimizationOutcome",
-
     "build_optimization_plan",
     "require_optimizer_backend",
 ]

@@ -45,10 +45,7 @@ SERVICE_PROPERTIES = (
 def command_available(
     command: str,
 ) -> bool:
-    return (
-        shutil.which(command)
-        is not None
-    )
+    return shutil.which(command) is not None
 
 
 def run_command(
@@ -70,10 +67,7 @@ def run_command(
             args=command,
             returncode=124,
             stdout="",
-            stderr=(
-                "Command timed out after "
-                f"{timeout} seconds"
-            ),
+            stderr=(f"Command timed out after {timeout} seconds"),
         )
 
 
@@ -91,9 +85,7 @@ def parse_key_value_output(
             1,
         )
 
-        output[
-            key.strip()
-        ] = value.strip()
+        output[key.strip()] = value.strip()
 
     return output
 
@@ -121,11 +113,7 @@ def split_systemd_list(
     if not value:
         return []
 
-    return [
-        item
-        for item in value.split()
-        if item
-    ]
+    return [item for item in value.split() if item]
 
 
 def list_loaded_services() -> List[str]:
@@ -179,16 +167,10 @@ def list_loaded_services() -> List[str]:
 
             unit = parts[1]
 
-        if unit.endswith(
-            ".service"
-        ):
-            services.append(
-                unit
-            )
+        if unit.endswith(".service"):
+            services.append(unit)
 
-    return sorted(
-        set(services)
-    )
+    return sorted(set(services))
 
 
 def list_installed_services() -> Dict[str, str]:
@@ -230,9 +212,7 @@ def list_installed_services() -> Dict[str, str]:
         unit = parts[0]
         state = parts[1]
 
-        if not unit.endswith(
-            ".service"
-        ):
+        if not unit.endswith(".service"):
             continue
 
         services[unit] = state
@@ -250,9 +230,7 @@ def get_service_properties(
         "--no-pager",
     ]
 
-    for property_name in (
-        SERVICE_PROPERTIES
-    ):
+    for property_name in SERVICE_PROPERTIES:
         command.extend(
             [
                 "--property",
@@ -260,16 +238,12 @@ def get_service_properties(
             ]
         )
 
-    result = run_command(
-        command
-    )
+    result = run_command(command)
 
     if result.returncode != 0:
         return {}
 
-    return parse_key_value_output(
-        result.stdout
-    )
+    return parse_key_value_output(result.stdout)
 
 
 def normalize_service(
@@ -277,29 +251,15 @@ def normalize_service(
     properties: Dict[str, str],
     installed_state: Optional[str],
 ) -> dict:
-    unit_file_state = (
-        properties.get(
-            "UnitFileState"
-        )
-        or installed_state
-    )
+    unit_file_state = properties.get("UnitFileState") or installed_state
 
-    active_state = properties.get(
-        "ActiveState"
-    )
+    active_state = properties.get("ActiveState")
 
-    sub_state = properties.get(
-        "SubState"
-    )
+    sub_state = properties.get("SubState")
 
-    load_state = properties.get(
-        "LoadState"
-    )
+    load_state = properties.get("LoadState")
 
-    service_status = (
-        active_state
-        or "unknown"
-    )
+    service_status = active_state or "unknown"
 
     healthy = None
 
@@ -309,162 +269,37 @@ def normalize_service(
         healthy = True
 
     payload = {
-        "service_name": (
-            properties.get("Id")
-            or service_name
-        ),
-        "names": split_systemd_list(
-            properties.get("Names")
-        ),
-        "description": (
-            properties.get(
-                "Description"
-            )
-        ),
+        "service_name": (properties.get("Id") or service_name),
+        "names": split_systemd_list(properties.get("Names")),
+        "description": (properties.get("Description")),
         "load_state": load_state,
-        "active_state": (
-            active_state
-        ),
+        "active_state": (active_state),
         "sub_state": sub_state,
-        "service_status": (
-            service_status
-        ),
+        "service_status": (service_status),
         "healthy": healthy,
-        "unit_file_state": (
-            unit_file_state
-        ),
-        "unit_file_preset": (
-            properties.get(
-                "UnitFilePreset"
-            )
-        ),
-        "service_type": (
-            properties.get("Type")
-        ),
-        "main_pid": optional_int(
-            properties.get("MainPID")
-        ),
-        "control_pid": optional_int(
-            properties.get(
-                "ControlPID"
-            )
-        ),
-        "exec_main_pid": optional_int(
-            properties.get(
-                "ExecMainPID"
-            )
-        ),
-        "exec_main_code": optional_int(
-            properties.get(
-                "ExecMainCode"
-            )
-        ),
-        "exec_main_status": (
-            optional_int(
-                properties.get(
-                    "ExecMainStatus"
-                )
-            )
-        ),
-        "restart_policy": (
-            properties.get("Restart")
-        ),
-        "restart_count": (
-            optional_int(
-                properties.get(
-                    "NRestarts"
-                )
-            )
-        ),
-        "unit_file": (
-            properties.get(
-                "FragmentPath"
-            )
-            or None
-        ),
-        "source_path": (
-            properties.get(
-                "SourcePath"
-            )
-            or None
-        ),
-        "drop_in_paths": (
-            split_systemd_list(
-                properties.get(
-                    "DropInPaths"
-                )
-            )
-        ),
-        "requires": (
-            split_systemd_list(
-                properties.get(
-                    "Requires"
-                )
-            )
-        ),
-        "wants": (
-            split_systemd_list(
-                properties.get(
-                    "Wants"
-                )
-            )
-        ),
-        "after": (
-            split_systemd_list(
-                properties.get(
-                    "After"
-                )
-            )
-        ),
-        "before": (
-            split_systemd_list(
-                properties.get(
-                    "Before"
-                )
-            )
-        ),
-        "triggered_by": (
-            split_systemd_list(
-                properties.get(
-                    "TriggeredBy"
-                )
-            )
-        ),
-        "triggers": (
-            split_systemd_list(
-                properties.get(
-                    "Triggers"
-                )
-            )
-        ),
-        "memory_current_bytes": (
-            optional_int(
-                properties.get(
-                    "MemoryCurrent"
-                )
-            )
-        ),
-        "memory_peak_bytes": (
-            optional_int(
-                properties.get(
-                    "MemoryPeak"
-                )
-            )
-        ),
-        "tasks_current": (
-            optional_int(
-                properties.get(
-                    "TasksCurrent"
-                )
-            )
-        ),
-        "cpu_usage_nsec": (
-            optional_int(
-                properties.get(
-                    "CPUUsageNSec"
-                )
-            )
-        ),
+        "unit_file_state": (unit_file_state),
+        "unit_file_preset": (properties.get("UnitFilePreset")),
+        "service_type": (properties.get("Type")),
+        "main_pid": optional_int(properties.get("MainPID")),
+        "control_pid": optional_int(properties.get("ControlPID")),
+        "exec_main_pid": optional_int(properties.get("ExecMainPID")),
+        "exec_main_code": optional_int(properties.get("ExecMainCode")),
+        "exec_main_status": (optional_int(properties.get("ExecMainStatus"))),
+        "restart_policy": (properties.get("Restart")),
+        "restart_count": (optional_int(properties.get("NRestarts"))),
+        "unit_file": (properties.get("FragmentPath") or None),
+        "source_path": (properties.get("SourcePath") or None),
+        "drop_in_paths": (split_systemd_list(properties.get("DropInPaths"))),
+        "requires": (split_systemd_list(properties.get("Requires"))),
+        "wants": (split_systemd_list(properties.get("Wants"))),
+        "after": (split_systemd_list(properties.get("After"))),
+        "before": (split_systemd_list(properties.get("Before"))),
+        "triggered_by": (split_systemd_list(properties.get("TriggeredBy"))),
+        "triggers": (split_systemd_list(properties.get("Triggers"))),
+        "memory_current_bytes": (optional_int(properties.get("MemoryCurrent"))),
+        "memory_peak_bytes": (optional_int(properties.get("MemoryPeak"))),
+        "tasks_current": (optional_int(properties.get("TasksCurrent"))),
+        "cpu_usage_nsec": (optional_int(properties.get("CPUUsageNSec"))),
     }
 
     return build_record(
@@ -481,9 +316,7 @@ def collector_error(
     return build_record(
         signal_type="collector_error",
         payload={
-            "collector": (
-                "linux_services"
-            ),
+            "collector": ("linux_services"),
             "error": error,
             "message": message,
         },
@@ -498,68 +331,38 @@ def collect_services() -> List[dict]:
     stop, enable, disable or restart services.
     """
 
-    if not command_available(
-        "systemctl"
-    ):
+    if not command_available("systemctl"):
         return [
             collector_error(
-                error=(
-                    "systemctl_not_found"
-                ),
-                message=(
-                    "systemctl is not "
-                    "available on this host"
-                ),
+                error=("systemctl_not_found"),
+                message=("systemctl is not available on this host"),
             )
         ]
 
-    installed = (
-        list_installed_services()
-    )
+    installed = list_installed_services()
 
-    loaded = set(
-        list_loaded_services()
-    )
+    loaded = set(list_loaded_services())
 
-    all_services = sorted(
-        loaded
-        | set(installed.keys())
-    )
+    all_services = sorted(loaded | set(installed.keys()))
 
     if not all_services:
         return [
             collector_error(
-                error=(
-                    "services_not_discovered"
-                ),
-                message=(
-                    "No systemd services "
-                    "were discovered"
-                ),
+                error=("services_not_discovered"),
+                message=("No systemd services were discovered"),
             )
         ]
 
     records: List[dict] = []
 
-    for service_name in (
-        all_services
-    ):
-        properties = (
-            get_service_properties(
-                service_name
-            )
-        )
+    for service_name in all_services:
+        properties = get_service_properties(service_name)
 
         if not properties:
             records.append(
                 collector_error(
-                    error=(
-                        "service_inspection_failed"
-                    ),
-                    message=(
-                        "Unable to inspect "
-                        f"{service_name}"
-                    ),
+                    error=("service_inspection_failed"),
+                    message=(f"Unable to inspect {service_name}"),
                 )
             )
 
@@ -569,9 +372,7 @@ def collect_services() -> List[dict]:
             normalize_service(
                 service_name,
                 properties,
-                installed.get(
-                    service_name
-                ),
+                installed.get(service_name),
             )
         )
 

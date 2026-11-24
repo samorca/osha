@@ -1,0 +1,248 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+
+# -------------------------------------------------------------------
+# Base
+# -------------------------------------------------------------------
+
+resources:
+  - ../../base
+
+
+# -------------------------------------------------------------------
+# Production identity
+# -------------------------------------------------------------------
+
+labels:
+  - pairs:
+      osha.atonixcorp.io/environment: production
+
+    includeSelectors: false
+    includeTemplates: true
+
+
+# -------------------------------------------------------------------
+# Image
+# -------------------------------------------------------------------
+#
+# Production must eventually use an immutable release
+# tag or digest supplied by the deployment pipeline.
+#
+# "stable" is a repository placeholder until release
+# automation pins the exact OSHA image.
+# -------------------------------------------------------------------
+
+images:
+  - name: osha
+    newName: osha
+    newTag: stable
+
+
+# -------------------------------------------------------------------
+# Production patches
+# -------------------------------------------------------------------
+
+patches:
+
+  # =================================================================
+  # Shared OSHA configuration
+  # =================================================================
+
+  - target:
+      version: v1
+      kind: ConfigMap
+      name: osha-config
+
+    patch: |-
+      - op: replace
+        path: /data/OSHA_ENVIRONMENT_ID
+        value: production
+
+      - op: replace
+        path: /data/OSHA_FAIL_FAST
+        value: "true"
+
+      - op: replace
+        path: /data/OSHA_RUNTIME_LOG_LEVEL
+        value: info
+
+      - op: replace
+        path: /data/OSHA_API_LOG_LEVEL
+        value: info
+
+      - op: replace
+        path: /data/OSHA_API_WORKERS
+        value: "2"
+
+      - op: replace
+        path: /data/OSHA_API_GRACEFUL_TIMEOUT
+        value: "60"
+
+      - op: replace
+        path: /data/OSHA_API_LIMIT_CONCURRENCY
+        value: "1000"
+
+      - op: replace
+        path: /data/OSHA_API_LIMIT_MAX_REQUESTS
+        value: "10000"
+
+
+      # -------------------------------------------------------------
+      # Remediation safety
+      # -------------------------------------------------------------
+      #
+      # Production does NOT automatically mean:
+      #
+      #     automatic remediation
+      #     destructive actions
+      #     approval bypass
+      #
+      # Those capabilities require an explicit
+      # controlled policy change.
+      # -------------------------------------------------------------
+
+      - op: replace
+        path: /data/OSHA_DRY_RUN
+        value: "true"
+
+      - op: replace
+        path: /data/OSHA_REMEDIATION_DRY_RUN
+        value: "true"
+
+      - op: replace
+        path: /data/OSHA_REMEDIATION_AUTOMATIC_EXECUTION
+        value: "false"
+
+      - op: replace
+        path: /data/OSHA_REMEDIATION_REQUIRE_APPROVAL
+        value: "true"
+
+      - op: replace
+        path: /data/OSHA_REMEDIATION_ALLOW_DESTRUCTIVE_ACTIONS
+        value: "false"
+
+
+  # =================================================================
+  # OSHA API
+  # =================================================================
+  #
+  # API replicas can scale independently because
+  # they are request-serving instances.
+  # =================================================================
+
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: osha-api
+
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: IfNotPresent
+
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "500m"
+
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "512Mi"
+
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "2"
+
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "2Gi"
+
+
+  # =================================================================
+  # OSHA orchestration runtime
+  # =================================================================
+  #
+  # Deliberately remains one replica.
+  #
+  # Multiple orchestration authorities must not be
+  # enabled until leader election/distributed runtime
+  # coordination is implemented and tested.
+  # =================================================================
+
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: osha-runtime
+
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: IfNotPresent
+
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "500m"
+
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "512Mi"
+
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "2"
+
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "2Gi"
+
+
+  # =================================================================
+  # OSHA worker
+  # =================================================================
+  #
+  # Keep the generic/base worker at one replica until
+  # we verify each concrete worker's queue semantics
+  # and idempotency.
+  # =================================================================
+
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: osha-worker
+
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: IfNotPresent
+
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "500m"
+
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "512Mi"
+
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "2"
+
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "2Gi"

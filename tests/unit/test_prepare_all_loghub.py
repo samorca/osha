@@ -7,10 +7,12 @@ from scripts.data.prepare_all_loghub import build_timestamp
 
 class LoghubTimestampTests(unittest.TestCase):
     def test_partial_month_day_uses_stable_reference_year(self):
-        frame = pd.DataFrame({
-            "Date": ["03-17"],
-            "Time": ["16:13:38.811"],
-        })
+        frame = pd.DataFrame(
+            {
+                "Date": ["03-17"],
+                "Time": ["16:13:38.811"],
+            }
+        )
 
         timestamps = build_timestamp(frame)
 
@@ -21,11 +23,13 @@ class LoghubTimestampTests(unittest.TestCase):
         self.assertEqual(str(timestamps.dtype), "datetime64[ns, UTC]")
 
     def test_month_day_columns_are_combined(self):
-        frame = pd.DataFrame({
-            "Month": ["Nov"],
-            "Date": ["14"],
-            "Time": ["15:16:01"],
-        })
+        frame = pd.DataFrame(
+            {
+                "Month": ["Nov"],
+                "Date": ["14"],
+                "Time": ["15:16:01"],
+            }
+        )
 
         timestamp = build_timestamp(frame).iloc[0]
 

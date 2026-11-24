@@ -86,57 +86,46 @@ SIGNAL_COMPATIBILITY = {
         SignalType.EVENT.value,
         SignalType.LOG.value,
     ): 0.75,
-
     (
         SignalType.EVENT.value,
         SignalType.METRIC.value,
     ): 0.70,
-
     (
         SignalType.EVENT.value,
         SignalType.STATE_CHANGE.value,
     ): 0.85,
-
     (
         SignalType.EVENT.value,
         SignalType.RESOURCE_STATE.value,
     ): 0.75,
-
     (
         SignalType.ALERT.value,
         SignalType.METRIC.value,
     ): 0.85,
-
     (
         SignalType.ALERT.value,
         SignalType.LOG.value,
     ): 0.75,
-
     (
         SignalType.LOG.value,
         SignalType.METRIC.value,
     ): 0.65,
-
     (
         SignalType.LOG.value,
         SignalType.STATE_CHANGE.value,
     ): 0.70,
-
     (
         SignalType.METRIC.value,
         SignalType.STATE_CHANGE.value,
     ): 0.70,
-
     (
         SignalType.RESOURCE_STATE.value,
         SignalType.STATE_CHANGE.value,
     ): 0.80,
-
     (
         SignalType.HEALTH.value,
         SignalType.ALERT.value,
     ): 0.85,
-
     (
         SignalType.SECURITY.value,
         SignalType.ALERT.value,
@@ -154,23 +143,13 @@ class ScoringConfig:
     weights: Dict[
         str,
         float,
-    ] = field(
-        default_factory=lambda: dict(
-            DEFAULT_WEIGHTS
-        )
-    )
+    ] = field(default_factory=lambda: dict(DEFAULT_WEIGHTS))
 
-    correlated_threshold: float = (
-        DEFAULT_CORRELATED_THRESHOLD
-    )
+    correlated_threshold: float = DEFAULT_CORRELATED_THRESHOLD
 
-    candidate_threshold: float = (
-        DEFAULT_CANDIDATE_THRESHOLD
-    )
+    candidate_threshold: float = DEFAULT_CANDIDATE_THRESHOLD
 
-    weak_threshold: float = (
-        DEFAULT_WEAK_THRESHOLD
-    )
+    weak_threshold: float = DEFAULT_WEAK_THRESHOLD
 
     topology_max_depth: int = 6
 
@@ -195,26 +174,15 @@ class ScoringConfig:
                 0.0,
                 float(value),
             )
-            for key, value
-            in self.weights.items()
+            for key, value in self.weights.items()
         }
 
-        total = sum(
-            cleaned.values()
-        )
+        total = sum(cleaned.values())
 
         if total <= 0:
-            return dict(
-                DEFAULT_WEIGHTS
-            )
+            return dict(DEFAULT_WEIGHTS)
 
-        return {
-            key: (
-                value / total
-            )
-            for key, value
-            in cleaned.items()
-        }
+        return {key: (value / total) for key, value in cleaned.items()}
 
 
 def optional_string(
@@ -231,9 +199,7 @@ def optional_string(
 def normalized_text(
     value: Any,
 ) -> Optional[str]:
-    text = optional_string(
-        value
-    )
+    text = optional_string(value)
 
     if text is None:
         return None
@@ -253,20 +219,14 @@ def records_compatible(
 
     if (
         config.require_same_environment
-        and source.resource.environment_id
-        != target.resource.environment_id
+        and source.resource.environment_id != target.resource.environment_id
     ):
         return False
 
     source.finalize()
     target.finalize()
 
-    if (
-        source.record_id
-        and target.record_id
-        and source.record_id
-        == target.record_id
-    ):
+    if source.record_id and target.record_id and source.record_id == target.record_id:
         return False
 
     return True
@@ -300,43 +260,18 @@ def identity_evidence(
         score = match.score
 
     return CorrelationEvidence(
-        evidence_type=(
-            EvidenceType.IDENTITY.value
-        ),
-        score=checked_score(
-            score
-        ),
-        source_record_id=(
-            source.record_id
-        ),
-        target_record_id=(
-            target.record_id
-        ),
-        source_resource_id=(
-            source.resource.effective_id()
-        ),
-        target_resource_id=(
-            target.resource.effective_id()
-        ),
-        description=(
-            "Normalized resources have "
-            f"{match.decision} identity evidence"
-        ),
+        evidence_type=(EvidenceType.IDENTITY.value),
+        score=checked_score(score),
+        source_record_id=(source.record_id),
+        target_record_id=(target.record_id),
+        source_resource_id=(source.resource.effective_id()),
+        target_resource_id=(target.resource.effective_id()),
+        description=(f"Normalized resources have {match.decision} identity evidence"),
         attributes={
-            "identity_decision": (
-                match.decision
-            ),
-            "identity_score": (
-                match.score
-            ),
-            "identity_evidence": [
-                item.to_dict()
-                for item
-                in match.evidence
-            ],
-            "conflicts": (
-                match.conflicts
-            ),
+            "identity_decision": (match.decision),
+            "identity_score": (match.score),
+            "identity_evidence": [item.to_dict() for item in match.evidence],
+            "conflicts": (match.conflicts),
         },
     )
 
@@ -351,38 +286,21 @@ def same_resource_evidence(
     effective resource.
     """
 
-    source_id = (
-        source.resource.effective_id()
-    )
+    source_id = source.resource.effective_id()
 
-    target_id = (
-        target.resource.effective_id()
-    )
+    target_id = target.resource.effective_id()
 
     if source_id != target_id:
         return None
 
     return CorrelationEvidence(
-        evidence_type=(
-            EvidenceType.RESOURCE.value
-        ),
+        evidence_type=(EvidenceType.RESOURCE.value),
         score=1.0,
-        source_record_id=(
-            source.record_id
-        ),
-        target_record_id=(
-            target.record_id
-        ),
-        source_resource_id=(
-            source_id
-        ),
-        target_resource_id=(
-            target_id
-        ),
-        description=(
-            "Observations reference the same "
-            "normalized resource"
-        ),
+        source_record_id=(source.record_id),
+        target_record_id=(target.record_id),
+        source_resource_id=(source_id),
+        target_resource_id=(target_id),
+        description=("Observations reference the same normalized resource"),
         attributes={
             "same_resource": True,
         },
@@ -392,9 +310,7 @@ def same_resource_evidence(
 def topology_evidence(
     source: TelemetryRecord,
     target: TelemetryRecord,
-    topology: Optional[
-        TopologyGraph
-    ],
+    topology: Optional[TopologyGraph],
     *,
     max_depth: int,
 ) -> Optional[CorrelationEvidence]:
@@ -413,13 +329,9 @@ def topology_evidence(
     if topology is None:
         return None
 
-    source_id = (
-        source.resource.effective_id()
-    )
+    source_id = source.resource.effective_id()
 
-    target_id = (
-        target.resource.effective_id()
-    )
+    target_id = target.resource.effective_id()
 
     path = topology.shortest_path(
         source_id,
@@ -438,44 +350,20 @@ def topology_evidence(
         # One hop = 0.85
         # Two hops = 0.7225
         # Three hops = 0.6141
-        score = (
-            0.85
-            ** path.distance
-        )
+        score = 0.85**path.distance
 
     return CorrelationEvidence(
-        evidence_type=(
-            EvidenceType.TOPOLOGY.value
-        ),
-        score=checked_score(
-            score
-        ),
-        source_record_id=(
-            source.record_id
-        ),
-        target_record_id=(
-            target.record_id
-        ),
-        source_resource_id=(
-            source_id
-        ),
-        target_resource_id=(
-            target_id
-        ),
-        description=(
-            "Resources are "
-            f"{path.distance} topology hops apart"
-        ),
+        evidence_type=(EvidenceType.TOPOLOGY.value),
+        score=checked_score(score),
+        source_record_id=(source.record_id),
+        target_record_id=(target.record_id),
+        source_resource_id=(source_id),
+        target_resource_id=(target_id),
+        description=(f"Resources are {path.distance} topology hops apart"),
         attributes={
-            "distance": (
-                path.distance
-            ),
-            "resource_path": (
-                path.resource_ids
-            ),
-            "relationship_path": (
-                path.relationships
-            ),
+            "distance": (path.distance),
+            "resource_path": (path.resource_ids),
+            "relationship_path": (path.relationships),
         },
     )
 
@@ -486,55 +374,29 @@ def service_evidence(
 ) -> Optional[CorrelationEvidence]:
     source_service = normalized_text(
         source.resource.service
-        or source.signal.attributes.get(
-            "service"
-        )
-        or source.signal.attributes.get(
-            "service_name"
-        )
+        or source.signal.attributes.get("service")
+        or source.signal.attributes.get("service_name")
     )
 
     target_service = normalized_text(
         target.resource.service
-        or target.signal.attributes.get(
-            "service"
-        )
-        or target.signal.attributes.get(
-            "service_name"
-        )
+        or target.signal.attributes.get("service")
+        or target.signal.attributes.get("service_name")
     )
 
-    if (
-        source_service is None
-        or source_service != target_service
-    ):
+    if source_service is None or source_service != target_service:
         return None
 
     return CorrelationEvidence(
-        evidence_type=(
-            EvidenceType.SERVICE.value
-        ),
+        evidence_type=(EvidenceType.SERVICE.value),
         score=0.80,
-        source_record_id=(
-            source.record_id
-        ),
-        target_record_id=(
-            target.record_id
-        ),
-        source_resource_id=(
-            source.resource.effective_id()
-        ),
-        target_resource_id=(
-            target.resource.effective_id()
-        ),
-        description=(
-            "Observations reference the same "
-            "logical service"
-        ),
+        source_record_id=(source.record_id),
+        target_record_id=(target.record_id),
+        source_resource_id=(source.resource.effective_id()),
+        target_resource_id=(target.resource.effective_id()),
+        description=("Observations reference the same logical service"),
         attributes={
-            "service": (
-                source_service
-            ),
+            "service": (source_service),
         },
     )
 
@@ -548,10 +410,7 @@ def signal_compatibility_score(
     common signal types.
     """
 
-    if (
-        source_signal_type
-        == target_signal_type
-    ):
+    if source_signal_type == target_signal_type:
         if source_signal_type in {
             SignalType.EVENT.value,
             SignalType.ALERT.value,
@@ -561,24 +420,20 @@ def signal_compatibility_score(
 
         return 0.50
 
-    direct = (
-        SIGNAL_COMPATIBILITY.get(
-            (
-                source_signal_type,
-                target_signal_type,
-            )
+    direct = SIGNAL_COMPATIBILITY.get(
+        (
+            source_signal_type,
+            target_signal_type,
         )
     )
 
     if direct is not None:
         return direct
 
-    reverse = (
-        SIGNAL_COMPATIBILITY.get(
-            (
-                target_signal_type,
-                source_signal_type,
-            )
+    reverse = SIGNAL_COMPATIBILITY.get(
+        (
+            target_signal_type,
+            source_signal_type,
         )
     )
 
@@ -592,32 +447,20 @@ def signal_evidence(
     source: TelemetryRecord,
     target: TelemetryRecord,
 ) -> CorrelationEvidence:
-    source_type = (
-        source.signal.signal_type
-    )
+    source_type = source.signal.signal_type
 
-    target_type = (
-        target.signal.signal_type
-    )
+    target_type = target.signal.signal_type
 
     score = signal_compatibility_score(
         source_type,
         target_type,
     )
 
-    source_name = normalized_text(
-        source.signal.signal_name
-    )
+    source_name = normalized_text(source.signal.signal_name)
 
-    target_name = normalized_text(
-        target.signal.signal_name
-    )
+    target_name = normalized_text(target.signal.signal_name)
 
-    same_name = (
-        source_name is not None
-        and source_name
-        == target_name
-    )
+    same_name = source_name is not None and source_name == target_name
 
     if same_name:
         score = combine_independent_scores(
@@ -628,44 +471,19 @@ def signal_evidence(
         )
 
     return CorrelationEvidence(
-        evidence_type=(
-            EvidenceType.SIGNAL.value
-        ),
-        score=checked_score(
-            score
-        ),
-        source_record_id=(
-            source.record_id
-        ),
-        target_record_id=(
-            target.record_id
-        ),
-        source_resource_id=(
-            source.resource.effective_id()
-        ),
-        target_resource_id=(
-            target.resource.effective_id()
-        ),
-        description=(
-            "Signal types are evaluated for "
-            "semantic compatibility"
-        ),
+        evidence_type=(EvidenceType.SIGNAL.value),
+        score=checked_score(score),
+        source_record_id=(source.record_id),
+        target_record_id=(target.record_id),
+        source_resource_id=(source.resource.effective_id()),
+        target_resource_id=(target.resource.effective_id()),
+        description=("Signal types are evaluated for semantic compatibility"),
         attributes={
-            "source_signal_type": (
-                source_type
-            ),
-            "target_signal_type": (
-                target_type
-            ),
-            "source_signal_name": (
-                source.signal.signal_name
-            ),
-            "target_signal_name": (
-                target.signal.signal_name
-            ),
-            "same_signal_name": (
-                same_name
-            ),
+            "source_signal_type": (source_type),
+            "target_signal_type": (target_type),
+            "source_signal_name": (source.signal.signal_name),
+            "target_signal_name": (target.signal.signal_name),
+            "same_signal_name": (same_name),
         },
     )
 
@@ -675,9 +493,7 @@ def severity_value(
 ) -> float:
     return SEVERITY_SCORES.get(
         severity,
-        SEVERITY_SCORES[
-            Severity.UNKNOWN.value
-        ],
+        SEVERITY_SCORES[Severity.UNKNOWN.value],
     )
 
 
@@ -685,13 +501,9 @@ def severity_evidence(
     source: TelemetryRecord,
     target: TelemetryRecord,
 ) -> CorrelationEvidence:
-    source_score = severity_value(
-        source.signal.severity
-    )
+    source_score = severity_value(source.signal.severity)
 
-    target_score = severity_value(
-        target.signal.severity
-    )
+    target_score = severity_value(target.signal.severity)
 
     # The stronger severity is relevant, while
     # the weaker signal still contributes.
@@ -709,35 +521,16 @@ def severity_evidence(
     )
 
     return CorrelationEvidence(
-        evidence_type=(
-            EvidenceType.SEVERITY.value
-        ),
-        score=checked_score(
-            score
-        ),
-        source_record_id=(
-            source.record_id
-        ),
-        target_record_id=(
-            target.record_id
-        ),
-        source_resource_id=(
-            source.resource.effective_id()
-        ),
-        target_resource_id=(
-            target.resource.effective_id()
-        ),
-        description=(
-            "Signal severities contribute "
-            "correlation priority"
-        ),
+        evidence_type=(EvidenceType.SEVERITY.value),
+        score=checked_score(score),
+        source_record_id=(source.record_id),
+        target_record_id=(target.record_id),
+        source_resource_id=(source.resource.effective_id()),
+        target_resource_id=(target.resource.effective_id()),
+        description=("Signal severities contribute correlation priority"),
         attributes={
-            "source_severity": (
-                source.signal.severity
-            ),
-            "target_severity": (
-                target.signal.severity
-            ),
+            "source_severity": (source.signal.severity),
+            "target_severity": (target.signal.severity),
         },
     )
 
@@ -745,9 +538,7 @@ def severity_evidence(
 def historical_evidence(
     source: TelemetryRecord,
     target: TelemetryRecord,
-    historical_score: Optional[
-        float
-    ],
+    historical_score: Optional[float],
 ) -> Optional[CorrelationEvidence]:
     """
     Convert an externally calculated history
@@ -759,34 +550,19 @@ def historical_evidence(
     if historical_score is None:
         return None
 
-    score = checked_score(
-        historical_score
-    )
+    score = checked_score(historical_score)
 
     if score <= 0:
         return None
 
     return CorrelationEvidence(
-        evidence_type=(
-            EvidenceType.HISTORICAL.value
-        ),
+        evidence_type=(EvidenceType.HISTORICAL.value),
         score=score,
-        source_record_id=(
-            source.record_id
-        ),
-        target_record_id=(
-            target.record_id
-        ),
-        source_resource_id=(
-            source.resource.effective_id()
-        ),
-        target_resource_id=(
-            target.resource.effective_id()
-        ),
-        description=(
-            "Historical observations support "
-            "this correlation candidate"
-        ),
+        source_record_id=(source.record_id),
+        target_record_id=(target.record_id),
+        source_resource_id=(source.resource.effective_id()),
+        target_resource_id=(target.resource.effective_id()),
+        description=("Historical observations support this correlation candidate"),
     )
 
 
@@ -794,18 +570,10 @@ def collect_evidence(
     source: TelemetryRecord,
     target: TelemetryRecord,
     *,
-    topology: Optional[
-        TopologyGraph
-    ] = None,
-    temporal: Optional[
-        TemporalAnalyzer
-    ] = None,
-    config: Optional[
-        ScoringConfig
-    ] = None,
-    historical_score: Optional[
-        float
-    ] = None,
+    topology: Optional[TopologyGraph] = None,
+    temporal: Optional[TemporalAnalyzer] = None,
+    config: Optional[ScoringConfig] = None,
+    historical_score: Optional[float] = None,
 ) -> List[CorrelationEvidence]:
     """
     Generate correlation evidence for one pair.
@@ -814,10 +582,7 @@ def collect_evidence(
     candidate decision.
     """
 
-    configuration = (
-        config
-        or ScoringConfig()
-    )
+    configuration = config or ScoringConfig()
 
     if not records_compatible(
         source,
@@ -829,88 +594,54 @@ def collect_evidence(
     source.finalize()
     target.finalize()
 
-    temporal_analyzer = (
-        temporal
-        or TemporalAnalyzer(
-            maximum_distance_seconds=(
-                configuration.
-                temporal_max_seconds
-            ),
-            half_life_seconds=(
-                configuration.
-                temporal_half_life_seconds
-            ),
-        )
+    temporal_analyzer = temporal or TemporalAnalyzer(
+        maximum_distance_seconds=(configuration.temporal_max_seconds),
+        half_life_seconds=(configuration.temporal_half_life_seconds),
     )
 
-    evidence: List[
-        CorrelationEvidence
-    ] = []
+    evidence: List[CorrelationEvidence] = []
 
-    temporal_item = (
-        temporal_analyzer.evidence(
-            source,
-            target,
-        )
+    temporal_item = temporal_analyzer.evidence(
+        source,
+        target,
     )
 
     if temporal_item is not None:
-        evidence.append(
-            temporal_item
-        )
+        evidence.append(temporal_item)
 
-    resource_item = (
-        same_resource_evidence(
-            source,
-            target,
-        )
+    resource_item = same_resource_evidence(
+        source,
+        target,
     )
 
     if resource_item is not None:
-        evidence.append(
-            resource_item
-        )
+        evidence.append(resource_item)
 
-    identity_item = (
-        identity_evidence(
-            source,
-            target,
-        )
+    identity_item = identity_evidence(
+        source,
+        target,
     )
 
     if identity_item is not None:
-        evidence.append(
-            identity_item
-        )
+        evidence.append(identity_item)
 
-    topology_item = (
-        topology_evidence(
-            source,
-            target,
-            topology,
-            max_depth=(
-                configuration.
-                topology_max_depth
-            ),
-        )
+    topology_item = topology_evidence(
+        source,
+        target,
+        topology,
+        max_depth=(configuration.topology_max_depth),
     )
 
     if topology_item is not None:
-        evidence.append(
-            topology_item
-        )
+        evidence.append(topology_item)
 
-    service_item = (
-        service_evidence(
-            source,
-            target,
-        )
+    service_item = service_evidence(
+        source,
+        target,
     )
 
     if service_item is not None:
-        evidence.append(
-            service_item
-        )
+        evidence.append(service_item)
 
     evidence.append(
         signal_evidence(
@@ -926,26 +657,20 @@ def collect_evidence(
         )
     )
 
-    history_item = (
-        historical_evidence(
-            source,
-            target,
-            historical_score,
-        )
+    history_item = historical_evidence(
+        source,
+        target,
+        historical_score,
     )
 
     if history_item is not None:
-        evidence.append(
-            history_item
-        )
+        evidence.append(history_item)
 
     return evidence
 
 
 def dimension_score(
-    evidence: Iterable[
-        CorrelationEvidence
-    ],
+    evidence: Iterable[CorrelationEvidence],
     evidence_type: str,
 ) -> float:
     """
@@ -956,23 +681,16 @@ def dimension_score(
     scores = [
         item.normalized_score()
         for item in evidence
-        if item.evidence_type
-        == evidence_type
+        if item.evidence_type == evidence_type
     ]
 
-    return combine_independent_scores(
-        scores
-    )
+    return combine_independent_scores(scores)
 
 
 def calculate_score(
-    evidence: Iterable[
-        CorrelationEvidence
-    ],
+    evidence: Iterable[CorrelationEvidence],
     *,
-    config: Optional[
-        ScoringConfig
-    ] = None,
+    config: Optional[ScoringConfig] = None,
 ) -> CorrelationScore:
     """
     Calculate a transparent weighted score.
@@ -982,14 +700,9 @@ def calculate_score(
     weighting model.
     """
 
-    configuration = (
-        config
-        or ScoringConfig()
-    )
+    configuration = config or ScoringConfig()
 
-    evidence_list = list(
-        evidence
-    )
+    evidence_list = list(evidence)
 
     identity = dimension_score(
         evidence_list,
@@ -1042,10 +755,7 @@ def calculate_score(
         "historical": historical,
     }
 
-    weights = (
-        configuration.
-        normalized_weights()
-    )
+    weights = configuration.normalized_weights()
 
     overall = sum(
         dimensions.get(
@@ -1053,8 +763,7 @@ def calculate_score(
             0.0,
         )
         * weight
-        for dimension, weight
-        in weights.items()
+        for dimension, weight in weights.items()
     )
 
     return CorrelationScore(
@@ -1066,23 +775,15 @@ def calculate_score(
         signal=signal,
         severity=severity,
         historical=historical,
-        overall=checked_score(
-            overall
-        ),
+        overall=checked_score(overall),
     )
 
 
 def decide_correlation(
     scores: CorrelationScore,
     *,
-    config: Optional[
-        ScoringConfig
-    ] = None,
-    evidence: Optional[
-        Iterable[
-            CorrelationEvidence
-        ]
-    ] = None,
+    config: Optional[ScoringConfig] = None,
+    evidence: Optional[Iterable[CorrelationEvidence]] = None,
 ) -> str:
     """
     Convert scores into a correlation decision.
@@ -1093,14 +794,9 @@ def decide_correlation(
     severity/signal compatibility alone.
     """
 
-    configuration = (
-        config
-        or ScoringConfig()
-    )
+    configuration = config or ScoringConfig()
 
-    normalized = (
-        scores.normalized()
-    )
+    normalized = scores.normalized()
 
     structural_support = max(
         normalized.identity,
@@ -1108,83 +804,44 @@ def decide_correlation(
         normalized.topology,
     )
 
-    temporal_support = (
-        normalized.temporal
-    )
+    temporal_support = normalized.temporal
 
     has_context = (
-        structural_support > 0
-        or temporal_support > 0
-        or normalized.historical > 0
+        structural_support > 0 or temporal_support > 0 or normalized.historical > 0
     )
 
-    if (
-        normalized.overall
-        >= configuration.
-        correlated_threshold
-        and has_context
-    ):
-        return (
-            CorrelationDecision.
-            CORRELATED.value
-        )
+    if normalized.overall >= configuration.correlated_threshold and has_context:
+        return CorrelationDecision.CORRELATED.value
 
-    if (
-        normalized.overall
-        >= configuration.
-        candidate_threshold
-        and has_context
-    ):
-        return (
-            CorrelationDecision.
-            CANDIDATE.value
-        )
+    if normalized.overall >= configuration.candidate_threshold and has_context:
+        return CorrelationDecision.CANDIDATE.value
 
-    if (
-        normalized.overall
-        >= configuration.
-        weak_threshold
-    ):
-        return (
-            CorrelationDecision.
-            WEAK.value
-        )
+    if normalized.overall >= configuration.weak_threshold:
+        return CorrelationDecision.WEAK.value
 
-    return (
-        CorrelationDecision.
-        REJECTED.value
-    )
+    return CorrelationDecision.REJECTED.value
 
 
 def score_candidate(
     candidate: CorrelationCandidate,
     *,
-    config: Optional[
-        ScoringConfig
-    ] = None,
+    config: Optional[ScoringConfig] = None,
 ) -> CorrelationCandidate:
     """
     Score and classify an existing candidate.
     """
 
-    configuration = (
-        config
-        or ScoringConfig()
-    )
+    configuration = config or ScoringConfig()
 
     candidate.scores = calculate_score(
         candidate.evidence,
         config=configuration,
     )
 
-    candidate.decision = (
-        decide_correlation(
-            candidate.scores,
-            config=configuration,
-            evidence=(
-                candidate.evidence
-            ),
-        )
+    candidate.decision = decide_correlation(
+        candidate.scores,
+        config=configuration,
+        evidence=(candidate.evidence),
     )
 
     return candidate.finalize()
@@ -1194,28 +851,17 @@ def score_records(
     source: TelemetryRecord,
     target: TelemetryRecord,
     *,
-    topology: Optional[
-        TopologyGraph
-    ] = None,
-    temporal: Optional[
-        TemporalAnalyzer
-    ] = None,
-    config: Optional[
-        ScoringConfig
-    ] = None,
-    historical_score: Optional[
-        float
-    ] = None,
+    topology: Optional[TopologyGraph] = None,
+    temporal: Optional[TemporalAnalyzer] = None,
+    config: Optional[ScoringConfig] = None,
+    historical_score: Optional[float] = None,
 ) -> Dict[str, Any]:
     """
     Diagnostic helper for inspecting why two
     records would or would not correlate.
     """
 
-    configuration = (
-        config
-        or ScoringConfig()
-    )
+    configuration = config or ScoringConfig()
 
     evidence = collect_evidence(
         source,
@@ -1223,9 +869,7 @@ def score_records(
         topology=topology,
         temporal=temporal,
         config=configuration,
-        historical_score=(
-            historical_score
-        ),
+        historical_score=(historical_score),
     )
 
     scores = calculate_score(
@@ -1240,20 +884,11 @@ def score_records(
     )
 
     return {
-        "source_record_id": (
-            source.record_id
-        ),
-        "target_record_id": (
-            target.record_id
-        ),
+        "source_record_id": (source.record_id),
+        "target_record_id": (target.record_id),
         "decision": decision,
-        "scores": (
-            scores.to_dict()
-        ),
-        "evidence": [
-            item.to_dict()
-            for item in evidence
-        ],
+        "scores": (scores.to_dict()),
+        "evidence": [item.to_dict() for item in evidence],
     }
 
 
@@ -1266,35 +901,17 @@ class CorrelationScorer:
     def __init__(
         self,
         *,
-        config: Optional[
-            ScoringConfig
-        ] = None,
-        topology: Optional[
-            TopologyGraph
-        ] = None,
-        temporal: Optional[
-            TemporalAnalyzer
-        ] = None,
+        config: Optional[ScoringConfig] = None,
+        topology: Optional[TopologyGraph] = None,
+        temporal: Optional[TemporalAnalyzer] = None,
     ) -> None:
-        self.config = (
-            config
-            or ScoringConfig()
-        )
+        self.config = config or ScoringConfig()
 
         self.topology = topology
 
-        self.temporal = (
-            temporal
-            or TemporalAnalyzer(
-                maximum_distance_seconds=(
-                    self.config.
-                    temporal_max_seconds
-                ),
-                half_life_seconds=(
-                    self.config.
-                    temporal_half_life_seconds
-                ),
-            )
+        self.temporal = temporal or TemporalAnalyzer(
+            maximum_distance_seconds=(self.config.temporal_max_seconds),
+            half_life_seconds=(self.config.temporal_half_life_seconds),
         )
 
     def evidence(
@@ -1302,28 +919,20 @@ class CorrelationScorer:
         source: TelemetryRecord,
         target: TelemetryRecord,
         *,
-        historical_score: Optional[
-            float
-        ] = None,
-    ) -> List[
-        CorrelationEvidence
-    ]:
+        historical_score: Optional[float] = None,
+    ) -> List[CorrelationEvidence]:
         return collect_evidence(
             source,
             target,
             topology=self.topology,
             temporal=self.temporal,
             config=self.config,
-            historical_score=(
-                historical_score
-            ),
+            historical_score=(historical_score),
         )
 
     def scores(
         self,
-        evidence: Iterable[
-            CorrelationEvidence
-        ],
+        evidence: Iterable[CorrelationEvidence],
     ) -> CorrelationScore:
         return calculate_score(
             evidence,
@@ -1344,9 +953,7 @@ class CorrelationScorer:
         source: TelemetryRecord,
         target: TelemetryRecord,
         *,
-        historical_score: Optional[
-            float
-        ] = None,
+        historical_score: Optional[float] = None,
     ) -> Dict[str, Any]:
         return score_records(
             source,
@@ -1354,7 +961,5 @@ class CorrelationScorer:
             topology=self.topology,
             temporal=self.temporal,
             config=self.config,
-            historical_score=(
-                historical_score
-            ),
+            historical_score=(historical_score),
         )

@@ -95,6 +95,7 @@ except ImportError:
 # CPU device schema
 # ------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class CPUDeviceProfile:
     """
@@ -109,47 +110,27 @@ class CPUDeviceProfile:
 
     device: AcceleratorDevice
 
-    logical_processors: Optional[
-        int
-    ] = None
+    logical_processors: Optional[int] = None
 
-    physical_processors: Optional[
-        int
-    ] = None
+    physical_processors: Optional[int] = None
 
-    affinity_processors: Optional[
-        int
-    ] = None
+    affinity_processors: Optional[int] = None
 
-    machine: Optional[
-        str
-    ] = None
+    machine: Optional[str] = None
 
-    architecture: Optional[
-        str
-    ] = None
+    architecture: Optional[str] = None
 
-    processor: Optional[
-        str
-    ] = None
+    processor: Optional[str] = None
 
-    system: Optional[
-        str
-    ] = None
+    system: Optional[str] = None
 
-    memory: AcceleratorMemory = field(
-        default_factory=AcceleratorMemory
-    )
+    memory: AcceleratorMemory = field(default_factory=AcceleratorMemory)
 
     torch_available: bool = False
 
-    torch_num_threads: Optional[
-        int
-    ] = None
+    torch_num_threads: Optional[int] = None
 
-    torch_num_interop_threads: Optional[
-        int
-    ] = None
+    torch_num_interop_threads: Optional[int] = None
 
     supported_precisions: Tuple[
         str,
@@ -164,32 +145,18 @@ class CPUDeviceProfile:
     attributes: Mapping[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def validate(
         self,
     ) -> None:
         self.device.validate()
 
-        if (
-            self.device.kind
-            != AcceleratorKind.CPU.value
-        ):
-            raise ValueError(
-                "CPUDeviceProfile requires "
-                "a CPU AcceleratorDevice."
-            )
+        if self.device.kind != AcceleratorKind.CPU.value:
+            raise ValueError("CPUDeviceProfile requires a CPU AcceleratorDevice.")
 
-        if (
-            self.device.device_id
-            != CPU_DEVICE_ID
-        ):
-            raise ValueError(
-                "CPUDeviceProfile requires "
-                "the canonical CPU device."
-            )
+        if self.device.device_id != CPU_DEVICE_ID:
+            raise ValueError("CPUDeviceProfile requires the canonical CPU device.")
 
         for name, value in (
             (
@@ -213,37 +180,24 @@ class CPUDeviceProfile:
                 self.torch_num_interop_threads,
             ),
         ):
-            if (
-                value is not None
-                and value < 1
-            ):
-                raise ValueError(
-                    f"{name} must be >= 1"
-                )
+            if value is not None and value < 1:
+                raise ValueError(f"{name} must be >= 1")
 
         self.memory.validate()
 
-        valid_precisions = {
-            item.value
-            for item in AcceleratorPrecision
-        }
+        valid_precisions = {item.value for item in AcceleratorPrecision}
 
         unknown = [
             precision
-            for precision
-            in self.supported_precisions
-            if precision
-            not in valid_precisions
+            for precision in self.supported_precisions
+            if precision not in valid_precisions
         ]
 
         if unknown:
             raise ValueError(
                 "CPU profile contains "
                 "unsupported precision "
-                "identifiers: "
-                + ", ".join(
-                    unknown
-                )
+                "identifiers: " + ", ".join(unknown)
             )
 
     @property
@@ -283,27 +237,13 @@ class CPUDeviceProfile:
         self,
         precision: str,
     ) -> bool:
-        return (
-            str(
-                precision
-            ).strip().lower()
-            in set(
-                self.supported_precisions
-            )
-        )
+        return str(precision).strip().lower() in set(self.supported_precisions)
 
     def supports_capability(
         self,
         capability: str,
     ) -> bool:
-        return (
-            str(
-                capability
-            ).strip()
-            in set(
-                self.capabilities
-            )
-        )
+        return str(capability).strip() in set(self.capabilities)
 
     def to_dict(
         self,
@@ -311,76 +251,29 @@ class CPUDeviceProfile:
         self.validate()
 
         return {
-            "device": (
-                self.device.to_dict()
-            ),
-
-            "logical_processors": (
-                self.logical_processors
-            ),
-
-            "physical_processors": (
-                self.physical_processors
-            ),
-
-            "affinity_processors": (
-                self.affinity_processors
-            ),
-
-            "effective_processors": (
-                self.effective_processors
-            ),
-
+            "device": (self.device.to_dict()),
+            "logical_processors": (self.logical_processors),
+            "physical_processors": (self.physical_processors),
+            "affinity_processors": (self.affinity_processors),
+            "effective_processors": (self.effective_processors),
             "machine": self.machine,
-
-            "architecture": (
-                self.architecture
-            ),
-
-            "processor": (
-                self.processor
-            ),
-
+            "architecture": (self.architecture),
+            "processor": (self.processor),
             "system": self.system,
-
-            "memory": (
-                self.memory.to_dict()
-            ),
-
-            "torch_available": (
-                self.torch_available
-            ),
-
-            "torch_num_threads": (
-                self.torch_num_threads
-            ),
-
-            "torch_num_interop_threads": (
-                self.
-                torch_num_interop_threads
-            ),
-
-            "supported_precisions": list(
-                self.supported_precisions
-            ),
-
-            "capabilities": list(
-                self.capabilities
-            ),
-
-            "attributes": (
-                to_json_safe(
-                    dict(
-                        self.attributes
-                    )
-                )
-            ),
+            "memory": (self.memory.to_dict()),
+            "torch_available": (self.torch_available),
+            "torch_num_threads": (self.torch_num_threads),
+            "torch_num_interop_threads": (self.torch_num_interop_threads),
+            "supported_precisions": list(self.supported_precisions),
+            "capabilities": list(self.capabilities),
+            "attributes": (to_json_safe(dict(self.attributes))),
         }
 
 
 # ------------------------------------------------------------------
 # CPU affinity
 # ------------------------------------------------------------------
+
 
 def affinity_processor_count() -> Optional[int]:
     """
@@ -398,17 +291,11 @@ def affinity_processor_count() -> Optional[int]:
         None,
     )
 
-    if callable(
-        affinity
-    ):
+    if callable(affinity):
         try:
-            processors = affinity(
-                0
-            )
+            processors = affinity(0)
 
-            count = len(
-                processors
-            )
+            count = len(processors)
 
             if count > 0:
                 return count
@@ -429,17 +316,11 @@ def affinity_processor_count() -> Optional[int]:
                 None,
             )
 
-            if callable(
-                cpu_affinity
-            ):
-                processors = (
-                    cpu_affinity()
-                )
+            if callable(cpu_affinity):
+                processors = cpu_affinity()
 
                 if processors:
-                    return len(
-                        processors
-                    )
+                    return len(processors)
 
         except Exception:
             pass
@@ -450,6 +331,7 @@ def affinity_processor_count() -> Optional[int]:
 # ------------------------------------------------------------------
 # Runtime thread inspection
 # ------------------------------------------------------------------
+
 
 def torch_thread_counts() -> Tuple[
     Optional[int],
@@ -471,9 +353,7 @@ def torch_thread_counts() -> Tuple[
     inter_op = None
 
     try:
-        value = int(
-            torch.get_num_threads()
-        )
+        value = int(torch.get_num_threads())
 
         if value > 0:
             intra_op = value
@@ -482,9 +362,7 @@ def torch_thread_counts() -> Tuple[
         pass
 
     try:
-        value = int(
-            torch.get_num_interop_threads()
-        )
+        value = int(torch.get_num_interop_threads())
 
         if value > 0:
             inter_op = value
@@ -501,6 +379,7 @@ def torch_thread_counts() -> Tuple[
 # ------------------------------------------------------------------
 # Environment inspection
 # ------------------------------------------------------------------
+
 
 def cpu_environment() -> Dict[str, Any]:
     """
@@ -520,13 +399,7 @@ def cpu_environment() -> Dict[str, Any]:
     )
 
     return {
-        name: os.environ.get(
-            name
-        )
-        for name in names
-        if os.environ.get(
-            name
-        ) is not None
+        name: os.environ.get(name) for name in names if os.environ.get(name) is not None
     }
 
 
@@ -534,34 +407,14 @@ def cpu_environment() -> Dict[str, Any]:
 # CPU architecture information
 # ------------------------------------------------------------------
 
+
 def cpu_architecture_info() -> Dict[str, Any]:
     return {
-        "machine": (
-            platform.machine()
-            or None
-        ),
-
-        "architecture": (
-            platform.architecture()[
-                0
-            ]
-            or None
-        ),
-
-        "processor": (
-            platform.processor()
-            or None
-        ),
-
-        "system": (
-            platform.system()
-            or None
-        ),
-
-        "release": (
-            platform.release()
-            or None
-        ),
+        "machine": (platform.machine() or None),
+        "architecture": (platform.architecture()[0] or None),
+        "processor": (platform.processor() or None),
+        "system": (platform.system() or None),
+        "release": (platform.release() or None),
     }
 
 
@@ -569,28 +422,22 @@ def cpu_architecture_info() -> Dict[str, Any]:
 # Resolve canonical CPU device
 # ------------------------------------------------------------------
 
+
 def resolve_cpu_device(
-    backend: Optional[
-        CPUBackend
-    ] = None,
+    backend: Optional[CPUBackend] = None,
 ) -> AcceleratorDevice:
     """
     Discover and return the canonical CPU device.
     """
 
-    runtime_backend = (
-        backend
-        or CPUBackend()
-    )
+    runtime_backend = backend or CPUBackend()
 
     result = runtime_backend.discover()
 
     for device in result.devices:
         if (
-            device.kind
-            == AcceleratorKind.CPU.value
-            and device.device_id
-            == CPU_DEVICE_ID
+            device.kind == AcceleratorKind.CPU.value
+            and device.device_id == CPU_DEVICE_ID
         ):
             return device
 
@@ -599,51 +446,19 @@ def resolve_cpu_device(
     # for inspection callers rather than inventing
     # available hardware.
     return AcceleratorDevice(
-        device_id=(
-            CPU_DEVICE_ID
-        ),
-
-        kind=(
-            AcceleratorKind.CPU.value
-        ),
-
-        runtime_device=(
-            CPU_RUNTIME_DEVICE
-        ),
-
+        device_id=(CPU_DEVICE_ID),
+        kind=(AcceleratorKind.CPU.value),
+        runtime_device=(CPU_RUNTIME_DEVICE),
         index=None,
-
         name=cpu_name(),
-
-        state=(
-            AcceleratorState.
-            UNAVAILABLE.value
-        ),
-
-        memory=(
-            AcceleratorMemory()
-        ),
-
+        state=(AcceleratorState.UNAVAILABLE.value),
+        memory=(AcceleratorMemory()),
         capabilities=(),
-
-        supported_precisions=(
-            AcceleratorPrecision.
-            FLOAT32.value,
-        ),
-
-        architecture=(
-            platform.machine()
-            or None
-        ),
-
-        logical_processor_count=(
-            logical_processor_count()
-        ),
-
+        supported_precisions=(AcceleratorPrecision.FLOAT32.value,),
+        architecture=(platform.machine() or None),
+        logical_processor_count=(logical_processor_count()),
         attributes={
-            "resolved_without_available_backend": (
-                True
-            ),
+            "resolved_without_available_backend": (True),
         },
     )
 
@@ -651,6 +466,7 @@ def resolve_cpu_device(
 # ------------------------------------------------------------------
 # CPU device inspector
 # ------------------------------------------------------------------
+
 
 class CPUDeviceInspector:
     """
@@ -662,14 +478,9 @@ class CPUDeviceInspector:
     def __init__(
         self,
         *,
-        backend: Optional[
-            CPUBackend
-        ] = None,
+        backend: Optional[CPUBackend] = None,
     ) -> None:
-        self.backend = (
-            backend
-            or CPUBackend()
-        )
+        self.backend = backend or CPUBackend()
 
     # ---------------------------------------------------------
     # Inspect
@@ -677,148 +488,58 @@ class CPUDeviceInspector:
 
     def inspect(
         self,
-        device: Optional[
-            AcceleratorDevice
-        ] = None,
+        device: Optional[AcceleratorDevice] = None,
         *,
         refresh_memory: bool = True,
     ) -> CPUDeviceProfile:
-        resolved = (
-            device
-            or resolve_cpu_device(
-                self.backend
-            )
-        )
+        resolved = device or resolve_cpu_device(self.backend)
 
         resolved.validate()
 
-        if (
-            resolved.kind
-            != AcceleratorKind.CPU.value
-        ):
-            raise ValueError(
-                "CPUDeviceInspector cannot "
-                "inspect a non-CPU device."
-            )
+        if resolved.kind != AcceleratorKind.CPU.value:
+            raise ValueError("CPUDeviceInspector cannot inspect a non-CPU device.")
 
-        memory = (
-            resolved.memory
-        )
+        memory = resolved.memory
 
         memory_error_type = None
 
-        if (
-            refresh_memory
-            and resolved.available
-        ):
+        if refresh_memory and resolved.available:
             try:
-                memory = (
-                    self.backend.memory(
-                        resolved
-                    )
-                )
+                memory = self.backend.memory(resolved)
 
             except Exception as exc:
-                memory_error_type = (
-                    type(exc).__name__
-                )
+                memory_error_type = type(exc).__name__
 
         (
             torch_threads,
             torch_interop_threads,
         ) = torch_thread_counts()
 
-        architecture = (
-            cpu_architecture_info()
-        )
+        architecture = cpu_architecture_info()
 
         profile = CPUDeviceProfile(
             device=resolved,
-
-            logical_processors=(
-                logical_processor_count()
-            ),
-
-            physical_processors=(
-                physical_processor_count()
-            ),
-
-            affinity_processors=(
-                affinity_processor_count()
-            ),
-
-            machine=(
-                architecture[
-                    "machine"
-                ]
-            ),
-
-            architecture=(
-                architecture[
-                    "architecture"
-                ]
-            ),
-
-            processor=(
-                architecture[
-                    "processor"
-                ]
-            ),
-
-            system=(
-                architecture[
-                    "system"
-                ]
-            ),
-
+            logical_processors=(logical_processor_count()),
+            physical_processors=(physical_processor_count()),
+            affinity_processors=(affinity_processor_count()),
+            machine=(architecture["machine"]),
+            architecture=(architecture["architecture"]),
+            processor=(architecture["processor"]),
+            system=(architecture["system"]),
             memory=memory,
-
-            torch_available=(
-                torch is not None
-            ),
-
-            torch_num_threads=(
-                torch_threads
-            ),
-
-            torch_num_interop_threads=(
-                torch_interop_threads
-            ),
-
+            torch_available=(torch is not None),
+            torch_num_threads=(torch_threads),
+            torch_num_interop_threads=(torch_interop_threads),
             supported_precisions=(
-                resolved.
-                supported_precisions
-                or cpu_supported_precisions()
+                resolved.supported_precisions or cpu_supported_precisions()
             ),
-
-            capabilities=(
-                resolved.capabilities
-                or cpu_capabilities()
-            ),
-
+            capabilities=(resolved.capabilities or cpu_capabilities()),
             attributes={
-                "cpu_name": (
-                    resolved.name
-                    or cpu_name()
-                ),
-
-                "environment": (
-                    cpu_environment()
-                ),
-
-                "memory_error_type": (
-                    memory_error_type
-                ),
-
-                "psutil_available": (
-                    psutil is not None
-                ),
-
-                "platform_release": (
-                    architecture[
-                        "release"
-                    ]
-                ),
+                "cpu_name": (resolved.name or cpu_name()),
+                "environment": (cpu_environment()),
+                "memory_error_type": (memory_error_type),
+                "psutil_available": (psutil is not None),
+                "platform_release": (architecture["release"]),
             },
         )
 
@@ -834,9 +555,7 @@ class CPUDeviceInspector:
         self,
         workload: AcceleratorWorkload,
         *,
-        device: Optional[
-            AcceleratorDevice
-        ] = None,
+        device: Optional[AcceleratorDevice] = None,
         refresh_memory: bool = True,
     ) -> AcceleratorOptimizationProfile:
         """
@@ -848,77 +567,32 @@ class CPUDeviceInspector:
 
         profile = self.inspect(
             device,
-            refresh_memory=(
-                refresh_memory
-        result = (
-            AcceleratorOptimizationProfile(
-                device=profile.device,
+            refresh_memory=refresh_memory,
+        )
 
-                workload=workload,
-
-                free_memory_bytes=(
-                    profile.
-                    free_memory_bytes
+        result = AcceleratorOptimizationProfile(
+            device=profile.device,
+            workload=workload,
+            free_memory_bytes=(profile.free_memory_bytes),
+            total_memory_bytes=(profile.total_memory_bytes),
+            utilization_percent=None,
+            temperature_celsius=None,
+            capabilities=(profile.capabilities),
+            attributes={
+                "logical_processors": (profile.logical_processors),
+                "physical_processors": (profile.physical_processors),
+                "affinity_processors": (profile.affinity_processors),
+                "effective_processors": (profile.effective_processors),
+                "torch_num_threads": (profile.torch_num_threads),
+                "torch_num_interop_threads": (profile.torch_num_interop_threads),
+                "supported_precisions": list(profile.supported_precisions),
+                "environment": (
+                    profile.attributes.get(
+                        "environment",
+                        {},
+                    )
                 ),
-
-                total_memory_bytes=(
-                    profile.
-                    total_memory_bytes
-                ),
-
-                utilization_percent=None,
-
-                temperature_celsius=None,
-
-                capabilities=(
-                    profile.capabilities
-                ),
-
-                attributes={
-                    "logical_processors": (
-                        profile.
-                        logical_processors
-                    ),
-
-                    "physical_processors": (
-                        profile.
-                        physical_processors
-                    ),
-
-                    "affinity_processors": (
-                        profile.
-                        affinity_processors
-                    ),
-
-                    "effective_processors": (
-                        profile.
-                        effective_processors
-                    ),
-
-                    "torch_num_threads": (
-                        profile.
-                        torch_num_threads
-                    ),
-
-                    "torch_num_interop_threads": (
-                        profile.
-                        torch_num_interop_threads
-                    ),
-
-                    "supported_precisions": list(
-                        profile.
-                        supported_precisions
-                    ),
-
-                    "environment": (
-                        profile.attributes.
-                        get(
-                            "environment",
-                            {},
-                        )
-                    ),
-                },
-            )
+            },
         )
 
         result.validate()
@@ -929,6 +603,7 @@ class CPUDeviceInspector:
 # ------------------------------------------------------------------
 # Workload suitability
 # ------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class CPUWorkloadSuitability:
@@ -954,33 +629,16 @@ class CPUWorkloadSuitability:
     attributes: Mapping[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def to_dict(
         self,
     ) -> Dict[str, Any]:
         return {
-            "suitable": (
-                self.suitable
-            ),
-
-            "reasons": list(
-                self.reasons
-            ),
-
-            "warnings": list(
-                self.warnings
-            ),
-
-            "attributes": (
-                to_json_safe(
-                    dict(
-                        self.attributes
-                    )
-                )
-            ),
+            "suitable": (self.suitable),
+            "reasons": list(self.reasons),
+            "warnings": list(self.warnings),
+            "attributes": (to_json_safe(dict(self.attributes))),
         }
 
 
@@ -1003,85 +661,37 @@ def evaluate_cpu_workload(
     warnings = []
 
     if not profile.device.available:
-        reasons.append(
-            "cpu_device_unavailable"
-        )
+        reasons.append("cpu_device_unavailable")
 
-    if not profile.supports_precision(
-        workload.precision
-    ):
-        reasons.append(
-            "workload_precision_unsupported"
-        )
+    if not profile.supports_precision(workload.precision):
+        reasons.append("workload_precision_unsupported")
 
     if workload.mixed_precision_enabled:
         # The generic CPU backend does not advertise
         # MIXED_PRECISION because support depends on
         # runtime/operator coverage.
-        warnings.append(
-            "mixed_precision_requires_runtime_validation"
-        )
+        warnings.append("mixed_precision_requires_runtime_validation")
 
-    if (
-        workload.
-        estimated_peak_memory_bytes
-        is not None
-    ):
-        free = (
-            profile.
-            free_memory_bytes
-        )
+    if workload.estimated_peak_memory_bytes is not None:
+        free = profile.free_memory_bytes
 
         if free is None:
-            warnings.append(
-                "free_memory_unknown"
-            )
+            warnings.append("free_memory_unknown")
 
-        elif (
-            workload.
-            estimated_peak_memory_bytes
-            > free
-        ):
-            reasons.append(
-                "estimated_peak_memory_exceeds_available_memory"
-            )
+        elif workload.estimated_peak_memory_bytes > free:
+            reasons.append("estimated_peak_memory_exceeds_available_memory")
 
-    if (
-        profile.effective_processors
-        is None
-    ):
-        warnings.append(
-            "effective_processor_count_unknown"
-        )
+    if profile.effective_processors is None:
+        warnings.append("effective_processor_count_unknown")
 
     return CPUWorkloadSuitability(
-        suitable=(
-            not reasons
-        ),
-
-        reasons=tuple(
-            reasons
-        ),
-
-        warnings=tuple(
-            warnings
-        ),
-
+        suitable=(not reasons),
+        reasons=tuple(reasons),
+        warnings=tuple(warnings),
         attributes={
-            "effective_processors": (
-                profile.
-                effective_processors
-            ),
-
-            "free_memory_bytes": (
-                profile.
-                free_memory_bytes
-            ),
-
-            "estimated_peak_memory_bytes": (
-                workload.
-                estimated_peak_memory_bytes
-            ),
+            "effective_processors": (profile.effective_processors),
+            "free_memory_bytes": (profile.free_memory_bytes),
+            "estimated_peak_memory_bytes": (workload.estimated_peak_memory_bytes),
         },
     )
 
@@ -1090,20 +700,71 @@ def evaluate_cpu_workload(
 # Convenience inspection
 # ------------------------------------------------------------------
 
+
 def inspect_cpu_device(
     *,
-    backend: Optional[
-        CPUBackend
-    ] = None,
+    backend: Optional[CPUBackend] = None,
     refresh_memory: bool = True,
 ) -> CPUDeviceProfile:
-    return CPUDeviceInspector(
-        backend=backend
-    ).inspect(
-        refresh_memory=(
-            refresh_memory
-        )
-    )
+    return CPUDeviceInspector(backend=backend).inspect(refresh_memory=(refresh_memory))
+
+
+# ------------------------------------------------------------------
+# Compatibility helpers
+# ------------------------------------------------------------------
+
+
+def _compat_torch():
+    try:
+        import torch as runtime
+    except ImportError:
+        return None
+    return runtime
+
+
+def is_cpu_available() -> bool:
+    return True
+
+
+def get_device_count() -> int:
+    return logical_processor_count() or 1
+
+
+def get_device(index: int = 0) -> str:
+    if not isinstance(index, int) or isinstance(index, bool):
+        raise TypeError("Device index must be an integer.")
+    if index != 0:
+        raise ValueError("CPU exposes only device index 0.")
+    runtime = _compat_torch()
+    if runtime is None:
+        return "cpu"
+    return str(runtime.device("cpu"))
+
+
+def get_device_info(index: int = 0) -> Dict[str, Any]:
+    get_device(index)
+    runtime = _compat_torch()
+    return {
+        "backend": "cpu",
+        "name": "CPU",
+        "pytorch_threads": (
+            runtime.get_num_threads()
+            if runtime is not None
+            and callable(getattr(runtime, "get_num_threads", None))
+            else None
+        ),
+        "pytorch_interop_threads": (
+            runtime.get_num_interop_threads()
+            if runtime is not None
+            and callable(getattr(runtime, "get_num_interop_threads", None))
+            else None
+        ),
+        "logical_processors": logical_processor_count(),
+    }
+
+
+def list_devices() -> list[Dict[str, Any]]:
+    return [get_device_info()]
 
 
 # ------------------------------------------------------------------
@@ -1113,16 +774,17 @@ def inspect_cpu_device(
 __all__ = [
     "CPUDeviceProfile",
     "CPUWorkloadSuitability",
-
     "affinity_processor_count",
     "torch_thread_counts",
     "cpu_environment",
     "cpu_architecture_info",
-
     "resolve_cpu_device",
-
     "CPUDeviceInspector",
-
     "evaluate_cpu_workload",
     "inspect_cpu_device",
+    "is_cpu_available",
+    "get_device",
+    "get_device_count",
+    "get_device_info",
+    "list_devices",
 ]

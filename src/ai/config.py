@@ -69,6 +69,7 @@ SUPPORTED_DEVICES = (
 # Model path configuration
 # ---------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class AIPathConfig:
     """
@@ -80,13 +81,9 @@ class AIPathConfig:
 
     models_directory: str = "models"
 
-    cache_directory: str = (
-        "artifacts/ai-cache"
-    )
+    cache_directory: str = "artifacts/ai-cache"
 
-    log_directory: str = (
-        "logs/ai"
-    )
+    log_directory: str = "logs/ai"
 
     def validate(
         self,
@@ -105,12 +102,8 @@ class AIPathConfig:
                 self.log_directory,
             ),
         ):
-            if not str(
-                value
-            ).strip():
-                raise ValueError(
-                    f"{name} cannot be empty"
-                )
+            if not str(value).strip():
+                raise ValueError(f"{name} cannot be empty")
 
     def resolved(
         self,
@@ -118,29 +111,16 @@ class AIPathConfig:
         self.validate()
 
         return {
-            "models": str(
-                Path(
-                    self.models_directory
-                ).expanduser().resolve()
-            ),
-
-            "cache": str(
-                Path(
-                    self.cache_directory
-                ).expanduser().resolve()
-            ),
-
-            "logs": str(
-                Path(
-                    self.log_directory
-                ).expanduser().resolve()
-            ),
+            "models": str(Path(self.models_directory).expanduser().resolve()),
+            "cache": str(Path(self.cache_directory).expanduser().resolve()),
+            "logs": str(Path(self.log_directory).expanduser().resolve()),
         }
 
 
 # ---------------------------------------------------------------
 # Device configuration
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class AIDeviceConfig:
@@ -151,13 +131,9 @@ class AIDeviceConfig:
     responsibility of src/accelerators/.
     """
 
-    preferred: str = (
-        AIDeviceFamily.AUTO.value
-    )
+    preferred: str = AIDeviceFamily.AUTO.value
 
-    device_index: Optional[
-        int
-    ] = None
+    device_index: Optional[int] = None
 
     allow_cpu_fallback: bool = True
 
@@ -166,18 +142,10 @@ class AIDeviceConfig:
     def validate(
         self,
     ) -> None:
-        preferred = str(
-            self.preferred
-        ).strip().lower()
+        preferred = str(self.preferred).strip().lower()
 
-        if (
-            preferred
-            not in SUPPORTED_DEVICES
-        ):
-            raise ValueError(
-                "Unsupported AI device: "
-                f"{self.preferred}"
-            )
+        if preferred not in SUPPORTED_DEVICES:
+            raise ValueError(f"Unsupported AI device: {self.preferred}")
 
         if self.device_index is not None:
             integer(
@@ -190,6 +158,7 @@ class AIDeviceConfig:
 # ---------------------------------------------------------------
 # Model loading/cache configuration
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class AIModelLoadingConfig:
@@ -226,6 +195,7 @@ class AIModelLoadingConfig:
 # Inference configuration
 # ---------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class AIInferenceConfig:
     """
@@ -237,11 +207,7 @@ class AIInferenceConfig:
 
     maximum_batch_size: int = 64
 
-    maximum_payload_bytes: int = (
-        4
-        * 1024
-        * 1024
-    )
+    maximum_payload_bytes: int = 4 * 1024 * 1024
 
     timeout_seconds: float = 30.0
 
@@ -276,6 +242,7 @@ class AIInferenceConfig:
 # ---------------------------------------------------------------
 # Event inference configuration
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class EventInferenceConfig:
@@ -313,6 +280,7 @@ class EventInferenceConfig:
 # Anomaly inference configuration
 # ---------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class AnomalyInferenceConfig:
     """
@@ -330,9 +298,7 @@ class AnomalyInferenceConfig:
 
     maximum_threshold: float = 1.0
 
-    allow_request_threshold_override: bool = (
-        False
-    )
+    allow_request_threshold_override: bool = False
 
     def validate(
         self,
@@ -360,26 +326,19 @@ class AnomalyInferenceConfig:
 
         if minimum > maximum:
             raise ValueError(
-                "minimum_threshold "
-                "cannot be greater than "
-                "maximum_threshold"
+                "minimum_threshold cannot be greater than maximum_threshold"
             )
 
-        if not (
-            minimum
-            <= threshold
-            <= maximum
-        ):
+        if not (minimum <= threshold <= maximum):
             raise ValueError(
-                "default_threshold must "
-                "fall within configured "
-                "threshold limits"
+                "default_threshold must fall within configured threshold limits"
             )
 
 
 # ---------------------------------------------------------------
 # Routing configuration
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class AIRoutingConfig:
@@ -388,51 +347,30 @@ class AIRoutingConfig:
     versions.
     """
 
-    use_latest_version_when_unspecified: bool = (
-        True
-    )
+    use_latest_version_when_unspecified: bool = True
 
     require_explicit_family: bool = True
 
     allow_fallback_model: bool = False
 
-    fallback_event_model: Optional[
-        str
-    ] = None
+    fallback_event_model: Optional[str] = None
 
-    fallback_anomaly_model: Optional[
-        str
-    ] = None
+    fallback_anomaly_model: Optional[str] = None
 
     def validate(
         self,
     ) -> None:
-        if (
-            self.fallback_event_model
-            and not self.
-            allow_fallback_model
-        ):
-            raise ValueError(
-                "fallback_event_model "
-                "requires "
-                "allow_fallback_model"
-            )
+        if self.fallback_event_model and not self.allow_fallback_model:
+            raise ValueError("fallback_event_model requires allow_fallback_model")
 
-        if (
-            self.fallback_anomaly_model
-            and not self.
-            allow_fallback_model
-        ):
-            raise ValueError(
-                "fallback_anomaly_model "
-                "requires "
-                "allow_fallback_model"
-            )
+        if self.fallback_anomaly_model and not self.allow_fallback_model:
+            raise ValueError("fallback_anomaly_model requires allow_fallback_model")
 
 
 # ---------------------------------------------------------------
 # Main AI configuration
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class AIConfig:
@@ -450,50 +388,24 @@ class AIConfig:
         AIModelFamily.ANOMALY.value,
     )
 
-    paths: AIPathConfig = field(
-        default_factory=AIPathConfig
-    )
+    paths: AIPathConfig = field(default_factory=AIPathConfig)
 
-    device: AIDeviceConfig = field(
-        default_factory=AIDeviceConfig
-    )
+    device: AIDeviceConfig = field(default_factory=AIDeviceConfig)
 
-    loading: AIModelLoadingConfig = field(
-        default_factory=(
-            AIModelLoadingConfig
-        )
-    )
+    loading: AIModelLoadingConfig = field(default_factory=(AIModelLoadingConfig))
 
-    inference: AIInferenceConfig = field(
-        default_factory=(
-            AIInferenceConfig
-        )
-    )
+    inference: AIInferenceConfig = field(default_factory=(AIInferenceConfig))
 
-    event: EventInferenceConfig = field(
-        default_factory=(
-            EventInferenceConfig
-        )
-    )
+    event: EventInferenceConfig = field(default_factory=(EventInferenceConfig))
 
-    anomaly: AnomalyInferenceConfig = field(
-        default_factory=(
-            AnomalyInferenceConfig
-        )
-    )
+    anomaly: AnomalyInferenceConfig = field(default_factory=(AnomalyInferenceConfig))
 
-    routing: AIRoutingConfig = field(
-        default_factory=(
-            AIRoutingConfig
-        )
-    )
+    routing: AIRoutingConfig = field(default_factory=(AIRoutingConfig))
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def validate(
         self,
@@ -518,28 +430,12 @@ class AIConfig:
             allow_empty=False,
         )
 
-        valid_families = {
-            item.value
-            for item
-            in AIModelFamily
-        }
+        valid_families = {item.value for item in AIModelFamily}
 
-        unsupported = [
-            family
-            for family
-            in families
-            if family
-            not in valid_families
-        ]
+        unsupported = [family for family in families if family not in valid_families]
 
         if unsupported:
-            raise ValueError(
-                "Unsupported AI model "
-                "families: "
-                + ", ".join(
-                    unsupported
-                )
-            )
+            raise ValueError("Unsupported AI model families: " + ", ".join(unsupported))
 
     # ---------------------------------------------------------
     # Family enabled
@@ -552,13 +448,7 @@ class AIConfig:
         self.validate()
 
         return bool(
-            self.enabled
-            and str(
-                family
-            ).strip().lower()
-            in set(
-                self.allowed_families
-            )
+            self.enabled and str(family).strip().lower() in set(self.allowed_families)
         )
 
     # ---------------------------------------------------------
@@ -572,183 +462,62 @@ class AIConfig:
 
         return {
             "enabled": self.enabled,
-
-            "allowed_families": list(
-                self.allowed_families
-            ),
-
-            "paths": (
-                self.paths.resolved()
-            ),
-
+            "allowed_families": list(self.allowed_families),
+            "paths": (self.paths.resolved()),
             "device": {
-                "preferred": (
-                    self.device.preferred
-                ),
-
-                "device_index": (
-                    self.device.
-                    device_index
-                ),
-
-                "allow_cpu_fallback": (
-                    self.device.
-                    allow_cpu_fallback
-                ),
-
-                "mixed_precision": (
-                    self.device.
-                    mixed_precision
-                ),
+                "preferred": (self.device.preferred),
+                "device_index": (self.device.device_index),
+                "allow_cpu_fallback": (self.device.allow_cpu_fallback),
+                "mixed_precision": (self.device.mixed_precision),
             },
-
             "loading": {
-                "lazy_loading": (
-                    self.loading.
-                    lazy_loading
-                ),
-
-                "verify_checksum": (
-                    self.loading.
-                    verify_checksum
-                ),
-
-                "maximum_loaded_models": (
-                    self.loading.
-                    maximum_loaded_models
-                ),
-
-                "unload_unused_models": (
-                    self.loading.
-                    unload_unused_models
-                ),
-
-                "allow_runtime_replacement": (
-                    self.loading.
-                    allow_runtime_replacement
-                ),
-
-                "require_promoted_state": (
-                    self.loading.
-                    require_promoted_state
-                ),
+                "lazy_loading": (self.loading.lazy_loading),
+                "verify_checksum": (self.loading.verify_checksum),
+                "maximum_loaded_models": (self.loading.maximum_loaded_models),
+                "unload_unused_models": (self.loading.unload_unused_models),
+                "allow_runtime_replacement": (self.loading.allow_runtime_replacement),
+                "require_promoted_state": (self.loading.require_promoted_state),
             },
-
             "inference": {
-                "maximum_batch_size": (
-                    self.inference.
-                    maximum_batch_size
-                ),
-
-                "maximum_payload_bytes": (
-                    self.inference.
-                    maximum_payload_bytes
-                ),
-
-                "timeout_seconds": (
-                    self.inference.
-                    timeout_seconds
-                ),
-
-                "enable_batch_inference": (
-                    self.inference.
-                    enable_batch_inference
-                ),
-
-                "reject_non_finite_inputs": (
-                    self.inference.
-                    reject_non_finite_inputs
-                ),
-
-                "include_representations": (
-                    self.inference.
-                    include_representations
-                ),
+                "maximum_batch_size": (self.inference.maximum_batch_size),
+                "maximum_payload_bytes": (self.inference.maximum_payload_bytes),
+                "timeout_seconds": (self.inference.timeout_seconds),
+                "enable_batch_inference": (self.inference.enable_batch_inference),
+                "reject_non_finite_inputs": (self.inference.reject_non_finite_inputs),
+                "include_representations": (self.inference.include_representations),
             },
-
             "event": {
-                "max_length": (
-                    self.event.max_length
-                ),
-
-                "top_k": (
-                    self.event.top_k
-                ),
-
-                "return_source_prediction": (
-                    self.event.
-                    return_source_prediction
-                ),
-
-                "return_component_prediction": (
-                    self.event.
-                    return_component_prediction
-                ),
-
-                "return_event_prediction": (
-                    self.event.
-                    return_event_prediction
-                ),
+                "max_length": (self.event.max_length),
+                "top_k": (self.event.top_k),
+                "return_source_prediction": (self.event.return_source_prediction),
+                "return_component_prediction": (self.event.return_component_prediction),
+                "return_event_prediction": (self.event.return_event_prediction),
             },
-
             "anomaly": {
-                "default_threshold": (
-                    self.anomaly.
-                    default_threshold
-                ),
-
-                "minimum_threshold": (
-                    self.anomaly.
-                    minimum_threshold
-                ),
-
-                "maximum_threshold": (
-                    self.anomaly.
-                    maximum_threshold
-                ),
-
+                "default_threshold": (self.anomaly.default_threshold),
+                "minimum_threshold": (self.anomaly.minimum_threshold),
+                "maximum_threshold": (self.anomaly.maximum_threshold),
                 "allow_request_threshold_override": (
-                    self.anomaly.
-                    allow_request_threshold_override
+                    self.anomaly.allow_request_threshold_override
                 ),
             },
-
             "routing": {
                 "use_latest_version_when_unspecified": (
-                    self.routing.
-                    use_latest_version_when_unspecified
+                    self.routing.use_latest_version_when_unspecified
                 ),
-
-                "require_explicit_family": (
-                    self.routing.
-                    require_explicit_family
-                ),
-
-                "allow_fallback_model": (
-                    self.routing.
-                    allow_fallback_model
-                ),
-
-                "fallback_event_model": (
-                    self.routing.
-                    fallback_event_model
-                ),
-
-                "fallback_anomaly_model": (
-                    self.routing.
-                    fallback_anomaly_model
-                ),
+                "require_explicit_family": (self.routing.require_explicit_family),
+                "allow_fallback_model": (self.routing.allow_fallback_model),
+                "fallback_event_model": (self.routing.fallback_event_model),
+                "fallback_anomaly_model": (self.routing.fallback_anomaly_model),
             },
-
-            "attributes": dict(
-                self.attributes
-            ),
+            "attributes": dict(self.attributes),
         }
 
 
 # ---------------------------------------------------------------
 # Parsing helpers
 # ---------------------------------------------------------------
+
 
 def _get(
     values: Mapping[
@@ -772,9 +541,7 @@ def _text(
     ],
     prefix: str,
     name: str,
-    default: Optional[
-        str
-    ] = None,
+    default: Optional[str] = None,
 ) -> Optional[str]:
     value = _get(
         values,
@@ -786,9 +553,7 @@ def _text(
     if value is None:
         return None
 
-    text = str(
-        value
-    ).strip()
+    text = str(value).strip()
 
     return text or None
 
@@ -808,13 +573,7 @@ def _bool(
         name,
     )
 
-    if (
-        value is None
-        or str(
-            value
-        ).strip()
-        == ""
-    ):
+    if value is None or str(value).strip() == "":
         return default
 
     return boolean(
@@ -840,13 +599,7 @@ def _int(
         name,
     )
 
-    if (
-        value is None
-        or str(
-            value
-        ).strip()
-        == ""
-    ):
+    if value is None or str(value).strip() == "":
         return default
 
     return integer(
@@ -863,9 +616,7 @@ def _optional_int(
     ],
     prefix: str,
     name: str,
-    default: Optional[
-        int
-    ],
+    default: Optional[int],
 ) -> Optional[int]:
     value = _get(
         values,
@@ -873,13 +624,7 @@ def _optional_int(
         name,
     )
 
-    if (
-        value is None
-        or str(
-            value
-        ).strip()
-        == ""
-    ):
+    if value is None or str(value).strip() == "":
         return default
 
     return integer(
@@ -899,9 +644,7 @@ def _float(
     default: float,
     *,
     minimum: float = 0.0,
-    maximum: Optional[
-        float
-    ] = None,
+    maximum: Optional[float] = None,
 ) -> float:
     value = _get(
         values,
@@ -909,13 +652,7 @@ def _float(
         name,
     )
 
-    if (
-        value is None
-        or str(
-            value
-        ).strip()
-        == ""
-    ):
+    if value is None or str(value).strip() == "":
         return default
 
     kwargs: Dict[
@@ -927,9 +664,7 @@ def _float(
     }
 
     if maximum is not None:
-        kwargs[
-            "maximum"
-        ] = maximum
+        kwargs["maximum"] = maximum
 
     return number(
         value,
@@ -958,24 +693,13 @@ def _csv(
         name,
     )
 
-    if (
-        value is None
-        or str(
-            value
-        ).strip()
-        == ""
-    ):
+    if value is None or str(value).strip() == "":
         return default
 
     return tuple(
         item.lower()
-        for item
-        in unique_strings(
-            str(
-                value
-            ).split(
-                ","
-            ),
+        for item in unique_strings(
+            str(value).split(","),
             name=prefix + name,
             allow_empty=False,
         )
@@ -985,6 +709,7 @@ def _csv(
 # ---------------------------------------------------------------
 # Mapping loader
 # ---------------------------------------------------------------
+
 
 def from_mapping(
     values: Mapping[
@@ -1003,364 +728,287 @@ def from_mapping(
             "ENABLED",
             True,
         ),
-
         allowed_families=_csv(
             values,
             prefix,
             "ALLOWED_FAMILIES",
             defaults.allowed_families,
         ),
-
         paths=AIPathConfig(
             models_directory=(
                 _text(
                     values,
                     prefix,
                     "MODELS_DIRECTORY",
-                    defaults.paths.
-                    models_directory,
+                    defaults.paths.models_directory,
                 )
-                or defaults.paths.
-                models_directory
+                or defaults.paths.models_directory
             ),
-
             cache_directory=(
                 _text(
                     values,
                     prefix,
                     "CACHE_DIRECTORY",
-                    defaults.paths.
-                    cache_directory,
+                    defaults.paths.cache_directory,
                 )
-                or defaults.paths.
-                cache_directory
+                or defaults.paths.cache_directory
             ),
-
             log_directory=(
                 _text(
                     values,
                     prefix,
                     "LOG_DIRECTORY",
-                    defaults.paths.
-                    log_directory,
+                    defaults.paths.log_directory,
                 )
-                or defaults.paths.
-                log_directory
+                or defaults.paths.log_directory
             ),
         ),
-
         device=AIDeviceConfig(
             preferred=(
                 _text(
                     values,
                     prefix,
                     "DEVICE",
-                    defaults.device.
-                    preferred,
+                    defaults.device.preferred,
                 )
-                or defaults.device.
-                preferred
+                or defaults.device.preferred
             ).lower(),
-
             device_index=(
                 _optional_int(
                     values,
                     prefix,
                     "DEVICE_INDEX",
-                    defaults.device.
-                    device_index,
+                    defaults.device.device_index,
                 )
             ),
-
             allow_cpu_fallback=(
                 _bool(
                     values,
                     prefix,
                     "ALLOW_CPU_FALLBACK",
-                    defaults.device.
-                    allow_cpu_fallback,
+                    defaults.device.allow_cpu_fallback,
                 )
             ),
-
             mixed_precision=_bool(
                 values,
                 prefix,
                 "MIXED_PRECISION",
-                defaults.device.
-                mixed_precision,
+                defaults.device.mixed_precision,
             ),
         ),
-
         loading=AIModelLoadingConfig(
             lazy_loading=_bool(
                 values,
                 prefix,
                 "LAZY_LOADING",
-                defaults.loading.
-                lazy_loading,
+                defaults.loading.lazy_loading,
             ),
-
             verify_checksum=_bool(
                 values,
                 prefix,
                 "VERIFY_CHECKSUM",
-                defaults.loading.
-                verify_checksum,
+                defaults.loading.verify_checksum,
             ),
-
             maximum_loaded_models=(
                 _int(
                     values,
                     prefix,
                     "MAXIMUM_LOADED_MODELS",
-                    defaults.loading.
-                    maximum_loaded_models,
+                    defaults.loading.maximum_loaded_models,
                     minimum=1,
                 )
             ),
-
             unload_unused_models=(
                 _bool(
                     values,
                     prefix,
                     "UNLOAD_UNUSED_MODELS",
-                    defaults.loading.
-                    unload_unused_models,
+                    defaults.loading.unload_unused_models,
                 )
             ),
-
             allow_runtime_replacement=(
                 _bool(
                     values,
                     prefix,
                     "ALLOW_RUNTIME_REPLACEMENT",
-                    defaults.loading.
-                    allow_runtime_replacement,
+                    defaults.loading.allow_runtime_replacement,
                 )
             ),
-
             require_promoted_state=(
                 _bool(
                     values,
                     prefix,
                     "REQUIRE_PROMOTED_STATE",
-                    defaults.loading.
-                    require_promoted_state,
+                    defaults.loading.require_promoted_state,
                 )
             ),
         ),
-
         inference=AIInferenceConfig(
             maximum_batch_size=_int(
                 values,
                 prefix,
                 "MAXIMUM_BATCH_SIZE",
-                defaults.inference.
-                maximum_batch_size,
+                defaults.inference.maximum_batch_size,
                 minimum=1,
             ),
-
             maximum_payload_bytes=_int(
                 values,
                 prefix,
                 "MAXIMUM_PAYLOAD_BYTES",
-                defaults.inference.
-                maximum_payload_bytes,
+                defaults.inference.maximum_payload_bytes,
                 minimum=1,
             ),
-
             timeout_seconds=_float(
                 values,
                 prefix,
                 "TIMEOUT_SECONDS",
-                defaults.inference.
-                timeout_seconds,
+                defaults.inference.timeout_seconds,
                 minimum=0.001,
             ),
-
             enable_batch_inference=(
                 _bool(
                     values,
                     prefix,
                     "ENABLE_BATCH_INFERENCE",
-                    defaults.inference.
-                    enable_batch_inference,
+                    defaults.inference.enable_batch_inference,
                 )
             ),
-
             reject_non_finite_inputs=(
                 _bool(
                     values,
                     prefix,
                     "REJECT_NON_FINITE_INPUTS",
-                    defaults.inference.
-                    reject_non_finite_inputs,
+                    defaults.inference.reject_non_finite_inputs,
                 )
             ),
-
             include_representations=(
                 _bool(
                     values,
                     prefix,
                     "INCLUDE_REPRESENTATIONS",
-                    defaults.inference.
-                    include_representations,
+                    defaults.inference.include_representations,
                 )
             ),
         ),
-
         event=EventInferenceConfig(
             max_length=_int(
                 values,
                 prefix,
                 "EVENT_MAX_LENGTH",
-                defaults.event.
-                max_length,
+                defaults.event.max_length,
                 minimum=1,
             ),
-
             top_k=_int(
                 values,
                 prefix,
                 "EVENT_TOP_K",
-                defaults.event.
-                top_k,
+                defaults.event.top_k,
                 minimum=1,
             ),
-
             return_source_prediction=(
                 _bool(
                     values,
                     prefix,
                     "EVENT_RETURN_SOURCE",
-                    defaults.event.
-                    return_source_prediction,
+                    defaults.event.return_source_prediction,
                 )
             ),
-
             return_component_prediction=(
                 _bool(
                     values,
                     prefix,
                     "EVENT_RETURN_COMPONENT",
-                    defaults.event.
-                    return_component_prediction,
+                    defaults.event.return_component_prediction,
                 )
             ),
-
             return_event_prediction=(
                 _bool(
                     values,
                     prefix,
                     "EVENT_RETURN_EVENT",
-                    defaults.event.
-                    return_event_prediction,
+                    defaults.event.return_event_prediction,
                 )
             ),
         ),
-
         anomaly=AnomalyInferenceConfig(
             default_threshold=_float(
                 values,
                 prefix,
                 "ANOMALY_DEFAULT_THRESHOLD",
-                defaults.anomaly.
-                default_threshold,
+                defaults.anomaly.default_threshold,
                 minimum=0.0,
                 maximum=1.0,
             ),
-
             minimum_threshold=_float(
                 values,
                 prefix,
                 "ANOMALY_MINIMUM_THRESHOLD",
-                defaults.anomaly.
-                minimum_threshold,
+                defaults.anomaly.minimum_threshold,
                 minimum=0.0,
                 maximum=1.0,
             ),
-
             maximum_threshold=_float(
                 values,
                 prefix,
                 "ANOMALY_MAXIMUM_THRESHOLD",
-                defaults.anomaly.
-                maximum_threshold,
+                defaults.anomaly.maximum_threshold,
                 minimum=0.0,
                 maximum=1.0,
             ),
-
             allow_request_threshold_override=(
                 _bool(
                     values,
                     prefix,
                     "ANOMALY_ALLOW_THRESHOLD_OVERRIDE",
-                    defaults.anomaly.
-                    allow_request_threshold_override,
+                    defaults.anomaly.allow_request_threshold_override,
                 )
             ),
         ),
-
         routing=AIRoutingConfig(
             use_latest_version_when_unspecified=(
                 _bool(
                     values,
                     prefix,
                     "USE_LATEST_VERSION",
-                    defaults.routing.
-                    use_latest_version_when_unspecified,
+                    defaults.routing.use_latest_version_when_unspecified,
                 )
             ),
-
             require_explicit_family=(
                 _bool(
                     values,
                     prefix,
                     "REQUIRE_EXPLICIT_FAMILY",
-                    defaults.routing.
-                    require_explicit_family,
+                    defaults.routing.require_explicit_family,
                 )
             ),
-
             allow_fallback_model=(
                 _bool(
                     values,
                     prefix,
                     "ALLOW_FALLBACK_MODEL",
-                    defaults.routing.
-                    allow_fallback_model,
+                    defaults.routing.allow_fallback_model,
                 )
             ),
-
             fallback_event_model=(
                 _text(
                     values,
                     prefix,
                     "FALLBACK_EVENT_MODEL",
-                    defaults.routing.
-                    fallback_event_model,
+                    defaults.routing.fallback_event_model,
                 )
             ),
-
             fallback_anomaly_model=(
                 _text(
                     values,
                     prefix,
                     "FALLBACK_ANOMALY_MODEL",
-                    defaults.routing.
-                    fallback_anomaly_model,
+                    defaults.routing.fallback_anomaly_model,
                 )
             ),
         ),
-
         attributes={
-            "config_source": (
-                "mapping"
-            ),
-
-            "environment_prefix": (
-                prefix
-            ),
+            "config_source": ("mapping"),
+            "environment_prefix": (prefix),
         },
     )
 
@@ -1373,6 +1021,7 @@ def from_mapping(
 # Environment loader
 # ---------------------------------------------------------------
 
+
 def from_environment(
     *,
     environ: Optional[
@@ -1383,11 +1032,7 @@ def from_environment(
     ] = None,
     prefix: str = DEFAULT_ENV_PREFIX,
 ) -> AIConfig:
-    source = (
-        os.environ
-        if environ is None
-        else environ
-    )
+    source = os.environ if environ is None else environ
 
     config = from_mapping(
         source,
@@ -1396,31 +1041,17 @@ def from_environment(
 
     return AIConfig(
         enabled=config.enabled,
-
-        allowed_families=(
-            config.allowed_families
-        ),
-
+        allowed_families=(config.allowed_families),
         paths=config.paths,
-
         device=config.device,
-
         loading=config.loading,
-
         inference=config.inference,
-
         event=config.event,
-
         anomaly=config.anomaly,
-
         routing=config.routing,
-
         attributes={
             **config.attributes,
-
-            "config_source": (
-                "environment"
-            ),
+            "config_source": ("environment"),
         },
     )
 
@@ -1429,84 +1060,29 @@ def from_environment(
 # Safe summary
 # ---------------------------------------------------------------
 
+
 def safe_config_summary(
     config: AIConfig,
 ) -> Dict[str, Any]:
     config.validate()
 
     return {
-        "enabled": (
-            config.enabled
-        ),
-
-        "allowed_families": list(
-            config.allowed_families
-        ),
-
-        "paths": (
-            config.paths.resolved()
-        ),
-
-        "device": (
-            config.device.preferred
-        ),
-
-        "device_index": (
-            config.device.device_index
-        ),
-
-        "cpu_fallback": (
-            config.device.
-            allow_cpu_fallback
-        ),
-
-        "mixed_precision": (
-            config.device.
-            mixed_precision
-        ),
-
-        "lazy_loading": (
-            config.loading.
-            lazy_loading
-        ),
-
-        "verify_checksum": (
-            config.loading.
-            verify_checksum
-        ),
-
-        "maximum_loaded_models": (
-            config.loading.
-            maximum_loaded_models
-        ),
-
-        "runtime_model_replacement": (
-            config.loading.
-            allow_runtime_replacement
-        ),
-
-        "maximum_batch_size": (
-            config.inference.
-            maximum_batch_size
-        ),
-
-        "timeout_seconds": (
-            config.inference.
-            timeout_seconds
-        ),
-
-        "default_anomaly_threshold": (
-            config.anomaly.
-            default_threshold
-        ),
-
-        "request_threshold_override": (
-            config.anomaly.
-            allow_request_threshold_override
-        ),
-
+        "enabled": (config.enabled),
+        "allowed_families": list(config.allowed_families),
+        "paths": (config.paths.resolved()),
+        "device": (config.device.preferred),
+        "device_index": (config.device.device_index),
+        "cpu_fallback": (config.device.allow_cpu_fallback),
+        "mixed_precision": (config.device.mixed_precision),
+        "lazy_loading": (config.loading.lazy_loading),
+        "verify_checksum": (config.loading.verify_checksum),
+        "maximum_loaded_models": (config.loading.maximum_loaded_models),
+        "runtime_model_replacement": (config.loading.allow_runtime_replacement),
+        "maximum_batch_size": (config.inference.maximum_batch_size),
+        "timeout_seconds": (config.inference.timeout_seconds),
+        "default_anomaly_threshold": (config.anomaly.default_threshold),
+        "request_threshold_override": (config.anomaly.allow_request_threshold_override),
         "automatic_training": False,
-
         "automatic_remediation": False,
     }
 
@@ -1518,22 +1094,15 @@ def safe_config_summary(
 __all__ = [
     "DEFAULT_ENV_PREFIX",
     "SUPPORTED_DEVICES",
-
     "AIPathConfig",
     "AIDeviceConfig",
-
     "AIModelLoadingConfig",
     "AIInferenceConfig",
-
     "EventInferenceConfig",
     "AnomalyInferenceConfig",
-
     "AIRoutingConfig",
-
     "AIConfig",
-
     "from_mapping",
     "from_environment",
-
     "safe_config_summary",
 ]

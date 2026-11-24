@@ -49,38 +49,17 @@ CATEGORY_PRIORITY: Dict[
     str,
     int,
 ] = {
-    ActionCategory.
-    OBSERVATION.value: 10,
-
-    ActionCategory.
-    INVESTIGATION.value: 20,
-
-    ActionCategory.
-    NOTIFICATION.value: 30,
-
-    ActionCategory.
-    CONFIGURATION.value: 50,
-
-    ActionCategory.
-    SERVICE_CONTROL.value: 60,
-
-    ActionCategory.
-    CAPACITY.value: 70,
-
-    ActionCategory.
-    RECOVERY.value: 80,
-
-    ActionCategory.
-    SECURITY_CONTROL.value: 90,
-
-    ActionCategory.
-    NETWORK_CONTROL.value: 100,
-
-    ActionCategory.
-    RESOURCE_CONTROL.value: 110,
-
-    ActionCategory.
-    OTHER.value: 999,
+    ActionCategory.OBSERVATION.value: 10,
+    ActionCategory.INVESTIGATION.value: 20,
+    ActionCategory.NOTIFICATION.value: 30,
+    ActionCategory.CONFIGURATION.value: 50,
+    ActionCategory.SERVICE_CONTROL.value: 60,
+    ActionCategory.CAPACITY.value: 70,
+    ActionCategory.RECOVERY.value: 80,
+    ActionCategory.SECURITY_CONTROL.value: 90,
+    ActionCategory.NETWORK_CONTROL.value: 100,
+    ActionCategory.RESOURCE_CONTROL.value: 110,
+    ActionCategory.OTHER.value: 999,
 }
 
 
@@ -114,26 +93,19 @@ class PlannerConfig:
 
     prioritize_read_only_actions: bool = True
 
-    require_at_least_one_safe_action: bool = (
-        True
-    )
+    require_at_least_one_safe_action: bool = True
 
     def validate(
         self,
     ) -> None:
-        if (
-            self.maximum_actions_per_plan
-            < 1
-        ):
-            raise ValueError(
-                "maximum_actions_per_plan "
-                "must be >= 1"
-            )
+        if self.maximum_actions_per_plan < 1:
+            raise ValueError("maximum_actions_per_plan must be >= 1")
 
 
 # ---------------------------------------------------------------
 # Ordering
 # ---------------------------------------------------------------
+
 
 def action_sort_key(
     action: ActionCandidate,
@@ -157,31 +129,16 @@ def action_sort_key(
 
     approval_rank = 0
 
-    if (
-        action.approval.mode
-        == ApprovalMode.HUMAN.value
-    ):
+    if action.approval.mode == ApprovalMode.HUMAN.value:
         approval_rank = 10
 
-    elif (
-        action.approval.mode
-        == ApprovalMode.
-        MULTI_PARTY.value
-    ):
+    elif action.approval.mode == ApprovalMode.MULTI_PARTY.value:
         approval_rank = 20
 
-    elif (
-        action.approval.mode
-        == ApprovalMode.
-        FORBIDDEN.value
-    ):
+    elif action.approval.mode == ApprovalMode.FORBIDDEN.value:
         approval_rank = 100
 
-    if not (
-        action.
-        eligibility.
-        eligible
-    ):
+    if not (action.eligibility.eligible):
         approval_rank += 100
 
     return (
@@ -194,10 +151,7 @@ def action_sort_key(
             action.risk.level,
             50,
         ),
-        (
-            action.action_id
-            or action.action_type
-        ),
+        (action.action_id or action.action_type),
     )
 
 
@@ -205,27 +159,16 @@ def action_sort_key(
 # Candidate evaluation
 # ---------------------------------------------------------------
 
+
 def evaluate_candidates(
-    actions: Iterable[
-        ActionCandidate
-    ],
+    actions: Iterable[ActionCandidate],
     context: DecisionContext,
     *,
-    policy_engine: Optional[
-        PolicyEngine
-    ] = None,
-    risk_engine: Optional[
-        RiskEngine
-    ] = None,
-    eligibility_engine: Optional[
-        EligibilityEngine
-    ] = None,
-    approval_engine: Optional[
-        ApprovalEngine
-    ] = None,
-) -> List[
-    ActionCandidate
-]:
+    policy_engine: Optional[PolicyEngine] = None,
+    risk_engine: Optional[RiskEngine] = None,
+    eligibility_engine: Optional[EligibilityEngine] = None,
+    approval_engine: Optional[ApprovalEngine] = None,
+) -> List[ActionCandidate]:
     """
     Pass each action through all decision gates:
 
@@ -236,95 +179,53 @@ def evaluate_candidates(
     No action is executed.
     """
 
-    policy = (
-        policy_engine
-        or PolicyEngine()
-    )
+    policy = policy_engine or PolicyEngine()
 
-    risk = (
-        risk_engine
-        or RiskEngine()
-    )
+    risk = risk_engine or RiskEngine()
 
-    eligibility = (
-        eligibility_engine
-        or EligibilityEngine(
-            policy_engine=policy
-        )
-    )
+    eligibility = eligibility_engine or EligibilityEngine(policy_engine=policy)
 
-    approval = (
-        approval_engine
-        or ApprovalEngine()
-    )
+    approval = approval_engine or ApprovalEngine()
 
     evaluated = []
 
-    for candidate in (
-        deduplicate_actions(
-            actions
-        )
-    ):
+    for candidate in deduplicate_actions(actions):
         candidate = risk.apply(
             candidate,
             context,
         )
 
-        candidate = (
-            eligibility.apply(
-                candidate,
-                context,
-            )
+        candidate = eligibility.apply(
+            candidate,
+            context,
         )
 
-        candidate = (
-            approval.assign(
-                candidate,
-                context,
-            )
+        candidate = approval.assign(
+            candidate,
+            context,
         )
 
-        evaluated.append(
-            candidate.finalize()
-        )
+        evaluated.append(candidate.finalize())
 
-    evaluated.sort(
-        key=action_sort_key
-    )
+    evaluated.sort(key=action_sort_key)
 
     return evaluated
 
 
 def select_plan_actions(
-    actions: Iterable[
-        ActionCandidate
-    ],
+    actions: Iterable[ActionCandidate],
     *,
     config: PlannerConfig,
-) -> List[
-    ActionCandidate
-]:
+) -> List[ActionCandidate]:
     selected = []
 
     for action in actions:
-        if (
-            not config.
-            include_ineligible_actions
-            and not action.
-            eligibility.
-            eligible
-        ):
+        if not config.include_ineligible_actions and not action.eligibility.eligible:
             continue
 
-        selected.append(
-            action
-        )
+        selected.append(action)
 
-        if (
-            len(selected)
-            >= config.
-            maximum_actions_per_plan
-        ):
+        if len(selected) >= config.maximum_actions_per_plan:
             break
 
     return selected
@@ -334,37 +235,21 @@ def select_plan_actions(
 # Plan summary
 # ---------------------------------------------------------------
 
-def plan_summary(
-    actions: Iterable[
-        ActionCandidate
-    ],
-) -> str:
-    action_list = list(
-        actions
-    )
 
-    eligible = sum(
-        1
-        for item in action_list
-        if item.eligibility.eligible
-    )
+def plan_summary(
+    actions: Iterable[ActionCandidate],
+) -> str:
+    action_list = list(actions)
+
+    eligible = sum(1 for item in action_list if item.eligibility.eligible)
 
     pending = sum(
         1
         for item in action_list
-        if (
-            item.approval.status
-            == ApprovalStatus.
-            PENDING.value
-        )
+        if (item.approval.status == ApprovalStatus.PENDING.value)
     )
 
-    blocked = sum(
-        1
-        for item in action_list
-        if not item.
-        eligibility.eligible
-    )
+    blocked = sum(1 for item in action_list if not item.eligibility.eligible)
 
     return (
         f"Plan contains "
@@ -380,32 +265,17 @@ def plan_summary(
 # Plan construction
 # ---------------------------------------------------------------
 
+
 def build_plan(
     context: DecisionContext,
     *,
-    actions: Optional[
-        Iterable[
-            ActionCandidate
-        ]
-    ] = None,
-    action_catalog: Optional[
-        ActionCatalog
-    ] = None,
-    policy_engine: Optional[
-        PolicyEngine
-    ] = None,
-    risk_engine: Optional[
-        RiskEngine
-    ] = None,
-    eligibility_engine: Optional[
-        EligibilityEngine
-    ] = None,
-    approval_engine: Optional[
-        ApprovalEngine
-    ] = None,
-    config: Optional[
-        PlannerConfig
-    ] = None,
+    actions: Optional[Iterable[ActionCandidate]] = None,
+    action_catalog: Optional[ActionCatalog] = None,
+    policy_engine: Optional[PolicyEngine] = None,
+    risk_engine: Optional[RiskEngine] = None,
+    eligibility_engine: Optional[EligibilityEngine] = None,
+    approval_engine: Optional[ApprovalEngine] = None,
+    config: Optional[PlannerConfig] = None,
 ) -> DecisionPlan:
     """
     Build one declarative decision plan.
@@ -414,51 +284,30 @@ def build_plan(
     the ActionCatalog for conservative defaults.
     """
 
-    configuration = (
-        config
-        or PlannerConfig()
-    )
+    configuration = config or PlannerConfig()
 
     configuration.validate()
 
     context.finalize()
 
-    catalog = (
-        action_catalog
-        or ActionCatalog()
-    )
+    catalog = action_catalog or ActionCatalog()
 
     if actions is not None:
-        candidates = list(
-            actions
-        )
+        candidates = list(actions)
 
     else:
-        candidates = (
-            catalog.defaults(
-                context,
-                include_mutating_candidates=(
-                    configuration.
-                    include_mutating_candidates
-                ),
-            )
+        candidates = catalog.defaults(
+            context,
+            include_mutating_candidates=(configuration.include_mutating_candidates),
         )
 
     evaluated = evaluate_candidates(
         candidates,
         context,
-        policy_engine=(
-            policy_engine
-        ),
-        risk_engine=(
-            risk_engine
-        ),
-        eligibility_engine=(
-            eligibility_engine
-        ),
-        approval_engine=(
-            approval_engine
-        ),
+        policy_engine=(policy_engine),
+        risk_engine=(risk_engine),
+        eligibility_engine=(eligibility_engine),
+        approval_engine=(approval_engine),
     )
 
     selected = select_plan_actions(
@@ -470,64 +319,37 @@ def build_plan(
         item
         for item in selected
         if (
-            item.
-            eligibility.
-            eligible
-            and not item.
-            approval.required
-            and item.approval.mode
-            != ApprovalMode.
-            FORBIDDEN.value
+            item.eligibility.eligible
+            and not item.approval.required
+            and item.approval.mode != ApprovalMode.FORBIDDEN.value
         )
     ]
 
     # If all generated actions are blocked or
     # approval-bound, retain a safe observation
     # candidate when policy permits it.
-    if (
-        configuration.
-        require_at_least_one_safe_action
-        and not safe_actions
-    ):
-        observation = (
-            catalog.create(
-                "observe_resource",
-                context,
-                target_resource_ids=(
-                    context.resource_ids
-                ),
-                target_service_ids=(
-                    context.service_ids
-                ),
-                rationale=(
-                    "Fallback safe action "
-                    "because no other "
-                    "immediately eligible "
-                    "action was available."
-                ),
-            )
+    if configuration.require_at_least_one_safe_action and not safe_actions:
+        observation = catalog.create(
+            "observe_resource",
+            context,
+            target_resource_ids=(context.resource_ids),
+            target_service_ids=(context.service_ids),
+            rationale=(
+                "Fallback safe action "
+                "because no other "
+                "immediately eligible "
+                "action was available."
+            ),
         )
 
-        observation = (
-            evaluate_candidates(
-                [
-                    observation
-                ],
-                context,
-                policy_engine=(
-                    policy_engine
-                ),
-                risk_engine=(
-                    risk_engine
-                ),
-                eligibility_engine=(
-                    eligibility_engine
-                ),
-                approval_engine=(
-                    approval_engine
-                ),
-            )[0]
-        )
+        observation = evaluate_candidates(
+            [observation],
+            context,
+            policy_engine=(policy_engine),
+            risk_engine=(risk_engine),
+            eligibility_engine=(eligibility_engine),
+            approval_engine=(approval_engine),
+        )[0]
 
         selected = (
             deduplicate_actions(
@@ -536,80 +358,37 @@ def build_plan(
                     *selected,
                 ]
             )
-        )[
-            :configuration.
-            maximum_actions_per_plan
-        ]
+        )[: configuration.maximum_actions_per_plan]
 
-        selected.sort(
-            key=action_sort_key
-        )
+        selected.sort(key=action_sort_key)
 
     plan = DecisionPlan(
-        environment_id=(
-            context.environment_id
-        ),
-        incident_id=(
-            context.incident_id
-        ),
+        environment_id=(context.environment_id),
+        incident_id=(context.incident_id),
         actions=selected,
-        summary=plan_summary(
-            selected
-        ),
-        highest_risk_level=(
-            highest_risk(
-                [
-                    item.risk.level
-                    for item
-                    in selected
-                ]
-            )
-        ),
+        summary=plan_summary(selected),
+        highest_risk_level=(highest_risk([item.risk.level for item in selected])),
         validation_required=True,
         attributes={
-            "context_id": (
-                context.context_id
-            ),
-            "candidate_count": (
-                len(candidates)
-            ),
-            "evaluated_count": (
-                len(evaluated)
-            ),
-            "selected_count": (
-                len(selected)
-            ),
+            "context_id": (context.context_id),
+            "candidate_count": (len(candidates)),
+            "evaluated_count": (len(evaluated)),
+            "selected_count": (len(selected)),
             "eligible_action_ids": [
                 item.action_id
-                for item
-                in selected
-                if (
-                    item.
-                    eligibility.
-                    eligible
-                    and item.action_id
-                )
+                for item in selected
+                if (item.eligibility.eligible and item.action_id)
             ],
             "blocked_action_ids": [
                 item.action_id
-                for item
-                in selected
-                if (
-                    not item.
-                    eligibility.
-                    eligible
-                    and item.action_id
-                )
+                for item in selected
+                if (not item.eligibility.eligible and item.action_id)
             ],
             "approval_pending_action_ids": [
                 item.action_id
-                for item
-                in selected
+                for item in selected
                 if (
-                    item.
-                    approval.status
-                    == ApprovalStatus.
-                    PENDING.value
+                    item.approval.status == ApprovalStatus.PENDING.value
                     and item.action_id
                 )
             ],
@@ -623,96 +402,47 @@ def build_plan(
 # Decision generation
 # ---------------------------------------------------------------
 
+
 def decision_type_for_plan(
     plan: DecisionPlan,
 ) -> str:
-    eligible = [
-        item
-        for item in plan.actions
-        if item.eligibility.eligible
-    ]
+    eligible = [item for item in plan.actions if item.eligibility.eligible]
 
     if not eligible:
-        return (
-            DecisionType.NO_ACTION.value
-        )
+        return DecisionType.NO_ACTION.value
 
-    if any(
-        item.approval.required
-        for item in eligible
-    ):
-        return (
-            DecisionType.
-            REQUEST_APPROVAL.value
-        )
+    if any(item.approval.required for item in eligible):
+        return DecisionType.REQUEST_APPROVAL.value
 
-    if any(
-        item.category
-        == ActionCategory.
-        INVESTIGATION.value
-        for item in eligible
-    ):
-        return (
-            DecisionType.
-            INVESTIGATE.value
-        )
+    if any(item.category == ActionCategory.INVESTIGATION.value for item in eligible):
+        return DecisionType.INVESTIGATE.value
 
-    if any(
-        item.category
-        == ActionCategory.
-        NOTIFICATION.value
-        for item in eligible
-    ):
-        return (
-            DecisionType.
-            RECOMMEND.value
-        )
+    if any(item.category == ActionCategory.NOTIFICATION.value for item in eligible):
+        return DecisionType.RECOMMEND.value
 
-    return (
-        DecisionType.OBSERVE.value
-    )
+    return DecisionType.OBSERVE.value
 
 
 def decision_status_for_plan(
     plan: DecisionPlan,
 ) -> str:
-    eligible = [
-        item
-        for item in plan.actions
-        if item.eligibility.eligible
-    ]
+    eligible = [item for item in plan.actions if item.eligibility.eligible]
 
     if not eligible:
-        return (
-            DecisionStatus.
-            DEFERRED.value
-        )
+        return DecisionStatus.DEFERRED.value
 
-    if any(
-        item.approval.status
-        == ApprovalStatus.
-        PENDING.value
-        for item in eligible
-    ):
-        return (
-            DecisionStatus.
-            PENDING_APPROVAL.value
-        )
+    if any(item.approval.status == ApprovalStatus.PENDING.value for item in eligible):
+        return DecisionStatus.PENDING_APPROVAL.value
 
     if all(
         item.approval.status
         in {
-            ApprovalStatus.
-            NOT_REQUIRED.value,
-            ApprovalStatus.
-            APPROVED.value,
+            ApprovalStatus.NOT_REQUIRED.value,
+            ApprovalStatus.APPROVED.value,
         }
         for item in eligible
     ):
-        return (
-            DecisionStatus.
-            PROPOSED.value
-        )
+        return DecisionStatus.PROPOSED.value
 
     return DecisionStatus.DRAFT.value
 
@@ -727,117 +457,56 @@ def decision_from_plan(
 
     plan.finalize()
 
-    eligible = [
-        item
-        for item in plan.actions
-        if item.eligibility.eligible
-    ]
+    eligible = [item for item in plan.actions if item.eligibility.eligible]
 
-    blocked = [
-        item
-        for item in plan.actions
-        if not item.
-        eligibility.eligible
-    ]
+    blocked = [item for item in plan.actions if not item.eligibility.eligible]
 
-    decision_type = (
-        decision_type_for_plan(
-            plan
-        )
-    )
+    decision_type = decision_type_for_plan(plan)
 
-    status = (
-        decision_status_for_plan(
-            plan
-        )
-    )
+    status = decision_status_for_plan(plan)
 
     reason_codes = []
 
     if eligible:
-        reason_codes.append(
-            "eligible_actions_available"
-        )
+        reason_codes.append("eligible_actions_available")
 
-    if any(
-        item.approval.required
-        for item in eligible
-    ):
-        reason_codes.append(
-            "approval_required"
-        )
+    if any(item.approval.required for item in eligible):
+        reason_codes.append("approval_required")
 
     if blocked:
-        reason_codes.append(
-            "blocked_actions_present"
-        )
+        reason_codes.append("blocked_actions_present")
 
     if not eligible:
-        reason_codes.append(
-            "no_eligible_actions"
-        )
+        reason_codes.append("no_eligible_actions")
 
     evidence = []
 
     for action in plan.actions:
-        evidence.extend(
-            action.evidence
-        )
+        evidence.extend(action.evidence)
 
     return Decision(
         decision_type=decision_type,
-        environment_id=(
-            context.environment_id
-        ),
+        environment_id=(context.environment_id),
         status=status,
-        incident_id=(
-            context.incident_id
-        ),
-        context_id=(
-            context.context_id
-        ),
+        incident_id=(context.incident_id),
+        context_id=(context.context_id),
         plan_id=plan.plan_id,
         title=(
-            "Approval required for "
-            "proposed incident actions"
-            if decision_type
-            == DecisionType.
-            REQUEST_APPROVAL.value
-            else (
-                "Incident decision plan "
-                "prepared"
-            )
+            "Approval required for proposed incident actions"
+            if decision_type == DecisionType.REQUEST_APPROVAL.value
+            else ("Incident decision plan prepared")
         ),
         summary=plan.summary,
-        confidence=(
-            context.
-            incident_confidence
-        ),
-        risk_level=(
-            plan.highest_risk_level
-        ),
-        reason_codes=(
-            reason_codes
-        ),
+        confidence=(context.incident_confidence),
+        risk_level=(plan.highest_risk_level),
+        reason_codes=(reason_codes),
         evidence=evidence,
-        limitations=list(
-            context.limitations
-        ),
+        limitations=list(context.limitations),
         attributes={
-            "eligible_action_count": (
-                len(eligible)
-            ),
-            "blocked_action_count": (
-                len(blocked)
-            ),
-            "requires_approval": (
-                plan.
-                requires_approval
-            ),
-            "rollback_required": (
-                plan.
-                rollback_required
-            ),
+            "eligible_action_count": (len(eligible)),
+            "blocked_action_count": (len(blocked)),
+            "requires_approval": (plan.requires_approval),
+            "rollback_required": (plan.rollback_required),
         },
     ).finalize()
 
@@ -845,29 +514,13 @@ def decision_from_plan(
 def plan_decision(
     context: DecisionContext,
     *,
-    actions: Optional[
-        Iterable[
-            ActionCandidate
-        ]
-    ] = None,
-    action_catalog: Optional[
-        ActionCatalog
-    ] = None,
-    policy_engine: Optional[
-        PolicyEngine
-    ] = None,
-    risk_engine: Optional[
-        RiskEngine
-    ] = None,
-    eligibility_engine: Optional[
-        EligibilityEngine
-    ] = None,
-    approval_engine: Optional[
-        ApprovalEngine
-    ] = None,
-    config: Optional[
-        PlannerConfig
-    ] = None,
+    actions: Optional[Iterable[ActionCandidate]] = None,
+    action_catalog: Optional[ActionCatalog] = None,
+    policy_engine: Optional[PolicyEngine] = None,
+    risk_engine: Optional[RiskEngine] = None,
+    eligibility_engine: Optional[EligibilityEngine] = None,
+    approval_engine: Optional[ApprovalEngine] = None,
+    config: Optional[PlannerConfig] = None,
 ) -> tuple[
     DecisionPlan,
     Decision,
@@ -875,19 +528,11 @@ def plan_decision(
     plan = build_plan(
         context,
         actions=actions,
-        action_catalog=(
-            action_catalog
-        ),
-        policy_engine=(
-            policy_engine
-        ),
+        action_catalog=(action_catalog),
+        policy_engine=(policy_engine),
         risk_engine=risk_engine,
-        eligibility_engine=(
-            eligibility_engine
-        ),
-        approval_engine=(
-            approval_engine
-        ),
+        eligibility_engine=(eligibility_engine),
+        approval_engine=(approval_engine),
         config=config,
     )
 
@@ -904,60 +549,28 @@ def plan_decision(
 # Summary
 # ---------------------------------------------------------------
 
-def planner_summary(
-    plans: Iterable[
-        DecisionPlan
-    ],
-) -> Dict[str, Any]:
-    plan_list = list(
-        plans
-    )
 
-    actions = [
-        action
-        for plan in plan_list
-        for action in plan.actions
-    ]
+def planner_summary(
+    plans: Iterable[DecisionPlan],
+) -> Dict[str, Any]:
+    plan_list = list(plans)
+
+    actions = [action for plan in plan_list for action in plan.actions]
 
     return {
-        "plan_count": (
-            len(plan_list)
-        ),
-        "action_count": (
-            len(actions)
-        ),
+        "plan_count": (len(plan_list)),
+        "action_count": (len(actions)),
         "eligible_action_count": (
-            sum(
-                1
-                for item in actions
-                if item.
-                eligibility.
-                eligible
-            )
+            sum(1 for item in actions if item.eligibility.eligible)
         ),
         "blocked_action_count": (
-            sum(
-                1
-                for item in actions
-                if not item.
-                eligibility.
-                eligible
-            )
+            sum(1 for item in actions if not item.eligibility.eligible)
         ),
         "approval_required_count": (
-            sum(
-                1
-                for item in actions
-                if item.
-                approval.required
-            )
+            sum(1 for item in actions if item.approval.required)
         ),
         "plans_requiring_approval": (
-            sum(
-                1
-                for plan in plan_list
-                if plan.requires_approval
-            )
+            sum(1 for plan in plan_list if plan.requires_approval)
         ),
     }
 
@@ -972,58 +585,26 @@ class DecisionPlanner:
     def __init__(
         self,
         *,
-        action_catalog: Optional[
-            ActionCatalog
-        ] = None,
-        policy_engine: Optional[
-            PolicyEngine
-        ] = None,
-        risk_engine: Optional[
-            RiskEngine
-        ] = None,
-        eligibility_engine: Optional[
-            EligibilityEngine
-        ] = None,
-        approval_engine: Optional[
-            ApprovalEngine
-        ] = None,
-        config: Optional[
-            PlannerConfig
-        ] = None,
+        action_catalog: Optional[ActionCatalog] = None,
+        policy_engine: Optional[PolicyEngine] = None,
+        risk_engine: Optional[RiskEngine] = None,
+        eligibility_engine: Optional[EligibilityEngine] = None,
+        approval_engine: Optional[ApprovalEngine] = None,
+        config: Optional[PlannerConfig] = None,
     ) -> None:
-        self.action_catalog = (
-            action_catalog
-            or ActionCatalog()
+        self.action_catalog = action_catalog or ActionCatalog()
+
+        self.policy_engine = policy_engine or PolicyEngine()
+
+        self.risk_engine = risk_engine or RiskEngine()
+
+        self.eligibility_engine = eligibility_engine or EligibilityEngine(
+            policy_engine=(self.policy_engine)
         )
 
-        self.policy_engine = (
-            policy_engine
-            or PolicyEngine()
-        )
+        self.approval_engine = approval_engine or ApprovalEngine()
 
-        self.risk_engine = (
-            risk_engine
-            or RiskEngine()
-        )
-
-        self.eligibility_engine = (
-            eligibility_engine
-            or EligibilityEngine(
-                policy_engine=(
-                    self.policy_engine
-                )
-            )
-        )
-
-        self.approval_engine = (
-            approval_engine
-            or ApprovalEngine()
-        )
-
-        self.config = (
-            config
-            or PlannerConfig()
-        )
+        self.config = config or PlannerConfig()
 
         self.config.validate()
 
@@ -1031,11 +612,7 @@ class DecisionPlanner:
         self,
         context: DecisionContext,
         *,
-        actions: Optional[
-            Iterable[
-                ActionCandidate
-            ]
-        ] = None,
+        actions: Optional[Iterable[ActionCandidate]] = None,
     ) -> tuple[
         DecisionPlan,
         Decision,
@@ -1043,21 +620,10 @@ class DecisionPlanner:
         return plan_decision(
             context,
             actions=actions,
-            action_catalog=(
-                self.action_catalog
-            ),
-            policy_engine=(
-                self.policy_engine
-            ),
-            risk_engine=(
-                self.risk_engine
-            ),
-            eligibility_engine=(
-                self.
-                eligibility_engine
-            ),
-            approval_engine=(
-                self.approval_engine
-            ),
+            action_catalog=(self.action_catalog),
+            policy_engine=(self.policy_engine),
+            risk_engine=(self.risk_engine),
+            eligibility_engine=(self.eligibility_engine),
+            approval_engine=(self.approval_engine),
             config=self.config,
         )

@@ -50,9 +50,7 @@ def resource_identifier(
         "id",
         "name",
     ):
-        value = optional_string(
-            payload.get(key)
-        )
+        value = optional_string(payload.get(key))
 
         if value:
             return value
@@ -72,50 +70,21 @@ def normalize_project(
 
     raw = as_dict(project)
 
-    enabled = raw.get(
-        "is_enabled"
-    )
+    enabled = raw.get("is_enabled")
 
     if enabled is None:
-        enabled = raw.get(
-            "enabled"
-        )
+        enabled = raw.get("enabled")
 
     return sanitize(
         {
-            "project_id": (
-                raw.get("id")
-            ),
-            "name": (
-                raw.get("name")
-            ),
-            "description": (
-                raw.get(
-                    "description"
-                )
-            ),
-            "domain_id": (
-                raw.get(
-                    "domain_id"
-                )
-            ),
-            "parent_id": (
-                raw.get(
-                    "parent_id"
-                )
-            ),
+            "project_id": (raw.get("id")),
+            "name": (raw.get("name")),
+            "description": (raw.get("description")),
+            "domain_id": (raw.get("domain_id")),
+            "parent_id": (raw.get("parent_id")),
             "enabled": enabled,
-            "is_domain": (
-                raw.get(
-                    "is_domain"
-                )
-            ),
-            "tags": (
-                raw.get(
-                    "tags"
-                )
-                or []
-            ),
+            "is_domain": (raw.get("is_domain")),
+            "tags": (raw.get("tags") or []),
         }
     )
 
@@ -125,28 +94,16 @@ def normalize_domain(
 ) -> dict:
     raw = as_dict(domain)
 
-    enabled = raw.get(
-        "is_enabled"
-    )
+    enabled = raw.get("is_enabled")
 
     if enabled is None:
-        enabled = raw.get(
-            "enabled"
-        )
+        enabled = raw.get("enabled")
 
     return sanitize(
         {
-            "domain_id": (
-                raw.get("id")
-            ),
-            "name": (
-                raw.get("name")
-            ),
-            "description": (
-                raw.get(
-                    "description"
-                )
-            ),
+            "domain_id": (raw.get("id")),
+            "name": (raw.get("name")),
+            "description": (raw.get("description")),
             "enabled": enabled,
         }
     )
@@ -157,28 +114,13 @@ def normalize_region(
 ) -> dict:
     raw = as_dict(region)
 
-    region_id = (
-        raw.get("id")
-        or raw.get(
-            "region_id"
-        )
-    )
+    region_id = raw.get("id") or raw.get("region_id")
 
     return sanitize(
         {
-            "region_id": (
-                region_id
-            ),
-            "description": (
-                raw.get(
-                    "description"
-                )
-            ),
-            "parent_region_id": (
-                raw.get(
-                    "parent_region_id"
-                )
-            ),
+            "region_id": (region_id),
+            "description": (raw.get("description")),
+            "parent_region_id": (raw.get("parent_region_id")),
         }
     )
 
@@ -190,22 +132,10 @@ def normalize_role(
 
     return sanitize(
         {
-            "role_id": (
-                raw.get("id")
-            ),
-            "name": (
-                raw.get("name")
-            ),
-            "domain_id": (
-                raw.get(
-                    "domain_id"
-                )
-            ),
-            "description": (
-                raw.get(
-                    "description"
-                )
-            ),
+            "role_id": (raw.get("id")),
+            "name": (raw.get("name")),
+            "domain_id": (raw.get("domain_id")),
+            "description": (raw.get("description")),
         }
     )
 
@@ -222,42 +152,22 @@ def normalize_user(
 
     raw = as_dict(user)
 
-    enabled = raw.get(
-        "is_enabled"
-    )
+    enabled = raw.get("is_enabled")
 
     if enabled is None:
-        enabled = raw.get(
-            "enabled"
-        )
+        enabled = raw.get("enabled")
 
     # Do not pass the complete raw object through
     # to the output. Explicit field selection is
     # used for identity records.
     return sanitize(
         {
-            "user_id": (
-                raw.get("id")
-            ),
-            "name": (
-                raw.get("name")
-            ),
-            "domain_id": (
-                raw.get(
-                    "domain_id"
-                )
-            ),
-            "default_project_id": (
-                raw.get(
-                    "default_project_id"
-                )
-            ),
+            "user_id": (raw.get("id")),
+            "name": (raw.get("name")),
+            "domain_id": (raw.get("domain_id")),
+            "default_project_id": (raw.get("default_project_id")),
             "enabled": enabled,
-            "description": (
-                raw.get(
-                    "description"
-                )
-            ),
+            "description": (raw.get("description")),
         }
     )
 
@@ -269,22 +179,10 @@ def normalize_group(
 
     return sanitize(
         {
-            "group_id": (
-                raw.get("id")
-            ),
-            "name": (
-                raw.get("name")
-            ),
-            "description": (
-                raw.get(
-                    "description"
-                )
-            ),
-            "domain_id": (
-                raw.get(
-                    "domain_id"
-                )
-            ),
+            "group_id": (raw.get("id")),
+            "name": (raw.get("name")),
+            "description": (raw.get("description")),
+            "domain_id": (raw.get("domain_id")),
         }
     )
 
@@ -316,18 +214,11 @@ def collect_resource_list(
 
     try:
         for resource in loader():
-            payload = normalizer(
-                resource
-            )
+            payload = normalizer(resource)
 
-            identifier = (
-                resource_identifier(
-                    payload,
-                    fallback=(
-                        f"unknown-"
-                        f"{signal_type}"
-                    ),
-                )
+            identifier = resource_identifier(
+                payload,
+                fallback=(f"unknown-{signal_type}"),
             )
 
             records.append(
@@ -335,16 +226,10 @@ def collect_resource_list(
                     "identity",
                     signal_type,
                     payload,
-                    cloud_id=(
-                        ctx.cloud_id
-                    ),
+                    cloud_id=(ctx.cloud_id),
                     region=ctx.region,
-                    environment_id=(
-                        ctx.environment_id
-                    ),
-                    resource_id=(
-                        identifier
-                    ),
+                    environment_id=(ctx.environment_id),
+                    resource_id=(identifier),
                     source="keystone",
                 )
             )
@@ -354,13 +239,9 @@ def collect_resource_list(
             error(
                 "identity",
                 exc,
-                cloud_id=(
-                    ctx.cloud_id
-                ),
+                cloud_id=(ctx.cloud_id),
                 region=ctx.region,
-                environment_id=(
-                    ctx.environment_id
-                ),
+                environment_id=(ctx.environment_id),
                 operation=operation,
             )
         )
@@ -388,17 +269,11 @@ def authenticated_context(
     }
 
     try:
-        auth = (
-            ctx.conn.session.auth
-        )
+        auth = ctx.conn.session.auth
 
-        access = auth.get_access(
-            ctx.conn.session
-        )
+        access = auth.get_access(ctx.conn.session)
 
-        payload[
-            "project_id"
-        ] = optional_string(
+        payload["project_id"] = optional_string(
             getattr(
                 access,
                 "project_id",
@@ -406,9 +281,7 @@ def authenticated_context(
             )
         )
 
-        payload[
-            "user_id"
-        ] = optional_string(
+        payload["user_id"] = optional_string(
             getattr(
                 access,
                 "user_id",
@@ -416,9 +289,7 @@ def authenticated_context(
             )
         )
 
-        payload[
-            "domain_id"
-        ] = optional_string(
+        payload["domain_id"] = optional_string(
             getattr(
                 access,
                 "domain_id",
@@ -438,56 +309,27 @@ def authenticated_context(
             access_data,
             Mapping,
         ):
-            token = (
-                access_data.get(
-                    "token"
-                )
-                or {}
-            )
+            token = access_data.get("token") or {}
 
             if isinstance(
                 token,
                 Mapping,
             ):
-                project = (
-                    token.get(
-                        "project"
-                    )
-                    or {}
-                )
+                project = token.get("project") or {}
 
-                user = (
-                    token.get("user")
-                    or {}
-                )
+                user = token.get("user") or {}
 
                 if isinstance(
                     project,
                     Mapping,
                 ):
-                    payload[
-                        "project_name"
-                    ] = (
-                        optional_string(
-                            project.get(
-                                "name"
-                            )
-                        )
-                    )
+                    payload["project_name"] = optional_string(project.get("name"))
 
                 if isinstance(
                     user,
                     Mapping,
                 ):
-                    payload[
-                        "user_name"
-                    ] = (
-                        optional_string(
-                            user.get(
-                                "name"
-                            )
-                        )
-                    )
+                    payload["user_name"] = optional_string(user.get("name"))
 
     except Exception:
         # Connection authentication has already
@@ -518,21 +360,12 @@ def identity_summary(
             )
         )
 
-        counts[
-            signal_type
-        ] += 1
+        counts[signal_type] += 1
 
-        payload = (
-            item.get("payload")
-            or {}
-        )
+        payload = item.get("payload") or {}
 
         if signal_type == "project":
-            enabled = (
-                payload.get(
-                    "enabled"
-                )
-            )
+            enabled = payload.get("enabled")
 
             if enabled is True:
                 enabled_projects += 1
@@ -540,11 +373,7 @@ def identity_summary(
                 disabled_projects += 1
 
         elif signal_type == "domain":
-            enabled = (
-                payload.get(
-                    "enabled"
-                )
-            )
+            enabled = payload.get("enabled")
 
             if enabled is True:
                 enabled_domains += 1
@@ -552,24 +381,14 @@ def identity_summary(
                 disabled_domains += 1
 
     return {
-        "record_counts": (
-            dict(counts)
-        ),
+        "record_counts": (dict(counts)),
         "projects": {
-            "enabled": (
-                enabled_projects
-            ),
-            "disabled": (
-                disabled_projects
-            ),
+            "enabled": (enabled_projects),
+            "disabled": (disabled_projects),
         },
         "domains": {
-            "enabled": (
-                enabled_domains
-            ),
-            "disabled": (
-                disabled_domains
-            ),
+            "enabled": (enabled_domains),
+            "disabled": (disabled_domains),
         },
     }
 
@@ -607,17 +426,10 @@ def collect(
         return [
             unavailable(
                 "identity",
-                (
-                    "Identity service endpoint "
-                    "is unavailable"
-                ),
-                cloud_id=(
-                    ctx.cloud_id
-                ),
+                ("Identity service endpoint is unavailable"),
+                cloud_id=(ctx.cloud_id),
                 region=ctx.region,
-                environment_id=(
-                    ctx.environment_id
-                ),
+                environment_id=(ctx.environment_id),
             )
         ]
 
@@ -627,19 +439,11 @@ def collect(
         record(
             "identity",
             "authenticated_identity",
-            authenticated_context(
-                ctx
-            ),
-            cloud_id=(
-                ctx.cloud_id
-            ),
+            authenticated_context(ctx),
+            cloud_id=(ctx.cloud_id),
             region=ctx.region,
-            environment_id=(
-                ctx.environment_id
-            ),
-            resource_id=(
-                ctx.cloud_id
-            ),
+            environment_id=(ctx.environment_id),
+            resource_id=(ctx.cloud_id),
             source="keystone",
         )
     )
@@ -648,16 +452,9 @@ def collect(
         collect_resource_list(
             ctx,
             signal_type="project",
-            operation=(
-                "list_projects"
-            ),
-            loader=lambda: (
-                ctx.conn.identity.
-                projects()
-            ),
-            normalizer=(
-                normalize_project
-            ),
+            operation=("list_projects"),
+            loader=lambda: ctx.conn.identity.projects(),
+            normalizer=(normalize_project),
         )
     )
 
@@ -665,16 +462,9 @@ def collect(
         collect_resource_list(
             ctx,
             signal_type="domain",
-            operation=(
-                "list_domains"
-            ),
-            loader=lambda: (
-                ctx.conn.identity.
-                domains()
-            ),
-            normalizer=(
-                normalize_domain
-            ),
+            operation=("list_domains"),
+            loader=lambda: ctx.conn.identity.domains(),
+            normalizer=(normalize_domain),
         )
     )
 
@@ -682,16 +472,9 @@ def collect(
         collect_resource_list(
             ctx,
             signal_type="region",
-            operation=(
-                "list_regions"
-            ),
-            loader=lambda: (
-                ctx.conn.identity.
-                regions()
-            ),
-            normalizer=(
-                normalize_region
-            ),
+            operation=("list_regions"),
+            loader=lambda: ctx.conn.identity.regions(),
+            normalizer=(normalize_region),
         )
     )
 
@@ -699,16 +482,9 @@ def collect(
         collect_resource_list(
             ctx,
             signal_type="role",
-            operation=(
-                "list_roles"
-            ),
-            loader=lambda: (
-                ctx.conn.identity.
-                roles()
-            ),
-            normalizer=(
-                normalize_role
-            ),
+            operation=("list_roles"),
+            loader=lambda: ctx.conn.identity.roles(),
+            normalizer=(normalize_role),
         )
     )
 
@@ -717,16 +493,9 @@ def collect(
             collect_resource_list(
                 ctx,
                 signal_type="user",
-                operation=(
-                    "list_users"
-                ),
-                loader=lambda: (
-                    ctx.conn.identity.
-                    users()
-                ),
-                normalizer=(
-                    normalize_user
-                ),
+                operation=("list_users"),
+                loader=lambda: ctx.conn.identity.users(),
+                normalizer=(normalize_user),
             )
         )
 
@@ -735,16 +504,9 @@ def collect(
             collect_resource_list(
                 ctx,
                 signal_type="group",
-                operation=(
-                    "list_groups"
-                ),
-                loader=lambda: (
-                    ctx.conn.identity.
-                    groups()
-                ),
-                normalizer=(
-                    normalize_group
-                ),
+                operation=("list_groups"),
+                loader=lambda: ctx.conn.identity.groups(),
+                normalizer=(normalize_group),
             )
         )
 
@@ -752,19 +514,11 @@ def collect(
         record(
             "identity",
             "identity_summary",
-            identity_summary(
-                records
-            ),
-            cloud_id=(
-                ctx.cloud_id
-            ),
+            identity_summary(records),
+            cloud_id=(ctx.cloud_id),
             region=ctx.region,
-            environment_id=(
-                ctx.environment_id
-            ),
-            resource_id=(
-                ctx.cloud_id
-            ),
+            environment_id=(ctx.environment_id),
+            resource_id=(ctx.cloud_id),
             source="osha",
         )
     )

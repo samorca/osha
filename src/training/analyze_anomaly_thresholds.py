@@ -22,28 +22,19 @@ from sklearn.metrics import (
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description=(
-            "Analyse anomaly-score distributions and "
-            "threshold tradeoffs."
-        )
+        description=("Analyse anomaly-score distributions and threshold tradeoffs.")
     )
 
     parser.add_argument(
         "--predictions",
         default=(
-            "artifacts/models/"
-            "anomaly-understanding-smoke/"
-            "evaluation/predictions.csv"
+            "artifacts/models/anomaly-understanding-smoke/evaluation/predictions.csv"
         ),
     )
 
     parser.add_argument(
         "--output",
-        default=(
-            "artifacts/models/"
-            "anomaly-understanding-smoke/"
-            "threshold-analysis"
-        ),
+        default=("artifacts/models/anomaly-understanding-smoke/threshold-analysis"),
     )
 
     parser.add_argument(
@@ -76,9 +67,7 @@ def calculate_metrics(
     scores: np.ndarray,
     threshold: float,
 ) -> dict:
-    predictions = (
-        scores > threshold
-    ).astype(int)
+    predictions = (scores > threshold).astype(int)
 
     tn, fp, fn, tp = confusion_matrix(
         labels,
@@ -140,18 +129,10 @@ def calculate_metrics(
         "recall": float(recall),
         "specificity": float(specificity),
         "f1": float(f1),
-        "balanced_accuracy": float(
-            balanced_accuracy
-        ),
-        "false_positive_rate": float(
-            false_positive_rate
-        ),
-        "false_negative_rate": float(
-            false_negative_rate
-        ),
-        "predicted_anomalies": int(
-            predictions.sum()
-        ),
+        "balanced_accuracy": float(balanced_accuracy),
+        "false_positive_rate": float(false_positive_rate),
+        "false_negative_rate": float(false_negative_rate),
+        "predicted_anomalies": int(predictions.sum()),
     }
 
 
@@ -211,14 +192,7 @@ def best_at_fpr(
     rows: list[dict],
     maximum_fpr: float,
 ) -> dict | None:
-    eligible = [
-        row
-        for row in rows
-        if (
-            row["false_positive_rate"]
-            <= maximum_fpr
-        )
-    ]
+    eligible = [row for row in rows if (row["false_positive_rate"] <= maximum_fpr)]
 
     if not eligible:
         return None
@@ -236,22 +210,16 @@ def best_at_fpr(
 def main():
     args = parse_args()
 
-    input_path = Path(
-        args.predictions
-    )
+    input_path = Path(args.predictions)
 
-    output_directory = Path(
-        args.output
-    )
+    output_directory = Path(args.output)
 
     output_directory.mkdir(
         parents=True,
         exist_ok=True,
     )
 
-    dataframe = pd.read_csv(
-        input_path
-    )
+    dataframe = pd.read_csv(input_path)
 
     required_columns = {
         "label",
@@ -259,64 +227,39 @@ def main():
         "event_id",
     }
 
-    missing = (
-        required_columns
-        - set(dataframe.columns)
-    )
+    missing = required_columns - set(dataframe.columns)
 
     if missing:
         raise ValueError(
-            "Predictions file is missing columns: "
-            + ", ".join(sorted(missing))
+            "Predictions file is missing columns: " + ", ".join(sorted(missing))
         )
 
-    dataframe = dataframe[
-        dataframe["label"].isin([0, 1])
-    ].copy()
+    dataframe = dataframe[dataframe["label"].isin([0, 1])].copy()
 
-    dataframe["label"] = dataframe[
-        "label"
-    ].astype(int)
+    dataframe["label"] = dataframe["label"].astype(int)
 
     dataframe["anomaly_score"] = pd.to_numeric(
         dataframe["anomaly_score"],
         errors="raise",
     )
 
-    labels = dataframe[
-        "label"
-    ].to_numpy(dtype=int)
+    labels = dataframe["label"].to_numpy(dtype=int)
 
-    scores = dataframe[
-        "anomaly_score"
-    ].to_numpy(dtype=float)
+    scores = dataframe["anomaly_score"].to_numpy(dtype=float)
 
     if not np.isfinite(scores).all():
-        raise ValueError(
-            "Anomaly scores contain NaN or infinity"
-        )
+        raise ValueError("Anomaly scores contain NaN or infinity")
 
     if len(np.unique(labels)) != 2:
-        raise ValueError(
-            "Both normal and anomaly labels "
-            "are required"
-        )
+        raise ValueError("Both normal and anomaly labels are required")
 
-    normal_scores = scores[
-        labels == 0
-    ]
+    normal_scores = scores[labels == 0]
 
-    anomaly_scores = scores[
-        labels == 1
-    ]
+    anomaly_scores = scores[labels == 1]
 
-    minimum_score = float(
-        np.min(scores)
-    )
+    minimum_score = float(np.min(scores))
 
-    maximum_score = float(
-        np.max(scores)
-    )
+    maximum_score = float(np.max(scores))
 
     quantile_thresholds = np.quantile(
         scores,
@@ -384,9 +327,7 @@ def main():
         0.15,
         0.20,
     ):
-        controlled_fpr[
-            f"{int(target * 100)}_percent"
-        ] = best_at_fpr(
+        controlled_fpr[f"{int(target * 100)}_percent"] = best_at_fpr(
             sweep_rows,
             target,
         )
@@ -401,33 +342,23 @@ def main():
         scores,
     )
 
-    fpr_curve, tpr_curve, roc_thresholds = (
-        roc_curve(
-            labels,
-            scores,
-        )
+    fpr_curve, tpr_curve, roc_thresholds = roc_curve(
+        labels,
+        scores,
     )
 
-    precision_curve, recall_curve, _ = (
-        precision_recall_curve(
-            labels,
-            scores,
-        )
+    precision_curve, recall_curve, _ = precision_recall_curve(
+        labels,
+        scores,
     )
 
     if args.current_threshold is None:
         if "threshold" in dataframe.columns:
-            current_threshold = float(
-                dataframe[
-                    "threshold"
-                ].iloc[0]
-            )
+            current_threshold = float(dataframe["threshold"].iloc[0])
         else:
             current_threshold = None
     else:
-        current_threshold = (
-            args.current_threshold
-        )
+        current_threshold = args.current_threshold
 
     current_metrics = None
 
@@ -440,64 +371,29 @@ def main():
 
     per_event = {}
 
-    for event_id, group in dataframe.groupby(
-        "event_id"
-    ):
-        event_labels = group[
-            "label"
-        ].to_numpy(dtype=int)
+    for event_id, group in dataframe.groupby("event_id"):
+        event_labels = group["label"].to_numpy(dtype=int)
 
-        event_scores = group[
-            "anomaly_score"
-        ].to_numpy(dtype=float)
+        event_scores = group["anomaly_score"].to_numpy(dtype=float)
 
         event_result = {
-            "examples": int(
-                len(group)
-            ),
-            "normal_examples": int(
-                (event_labels == 0).sum()
-            ),
-            "anomaly_examples": int(
-                (event_labels == 1).sum()
-            ),
-            "score_distribution": {
-                "all": distribution_summary(
-                    event_scores
-                )
-            },
+            "examples": int(len(group)),
+            "normal_examples": int((event_labels == 0).sum()),
+            "anomaly_examples": int((event_labels == 1).sum()),
+            "score_distribution": {"all": distribution_summary(event_scores)},
         }
 
-        if (
-            event_labels == 0
-        ).any():
-            event_result[
-                "score_distribution"
-            ]["normal"] = (
-                distribution_summary(
-                    event_scores[
-                        event_labels == 0
-                    ]
-                )
+        if (event_labels == 0).any():
+            event_result["score_distribution"]["normal"] = distribution_summary(
+                event_scores[event_labels == 0]
             )
 
-        if (
-            event_labels == 1
-        ).any():
-            event_result[
-                "score_distribution"
-            ]["anomaly"] = (
-                distribution_summary(
-                    event_scores[
-                        event_labels == 1
-                    ]
-                )
+        if (event_labels == 1).any():
+            event_result["score_distribution"]["anomaly"] = distribution_summary(
+                event_scores[event_labels == 1]
             )
 
-        if (
-            len(np.unique(event_labels))
-            == 2
-        ):
+        if len(np.unique(event_labels)) == 2:
             event_result["roc_auc"] = float(
                 roc_auc_score(
                     event_labels,
@@ -512,47 +408,23 @@ def main():
                 )
             )
 
-        per_event[str(event_id)] = (
-            event_result
-        )
+        per_event[str(event_id)] = event_result
 
     report = {
-        "predictions_file": str(
-            input_path
-        ),
-        "examples": int(
-            len(dataframe)
-        ),
-        "normal_examples": int(
-            (labels == 0).sum()
-        ),
-        "anomaly_examples": int(
-            (labels == 1).sum()
-        ),
+        "predictions_file": str(input_path),
+        "examples": int(len(dataframe)),
+        "normal_examples": int((labels == 0).sum()),
+        "anomaly_examples": int((labels == 1).sum()),
         "score_distribution": {
-            "normal": distribution_summary(
-                normal_scores
-            ),
-            "anomaly": distribution_summary(
-                anomaly_scores
-            ),
+            "normal": distribution_summary(normal_scores),
+            "anomaly": distribution_summary(anomaly_scores),
         },
-        "roc_auc": float(
-            roc_auc
-        ),
-        "pr_auc": float(
-            pr_auc
-        ),
-        "current_threshold": (
-            current_metrics
-        ),
+        "roc_auc": float(roc_auc),
+        "pr_auc": float(pr_auc),
+        "current_threshold": (current_metrics),
         "best_f1_threshold": best_f1,
-        "best_balanced_accuracy_threshold": (
-            best_balanced
-        ),
-        "recall_at_controlled_fpr": (
-            controlled_fpr
-        ),
+        "best_balanced_accuracy_threshold": (best_balanced),
+        "recall_at_controlled_fpr": (controlled_fpr),
         "per_event": per_event,
         "warning": (
             "Thresholds in this report were analysed "
@@ -562,10 +434,7 @@ def main():
         ),
     }
 
-    with (
-        output_directory
-        / "threshold_analysis.json"
-    ).open(
+    with (output_directory / "threshold_analysis.json").open(
         "w",
         encoding="utf-8",
     ) as handle:
@@ -575,13 +444,10 @@ def main():
             indent=2,
         )
 
-    sweep_frame = pd.DataFrame(
-        sweep_rows
-    )
+    sweep_frame = pd.DataFrame(sweep_rows)
 
     sweep_frame.to_csv(
-        output_directory
-        / "threshold_sweep.csv",
+        output_directory / "threshold_sweep.csv",
         index=False,
     )
 
@@ -607,31 +473,22 @@ def main():
         plt.axvline(
             current_threshold,
             linestyle="--",
-            label=(
-                "Current threshold "
-                f"{current_threshold:.4f}"
-            ),
+            label=(f"Current threshold {current_threshold:.4f}"),
         )
 
     plt.axvline(
         best_f1["threshold"],
         linestyle=":",
-        label=(
-            "Diagnostic best F1 "
-            f"{best_f1['threshold']:.4f}"
-        ),
+        label=(f"Diagnostic best F1 {best_f1['threshold']:.4f}"),
     )
 
     plt.xlabel("Anomaly score")
     plt.ylabel("Density")
-    plt.title(
-        "Normal vs anomaly score distribution"
-    )
+    plt.title("Normal vs anomaly score distribution")
     plt.legend()
     plt.tight_layout()
     plt.savefig(
-        output_directory
-        / "score_distribution.png",
+        output_directory / "score_distribution.png",
         dpi=160,
     )
     plt.close()
@@ -648,8 +505,7 @@ def main():
     plt.legend()
     plt.tight_layout()
     plt.savefig(
-        output_directory
-        / "precision_recall_curve.png",
+        output_directory / "precision_recall_curve.png",
         dpi=160,
     )
     plt.close()
@@ -672,8 +528,7 @@ def main():
     plt.legend()
     plt.tight_layout()
     plt.savefig(
-        output_directory
-        / "roc_curve.png",
+        output_directory / "roc_curve.png",
         dpi=160,
     )
     plt.close()
@@ -696,9 +551,7 @@ def main():
     )
     plt.plot(
         sweep_frame["threshold"],
-        sweep_frame[
-            "balanced_accuracy"
-        ],
+        sweep_frame["balanced_accuracy"],
         label="Balanced accuracy",
     )
     plt.xlabel("Threshold")
@@ -707,8 +560,7 @@ def main():
     plt.legend()
     plt.tight_layout()
     plt.savefig(
-        output_directory
-        / "threshold_tradeoffs.png",
+        output_directory / "threshold_tradeoffs.png",
         dpi=160,
     )
     plt.close()
@@ -744,9 +596,7 @@ def main():
         )
     )
 
-    print(
-        "\nDiagnostic best balanced accuracy:"
-    )
+    print("\nDiagnostic best balanced accuracy:")
     print(
         json.dumps(
             best_balanced,
@@ -754,10 +604,7 @@ def main():
         )
     )
 
-    print(
-        "\nRecall at controlled "
-        "false-positive rates:"
-    )
+    print("\nRecall at controlled false-positive rates:")
 
     print(
         json.dumps(
@@ -768,39 +615,30 @@ def main():
 
     print(
         "\nSaved:",
-        output_directory
-        / "threshold_analysis.json",
+        output_directory / "threshold_analysis.json",
     )
     print(
         "Saved:",
-        output_directory
-        / "threshold_sweep.csv",
+        output_directory / "threshold_sweep.csv",
     )
     print(
         "Saved:",
-        output_directory
-        / "score_distribution.png",
+        output_directory / "score_distribution.png",
     )
     print(
         "Saved:",
-        output_directory
-        / "precision_recall_curve.png",
+        output_directory / "precision_recall_curve.png",
     )
     print(
         "Saved:",
-        output_directory
-        / "roc_curve.png",
+        output_directory / "roc_curve.png",
     )
     print(
         "Saved:",
-        output_directory
-        / "threshold_tradeoffs.png",
+        output_directory / "threshold_tradeoffs.png",
     )
 
-    print(
-        "\nWARNING: These thresholds use test "
-        "labels and are diagnostic only."
-    )
+    print("\nWARNING: These thresholds use test labels and are diagnostic only.")
 
 
 if __name__ == "__main__":

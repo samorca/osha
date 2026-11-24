@@ -49,9 +49,7 @@ def resource_identifier(
         "security_group_id",
         "name",
     ):
-        value = optional_string(
-            payload.get(key)
-        )
+        value = optional_string(payload.get(key))
 
         if value:
             return value
@@ -66,120 +64,41 @@ def normalize_network(
 
     return sanitize(
         {
-            "network_id": (
-                raw.get("id")
-            ),
-            "name": raw.get(
-                "name"
-            ),
-            "status": raw.get(
-                "status"
-            ),
-            "project_id": (
-                raw.get(
-                    "project_id"
-                )
-                or raw.get(
-                    "tenant_id"
-                )
-            ),
+            "network_id": (raw.get("id")),
+            "name": raw.get("name"),
+            "status": raw.get("status"),
+            "project_id": (raw.get("project_id") or raw.get("tenant_id")),
             "admin_state_up": (
-                raw.get(
-                    "is_admin_state_up"
-                )
-                if (
-                    "is_admin_state_up"
-                    in raw
-                )
-                else raw.get(
-                    "admin_state_up"
-                )
+                raw.get("is_admin_state_up")
+                if ("is_admin_state_up" in raw)
+                else raw.get("admin_state_up")
             ),
             "shared": (
-                raw.get("is_shared")
-                if "is_shared" in raw
-                else raw.get(
-                    "shared"
-                )
+                raw.get("is_shared") if "is_shared" in raw else raw.get("shared")
             ),
             "external": (
-                raw.get(
-                    "is_router_external"
-                )
-                if (
-                    "is_router_external"
-                    in raw
-                )
-                else raw.get(
-                    "router:external"
-                )
+                raw.get("is_router_external")
+                if ("is_router_external" in raw)
+                else raw.get("router:external")
             ),
             "provider_network_type": (
-                raw.get(
-                    "provider_network_type"
-                )
-                or raw.get(
-                    "provider:"
-                    "network_type"
-                )
+                raw.get("provider_network_type") or raw.get("provider:network_type")
             ),
             "provider_physical_network": (
-                raw.get(
-                    "provider_physical_network"
-                )
-                or raw.get(
-                    "provider:"
-                    "physical_network"
-                )
+                raw.get("provider_physical_network")
+                or raw.get("provider:physical_network")
             ),
             "provider_segmentation_id": (
-                raw.get(
-                    "provider_segmentation_id"
-                )
-                or raw.get(
-                    "provider:"
-                    "segmentation_id"
-                )
+                raw.get("provider_segmentation_id")
+                or raw.get("provider:segmentation_id")
             ),
-            "mtu": raw.get(
-                "mtu"
-            ),
-            "availability_zones": (
-                raw.get(
-                    "availability_zones"
-                )
-                or []
-            ),
-            "availability_zone_hints": (
-                raw.get(
-                    "availability_zone_hints"
-                )
-                or []
-            ),
-            "dns_domain": (
-                raw.get(
-                    "dns_domain"
-                )
-            ),
-            "subnet_ids": (
-                raw.get(
-                    "subnet_ids"
-                )
-                or raw.get(
-                    "subnets"
-                )
-                or []
-            ),
-            "created_at": (
-                raw.get(
-                    "created_at"
-                )
-            ),
-            "updated_at": (
-                raw.get(
-                    "updated_at"
-                )
-            ),
+            "mtu": raw.get("mtu"),
+            "availability_zones": (raw.get("availability_zones") or []),
+            "availability_zone_hints": (raw.get("availability_zone_hints") or []),
+            "dns_domain": (raw.get("dns_domain")),
+            "subnet_ids": (raw.get("subnet_ids") or raw.get("subnets") or []),
+            "created_at": (raw.get("created_at")),
+            "updated_at": (raw.get("updated_at")),
         }
     )
 
@@ -189,110 +108,34 @@ def normalize_subnet(
 ) -> dict:
     raw = as_dict(subnet)
 
-    allocation_pools = (
-        raw.get(
-            "allocation_pools"
-        )
-        or []
-    )
+    allocation_pools = raw.get("allocation_pools") or []
 
-    host_routes = (
-        raw.get(
-            "host_routes"
-        )
-        or []
-    )
+    host_routes = raw.get("host_routes") or []
 
-    dns_nameservers = (
-        raw.get(
-            "dns_nameservers"
-        )
-        or raw.get(
-            "dns_nameservers_v2"
-        )
-        or []
-    )
+    dns_nameservers = raw.get("dns_nameservers") or raw.get("dns_nameservers_v2") or []
 
     return sanitize(
         {
-            "subnet_id": (
-                raw.get("id")
-            ),
-            "name": raw.get(
-                "name"
-            ),
-            "network_id": (
-                raw.get(
-                    "network_id"
-                )
-            ),
-            "project_id": (
-                raw.get(
-                    "project_id"
-                )
-                or raw.get(
-                    "tenant_id"
-                )
-            ),
-            "cidr": raw.get(
-                "cidr"
-            ),
-            "ip_version": (
-                raw.get(
-                    "ip_version"
-                )
-            ),
-            "gateway_ip": (
-                raw.get(
-                    "gateway_ip"
-                )
-            ),
+            "subnet_id": (raw.get("id")),
+            "name": raw.get("name"),
+            "network_id": (raw.get("network_id")),
+            "project_id": (raw.get("project_id") or raw.get("tenant_id")),
+            "cidr": raw.get("cidr"),
+            "ip_version": (raw.get("ip_version")),
+            "gateway_ip": (raw.get("gateway_ip")),
             "dhcp_enabled": (
-                raw.get(
-                    "is_dhcp_enabled"
-                )
-                if (
-                    "is_dhcp_enabled"
-                    in raw
-                )
-                else raw.get(
-                    "enable_dhcp"
-                )
+                raw.get("is_dhcp_enabled")
+                if ("is_dhcp_enabled" in raw)
+                else raw.get("enable_dhcp")
             ),
-            "ipv6_address_mode": (
-                raw.get(
-                    "ipv6_address_mode"
-                )
-            ),
-            "ipv6_ra_mode": (
-                raw.get(
-                    "ipv6_ra_mode"
-                )
-            ),
-            "allocation_pools": (
-                allocation_pools
-            ),
-            "dns_nameservers": (
-                dns_nameservers
-            ),
-            "host_routes": (
-                host_routes
-            ),
-            "segment_id": (
-                raw.get(
-                    "segment_id"
-                )
-            ),
-            "created_at": (
-                raw.get(
-                    "created_at"
-                )
-            ),
-            "updated_at": (
-                raw.get(
-                    "updated_at"
-                )
-            ),
+            "ipv6_address_mode": (raw.get("ipv6_address_mode")),
+            "ipv6_ra_mode": (raw.get("ipv6_ra_mode")),
+            "allocation_pools": (allocation_pools),
+            "dns_nameservers": (dns_nameservers),
+            "host_routes": (host_routes),
+            "segment_id": (raw.get("segment_id")),
+            "created_at": (raw.get("created_at")),
+            "updated_at": (raw.get("updated_at")),
         }
     )
 
@@ -302,139 +145,49 @@ def normalize_port(
 ) -> dict:
     raw = as_dict(port)
 
-    fixed_ips = (
-        raw.get("fixed_ips")
-        or []
-    )
+    fixed_ips = raw.get("fixed_ips") or []
 
     security_group_ids = (
-        raw.get(
-            "security_group_ids"
-        )
-        or raw.get(
-            "security_groups"
-        )
-        or []
+        raw.get("security_group_ids") or raw.get("security_groups") or []
     )
 
-    allowed_pairs = (
-        raw.get(
-            "allowed_address_pairs"
-        )
-        or []
-    )
+    allowed_pairs = raw.get("allowed_address_pairs") or []
 
     return sanitize(
         {
-            "port_id": (
-                raw.get("id")
-            ),
-            "name": raw.get(
-                "name"
-            ),
-            "status": raw.get(
-                "status"
-            ),
-            "network_id": (
-                raw.get(
-                    "network_id"
-                )
-            ),
-            "project_id": (
-                raw.get(
-                    "project_id"
-                )
-                or raw.get(
-                    "tenant_id"
-                )
-            ),
-            "device_id": (
-                raw.get(
-                    "device_id"
-                )
-            ),
-            "device_owner": (
-                raw.get(
-                    "device_owner"
-                )
-            ),
-            "mac_address": (
-                raw.get(
-                    "mac_address"
-                )
-            ),
-            "fixed_ips": (
-                fixed_ips
-            ),
-            "security_group_ids": (
-                security_group_ids
-            ),
-            "allowed_address_pairs": (
-                allowed_pairs
-            ),
+            "port_id": (raw.get("id")),
+            "name": raw.get("name"),
+            "status": raw.get("status"),
+            "network_id": (raw.get("network_id")),
+            "project_id": (raw.get("project_id") or raw.get("tenant_id")),
+            "device_id": (raw.get("device_id")),
+            "device_owner": (raw.get("device_owner")),
+            "mac_address": (raw.get("mac_address")),
+            "fixed_ips": (fixed_ips),
+            "security_group_ids": (security_group_ids),
+            "allowed_address_pairs": (allowed_pairs),
             "admin_state_up": (
-                raw.get(
-                    "is_admin_state_up"
-                )
-                if (
-                    "is_admin_state_up"
-                    in raw
-                )
-                else raw.get(
-                    "admin_state_up"
-                )
+                raw.get("is_admin_state_up")
+                if ("is_admin_state_up" in raw)
+                else raw.get("admin_state_up")
             ),
             "port_security_enabled": (
-                raw.get(
-                    "is_port_security_enabled"
-                )
-                if (
-                    "is_port_security_enabled"
-                    in raw
-                )
-                else raw.get(
-                    "port_security_enabled"
-                )
+                raw.get("is_port_security_enabled")
+                if ("is_port_security_enabled" in raw)
+                else raw.get("port_security_enabled")
             ),
             "binding_host_id": (
-                raw.get(
-                    "binding_host_id"
-                )
-                or raw.get(
-                    "binding:host_id"
-                )
+                raw.get("binding_host_id") or raw.get("binding:host_id")
             ),
             "binding_vnic_type": (
-                raw.get(
-                    "binding_vnic_type"
-                )
-                or raw.get(
-                    "binding:vnic_type"
-                )
+                raw.get("binding_vnic_type") or raw.get("binding:vnic_type")
             ),
             "binding_vif_type": (
-                raw.get(
-                    "binding_vif_type"
-                )
-                or raw.get(
-                    "binding:vif_type"
-                )
+                raw.get("binding_vif_type") or raw.get("binding:vif_type")
             ),
-            "dns_name": (
-                raw.get(
-                    "dns_name"
-                )
-            ),
-            "created_at": (
-                raw.get(
-                    "created_at"
-                )
-            ),
-            "updated_at": (
-                raw.get(
-                    "updated_at"
-                )
-            ),
+            "dns_name": (raw.get("dns_name")),
+            "created_at": (raw.get("created_at")),
+            "updated_at": (raw.get("updated_at")),
         }
     )
 
@@ -444,12 +197,7 @@ def normalize_router(
 ) -> dict:
     raw = as_dict(router)
 
-    gateway = (
-        raw.get(
-            "external_gateway_info"
-        )
-        or {}
-    )
+    gateway = raw.get("external_gateway_info") or {}
 
     gateway_network_id = None
 
@@ -457,94 +205,32 @@ def normalize_router(
         gateway,
         Mapping,
     ):
-        gateway_network_id = (
-            gateway.get(
-                "network_id"
-            )
-        )
+        gateway_network_id = gateway.get("network_id")
 
     return sanitize(
         {
-            "router_id": (
-                raw.get("id")
-            ),
-            "name": raw.get(
-                "name"
-            ),
-            "status": raw.get(
-                 "status"
-            ),
-            "project_id": (
-                raw.get(
-                    "project_id"
-                )
-                or raw.get(
-                    "tenant_id"
-                )
-            ),
+            "router_id": (raw.get("id")),
+            "name": raw.get("name"),
+            "status": raw.get("status"),
+            "project_id": (raw.get("project_id") or raw.get("tenant_id")),
             "admin_state_up": (
-                raw.get(
-                    "is_admin_state_up"
-                )
-                if (
-                    "s_admin_state_up"
-                    in raw
-                )
-                else raw.get(
-                    "admin_state_up"
-                )
+                raw.get("is_admin_state_up")
+                if ("s_admin_state_up" in raw)
+                else raw.get("admin_state_up")
             ),
             "distributed": (
-                raw.get(
-                    "is_distributed"
-                )
-                if (
-                    "is_distributed"
-                    in raw
-                )
-                else raw.get(
-                    "distributed"
-                )
+                raw.get("is_distributed")
+                if ("is_distributed" in raw)
+                else raw.get("distributed")
             ),
-            "ha": (
-                raw.get("is_ha")
-                if "is_ha" in raw
-                else raw.get(
-                    "ha"
-                )
-            ),
-            "external_gateway": (
-                gateway
-            ),
-            "external_network_id": (
-                gateway_network_id
-            ),
-            "availability_zones": (
-                raw.get(
-                    "availability_zones"
-                )
-                or []
-            ),
-            "availability_zone_hints": (
-                raw.get(
-                    "availability_zone_hints"
-                )
-                or []
-            ),
-            "routes": (
-                raw.get("routes")
-                or []
-            ),
-            "created_at": (
-                raw.get(
-                    "created_at"
-                )
-            ),
-            "updated_at": (
-                raw.get(
-                    "updated_at"
-                )
-            ),
+            "ha": (raw.get("is_ha") if "is_ha" in raw else raw.get("ha")),
+            "external_gateway": (gateway),
+            "external_network_id": (gateway_network_id),
+            "availability_zones": (raw.get("availability_zones") or []),
+            "availability_zone_hints": (raw.get("availability_zone_hints") or []),
+            "routes": (raw.get("routes") or []),
+            "created_at": (raw.get("created_at")),
+            "updated_at": (raw.get("updated_at")),
         }
     )
 
@@ -554,61 +240,23 @@ def normalize_security_group(
 ) -> dict:
     raw = as_dict(group)
 
-    rules = (
-        raw.get(
-            "security_group_rules"
-        )
-        or raw.get("rules")
-        or []
-    )
+    rules = raw.get("security_group_rules") or raw.get("rules") or []
 
     return sanitize(
         {
-            "security_group_id": (
-                raw.get("id")
-            ),
-            "name": raw.get(
-                "name"
-            ),
-            "description": (
-                raw.get(
-                    "description"
-                )
-            ),
-            "project_id": (
-                raw.get(
-                    "project_id"
-                )
-                or raw.get(
-                    "tenant_id"
-                )
-            ),
+            "security_group_id": (raw.get("id")),
+            "name": raw.get("name"),
+            "description": (raw.get("description")),
+            "project_id": (raw.get("project_id") or raw.get("tenant_id")),
             "stateful": (
-                raw.get(
-                    "is_stateful"
-                )
-                if (
-                    "is_stateful"
-                    in raw
-                )
-                else raw.get(
-                    "stateful"
-                )
+                raw.get("is_stateful")
+                if ("is_stateful" in raw)
+                else raw.get("stateful")
             ),
-            "rule_count": len(
-                rules
-            ),
+            "rule_count": len(rules),
             "rules": rules,
-            "created_at": (
-                raw.get(
-                    "created_at"
-                )
-            ),
-            "updated_at": (
-                raw.get(
-                    "updated_at"
-                )
-            ),
+            "created_at": (raw.get("created_at")),
+            "updated_at": (raw.get("updated_at")),
         }
     )
 
@@ -616,66 +264,21 @@ def normalize_security_group(
 def normalize_floating_ip(
     floating_ip: Any,
 ) -> dict:
-    raw = as_dict(
-        floating_ip
-    )
+    raw = as_dict(floating_ip)
 
     return sanitize(
         {
-            "floating_ip_id": (
-                raw.get("id")
-            ),
-            "floating_ip_address": (
-                raw.get(
-                    "floating_ip_address"
-                )
-            ),
-            "fixed_ip_address": (
-                raw.get(
-                    "fixed_ip_address"
-                )
-            ),
-            "floating_network_id": (
-                raw.get(
-                    "floating_network_id"
-                )
-            ),
-            "port_id": (
-                raw.get(
-                    "port_id"
-                )
-            ),
-            "router_id": (
-                raw.get(
-                    "router_id"
-                )
-            ),
-            "project_id": (
-                raw.get(
-                    "project_id"
-                )
-                or raw.get(
-                    "tenant_id"
-                )
-            ),
-            "status": (
-                raw.get("status")
-            ),
-            "description": (
-                raw.get(
-                    "description"
-                )
-            ),
-            "created_at": (
-                raw.get(
-                    "created_at"
-                )
-            ),
-            "updated_at": (
-                raw.get(
-                    "updated_at"
-                )
-            ),
+            "floating_ip_id": (raw.get("id")),
+            "floating_ip_address": (raw.get("floating_ip_address")),
+            "fixed_ip_address": (raw.get("fixed_ip_address")),
+            "floating_network_id": (raw.get("floating_network_id")),
+            "port_id": (raw.get("port_id")),
+            "router_id": (raw.get("router_id")),
+            "project_id": (raw.get("project_id") or raw.get("tenant_id")),
+            "status": (raw.get("status")),
+            "description": (raw.get("description")),
+            "created_at": (raw.get("created_at")),
+            "updated_at": (raw.get("updated_at")),
         }
     )
 
@@ -685,94 +288,39 @@ def normalize_agent(
 ) -> dict:
     raw = as_dict(agent)
 
-    alive = raw.get(
-        "is_alive"
-    )
+    alive = raw.get("is_alive")
 
     if alive is None:
-        alive = raw.get(
-            "alive"
-        )
+        alive = raw.get("alive")
 
-    admin_state_up = raw.get(
-        "is_admin_state_up"
-    )
+    admin_state_up = raw.get("is_admin_state_up")
 
     if admin_state_up is None:
-        admin_state_up = (
-            raw.get(
-                "admin_state_up"
-            )
-        )
+        admin_state_up = raw.get("admin_state_up")
 
     healthy = None
 
-    if (
-        alive is True
-        and admin_state_up
-        is not False
-    ):
+    if alive is True and admin_state_up is not False:
         healthy = True
 
-    elif (
-        alive is False
-        or admin_state_up
-        is False
-    ):
+    elif alive is False or admin_state_up is False:
         healthy = False
 
     return sanitize(
         {
-            "agent_id": (
-                raw.get("id")
-            ),
-            "agent_type": (
-                raw.get(
-                    "agent_type"
-                )
-            ),
-            "binary": (
-                raw.get(
-                    "binary"
-                )
-            ),
-            "host": (
-                raw.get("host")
-            ),
-            "topic": (
-                raw.get("topic")
-            ),
+            "agent_id": (raw.get("id")),
+            "agent_type": (raw.get("agent_type")),
+            "binary": (raw.get("binary")),
+            "host": (raw.get("host")),
+            "topic": (raw.get("topic")),
             "alive": alive,
-            "admin_state_up": (
-                admin_state_up
-            ),
+            "admin_state_up": (admin_state_up),
             "healthy": healthy,
-            "availability_zone": (
-                raw.get(
-                    "availability_zone"
-                )
-            ),
-            "heartbeat_timestamp": (
-                raw.get(
-                    "heartbeat_timestamp"
-                )
-            ),
-            "started_at": (
-                raw.get(
-                    "started_at"
-                )
-            ),
-            "created_at": (
-                raw.get(
-                    "created_at"
-                )
-            ),
-            "configurations": (
-                raw.get(
-                    "configurations"
-                )
-                or {}
-            ),
+            "availability_zone": (raw.get("availability_zone")),
+            "heartbeat_timestamp": (raw.get("heartbeat_timestamp")),
+            "started_at": (raw.get("started_at")),
+            "created_at": (raw.get("created_at")),
+            "configurations": (raw.get("configurations") or {}),
         }
     )
 
@@ -800,30 +348,17 @@ def collect_resource_list(
 
     try:
         for resource in loader():
-            payload = normalizer(
-                resource
-            )
+            payload = normalizer(resource)
 
-            identifier = (
-                resource_identifier(
-                    payload,
-                    fallback=(
-                        f"unknown-"
-                        f"{signal_type}"
-                    ),
-                )
+            identifier = resource_identifier(
+                payload,
+                fallback=(f"unknown-{signal_type}"),
             )
 
             timestamp = (
-                payload.get(
-                    "updated_at"
-                )
-                or payload.get(
-                    "created_at"
-                )
-                or payload.get(
-                    "heartbeat_timestamp"
-                )
+                payload.get("updated_at")
+                or payload.get("created_at")
+                or payload.get("heartbeat_timestamp")
             )
 
             records.append(
@@ -831,16 +366,10 @@ def collect_resource_list(
                     "network",
                     signal_type,
                     payload,
-                    cloud_id=(
-                        ctx.cloud_id
-                    ),
+                    cloud_id=(ctx.cloud_id),
                     region=ctx.region,
-                    environment_id=(
-                        ctx.environment_id
-                    ),
-                    resource_id=(
-                        identifier
-                    ),
+                    environment_id=(ctx.environment_id),
+                    resource_id=(identifier),
                     timestamp=timestamp,
                     source="neutron",
                 )
@@ -851,13 +380,9 @@ def collect_resource_list(
             error(
                 "network",
                 exc,
-                cloud_id=(
-                    ctx.cloud_id
-                ),
+                cloud_id=(ctx.cloud_id),
                 region=ctx.region,
-                environment_id=(
-                    ctx.environment_id
-                ),
+                environment_id=(ctx.environment_id),
                 operation=operation,
             )
         )
@@ -891,58 +416,31 @@ def network_summary(
 
         counts[signal] += 1
 
-        payload = (
-            item.get("payload")
-            or {}
-        )
+        payload = item.get("payload") or {}
 
         if signal == "network":
-            status = (
-                payload.get("status")
-                or "unknown"
-            )
+            status = payload.get("status") or "unknown"
 
-            network_statuses[
-                str(status)
-            ] += 1
+            network_statuses[str(status)] += 1
 
-            if (
-                payload.get(
-                    "external"
-                )
-                is True
-            ):
+            if payload.get("external") is True:
                 external_networks += 1
 
         elif signal == "port":
-            status = (
-                payload.get("status")
-                or "unknown"
-            )
+            status = payload.get("status") or "unknown"
 
-            port_statuses[
-                str(status)
-            ] += 1
+            port_statuses[str(status)] += 1
 
         elif signal == "router":
-            status = (
-                payload.get("status")
-                or "unknown"
-            )
+            status = payload.get("status") or "unknown"
 
-            router_statuses[
-                str(status)
-            ] += 1
+            router_statuses[str(status)] += 1
 
         elif signal == "floating_ip":
             floating_ips += 1
 
         elif signal == "network_agent":
-            healthy = (
-                payload.get(
-                    "healthy"
-                )
-            )
+            healthy = payload.get("healthy")
 
             if healthy is True:
                 healthy_agents += 1
@@ -954,40 +452,16 @@ def network_summary(
                 unknown_agents += 1
 
     return {
-        "record_counts": (
-            dict(counts)
-        ),
-        "network_statuses": (
-            dict(
-                network_statuses
-            )
-        ),
-        "port_statuses": (
-            dict(
-                port_statuses
-            )
-        ),
-        "router_statuses": (
-            dict(
-                router_statuses
-            )
-        ),
-        "external_network_count": (
-            external_networks
-        ),
-        "floating_ip_count": (
-            floating_ips
-        ),
+        "record_counts": (dict(counts)),
+        "network_statuses": (dict(network_statuses)),
+        "port_statuses": (dict(port_statuses)),
+        "router_statuses": (dict(router_statuses)),
+        "external_network_count": (external_networks),
+        "floating_ip_count": (floating_ips),
         "network_agents": {
-            "healthy": (
-                healthy_agents
-            ),
-            "unhealthy": (
-                unhealthy_agents
-            ),
-            "unknown": (
-                unknown_agents
-            ),
+            "healthy": (healthy_agents),
+            "unhealthy": (unhealthy_agents),
+            "unknown": (unknown_agents),
         },
     }
 
@@ -1016,17 +490,10 @@ def collect(
         return [
             unavailable(
                 "network",
-                (
-                    "Network service endpoint "
-                    "is unavailable"
-                ),
-                cloud_id=(
-                    ctx.cloud_id
-                ),
+                ("Network service endpoint is unavailable"),
+                cloud_id=(ctx.cloud_id),
                 region=ctx.region,
-                environment_id=(
-                    ctx.environment_id
-                ),
+                environment_id=(ctx.environment_id),
             )
         ]
 
@@ -1036,58 +503,43 @@ def collect(
         (
             "network",
             "list_networks",
-            lambda: (
-                ctx.conn.network.networks()
-            ),
+            lambda: ctx.conn.network.networks(),
             normalize_network,
         ),
         (
             "subnet",
             "list_subnets",
-            lambda: (
-                ctx.conn.network.subnets()
-            ),
+            lambda: ctx.conn.network.subnets(),
             normalize_subnet,
         ),
         (
             "port",
             "list_ports",
-            lambda: (
-                ctx.conn.network.ports()
-            ),
+            lambda: ctx.conn.network.ports(),
             normalize_port,
         ),
         (
             "router",
             "list_routers",
-            lambda: (
-                ctx.conn.network.routers()
-            ),
+            lambda: ctx.conn.network.routers(),
             normalize_router,
         ),
         (
             "security_group",
             "list_security_groups",
-            lambda: (
-                ctx.conn.network.
-                security_groups()
-            ),
+            lambda: ctx.conn.network.security_groups(),
             normalize_security_group,
         ),
         (
             "floating_ip",
             "list_floating_ips",
-            lambda: (
-                ctx.conn.network.ips()
-            ),
+            lambda: ctx.conn.network.ips(),
             normalize_floating_ip,
         ),
         (
             "network_agent",
             "list_network_agents",
-            lambda: (
-                ctx.conn.network.agents()
-            ),
+            lambda: ctx.conn.network.agents(),
             normalize_agent,
         ),
     ]
@@ -1101,16 +553,10 @@ def collect(
         records.extend(
             collect_resource_list(
                 ctx,
-                signal_type=(
-                    signal_type
-                ),
-                operation=(
-                    operation
-                ),
+                signal_type=(signal_type),
+                operation=(operation),
                 loader=loader,
-                normalizer=(
-                    normalizer
-                ),
+                normalizer=(normalizer),
             )
         )
 
@@ -1118,19 +564,11 @@ def collect(
         record(
             "network",
             "network_summary",
-            network_summary(
-                records
-            ),
-            cloud_id=(
-                ctx.cloud_id
-            ),
+            network_summary(records),
+            cloud_id=(ctx.cloud_id),
             region=ctx.region,
-            environment_id=(
-                ctx.environment_id
-            ),
-            resource_id=(
-                ctx.cloud_id
-            ),
+            environment_id=(ctx.environment_id),
+            resource_id=(ctx.cloud_id),
             source="osha",
         )
     )

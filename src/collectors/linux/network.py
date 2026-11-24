@@ -30,30 +30,20 @@ def run_json_command(
         return []
 
     try:
-        value = json.loads(
-            result.stdout
-        )
+        value = json.loads(result.stdout)
     except json.JSONDecodeError:
         return []
 
-    return (
-        value
-        if isinstance(value, list)
-        else []
-    )
+    return value if isinstance(value, list) else []
 
 
 def collect_interfaces() -> List[dict]:
     if shutil.which("ip") is None:
         return [
             build_record(
-                signal_type=(
-                    "collector_error"
-                ),
+                signal_type=("collector_error"),
                 payload={
-                    "collector": (
-                        "linux_network"
-                    ),
+                    "collector": ("linux_network"),
                     "error": "ip_not_found",
                 },
             )
@@ -74,106 +64,38 @@ def collect_interfaces() -> List[dict]:
     for interface in interfaces:
         addresses = []
 
-        for address in (
-            interface.get(
-                "addr_info"
-            )
-            or []
-        ):
+        for address in interface.get("addr_info") or []:
             addresses.append(
                 {
-                    "family": (
-                        address.get(
-                            "family"
-                        )
-                    ),
-                    "local": (
-                        address.get(
-                            "local"
-                        )
-                    ),
-                    "prefix_length": (
-                        address.get(
-                            "prefixlen"
-                        )
-                    ),
-                    "scope": (
-                        address.get(
-                            "scope"
-                        )
-                    ),
-                    "label": (
-                        address.get(
-                            "label"
-                        )
-                    ),
-                    "valid_lifetime": (
-                        address.get(
-                            "valid_life_time"
-                        )
-                    ),
-                    "preferred_lifetime": (
-                        address.get(
-                            "preferred_life_time"
-                        )
-                    ),
+                    "family": (address.get("family")),
+                    "local": (address.get("local")),
+                    "prefix_length": (address.get("prefixlen")),
+                    "scope": (address.get("scope")),
+                    "label": (address.get("label")),
+                    "valid_lifetime": (address.get("valid_life_time")),
+                    "preferred_lifetime": (address.get("preferred_life_time")),
                 }
             )
 
         payload = {
-            "interface_index": (
-                interface.get(
-                    "ifindex"
-                )
-            ),
-            "interface_name": (
-                interface.get(
-                    "ifname"
-                )
-            ),
+            "interface_index": (interface.get("ifindex")),
+            "interface_name": (interface.get("ifname")),
             "flags": interface.get(
                 "flags",
                 [],
             ),
-            "mtu": interface.get(
-                "mtu"
-            ),
-            "operational_state": (
-                interface.get(
-                    "operstate"
-                )
-            ),
-            "link_type": (
-                interface.get(
-                    "link_type"
-                )
-            ),
-            "mac_address": (
-                interface.get(
-                    "address"
-                )
-            ),
-            "broadcast_address": (
-                interface.get(
-                    "broadcast"
-                )
-            ),
+            "mtu": interface.get("mtu"),
+            "operational_state": (interface.get("operstate")),
+            "link_type": (interface.get("link_type")),
+            "mac_address": (interface.get("address")),
+            "broadcast_address": (interface.get("broadcast")),
             "addresses": addresses,
-            "statistics": (
-                interface.get(
-                    "stats64"
-                )
-                or interface.get(
-                    "stats"
-                )
-            ),
+            "statistics": (interface.get("stats64") or interface.get("stats")),
         }
 
         records.append(
             build_record(
-                signal_type=(
-                    "network_interface"
-                ),
+                signal_type=("network_interface"),
                 payload=payload,
             )
         )
@@ -201,52 +123,17 @@ def collect_routes() -> List[dict]:
     for route in routes:
         records.append(
             build_record(
-                signal_type=(
-                    "route_state"
-                ),
+                signal_type=("route_state"),
                 payload={
-                    "destination": (
-                        route.get("dst")
-                        or "default"
-                    ),
-                    "gateway": (
-                        route.get(
-                            "gateway"
-                        )
-                    ),
-                    "device": (
-                        route.get("dev")
-                    ),
-                    "source": (
-                        route.get(
-                            "prefsrc"
-                        )
-                    ),
-                    "protocol": (
-                        route.get(
-                            "protocol"
-                        )
-                    ),
-                    "scope": (
-                        route.get(
-                            "scope"
-                        )
-                    ),
-                    "metric": (
-                        route.get(
-                            "metric"
-                        )
-                    ),
-                    "table": (
-                        route.get(
-                            "table"
-                        )
-                    ),
-                    "route_type": (
-                        route.get(
-                            "type"
-                        )
-                    ),
+                    "destination": (route.get("dst") or "default"),
+                    "gateway": (route.get("gateway")),
+                    "device": (route.get("dev")),
+                    "source": (route.get("prefsrc")),
+                    "protocol": (route.get("protocol")),
+                    "scope": (route.get("scope")),
+                    "metric": (route.get("metric")),
+                    "table": (route.get("table")),
+                    "route_type": (route.get("type")),
                 },
             )
         )
@@ -255,9 +142,7 @@ def collect_routes() -> List[dict]:
 
 
 def collect_dns() -> List[dict]:
-    path = Path(
-        "/etc/resolv.conf"
-    )
+    path = Path("/etc/resolv.conf")
 
     nameservers = []
     search_domains = []
@@ -273,10 +158,7 @@ def collect_dns() -> List[dict]:
     for line in lines:
         stripped = line.strip()
 
-        if (
-            not stripped
-            or stripped.startswith("#")
-        ):
+        if not stripped or stripped.startswith("#"):
             continue
 
         parts = stripped.split()
@@ -284,35 +166,25 @@ def collect_dns() -> List[dict]:
         if not parts:
             continue
 
-        if (
-            parts[0] == "nameserver"
-            and len(parts) > 1
-        ):
-            nameservers.append(
-                parts[1]
-            )
+        if parts[0] == "nameserver" and len(parts) > 1:
+            nameservers.append(parts[1])
 
         if (
-            parts[0] in (
+            parts[0]
+            in (
                 "search",
                 "domain",
             )
             and len(parts) > 1
         ):
-            search_domains.extend(
-                parts[1:]
-            )
+            search_domains.extend(parts[1:])
 
     return [
         build_record(
             signal_type="dns_state",
             payload={
-                "nameservers": (
-                    nameservers
-                ),
-                "search_domains": (
-                    search_domains
-                ),
+                "nameservers": (nameservers),
+                "search_domains": (search_domains),
                 "source": str(path),
             },
         )
@@ -320,11 +192,7 @@ def collect_dns() -> List[dict]:
 
 
 def collect_network() -> List[dict]:
-    return (
-        collect_interfaces()
-        + collect_routes()
-        + collect_dns()
-    )
+    return collect_interfaces() + collect_routes() + collect_dns()
 
 
 if __name__ == "__main__":

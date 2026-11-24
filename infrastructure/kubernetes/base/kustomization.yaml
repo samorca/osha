@@ -1,0 +1,51 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+
+# -------------------------------------------------------------------
+# Namespace
+# -------------------------------------------------------------------
+
+namespace: osha
+
+
+# -------------------------------------------------------------------
+# OSHA Kubernetes base resources
+# -------------------------------------------------------------------
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - serviceaccount.yaml
+  - api-deployment.yaml
+  - api-service.yaml
+  - runtime-deployment.yaml
+  - worker-deployment.yaml
+
+
+# -------------------------------------------------------------------
+# Common labels
+# -------------------------------------------------------------------
+#
+# These labels identify every resource assembled
+# from this OSHA base.
+#
+# Workload-specific labels such as:
+#
+#     app.kubernetes.io/component
+#
+# remain defined inside their individual manifests.
+# -------------------------------------------------------------------
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: osha
+      app.kubernetes.io/instance: osha
+      app.kubernetes.io/part-of: osha
+      app.kubernetes.io/managed-by: kustomize
+
+      osha.atonixcorp.io/system: orchestration-self-healing-ai
+
+    includeSelectors: false
+    includeTemplates: true

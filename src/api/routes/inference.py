@@ -70,11 +70,7 @@ def operation_context(
         actor_id=actor_id(request),
         tenant_id=tenant_id(request),
         correlation_id=correlation_id(request),
-        client_host=(
-            client.host
-            if client is not None
-            else None
-        ),
+        client_host=(client.host if client is not None else None),
     )
 
 

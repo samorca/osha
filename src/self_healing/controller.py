@@ -47,26 +47,22 @@ ALLOWED_TRANSITIONS: Dict[
         HealingState.DETECTED.value,
         HealingState.FAILED.value,
     },
-
     HealingState.OBSERVING.value: {
         HealingState.DETECTED.value,
         HealingState.CLOSED.value,
         HealingState.FAILED.value,
     },
-
     HealingState.DETECTED.value: {
         HealingState.ANALYZING.value,
         HealingState.FAILED.value,
         HealingState.CLOSED.value,
     },
-
     HealingState.ANALYZING.value: {
         HealingState.DECIDING.value,
         HealingState.DEGRADED.value,
         HealingState.ESCALATED.value,
         HealingState.FAILED.value,
     },
-
     HealingState.DECIDING.value: {
         HealingState.AWAITING_APPROVAL.value,
         HealingState.REMEDIATING.value,
@@ -74,21 +70,18 @@ ALLOWED_TRANSITIONS: Dict[
         HealingState.ESCALATED.value,
         HealingState.FAILED.value,
     },
-
     HealingState.AWAITING_APPROVAL.value: {
         HealingState.REMEDIATING.value,
         HealingState.OBSERVING.value,
         HealingState.ESCALATED.value,
         HealingState.FAILED.value,
     },
-
     HealingState.REMEDIATING.value: {
         HealingState.VERIFYING.value,
         HealingState.DEGRADED.value,
         HealingState.ESCALATED.value,
         HealingState.FAILED.value,
     },
-
     HealingState.VERIFYING.value: {
         HealingState.STABILIZING.value,
         HealingState.RECOVERED.value,
@@ -96,20 +89,17 @@ ALLOWED_TRANSITIONS: Dict[
         HealingState.ESCALATED.value,
         HealingState.FAILED.value,
     },
-
     HealingState.STABILIZING.value: {
         HealingState.RECOVERED.value,
         HealingState.DEGRADED.value,
         HealingState.ESCALATED.value,
         HealingState.FAILED.value,
     },
-
     HealingState.RECOVERED.value: {
         HealingState.CLOSED.value,
         HealingState.DEGRADED.value,
         HealingState.OBSERVING.value,
     },
-
     HealingState.DEGRADED.value: {
         HealingState.OBSERVING.value,
         HealingState.ANALYZING.value,
@@ -117,19 +107,16 @@ ALLOWED_TRANSITIONS: Dict[
         HealingState.ESCALATED.value,
         HealingState.FAILED.value,
     },
-
     HealingState.ESCALATED.value: {
         HealingState.OBSERVING.value,
         HealingState.ANALYZING.value,
         HealingState.CLOSED.value,
         HealingState.FAILED.value,
     },
-
     HealingState.FAILED.value: {
         HealingState.ESCALATED.value,
         HealingState.CLOSED.value,
     },
-
     HealingState.CLOSED.value: set(),
 }
 
@@ -137,6 +124,7 @@ ALLOWED_TRANSITIONS: Dict[
 # ---------------------------------------------------------------
 # Transition record
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class StateTransition:
@@ -150,40 +138,26 @@ class StateTransition:
 
     reason: str
 
-    occurred_at: str = field(
-        default_factory=utc_now
-    )
+    occurred_at: str = field(default_factory=utc_now)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def to_dict(
         self,
     ) -> Dict[str, Any]:
         return {
-            "previous_state": (
-                self.previous_state
-            ),
-            "next_state": (
-                self.next_state
-            ),
+            "previous_state": (self.previous_state),
+            "next_state": (self.next_state),
             "reason": self.reason,
-            "occurred_at": (
-                self.occurred_at
-            ),
-            "attributes": dict(
-                self.attributes
-            ),
+            "occurred_at": (self.occurred_at),
+            "attributes": dict(self.attributes),
         }
 
 
-class InvalidTransitionError(
-    ValueError
-):
+class InvalidTransitionError(ValueError):
     """
     Raised when a state transition violates the
     self-healing state machine.
@@ -194,13 +168,11 @@ class InvalidTransitionError(
 # State helpers
 # ---------------------------------------------------------------
 
+
 def valid_state(
     value: str,
 ) -> bool:
-    return value in {
-        state.value
-        for state in HealingState
-    }
+    return value in {state.value for state in HealingState}
 
 
 def can_transition(
@@ -210,12 +182,9 @@ def can_transition(
     if current_state == next_state:
         return True
 
-    return (
-        next_state
-        in ALLOWED_TRANSITIONS.get(
-            current_state,
-            set(),
-        )
+    return next_state in ALLOWED_TRANSITIONS.get(
+        current_state,
+        set(),
     )
 
 
@@ -224,9 +193,7 @@ def transition(
     next_state: str,
     *,
     reason: str,
-    attributes: Optional[
-        Dict[str, Any]
-    ] = None,
+    attributes: Optional[Dict[str, Any]] = None,
 ) -> StateTransition:
     """
     Move one HealingSession through the lifecycle.
@@ -236,84 +203,47 @@ def transition(
 
     session.finalize()
 
-    if not valid_state(
-        next_state
-    ):
-        raise InvalidTransitionError(
-            "Unknown healing state: "
-            f"{next_state}"
-        )
+    if not valid_state(next_state):
+        raise InvalidTransitionError(f"Unknown healing state: {next_state}")
 
-    previous_state = (
-        session.state
-    )
+    previous_state = session.state
 
     if not can_transition(
         previous_state,
         next_state,
     ):
         raise InvalidTransitionError(
-            "Invalid self-healing "
-            "transition: "
-            f"{previous_state} -> "
-            f"{next_state}"
+            f"Invalid self-healing transition: {previous_state} -> {next_state}"
         )
 
     event = StateTransition(
-        previous_state=(
-            previous_state
-        ),
-        next_state=(
-            next_state
-        ),
+        previous_state=(previous_state),
+        next_state=(next_state),
         reason=reason,
-        attributes=dict(
-            attributes
-            or {}
-        ),
+        attributes=dict(attributes or {}),
     )
 
-    session.state = (
-        next_state
-    )
+    session.state = next_state
 
-    session.updated_at = (
-        utc_now()
-    )
+    session.updated_at = utc_now()
 
     history = session.attributes.setdefault(
         "state_transitions",
         [],
     )
 
-    history.append(
-        event.to_dict()
-    )
+    history.append(event.to_dict())
 
     session.evidence.append(
         HealingEvidence(
-            evidence_type=(
-                "state_transition"
-            ),
-            description=(
-                f"{previous_state} -> "
-                f"{next_state}: "
-                f"{reason}"
-            ),
+            evidence_type=("state_transition"),
+            description=(f"{previous_state} -> {next_state}: {reason}"),
             score=1.0,
-            source_id=(
-                session.session_id
-            ),
-            resource_ids=list(
-                session.resource_ids
-            ),
+            source_id=(session.session_id),
+            resource_ids=list(session.resource_ids),
             attributes={
-                "previous_state": (
-                    previous_state
-                ),
-                "next_state": (
-                    next_state
-                ),
+                "previous_state": (previous_state),
+                "next_state": (next_state),
             },
         )
     )
@@ -327,28 +257,17 @@ def transition(
 # Session creation
 # ---------------------------------------------------------------
 
+
 def create_session(
     *,
     environment_id: str,
     incident_id: str,
-    decision_id: Optional[
-        str
-    ] = None,
-    plan_id: Optional[
-        str
-    ] = None,
-    action_id: Optional[
-        str
-    ] = None,
-    resource_ids: Iterable[
-        str
-    ] = (),
-    service_ids: Iterable[
-        str
-    ] = (),
-    attributes: Optional[
-        Dict[str, Any]
-    ] = None,
+    decision_id: Optional[str] = None,
+    plan_id: Optional[str] = None,
+    action_id: Optional[str] = None,
+    resource_ids: Iterable[str] = (),
+    service_ids: Iterable[str] = (),
+    attributes: Optional[Dict[str, Any]] = None,
 ) -> HealingSession:
     """
     Create a self-healing session.
@@ -357,23 +276,15 @@ def create_session(
     performs no infrastructure operation.
     """
 
-    environment = (
-        environment_id.strip()
-    )
+    environment = environment_id.strip()
 
-    incident = (
-        incident_id.strip()
-    )
+    incident = incident_id.strip()
 
     if not environment:
-        raise ValueError(
-            "environment_id is required"
-        )
+        raise ValueError("environment_id is required")
 
     if not incident:
-        raise ValueError(
-            "incident_id is required"
-        )
+        raise ValueError("incident_id is required")
 
     return HealingSession(
         environment_id=environment,
@@ -381,22 +292,16 @@ def create_session(
         decision_id=decision_id,
         plan_id=plan_id,
         action_id=action_id,
-        resource_ids=list(
-            resource_ids
-        ),
-        service_ids=list(
-            service_ids
-        ),
-        attributes=dict(
-            attributes
-            or {}
-        ),
+        resource_ids=list(resource_ids),
+        service_ids=list(service_ids),
+        attributes=dict(attributes or {}),
     ).finalize()
 
 
 # ---------------------------------------------------------------
 # Remediation synchronization
 # ---------------------------------------------------------------
+
 
 def attach_remediation(
     session: HealingSession,
@@ -413,92 +318,42 @@ def attach_remediation(
 
     remediation.finalize()
 
-    remediation_id = (
-        remediation.remediation_id
-    )
+    remediation_id = remediation.remediation_id
 
-    session.remediation_id = (
-        remediation_id
-    )
+    session.remediation_id = remediation_id
 
     if not session.action_id:
-        session.action_id = (
-            remediation.request.
-            action_id
-        )
+        session.action_id = remediation.request.action_id
 
     session.evidence.append(
         HealingEvidence(
-            evidence_type=(
-                "remediation"
-            ),
+            evidence_type=("remediation"),
             description=(
-                "Remediation lifecycle "
-                f"reported status "
-                f"{remediation.status}."
+                f"Remediation lifecycle reported status {remediation.status}."
             ),
-            score=(
-                1.0
-                if remediation.execution.
-                success
-                else 0.0
-            ),
-            source_id=(
-                remediation_id
-            ),
-            resource_ids=list(
-                remediation.request.
-                target_resource_ids
-            ),
+            score=(1.0 if remediation.execution.success else 0.0),
+            source_id=(remediation_id),
+            resource_ids=list(remediation.request.target_resource_ids),
             attributes={
-                "remediation_status": (
-                    remediation.status
-                ),
-                "execution_status": (
-                    remediation.execution.
-                    status
-                ),
-                "verification_status": (
-                    remediation.verification.
-                    status
-                ),
-                "rollback_status": (
-                    remediation.rollback.
-                    status
-                ),
-                "changed": (
-                    remediation.execution.
-                    changed
-                ),
-                "dry_run": (
-                    remediation.request.mode
-                    == "dry_run"
-                ),
+                "remediation_status": (remediation.status),
+                "execution_status": (remediation.execution.status),
+                "verification_status": (remediation.verification.status),
+                "rollback_status": (remediation.rollback.status),
+                "changed": (remediation.execution.changed),
+                "dry_run": (remediation.request.mode == "dry_run"),
             },
         )
     )
 
-    session.attributes[
-        "remediation_status"
-    ] = remediation.status
+    session.attributes["remediation_status"] = remediation.status
 
-    session.attributes[
-        "remediation_execution_status"
-    ] = (
-        remediation.execution.status
-    )
+    session.attributes["remediation_execution_status"] = remediation.execution.status
 
-    session.attributes[
-        "remediation_verification_status"
-    ] = (
+    session.attributes["remediation_verification_status"] = (
         remediation.verification.status
     )
 
-    session.attributes[
-        "remediation_rollback_status"
-    ] = (
-        remediation.rollback.status
-    )
+    session.attributes["remediation_rollback_status"] = remediation.rollback.status
 
     return session.finalize()
 
@@ -506,6 +361,7 @@ def attach_remediation(
 # ---------------------------------------------------------------
 # Remediation -> healing state mapping
 # ---------------------------------------------------------------
+
 
 def state_from_remediation(
     remediation: RemediationResult,
@@ -522,55 +378,27 @@ def state_from_remediation(
 
     remediation.finalize()
 
-    if (
-        remediation.status
-        == RemediationStatus.
-        BLOCKED.value
-    ):
+    if remediation.status == RemediationStatus.BLOCKED.value:
         return (
-            HealingState.
-            ESCALATED.value,
-            (
-                "Remediation was blocked "
-                "before execution."
-            ),
+            HealingState.ESCALATED.value,
+            ("Remediation was blocked before execution."),
         )
 
-    if (
-        remediation.status
-        == RemediationStatus.
-        FAILED.value
-    ):
+    if remediation.status == RemediationStatus.FAILED.value:
         return (
-            HealingState.
-            FAILED.value,
-            (
-                "Remediation failed."
-            ),
+            HealingState.FAILED.value,
+            ("Remediation failed."),
         )
 
-    if (
-        remediation.request.mode
-        == "dry_run"
-    ):
+    if remediation.request.mode == "dry_run":
         return (
-            HealingState.
-            OBSERVING.value,
-            (
-                "Dry-run remediation "
-                "completed without changing "
-                "infrastructure."
-            ),
+            HealingState.OBSERVING.value,
+            ("Dry-run remediation completed without changing infrastructure."),
         )
 
-    if (
-        remediation.verification.status
-        == VerificationStatus.
-        PASSED.value
-    ):
+    if remediation.verification.status == VerificationStatus.PASSED.value:
         return (
-            HealingState.
-            STABILIZING.value,
+            HealingState.STABILIZING.value,
             (
                 "Initial remediation "
                 "verification passed; "
@@ -579,42 +407,21 @@ def state_from_remediation(
             ),
         )
 
-    if (
-        remediation.verification.status
-        == VerificationStatus.
-        FAILED.value
-    ):
-        if (
-            remediation.rollback.status
-            == RollbackStatus.
-            SUCCEEDED.value
-        ):
+    if remediation.verification.status == VerificationStatus.FAILED.value:
+        if remediation.rollback.status == RollbackStatus.SUCCEEDED.value:
             return (
-                HealingState.
-                DEGRADED.value,
-                (
-                    "Recovery verification "
-                    "failed and remediation "
-                    "was rolled back."
-                ),
+                HealingState.DEGRADED.value,
+                ("Recovery verification failed and remediation was rolled back."),
             )
 
         return (
-            HealingState.
-            ESCALATED.value,
-            (
-                "Recovery verification "
-                "failed."
-            ),
+            HealingState.ESCALATED.value,
+            ("Recovery verification failed."),
         )
 
     return (
-        HealingState.
-        VERIFYING.value,
-        (
-            "Recovery has not yet been "
-            "conclusively established."
-        ),
+        HealingState.VERIFYING.value,
+        ("Recovery has not yet been conclusively established."),
     )
 
 
@@ -637,11 +444,7 @@ def synchronize_remediation(
         remediation,
     )
 
-    target, reason = (
-        state_from_remediation(
-            remediation
-        )
-    )
+    target, reason = state_from_remediation(remediation)
 
     if session.state == target:
         return session.finalize()
@@ -655,10 +458,7 @@ def synchronize_remediation(
             target,
             reason=reason,
             attributes={
-                "remediation_id": (
-                    remediation.
-                      remediation_id
-                ),
+                "remediation_id": (remediation.remediation_id),
             },
         )
 
@@ -680,6 +480,7 @@ def synchronize_remediation(
 # Recovery synchronization
 # ---------------------------------------------------------------
 
+
 def update_recovery(
     session: HealingSession,
     assessment: RecoveryAssessment,
@@ -693,23 +494,12 @@ def update_recovery(
 
     assessment.finalize()
 
-    session.recovery = (
-        assessment
-    )
+    session.recovery = assessment
 
-    session.evidence.extend(
-      assessment.evidence
-    )
+    session.evidence.extend(assessment.evidence)
 
-    if (
-        assessment.status
-        == RecoveryStatus.
-        RECOVERED.value
-    ):
-        target = (
-            HealingState.
-            STABILIZING.value
-        )
+    if assessment.status == RecoveryStatus.RECOVERED.value:
+        target = HealingState.STABILIZING.value
 
         reason = (
             "Recovery evidence indicates "
@@ -717,50 +507,23 @@ def update_recovery(
             "stability monitoring begins."
         )
 
-    elif (
-        assessment.status
-        == RecoveryStatus.
-        PARTIAL.value
-    ):
-        target = (
-            HealingState.
-            DEGRADED.value
-        )
+    elif assessment.status == RecoveryStatus.PARTIAL.value:
+        target = HealingState.DEGRADED.value
 
-        reason = (
-            "Only partial recovery was "
-            "observed."
-        )
+        reason = "Only partial recovery was observed."
 
-    elif (
-        assessment.status
-        in {
-            RecoveryStatus.
-            FAILED.value,
-            RecoveryStatus.
-            UNSTABLE.value,
-        }
-    ):
-        target = (
-            HealingState.
-            ESCALATED.value
-        )
+    elif assessment.status in {
+        RecoveryStatus.FAILED.value,
+        RecoveryStatus.UNSTABLE.value,
+    }:
+        target = HealingState.ESCALATED.value
 
-        reason = (
-            "Recovery evidence indicates "
-            "failure or instability."
-        )
+        reason = "Recovery evidence indicates failure or instability."
 
     else:
-        target = (
-            HealingState.
-            VERIFYING.value
-        )
+        target = HealingState.VERIFYING.value
 
-        reason = (
-            "Recovery remains under "
-            "observation."
-        )
+        reason = "Recovery remains under observation."
 
     if can_transition(
         session.state,
@@ -790,6 +553,7 @@ def update_recovery(
 # Stability synchronization
 # ---------------------------------------------------------------
 
+
 def update_stability(
     session: HealingSession,
     assessment: StabilityAssessment,
@@ -800,69 +564,29 @@ def update_stability(
 
     assessment.finalize()
 
-    session.stability = (
-        assessment
-    )
+    session.stability = assessment
 
-    session.evidence.extend(
-        assessment.evidence
-    )
+    session.evidence.extend(assessment.evidence)
 
-    if (
-        assessment.status
-        == StabilityStatus.
-        STABLE.value
-    ):
-        target = (
-            HealingState.
-            RECOVERED.value
-        )
+    if assessment.status == StabilityStatus.STABLE.value:
+        target = HealingState.RECOVERED.value
 
-        reason = (
-            "Recovery remained stable "
-            "through the observation window."
-        )
+        reason = "Recovery remained stable through the observation window."
 
-    elif (
-        assessment.status
-        == StabilityStatus.
-        REGRESSED.value
-    ):
-        target = (
-            HealingState.
-            DEGRADED.value
-        )
+    elif assessment.status == StabilityStatus.REGRESSED.value:
+        target = HealingState.DEGRADED.value
 
-        reason = (
-            "Infrastructure regressed "
-            "after apparent recovery."
-        )
+        reason = "Infrastructure regressed after apparent recovery."
 
-    elif (
-        assessment.status
-        == StabilityStatus.
-        UNSTABLE.value
-    ):
-        target = (
-            HealingState.
-            ESCALATED.value
-        )
+    elif assessment.status == StabilityStatus.UNSTABLE.value:
+        target = HealingState.ESCALATED.value
 
-        reason = (
-            "Infrastructure remains "
-            "unstable."
-        )
+        reason = "Infrastructure remains unstable."
 
     else:
-        target = (
-            HealingState.
-            STABILIZING.value
-        )
+        target = HealingState.STABILIZING.value
 
-        reason = (
-            "Stability observation is "
-            "still in progress."
-        )
+        reason = "Stability observation is still in progress."
 
     if can_transition(
         session.state,
@@ -892,14 +616,13 @@ def update_stability(
 # Escalation
 # ---------------------------------------------------------------
 
+
 def escalate(
     session: HealingSession,
     *,
     level: str,
     reason: str,
-    required_roles: Iterable[
-        str
-    ] = (),
+    required_roles: Iterable[str] = (),
 ) -> HealingSession:
     """
     Mark escalation requirements.
@@ -908,47 +631,22 @@ def escalate(
     contact an operator.
     """
 
-    if level not in {
-        item.value
-        for item
-        in EscalationLevel
-    }:
-        raise ValueError(
-            "Unknown escalation level: "
-            f"{level}"
-        )
+    if level not in {item.value for item in EscalationLevel}:
+        raise ValueError(f"Unknown escalation level: {level}")
 
-    session.escalation.level = (
-        level
-    )
+    session.escalation.level = level
 
-    session.escalation.required = (
-        level
-        != EscalationLevel.
-        NONE.value
-    )
+    session.escalation.required = level != EscalationLevel.NONE.value
 
-    session.escalation.reason = (
-        reason
-    )
+    session.escalation.reason = reason
 
-    session.escalation.required_roles = (
-        list(
-            required_roles
-        )
-    )
+    session.escalation.required_roles = list(required_roles)
 
-    session.escalation.incident_id = (
-        session.incident_id
-    )
+    session.escalation.incident_id = session.incident_id
 
-    session.escalation.action_id = (
-        session.action_id
-    )
+    session.escalation.action_id = session.action_id
 
-    session.escalation.remediation_id = (
-        session.remediation_id
-    )
+    session.escalation.remediation_id = session.remediation_id
 
     session.escalation.finalize()
 
@@ -956,42 +654,23 @@ def escalate(
         HealingEvidence(
             evidence_type="escalation",
             description=reason,
-            score=(
-                1.0
-                if session.escalation.
-                required
-                else 0.0
-            ),
-            source_id=(
-                session.escalation.
-                escalation_id
-            ),
-            resource_ids=list(
-                session.resource_ids
-            ),
+            score=(1.0 if session.escalation.required else 0.0),
+            source_id=(session.escalation.escalation_id),
+            resource_ids=list(session.resource_ids),
             attributes={
                 "level": level,
-                "required_roles": (
-                    list(
-                        required_roles
-                    )
-                ),
+                "required_roles": (list(required_roles)),
             },
         )
     )
 
-    if (
-        session.escalation.required
-        and can_transition(
-            session.state,
-            HealingState.
-            ESCALATED.value,
-        )
+    if session.escalation.required and can_transition(
+        session.state,
+        HealingState.ESCALATED.value,
     ):
         transition(
             session,
-            HealingState.
-            ESCALATED.value,
+            HealingState.ESCALATED.value,
             reason=reason,
         )
 
@@ -1001,6 +680,7 @@ def escalate(
 # ---------------------------------------------------------------
 # Closure
 # ---------------------------------------------------------------
+
 
 def can_close(
     session: HealingSession,
@@ -1018,96 +698,53 @@ def can_close(
 
     session.finalize()
 
-    if (
-        session.state
-        == HealingState.
-        RECOVERED.value
-    ):
-        if (
-            session.recovery.status
-            != RecoveryStatus.
-            RECOVERED.value
-        ):
+    if session.state == HealingState.RECOVERED.value:
+        if session.recovery.status != RecoveryStatus.RECOVERED.value:
             return (
                 False,
-                (
-                    "Recovery has not been "
-                    "recorded as recovered."
-                ),
+                ("Recovery has not been recorded as recovered."),
             )
 
-        if (
-            session.stability.status
-            != StabilityStatus.
-            STABLE.value
-        ):
+        if session.stability.status != StabilityStatus.STABLE.value:
             return (
                 False,
-                (
-                    "Recovery has not been "
-                    "shown to remain stable."
-                ),
+                ("Recovery has not been shown to remain stable."),
             )
 
         return (
             True,
-            (
-                "Recovery and stability "
-                "requirements are satisfied."
-            ),
+            ("Recovery and stability requirements are satisfied."),
         )
 
-    if (
-        session.state
-        in {
-            HealingState.
-            ESCALATED.value,
-            HealingState.
-            FAILED.value,
-        }
-    ):
+    if session.state in {
+        HealingState.ESCALATED.value,
+        HealingState.FAILED.value,
+    }:
         return (
             True,
-            (
-                "Session can be closed after "
-                "handoff/escalation."
-            ),
+            ("Session can be closed after handoff/escalation."),
         )
 
     return (
         False,
-        (
-            "Session lifecycle is not ready "
-            "for closure."
-        ),
+        ("Session lifecycle is not ready for closure."),
     )
 
 
 def close_session(
     session: HealingSession,
     *,
-    reason: Optional[
-        str
-    ] = None,
+    reason: Optional[str] = None,
 ) -> HealingSession:
-    allowed, explanation = (
-        can_close(
-            session
-        )
-    )
+    allowed, explanation = can_close(session)
 
     if not allowed:
-        raise InvalidTransitionError(
-            explanation
-        )
+        raise InvalidTransitionError(explanation)
 
     transition(
         session,
         HealingState.CLOSED.value,
-        reason=(
-            reason
-            or explanation
-        ),
+        reason=(reason or explanation),
     )
 
     return session.finalize()
@@ -1116,6 +753,7 @@ def close_session(
 # ---------------------------------------------------------------
 # Controller
 # ---------------------------------------------------------------
+
 
 class SelfHealingController:
     """
@@ -1133,36 +771,20 @@ class SelfHealingController:
         *,
         environment_id: str,
         incident_id: str,
-        decision_id: Optional[
-            str
-        ] = None,
-        plan_id: Optional[
-            str
-        ] = None,
-        action_id: Optional[
-            str
-        ] = None,
-        resource_ids: Iterable[
-            str
-        ] = (),
-        service_ids: Iterable[
-            str
-        ] = (),
+        decision_id: Optional[str] = None,
+        plan_id: Optional[str] = None,
+        action_id: Optional[str] = None,
+        resource_ids: Iterable[str] = (),
+        service_ids: Iterable[str] = (),
     ) -> HealingSession:
         return create_session(
-            environment_id=(
-                environment_id
-            ),
+            environment_id=(environment_id),
             incident_id=incident_id,
             decision_id=decision_id,
             plan_id=plan_id,
             action_id=action_id,
-            resource_ids=(
-                resource_ids
-            ),
-            service_ids=(
-                service_ids
-            ),
+            resource_ids=(resource_ids),
+            service_ids=(service_ids),
         )
 
     def transition(
@@ -1214,26 +836,20 @@ class SelfHealingController:
         *,
         level: str,
         reason: str,
-        required_roles: Iterable[
-            str
-        ] = (),
+        required_roles: Iterable[str] = (),
     ) -> HealingSession:
         return escalate(
             session,
             level=level,
             reason=reason,
-            required_roles=(
-                required_roles
-            ),
+            required_roles=(required_roles),
         )
 
     def close(
         self,
         session: HealingSession,
         *,
-        reason: Optional[
-            str
-        ] = None,
+        reason: Optional[str] = None,
     ) -> HealingSession:
         return close_session(
             session,

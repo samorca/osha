@@ -46,9 +46,7 @@ from src.api.services.incidents import (
 )
 
 
-class IncidentStatusUpdateRequest(
-    APIInputModel
-):
+class IncidentStatusUpdateRequest(APIInputModel):
     status: IncidentStatusAPI
 
     expected_version: int = Field(
@@ -118,11 +116,7 @@ async def list_incidents(
     descending: bool = True,
 ) -> IncidentListResponse:
     return await service_api.list_incidents(
-        status=(
-            incident_status.value
-            if incident_status is not None
-            else None
-        ),
+        status=(incident_status.value if incident_status is not None else None),
         severity=severity,
         service=service,
         environment=environment,
@@ -191,9 +185,7 @@ async def update_incident_status(
     return await service.update_status(
         incident_id,
         status_value,
-        expected_version=(
-            payload.expected_version
-        ),
+        expected_version=(payload.expected_version),
         context=operation_context(request),
     )
 

@@ -44,6 +44,7 @@ DATABASE_SCHEMA_VERSION = "1"
 # Database backend
 # ---------------------------------------------------------------
 
+
 class DatabaseBackend(
     str,
     Enum,
@@ -60,6 +61,7 @@ class DatabaseBackend(
 # ---------------------------------------------------------------
 # Connection state
 # ---------------------------------------------------------------
+
 
 class ConnectionState(
     str,
@@ -84,6 +86,7 @@ class ConnectionState(
 # Transaction state
 # ---------------------------------------------------------------
 
+
 class TransactionState(
     str,
     Enum,
@@ -102,6 +105,7 @@ class TransactionState(
 # ---------------------------------------------------------------
 # Persistence operation
 # ---------------------------------------------------------------
+
 
 class PersistenceOperation(
     str,
@@ -122,6 +126,7 @@ class PersistenceOperation(
 # Migration state
 # ---------------------------------------------------------------
 
+
 class MigrationState(
     str,
     Enum,
@@ -139,6 +144,7 @@ class MigrationState(
 # Database identity
 # ---------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class DatabaseIdentity:
     """
@@ -153,40 +159,22 @@ class DatabaseIdentity:
 
     environment_id: str
 
-    host: Optional[
-        str
-    ] = None
+    host: Optional[str] = None
 
-    port: Optional[
-        int
-    ] = None
+    port: Optional[int] = None
 
-    namespace: Optional[
-        str
-    ] = None
+    namespace: Optional[str] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
     ) -> "DatabaseIdentity":
-        if (
-            self.backend
-            not in {
-                item.value
-                for item
-                in DatabaseBackend
-            }
-        ):
-            raise ValueError(
-                "Unknown database backend: "
-                f"{self.backend}"
-            )
+        if self.backend not in {item.value for item in DatabaseBackend}:
+            raise ValueError(f"Unknown database backend: {self.backend}")
 
         required_string(
             self.database,
@@ -194,9 +182,7 @@ class DatabaseIdentity:
             maximum_length=256,
         )
 
-        environment_id(
-            self.environment_id
-        )
+        environment_id(self.environment_id)
 
         if self.host is not None:
             required_string(
@@ -205,20 +191,8 @@ class DatabaseIdentity:
                 maximum_length=512,
             )
 
-        if (
-            self.port is not None
-            and not (
-                1
-                <= int(
-                    self.port
-                )
-                <= 65535
-            )
-        ):
-            raise ValueError(
-                "database port must be "
-                "between 1 and 65535"
-            )
+        if self.port is not None and not (1 <= int(self.port) <= 65535):
+            raise ValueError("database port must be between 1 and 65535")
 
         return self
 
@@ -230,25 +204,18 @@ class DatabaseIdentity:
         return {
             "backend": self.backend,
             "database": self.database,
-            "environment_id": (
-                self.environment_id
-            ),
+            "environment_id": (self.environment_id),
             "host": self.host,
             "port": self.port,
-            "namespace": (
-                self.namespace
-            ),
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
+            "namespace": (self.namespace),
+            "attributes": (to_json_safe(self.attributes)),
         }
 
 
 # ---------------------------------------------------------------
 # Connection status
 # ---------------------------------------------------------------
+
 
 @dataclass
 class ConnectionStatus:
@@ -262,65 +229,35 @@ class ConnectionStatus:
 
     identity: DatabaseIdentity
 
-    state: str = (
-        ConnectionState.CREATED.value
-    )
+    state: str = ConnectionState.CREATED.value
 
-    connection_id: Optional[
-        str
-    ] = None
+    connection_id: Optional[str] = None
 
-    opened_at: Optional[
-        str
-    ] = None
+    opened_at: Optional[str] = None
 
-    closed_at: Optional[
-        str
-    ] = None
+    closed_at: Optional[str] = None
 
-    last_error_type: Optional[
-        str
-    ] = None
+    last_error_type: Optional[str] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    updated_at: str = field(
-        default_factory=utc_now
-    )
+    updated_at: str = field(default_factory=utc_now)
 
     def finalize(
         self,
     ) -> "ConnectionStatus":
         self.identity.finalize()
 
-        if (
-            self.state
-            not in {
-                item.value
-                for item
-                in ConnectionState
-            }
-        ):
-            raise ValueError(
-                "Unknown connection state: "
-                f"{self.state}"
-            )
+        if self.state not in {item.value for item in ConnectionState}:
+            raise ValueError(f"Unknown connection state: {self.state}")
 
         if not self.connection_id:
-            self.connection_id = (
-                random_id(
-                    "database:connection"
-                )
-            )
+            self.connection_id = random_id("database:connection")
 
-        self.updated_at = (
-            utc_now()
-        )
+        self.updated_at = utc_now()
 
         return self
 
@@ -330,30 +267,14 @@ class ConnectionStatus:
         self.finalize()
 
         return {
-            "connection_id": (
-                self.connection_id
-            ),
-            "identity": (
-                self.identity.to_dict()
-            ),
+            "connection_id": (self.connection_id),
+            "identity": (self.identity.to_dict()),
             "state": self.state,
-            "opened_at": (
-                self.opened_at
-            ),
-            "closed_at": (
-                self.closed_at
-            ),
-            "last_error_type": (
-                self.last_error_type
-            ),
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
-            "updated_at": (
-                self.updated_at
-            ),
+            "opened_at": (self.opened_at),
+            "closed_at": (self.closed_at),
+            "last_error_type": (self.last_error_type),
+            "attributes": (to_json_safe(self.attributes)),
+            "updated_at": (self.updated_at),
         }
 
 
@@ -361,40 +282,27 @@ class ConnectionStatus:
 # Transaction record
 # ---------------------------------------------------------------
 
+
 @dataclass
 class TransactionRecord:
     connection_id: str
 
-    state: str = (
-        TransactionState.CREATED.value
-    )
+    state: str = TransactionState.CREATED.value
 
-    transaction_id: Optional[
-        str
-    ] = None
+    transaction_id: Optional[str] = None
 
-    started_at: Optional[
-        str
-    ] = None
+    started_at: Optional[str] = None
 
-    completed_at: Optional[
-        str
-    ] = None
+    completed_at: Optional[str] = None
 
-    rollback_reason: Optional[
-        str
-    ] = None
+    rollback_reason: Optional[str] = None
 
-    error_type: Optional[
-        str
-    ] = None
+    error_type: Optional[str] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
@@ -405,25 +313,11 @@ class TransactionRecord:
             maximum_length=512,
         )
 
-        if (
-            self.state
-            not in {
-                item.value
-                for item
-                in TransactionState
-            }
-        ):
-            raise ValueError(
-                "Unknown transaction "
-                f"state: {self.state}"
-            )
+        if self.state not in {item.value for item in TransactionState}:
+            raise ValueError(f"Unknown transaction state: {self.state}")
 
         if not self.transaction_id:
-            self.transaction_id = (
-                random_id(
-                    "database:transaction"
-                )
-            )
+            self.transaction_id = random_id("database:transaction")
 
         return self
 
@@ -433,36 +327,21 @@ class TransactionRecord:
         self.finalize()
 
         return {
-            "transaction_id": (
-                self.transaction_id
-            ),
-            "connection_id": (
-                self.connection_id
-            ),
+            "transaction_id": (self.transaction_id),
+            "connection_id": (self.connection_id),
             "state": self.state,
-            "started_at": (
-                self.started_at
-            ),
-            "completed_at": (
-                self.completed_at
-            ),
-            "rollback_reason": (
-                self.rollback_reason
-            ),
-            "error_type": (
-                self.error_type
-            ),
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
+            "started_at": (self.started_at),
+            "completed_at": (self.completed_at),
+            "rollback_reason": (self.rollback_reason),
+            "error_type": (self.error_type),
+            "attributes": (to_json_safe(self.attributes)),
         }
 
 
 # ---------------------------------------------------------------
 # Generic persistence metadata
 # ---------------------------------------------------------------
+
 
 @dataclass
 class PersistenceRecord:
@@ -484,26 +363,16 @@ class PersistenceRecord:
 
     version: int = 1
 
-    reference_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    reference_ids: List[str] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    created_at: str = field(
-        default_factory=utc_now
-    )
+    created_at: str = field(default_factory=utc_now)
 
-    updated_at: str = field(
-        default_factory=utc_now
-    )
+    updated_at: str = field(default_factory=utc_now)
 
     def finalize(
         self,
@@ -526,26 +395,16 @@ class PersistenceRecord:
             maximum_length=512,
         )
 
-        environment_id(
-            self.environment_id
-        )
+        environment_id(self.environment_id)
 
         self.version = max(
             1,
-            int(
-                self.version
-            ),
+            int(self.version),
         )
 
-        self.reference_ids = (
-            unique_strings(
-                self.reference_ids
-            )
-        )
+        self.reference_ids = unique_strings(self.reference_ids)
 
-        self.updated_at = (
-            utc_now()
-        )
+        self.updated_at = utc_now()
 
         return self
 
@@ -555,43 +414,22 @@ class PersistenceRecord:
         self.finalize()
 
         return {
-            "repository": (
-                self.repository
-            ),
-            "record_type": (
-                self.record_type
-            ),
-            "record_id": (
-                self.record_id
-            ),
-            "environment_id": (
-                self.environment_id
-            ),
-            "version": (
-                self.version
-            ),
-            "reference_ids": (
-                list(
-                    self.reference_ids
-                )
-            ),
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
-            "created_at": (
-                self.created_at
-            ),
-            "updated_at": (
-                self.updated_at
-            ),
+            "repository": (self.repository),
+            "record_type": (self.record_type),
+            "record_id": (self.record_id),
+            "environment_id": (self.environment_id),
+            "version": (self.version),
+            "reference_ids": (list(self.reference_ids)),
+            "attributes": (to_json_safe(self.attributes)),
+            "created_at": (self.created_at),
+            "updated_at": (self.updated_at),
         }
 
 
 # ---------------------------------------------------------------
 # Generic persistence result
 # ---------------------------------------------------------------
+
 
 @dataclass
 class PersistenceResult:
@@ -601,46 +439,24 @@ class PersistenceResult:
 
     repository: str
 
-    record_id: Optional[
-        str
-    ] = None
+    record_id: Optional[str] = None
 
-    reference_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    reference_ids: List[str] = field(default_factory=list)
 
-    error_type: Optional[
-        str
-    ] = None
+    error_type: Optional[str] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    occurred_at: str = field(
-        default_factory=utc_now
-    )
+    occurred_at: str = field(default_factory=utc_now)
 
     def finalize(
         self,
     ) -> "PersistenceResult":
-        if (
-            self.operation
-            not in {
-                item.value
-                for item
-                in PersistenceOperation
-            }
-        ):
-            raise ValueError(
-                "Unknown persistence "
-                f"operation: {self.operation}"
-            )
+        if self.operation not in {item.value for item in PersistenceOperation}:
+            raise ValueError(f"Unknown persistence operation: {self.operation}")
 
         required_string(
             self.repository,
@@ -648,11 +464,7 @@ class PersistenceResult:
             maximum_length=256,
         )
 
-        self.reference_ids = (
-            unique_strings(
-                self.reference_ids
-            )
-        )
+        self.reference_ids = unique_strings(self.reference_ids)
 
         return self
 
@@ -662,38 +474,21 @@ class PersistenceResult:
         self.finalize()
 
         return {
-            "operation": (
-                self.operation
-            ),
+            "operation": (self.operation),
             "success": self.success,
-            "repository": (
-                self.repository
-            ),
-            "record_id": (
-                self.record_id
-            ),
-            "reference_ids": (
-                list(
-                    self.reference_ids
-                )
-            ),
-            "error_type": (
-                self.error_type
-            ),
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
-            "occurred_at": (
-                self.occurred_at
-            ),
+            "repository": (self.repository),
+            "record_id": (self.record_id),
+            "reference_ids": (list(self.reference_ids)),
+            "error_type": (self.error_type),
+            "attributes": (to_json_safe(self.attributes)),
+            "occurred_at": (self.occurred_at),
         }
 
 
 # ---------------------------------------------------------------
 # Migration record
 # ---------------------------------------------------------------
+
 
 @dataclass
 class MigrationRecord:
@@ -703,28 +498,18 @@ class MigrationRecord:
 
     version: int
 
-    state: str = (
-        MigrationState.PENDING.value
-    )
+    state: str = MigrationState.PENDING.value
 
-    checksum: Optional[
-        str
-    ] = None
+    checksum: Optional[str] = None
 
-    applied_at: Optional[
-        str
-    ] = None
+    applied_at: Optional[str] = None
 
-    error_type: Optional[
-        str
-    ] = None
+    error_type: Optional[str] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
@@ -743,23 +528,11 @@ class MigrationRecord:
 
         self.version = max(
             1,
-            int(
-                self.version
-            ),
+            int(self.version),
         )
 
-        if (
-            self.state
-            not in {
-                item.value
-                for item
-                in MigrationState
-            }
-        ):
-            raise ValueError(
-                "Unknown migration state: "
-                f"{self.state}"
-            )
+        if self.state not in {item.value for item in MigrationState}:
+            raise ValueError(f"Unknown migration state: {self.state}")
 
         return self
 
@@ -769,32 +542,21 @@ class MigrationRecord:
         self.finalize()
 
         return {
-            "migration_id": (
-                self.migration_id
-            ),
+            "migration_id": (self.migration_id),
             "name": self.name,
             "version": self.version,
             "state": self.state,
-            "checksum": (
-                self.checksum
-            ),
-            "applied_at": (
-                self.applied_at
-            ),
-            "error_type": (
-                self.error_type
-            ),
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
+            "checksum": (self.checksum),
+            "applied_at": (self.applied_at),
+            "error_type": (self.error_type),
+            "attributes": (to_json_safe(self.attributes)),
         }
 
 
 # ---------------------------------------------------------------
 # Database health
 # ---------------------------------------------------------------
+
 
 @dataclass
 class DatabaseHealth:
@@ -807,56 +569,32 @@ class DatabaseHealth:
 
     status: str
 
-    connection_id: Optional[
-        str
-    ] = None
+    connection_id: Optional[str] = None
 
-    latency_seconds: Optional[
-        float
-    ] = None
+    latency_seconds: Optional[float] = None
 
-    message: Optional[
-        str
-    ] = None
+    message: Optional[str] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    observed_at: str = field(
-        default_factory=utc_now
-    )
+    observed_at: str = field(default_factory=utc_now)
 
     def finalize(
         self,
     ) -> "DatabaseHealth":
-        if (
-            self.status
-            not in {
-                "unknown",
-                "healthy",
-                "degraded",
-                "unhealthy",
-            }
-        ):
-            raise ValueError(
-                "Unknown database health "
-                f"status: {self.status}"
-            )
+        if self.status not in {
+            "unknown",
+            "healthy",
+            "degraded",
+            "unhealthy",
+        }:
+            raise ValueError(f"Unknown database health status: {self.status}")
 
-        if (
-            self.latency_seconds
-            is not None
-            and self.latency_seconds
-            < 0
-        ):
-            raise ValueError(
-                "latency_seconds "
-                "must be >= 0"
-            )
+        if self.latency_seconds is not None and self.latency_seconds < 0:
+            raise ValueError("latency_seconds must be >= 0")
 
         return self
 
@@ -867,21 +605,11 @@ class DatabaseHealth:
 
         return {
             "status": self.status,
-            "connection_id": (
-                self.connection_id
-            ),
-            "latency_seconds": (
-                self.latency_seconds
-            ),
+            "connection_id": (self.connection_id),
+            "latency_seconds": (self.latency_seconds),
             "message": self.message,
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
-            "observed_at": (
-                self.observed_at
-            ),
+            "attributes": (to_json_safe(self.attributes)),
+            "observed_at": (self.observed_at),
         }
 
 
@@ -891,21 +619,16 @@ class DatabaseHealth:
 
 __all__ = [
     "DATABASE_SCHEMA_VERSION",
-
     "DatabaseBackend",
     "ConnectionState",
     "TransactionState",
     "PersistenceOperation",
     "MigrationState",
-
     "DatabaseIdentity",
     "ConnectionStatus",
     "TransactionRecord",
-
     "PersistenceRecord",
     "PersistenceResult",
-
     "MigrationRecord",
-
     "DatabaseHealth",
 ]

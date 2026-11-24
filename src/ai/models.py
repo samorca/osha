@@ -125,6 +125,7 @@ except ImportError:
 # Runtime containers
 # ------------------------------------------------------------------
 
+
 class EventRuntime:
     """
     Assets required for event-model inference.
@@ -138,30 +139,20 @@ class EventRuntime:
         labels: LabelMaps,
         max_length: int,
         device: Any,
-        accelerator_selection: (
-            AcceleratorSelection
-        ),
-        accelerator_manager: (
-            AcceleratorManager
-        ),
+        accelerator_selection: (AcceleratorSelection),
+        accelerator_manager: (AcceleratorManager),
     ) -> None:
         self.model = model
         self.vocabulary = vocabulary
         self.labels = labels
 
-        self.max_length = int(
-            max_length
-        )
+        self.max_length = int(max_length)
 
         self.device = device
 
-        self.accelerator_selection = (
-            accelerator_selection
-        )
+        self.accelerator_selection = accelerator_selection
 
-        self.accelerator_manager = (
-            accelerator_manager
-        )
+        self.accelerator_manager = accelerator_manager
 
 
 class AnomalyRuntime:
@@ -176,57 +167,39 @@ class AnomalyRuntime:
         input_dimension: int,
         threshold: float,
         device: Any,
-        accelerator_selection: (
-            AcceleratorSelection
-        ),
-        accelerator_manager: (
-            AcceleratorManager
-        ),
-        feature_names: Optional[
-            Sequence[str]
-        ] = None,
+        accelerator_selection: (AcceleratorSelection),
+        accelerator_manager: (AcceleratorManager),
+        feature_names: Optional[Sequence[str]] = None,
     ) -> None:
         self.model = model
 
-        self.input_dimension = int(
-            input_dimension
-        )
+        self.input_dimension = int(input_dimension)
 
-        self.threshold = float(
-            threshold
-        )
+        self.threshold = float(threshold)
 
         self.device = device
 
-        self.accelerator_selection = (
-            accelerator_selection
-        )
+        self.accelerator_selection = accelerator_selection
 
-        self.accelerator_manager = (
-            accelerator_manager
-        )
+        self.accelerator_manager = accelerator_manager
 
-        self.feature_names = tuple(
-            feature_names
-            or ()
-        )
+        self.feature_names = tuple(feature_names or ())
 
 
 # ------------------------------------------------------------------
 # Runtime guard
 # ------------------------------------------------------------------
 
+
 def require_torch() -> None:
     if torch is None:
-        raise AIModelLoadError(
-            "PyTorch is required for "
-            "OSHA AI model serving."
-        )
+        raise AIModelLoadError("PyTorch is required for OSHA AI model serving.")
 
 
 # ------------------------------------------------------------------
 # Accelerator configuration translation
 # ------------------------------------------------------------------
+
 
 def accelerator_config_from_ai(
     config: AIConfig,
@@ -247,14 +220,9 @@ def accelerator_config_from_ai(
 
     config.validate()
 
-    preferred = str(
-        config.device.preferred
-    ).strip().lower()
+    preferred = str(config.device.preferred).strip().lower()
 
-    allow_cpu_fallback = bool(
-        config.device.
-        allow_cpu_fallback
-    )
+    allow_cpu_fallback = bool(config.device.allow_cpu_fallback)
 
     require_accelerator = bool(
         not allow_cpu_fallback
@@ -269,26 +237,13 @@ def accelerator_config_from_ai(
         selection=(
             AcceleratorSelectionConfig(
                 preferred_kind=preferred,
-
-                device_index=(
-                    config.device.
-                    device_index
-                ),
-
-                allow_cpu_fallback=(
-                    allow_cpu_fallback
-                ),
-
+                device_index=(config.device.device_index),
+                allow_cpu_fallback=(allow_cpu_fallback),
                 allow_degraded_devices=True,
-
-                require_accelerator=(
-                    require_accelerator
-                ),
-
+                require_accelerator=(require_accelerator),
                 prefer_highest_free_memory=True,
             )
         ),
-
         attributes={
             "consumer": consumer,
         },
@@ -302,6 +257,7 @@ def accelerator_config_from_ai(
 # ------------------------------------------------------------------
 # Accelerator manager construction
 # ------------------------------------------------------------------
+
 
 def create_inference_accelerator_manager(
     config: AIConfig,
@@ -320,6 +276,7 @@ def create_inference_accelerator_manager(
 # Inference accelerator selection
 # ------------------------------------------------------------------
 
+
 def select_inference_accelerator(
     manager: AcceleratorManager,
     config: AIConfig,
@@ -335,107 +292,51 @@ def select_inference_accelerator(
     required_precisions = ()
 
     if config.device.mixed_precision:
-        required_precisions = (
-            AcceleratorPrecision.
-            FLOAT16.value,
-        )
+        required_precisions = (AcceleratorPrecision.FLOAT16.value,)
 
     try:
-        return (
-            manager.
-            select_for_inference(
-                preferred_kind=(
-                    config.device.
-                    preferred
-                ),
-
-                device_index=(
-                    config.device.
-                    device_index
-                ),
-
-                require_accelerator=(
-                    not config.device.
-                    allow_cpu_fallback
-                    and config.device.
-                    preferred
-                    in {
-                        "cuda",
-                        "rocm",
-                    }
-                ),
-
-                allow_cpu_fallback=(
-                    config.device.
-                    allow_cpu_fallback
-                ),
-
-                mixed_precision=(
-                    config.device.
-                    mixed_precision
-                ),
-
-                required_precisions=(
-                    required_precisions
-                ),
-
-                refresh=True,
-            )
+        return manager.select_for_inference(
+            preferred_kind=(config.device.preferred),
+            device_index=(config.device.device_index),
+            require_accelerator=(
+                not config.device.allow_cpu_fallback
+                and config.device.preferred
+                in {
+                    "cuda",
+                    "rocm",
+                }
+            ),
+            allow_cpu_fallback=(config.device.allow_cpu_fallback),
+            mixed_precision=(config.device.mixed_precision),
+            required_precisions=(required_precisions),
+            refresh=True,
         )
 
     except Exception as exc:
-        error_name = type(
-            exc
-        ).__name__
+        error_name = type(exc).__name__
 
-        if (
-            error_name
-            in {
-                "AcceleratorFallbackDisabledError",
-                "AcceleratorFallbackUnavailableError",
-                "AcceleratorDeviceUnavailableError",
-                "AcceleratorDeviceNotFoundError",
-                "AcceleratorNoMatchingDeviceError",
-            }
-        ):
+        if error_name in {
+            "AcceleratorFallbackDisabledError",
+            "AcceleratorFallbackUnavailableError",
+            "AcceleratorDeviceUnavailableError",
+            "AcceleratorDeviceNotFoundError",
+            "AcceleratorNoMatchingDeviceError",
+        }:
             raise AIDeviceUnavailableError(
-                "No accelerator device "
-                "satisfies the AI-serving "
-                "requirements.",
+                "No accelerator device satisfies the AI-serving requirements.",
                 details={
-                    "preferred": (
-                        config.device.
-                        preferred
-                    ),
-
-                    "device_index": (
-                        config.device.
-                        device_index
-                    ),
-
-                    "cpu_fallback": (
-                        config.device.
-                        allow_cpu_fallback
-                    ),
-
-                    "accelerator_error_type": (
-                        error_name
-                    ),
+                    "preferred": (config.device.preferred),
+                    "device_index": (config.device.device_index),
+                    "cpu_fallback": (config.device.allow_cpu_fallback),
+                    "accelerator_error_type": (error_name),
                 },
             ) from exc
 
         raise AIDeviceSelectionError(
-            "AI-serving accelerator "
-            "selection failed.",
+            "AI-serving accelerator selection failed.",
             details={
-                "preferred": (
-                    config.device.
-                    preferred
-                ),
-
-                "accelerator_error_type": (
-                    error_name
-                ),
+                "preferred": (config.device.preferred),
+                "accelerator_error_type": (error_name),
             },
         ) from exc
 
@@ -443,6 +344,7 @@ def select_inference_accelerator(
 # ------------------------------------------------------------------
 # Promoted checkpoint loading
 # ------------------------------------------------------------------
+
 
 def load_torch_payload(
     path: str | Path,
@@ -455,29 +357,21 @@ def load_torch_payload(
 
     require_torch()
 
-    source = Path(
-        path
-    ).expanduser().resolve()
+    source = Path(path).expanduser().resolve()
 
     if not source.exists():
         raise AIModelArtifactNotFoundError(
-            "Promoted model artifact was "
-            "not found.",
+            "Promoted model artifact was not found.",
             details={
-                "path": str(
-                    source
-                ),
+                "path": str(source),
             },
         )
 
     if not source.is_file():
         raise AIModelLoadError(
-            "Promoted model artifact is "
-            "not a regular file.",
+            "Promoted model artifact is not a regular file.",
             details={
-                "path": str(
-                    source
-                ),
+                "path": str(source),
             },
         )
 
@@ -485,33 +379,24 @@ def load_torch_payload(
         try:
             value = torch.load(
                 source,
-                map_location=(
-                    map_location
-                ),
+                map_location=(map_location),
                 weights_only=False,
             )
 
         except TypeError:
             value = torch.load(
                 source,
-                map_location=(
-                    map_location
-                ),
+                map_location=(map_location),
             )
 
     except Exception as exc:
         raise AIModelLoadError(
-            "Promoted model artifact "
-            "could not be loaded.",
+            "Promoted model artifact could not be loaded.",
             details=(
                 safe_ai_error_details(
                     exc,
-                    operation=(
-                        "load_model_artifact"
-                    ),
-                    device=str(
-                        map_location
-                    ),
+                    operation=("load_model_artifact"),
+                    device=str(map_location),
                 )
             ),
         ) from exc
@@ -520,19 +405,15 @@ def load_torch_payload(
         value,
         Mapping,
     ):
-        raise AIModelLoadError(
-            "Promoted model artifact root "
-            "must be an object."
-        )
+        raise AIModelLoadError("Promoted model artifact root must be an object.")
 
-    return dict(
-        value
-    )
+    return dict(value)
 
 
 # ------------------------------------------------------------------
 # Payload helpers
 # ------------------------------------------------------------------
+
 
 def require_mapping(
     payload: Mapping[
@@ -541,25 +422,20 @@ def require_mapping(
     ],
     key: str,
 ) -> Dict[str, Any]:
-    value = payload.get(
-        key
-    )
+    value = payload.get(key)
 
     if not isinstance(
         value,
         Mapping,
     ):
         raise AIModelConfigurationError(
-            "Model payload field is "
-            "missing or invalid.",
+            "Model payload field is missing or invalid.",
             details={
                 "field": key,
             },
         )
 
-    return dict(
-        value
-    )
+    return dict(value)
 
 
 def require_model_state(
@@ -568,17 +444,14 @@ def require_model_state(
         Any,
     ],
 ) -> Mapping[str, Any]:
-    value = payload.get(
-        "model_state_dict"
-    )
+    value = payload.get("model_state_dict")
 
     if not isinstance(
         value,
         Mapping,
     ):
         raise AIModelConfigurationError(
-            "Model payload contains no "
-            "valid model_state_dict."
+            "Model payload contains no valid model_state_dict."
         )
 
     return value
@@ -587,6 +460,7 @@ def require_model_state(
 # ------------------------------------------------------------------
 # Prediction helper
 # ------------------------------------------------------------------
+
 
 def top_prediction(
     logits: Any,
@@ -603,14 +477,12 @@ def top_prediction(
 
     if logits.ndim != 2:
         raise AIInferenceShapeError(
-            "Classification logits must "
-            "have shape [batch, classes]."
+            "Classification logits must have shape [batch, classes]."
         )
 
     if logits.shape[0] != 1:
         raise AIInferenceShapeError(
-            "Single inference expected one "
-            "classification-logits row."
+            "Single inference expected one classification-logits row."
         )
 
     if logits.shape[1] < 1:
@@ -626,33 +498,22 @@ def top_prediction(
         dim=1,
     )
 
-    class_id = int(
-        index.item()
-    )
+    class_id = int(index.item())
 
-    label = labels.get(
-        class_id
-    )
+    label = labels.get(class_id)
 
     if label is None:
         return None
 
     return Prediction(
-        label=str(
-            label
-        ),
-
+        label=str(label),
         score=float(
             logits[
                 0,
                 class_id,
             ].item()
         ),
-
-        probability=float(
-            probability.item()
-        ),
-
+        probability=float(probability.item()),
         attributes={
             "class_id": class_id,
         },
@@ -662,6 +523,7 @@ def top_prediction(
 # ------------------------------------------------------------------
 # Common runtime release helper
 # ------------------------------------------------------------------
+
 
 def release_accelerator_runtime(
     *,
@@ -678,30 +540,22 @@ def release_accelerator_runtime(
     """
 
     try:
-        if (
-            model is not None
-            and hasattr(
-                model,
-                "to",
-            )
+        if model is not None and hasattr(
+            model,
+            "to",
         ):
-            model.to(
-                "cpu"
-            )
+            model.to("cpu")
 
     finally:
-        manager.release(
-            selection
-        )
+        manager.release(selection)
 
 
 # ------------------------------------------------------------------
 # Event model adapter
 # ------------------------------------------------------------------
 
-class InfrastructureEventModelAdapter(
-    EventModelAdapter
-):
+
+class InfrastructureEventModelAdapter(EventModelAdapter):
     """
     Runtime adapter for
     InfrastructureEventModel.
@@ -712,31 +566,20 @@ class InfrastructureEventModelAdapter(
     ) -> EventRuntime:
         require_torch()
 
-        accelerator_manager = (
-            create_inference_accelerator_manager(
-                self.config,
-                consumer=(
-                    "ai.models.event"
-                ),
-            )
+        accelerator_manager = create_inference_accelerator_manager(
+            self.config,
+            consumer=("ai.models.event"),
         )
 
         accelerator_selection = None
 
         try:
-            accelerator_selection = (
-                select_inference_accelerator(
-                    accelerator_manager,
-                    self.config,
-                )
+            accelerator_selection = select_inference_accelerator(
+                accelerator_manager,
+                self.config,
             )
 
-            device = (
-                accelerator_manager.
-                runtime_device(
-                    accelerator_selection
-                )
-            )
+            device = accelerator_manager.runtime_device(accelerator_selection)
 
             payload = load_torch_payload(
                 self.descriptor.path,
@@ -748,56 +591,35 @@ class InfrastructureEventModelAdapter(
                 "model_config",
             )
 
-            vocabulary_value = payload.get(
-                "vocabulary"
-            )
+            vocabulary_value = payload.get("vocabulary")
 
             if not isinstance(
                 vocabulary_value,
                 Mapping,
             ):
-                raise AIVocabularyError(
-                    "Event model artifact has "
-                    "no valid vocabulary."
-                )
+                raise AIVocabularyError("Event model artifact has no valid vocabulary.")
 
-            labels_value = payload.get(
-                "labels"
-            )
+            labels_value = payload.get("labels")
 
             if not isinstance(
                 labels_value,
                 Mapping,
             ):
-                raise AILabelMapError(
-                    "Event model artifact has "
-                    "no valid label maps."
-                )
+                raise AILabelMapError("Event model artifact has no valid label maps.")
 
             try:
-                vocabulary = (
-                    Vocabulary.from_dict(
-                        vocabulary_value
-                    )
-                )
+                vocabulary = Vocabulary.from_dict(vocabulary_value)
 
-                labels = LabelMaps.from_dict(
-                    labels_value
-                )
+                labels = LabelMaps.from_dict(labels_value)
 
             except Exception as exc:
                 raise AIModelConfigurationError(
-                    "Event runtime assets "
-                    "could not be restored.",
+                    "Event runtime assets could not be restored.",
                     details=(
                         safe_ai_error_details(
                             exc,
-                            operation=(
-                                "restore_event_assets"
-                            ),
-                            model_id=(
-                                self.model_id
-                            ),
+                            operation=("restore_event_assets"),
+                            model_id=(self.model_id),
                         )
                     ),
                 ) from exc
@@ -809,59 +631,33 @@ class InfrastructureEventModelAdapter(
                 "num_events",
             )
 
-                      name
-                for name in required
-                if name not in model_config
-            ]
+            missing = [name for name in required if name not in model_config]
 
             if missing:
                 raise AIModelConfigurationError(
-                    "Event model configuration "
-                    "is incomplete.",
+                    "Event model configuration is incomplete.",
                     details={
                         "missing": missing,
                     },
                 )
 
             model = InfrastructureEventModel(
-                vocab_size=int(
-                    model_config[
-                        "vocab_size"
-                    ]
-                ),
-
-                num_sources=int(
-                    model_config[
-                        "num_sources"
-                    ]
-                ),
-
-                num_components=int(
-                    model_config[
-                        "num_components"
-                    ]
-                ),
-
-                num_events=int(
-                    model_config[
-                        "num_events"
-                    ]
-                ),
-
+                vocab_size=int(model_config["vocab_size"]),
+                num_sources=int(model_config["num_sources"]),
+                num_components=int(model_config["num_components"]),
+                num_events=int(model_config["num_events"]),
                 embedding_dim=int(
                     model_config.get(
                         "embedding_dim",
                         192,
                     )
                 ),
-
                 hidden_dim=int(
                     model_config.get(
                         "hidden_dim",
                         256,
                     )
                 ),
-
                 dropout=float(
                     model_config.get(
                         "dropout",
@@ -871,86 +667,50 @@ class InfrastructureEventModelAdapter(
             )
 
             model.load_state_dict(
-                require_model_state(
-                    payload
-                ),
+                require_model_state(payload),
                 strict=True,
             )
 
-            model.to(
-                device
-            )
+            model.to(device)
 
             model.eval()
 
-            self.descriptor.device = (
-                accelerator_selection.
-                device_id
-            )
+            self.descriptor.device = accelerator_selection.device_id
 
             self.descriptor.model_config = {
                 **model_config,
-
-                "accelerator_selection": (
-                    accelerator_selection.
-                    to_dict()
-                ),
+                "accelerator_selection": (accelerator_selection.to_dict()),
             }
 
-            self.descriptor.loaded_at = (
-                utc_now()
-            )
+            self.descriptor.loaded_at = utc_now()
 
             self.descriptor.attributes.update(
                 {
-                    "runtime_device": str(
-                        device
-                    ),
-
-                    "accelerator_kind": (
-                        accelerator_selection.
-                        kind
-                    ),
-
-                    "accelerator_fallback": (
-                        accelerator_selection.
-                        fallback_used
-                    ),
+                    "runtime_device": str(device),
+                    "accelerator_kind": (accelerator_selection.kind),
+                    "accelerator_fallback": (accelerator_selection.fallback_used),
                 }
             )
 
             return EventRuntime(
                 model=model,
-
                 vocabulary=vocabulary,
-
                 labels=labels,
-
                 max_length=int(
                     model_config.get(
                         "max_length",
-                        self.config.event.
-                        max_length,
+                        self.config.event.max_length,
                     )
                 ),
-
                 device=device,
-
-                accelerator_selection=(
-                    accelerator_selection
-                ),
-
-                accelerator_manager=(
-                    accelerator_manager
-                ),
+                accelerator_selection=(accelerator_selection),
+                accelerator_manager=(accelerator_manager),
             )
 
         except Exception:
             if accelerator_selection is not None:
                 try:
-                    accelerator_manager.release(
-                        accelerator_selection
-                    )
+                    accelerator_manager.release(accelerator_selection)
 
                 except Exception:
                     pass
@@ -964,10 +724,7 @@ class InfrastructureEventModelAdapter(
             self.model,
             EventRuntime,
         ):
-            raise AIModelLoadError(
-                "Event adapter runtime "
-                "state is invalid."
-            )
+            raise AIModelLoadError("Event adapter runtime state is invalid.")
 
     def _release_model(
         self,
@@ -980,16 +737,8 @@ class InfrastructureEventModelAdapter(
             return
 
         release_accelerator_runtime(
-            manager=(
-                runtime.
-                accelerator_manager
-            ),
-
-            selection=(
-                runtime.
-                accelerator_selection
-            ),
-
+            manager=(runtime.accelerator_manager),
+            selection=(runtime.accelerator_selection),
             model=runtime.model,
         )
 
@@ -1005,23 +754,17 @@ class InfrastructureEventModelAdapter(
             "text",
             "log",
         ):
-            value = payload.get(
-                key
-            )
+            value = payload.get(key)
 
             if value is None:
                 continue
 
-            text = str(
-                value
-            ).strip()
+            text = str(value).strip()
 
             if text:
                 return text
 
-        nested = payload.get(
-            "payload"
-        )
+        nested = payload.get("payload")
 
         if isinstance(
             nested,
@@ -1033,27 +776,20 @@ class InfrastructureEventModelAdapter(
                 "text",
                 "log",
             ):
-                value = nested.get(
-                    key
-                )
+                value = nested.get(key)
 
                 if value is None:
                     continue
 
-                text = str(
-                    value
-                ).strip()
+                text = str(value).strip()
 
                 if text:
                     return text
 
         raise AIEventTextMissingError(
-            "Event inference request "
-            "contains no log text.",
+            "Event inference request contains no log text.",
             details={
-                "request_id": (
-                    request.request_id
-                ),
+                "request_id": (request.request_id),
             },
         )
 
@@ -1067,46 +803,29 @@ class InfrastructureEventModelAdapter(
             runtime,
             EventRuntime,
         ):
-            raise AIInferenceExecutionError(
-                "Event runtime is not "
-                "available."
-            )
+            raise AIInferenceExecutionError("Event runtime is not available.")
 
-        text = self._event_text(
-            request
-        )
+        text = self._event_text(request)
 
-        requested_max_length = (
-            request.options.get(
-                "max_length"
-            )
-        )
+        requested_max_length = request.options.get("max_length")
 
         if requested_max_length is None:
-            max_length = (
-                runtime.max_length
-            )
+            max_length = runtime.max_length
 
         else:
             try:
-                max_length = int(
-                    requested_max_length
-                )
+                max_length = int(requested_max_length)
 
             except (
                 TypeError,
                 ValueError,
             ) as exc:
                 raise AIInferenceShapeError(
-                    "Event max_length must "
-                    "be an integer."
+                    "Event max_length must be an integer."
                 ) from exc
 
         if max_length < 1:
-            raise AIInferenceShapeError(
-                "Event max_length must be "
-                "at least one."
-            )
+            raise AIInferenceShapeError("Event max_length must be at least one.")
 
         max_length = min(
             max_length,
@@ -1125,135 +844,80 @@ class InfrastructureEventModelAdapter(
             )
 
             input_tensor = torch.tensor(
-                [
-                    input_ids
-                ],
+                [input_ids],
                 dtype=torch.long,
                 device=runtime.device,
             )
 
             mask_tensor = torch.tensor(
-                [
-                    attention_mask
-                ],
+                [attention_mask],
                 dtype=torch.float32,
                 device=runtime.device,
             )
 
             use_mixed_precision = bool(
-                self.config.device.
-                mixed_precision
-                and runtime.
-                accelerator_selection.
-                device.accelerator
+                self.config.device.mixed_precision
+                and runtime.accelerator_selection.device.accelerator
             )
 
             with torch.inference_mode():
                 with torch.autocast(
                     device_type=(
                         "cuda"
-                        if runtime.
-                        accelerator_selection.
-                        device.accelerator
+                        if runtime.accelerator_selection.device.accelerator
                         else "cpu"
                     ),
-
                     dtype=(
                         torch.float16
-                        if runtime.
-                        accelerator_selection.
-                        device.accelerator
+                        if runtime.accelerator_selection.device.accelerator
                         else torch.bfloat16
                     ),
-
-                    enabled=(
-                        use_mixed_precision
-                    ),
+                    enabled=(use_mixed_precision),
                 ):
                     output = runtime.model(
-                        input_ids=(
-                            input_tensor
-                        ),
-
-                        attention_mask=(
-                            mask_tensor
-                        ),
+                        input_ids=(input_tensor),
+                        attention_mask=(mask_tensor),
                     )
 
             source_prediction = (
                 top_prediction(
-                    output[
-                        "source_logits"
-                    ],
-                    runtime.labels.
-                    id_to_source,
+                    output["source_logits"],
+                    runtime.labels.id_to_source,
                 )
-                if self.config.event.
-                return_source_prediction
+                if self.config.event.return_source_prediction
                 else None
             )
 
             component_prediction = (
                 top_prediction(
-                    output[
-                        "component_logits"
-                    ],
-                    runtime.labels.
-                    id_to_component,
+                    output["component_logits"],
+                    runtime.labels.id_to_component,
                 )
-                if self.config.event.
-                return_component_prediction
+                if self.config.event.return_component_prediction
                 else None
             )
 
             event_prediction = (
                 top_prediction(
-                    output[
-                        "event_logits"
-                    ],
-                    runtime.labels.
-                    id_to_event,
+                    output["event_logits"],
+                    runtime.labels.id_to_event,
                 )
-                if self.config.event.
-                return_event_prediction
+                if self.config.event.return_event_prediction
                 else None
             )
 
-            representation = output[
-                "representation"
-            ]
+            representation = output["representation"]
 
-            latency_ms = (
-                time.perf_counter()
-                - started
-            ) * 1000.0
+            latency_ms = (time.perf_counter() - started) * 1000.0
 
             event_result = EventInference(
                 source=source_prediction,
-
-                component=(
-                    component_prediction
-                ),
-
+                component=(component_prediction),
                 event=event_prediction,
-
-                representation_dimension=(
-                    int(
-                        representation.
-                        shape[-1]
-                    )
-                ),
-
+                representation_dimension=(int(representation.shape[-1])),
                 attributes={
-                    "token_count": int(
-                        sum(
-                            attention_mask
-                        )
-                    ),
-
-                    "max_length": (
-                        max_length
-                    ),
+                    "token_count": int(sum(attention_mask)),
+                    "max_length": (max_length),
                 },
             ).finalize()
 
@@ -1271,63 +935,24 @@ class InfrastructureEventModelAdapter(
                 str,
                 Any,
             ] = {
-                "device": str(
-                    runtime.device
-                ),
-
-                "accelerator": (
-                    runtime.
-                    accelerator_selection.
-                    to_dict()
-                ),
-
-                "mixed_precision": (
-                    use_mixed_precision
-                ),
+                "device": str(runtime.device),
+                "accelerator": (runtime.accelerator_selection.to_dict()),
+                "mixed_precision": (use_mixed_precision),
             }
 
-            if (
-                self.config.inference.
-                include_representations
-            ):
-                attributes[
-                    "representation"
-                ] = (
-                    representation[0].
-                    detach().
-                    float().
-                    cpu().
-                    tolist()
+            if self.config.inference.include_representations:
+                attributes["representation"] = (
+                    representation[0].detach().float().cpu().tolist()
                 )
 
             return InferenceResult(
-                request_id=str(
-                    request.request_id
-                ),
-
-                model=(
-                    self.descriptor.identity
-                ),
-
-                state=(
-                    InferenceState.
-                    COMPLETED.value
-                ),
-
+                request_id=str(request.request_id),
+                model=(self.descriptor.identity),
+                state=(InferenceState.COMPLETED.value),
                 event=event_result,
-
-                predictions=(
-                    predictions
-                ),
-
-                provenance=(
-                    request.provenance
-                ),
-
-                latency_ms=(
-                    latency_ms
-                ),
-
+                predictions=(predictions),
+                provenance=(request.provenance),
+                latency_ms=(latency_ms),
                 attributes=attributes,
             ).finalize()
 
@@ -1344,19 +969,11 @@ class InfrastructureEventModelAdapter(
                 details=(
                     safe_ai_error_details(
                         exc,
-                        operation=(
-                            "event_inference"
-                        ),
-                        model_id=(
-                            self.model_id
-                        ),
+                        operation=("event_inference"),
+                        model_id=(self.model_id),
                         family=self.family,
-                        request_id=(
-                            request.request_id
-                        ),
-                        device=str(
-                            runtime.device
-                        ),
+                        request_id=(request.request_id),
+                        device=str(runtime.device),
                     )
                 ),
             ) from exc
@@ -1366,9 +983,8 @@ class InfrastructureEventModelAdapter(
 # Anomaly model adapter
 # ------------------------------------------------------------------
 
-class InfrastructureAnomalyModelAdapter(
-    AnomalyModelAdapter
-):
+
+class InfrastructureAnomalyModelAdapter(AnomalyModelAdapter):
     """
     Runtime adapter for
     InfrastructureAnomalyModel.
@@ -1379,31 +995,20 @@ class InfrastructureAnomalyModelAdapter(
     ) -> AnomalyRuntime:
         require_torch()
 
-        accelerator_manager = (
-            create_inference_accelerator_manager(
-                self.config,
-                consumer=(
-                    "ai.models.anomaly"
-                ),
-            )
+        accelerator_manager = create_inference_accelerator_manager(
+            self.config,
+            consumer=("ai.models.anomaly"),
         )
 
         accelerator_selection = None
 
         try:
-            accelerator_selection = (
-                select_inference_accelerator(
-                    accelerator_manager,
-                    self.config,
-                )
+            accelerator_selection = select_inference_accelerator(
+                accelerator_manager,
+                self.config,
             )
 
-            device = (
-                accelerator_manager.
-                runtime_device(
-                    accelerator_selection
-                )
-            )
+            device = accelerator_manager.runtime_device(accelerator_selection)
 
             payload = load_torch_payload(
                 self.descriptor.path,
@@ -1416,125 +1021,68 @@ class InfrastructureAnomalyModelAdapter(
             )
 
             try:
-                model = (
-                    InfrastructureAnomalyModel.
-                    from_config(
-                        model_config
-                    )
-                )
+                model = InfrastructureAnomalyModel.from_config(model_config)
 
                 model.load_state_dict(
-                    require_model_state(
-                        payload
-                    ),
+                    require_model_state(payload),
                     strict=True,
                 )
 
-                model.to(
-                    device
-                )
+                model.to(device)
 
                 model.eval()
 
             except Exception as exc:
                 raise AIModelLoadError(
-                    "Anomaly model could not "
-                    "be reconstructed.",
+                    "Anomaly model could not be reconstructed.",
                     details=(
                         safe_ai_error_details(
                             exc,
-                            operation=(
-                                "construct_anomaly_model"
-                            ),
-                            model_id=(
-                                self.model_id
-                            ),
-                            device=str(
-                                device
-                            ),
+                            operation=("construct_anomaly_model"),
+                            model_id=(self.model_id),
+                            device=str(device),
                         )
                     ),
                 ) from exc
 
-            threshold = (
-                self._artifact_threshold(
-                    payload,
-                    model_config,
-                )
+            threshold = self._artifact_threshold(
+                payload,
+                model_config,
             )
 
-            feature_names = (
-                self._feature_names(
-                    payload
-                )
-            )
+            feature_names = self._feature_names(payload)
 
-            self.descriptor.device = (
-                accelerator_selection.
-                device_id
-            )
+            self.descriptor.device = accelerator_selection.device_id
 
             self.descriptor.model_config = {
                 **model_config,
-
-                "accelerator_selection": (
-                    accelerator_selection.
-                    to_dict()
-                ),
+                "accelerator_selection": (accelerator_selection.to_dict()),
             }
 
-            self.descriptor.loaded_at = (
-                utc_now()
-            )
+            self.descriptor.loaded_at = utc_now()
 
             self.descriptor.attributes.update(
                 {
-                    "runtime_device": str(
-                        device
-                    ),
-
-                    "accelerator_kind": (
-                        accelerator_selection.
-                        kind
-                    ),
-
-                    "accelerator_fallback": (
-                        accelerator_selection.
-                        fallback_used
-                    ),
+                    "runtime_device": str(device),
+                    "accelerator_kind": (accelerator_selection.kind),
+                    "accelerator_fallback": (accelerator_selection.fallback_used),
                 }
             )
 
             return AnomalyRuntime(
                 model=model,
-
-                input_dimension=(
-                    model.input_dim
-                ),
-
+                input_dimension=(model.input_dim),
                 threshold=threshold,
-
                 device=device,
-
-                accelerator_selection=(
-                    accelerator_selection
-                ),
-
-                accelerator_manager=(
-                    accelerator_manager
-                ),
-
-                feature_names=(
-                    feature_names
-                ),
+                accelerator_selection=(accelerator_selection),
+                accelerator_manager=(accelerator_manager),
+                feature_names=(feature_names),
             )
 
         except Exception:
             if accelerator_selection is not None:
                 try:
-                    accelerator_manager.release(
-                        accelerator_selection
-                    )
+                    accelerator_manager.release(accelerator_selection)
 
                 except Exception:
                     pass
@@ -1548,10 +1096,7 @@ class InfrastructureAnomalyModelAdapter(
             self.model,
             AnomalyRuntime,
         ):
-            raise AIModelLoadError(
-                "Anomaly adapter runtime "
-                "state is invalid."
-            )
+            raise AIModelLoadError("Anomaly adapter runtime state is invalid.")
 
     def _release_model(
         self,
@@ -1564,16 +1109,8 @@ class InfrastructureAnomalyModelAdapter(
             return
 
         release_accelerator_runtime(
-            manager=(
-                runtime.
-                accelerator_manager
-            ),
-
-            selection=(
-                runtime.
-                accelerator_selection
-            ),
-
+            manager=(runtime.accelerator_manager),
+            selection=(runtime.accelerator_selection),
             model=runtime.model,
         )
 
@@ -1590,9 +1127,7 @@ class InfrastructureAnomalyModelAdapter(
     ) -> float:
         candidates: List[Any] = []
 
-        extra = payload.get(
-            "extra"
-        )
+        extra = payload.get("extra")
 
         if isinstance(
             extra,
@@ -1600,46 +1135,20 @@ class InfrastructureAnomalyModelAdapter(
         ):
             candidates.extend(
                 (
-                    extra.get(
-                        "calibrated_threshold"
-                    ),
-
-                    extra.get(
-                        "threshold"
-                    ),
-
-                    extra.get(
-                        "temporary_threshold"
-                    ),
+                    extra.get("calibrated_threshold"),
+                    extra.get("threshold"),
+                    extra.get("temporary_threshold"),
                 )
             )
 
         candidates.extend(
             (
-                model_config.get(
-                    "calibrated_threshold"
-                ),
-
-                model_config.get(
-                    "threshold"
-                ),
-
-                model_config.get(
-                    "temporary_threshold"
-                ),
-
-                self.descriptor.
-                attributes.get(
-                    "calibrated_threshold"
-                ),
-
-                self.descriptor.
-                attributes.get(
-                    "threshold"
-                ),
-
-                self.config.anomaly.
-                default_threshold,
+                model_config.get("calibrated_threshold"),
+                model_config.get("threshold"),
+                model_config.get("temporary_threshold"),
+                self.descriptor.attributes.get("calibrated_threshold"),
+                self.descriptor.attributes.get("threshold"),
+                self.config.anomaly.default_threshold,
             )
         )
 
@@ -1648,9 +1157,7 @@ class InfrastructureAnomalyModelAdapter(
                 continue
 
             try:
-                threshold = float(
-                    candidate
-                )
+                threshold = float(candidate)
 
             except (
                 TypeError,
@@ -1659,21 +1166,14 @@ class InfrastructureAnomalyModelAdapter(
                 continue
 
             if (
-                math.isfinite(
-                    threshold
-                )
-                and self.config.anomaly.
-                minimum_threshold
+                math.isfinite(threshold)
+                and self.config.anomaly.minimum_threshold
                 <= threshold
-                <= self.config.anomaly.
-                maximum_threshold
+                <= self.config.anomaly.maximum_threshold
             ):
                 return threshold
 
-        raise AIAnomalyThresholdError(
-            "No valid anomaly threshold "
-            "is available."
-        )
+        raise AIAnomalyThresholdError("No valid anomaly threshold is available.")
 
     @staticmethod
     def _feature_names(
@@ -1682,9 +1182,7 @@ class InfrastructureAnomalyModelAdapter(
             Any,
         ],
     ) -> Tuple[str, ...]:
-        schema = payload.get(
-            "feature_schema"
-        )
+        schema = payload.get("feature_schema")
 
         if not isinstance(
             schema,
@@ -1692,87 +1190,59 @@ class InfrastructureAnomalyModelAdapter(
         ):
             return ()
 
-        names = schema.get(
-            "feature_names"
-        )
+        names = schema.get("feature_names")
 
-        if (
-            not isinstance(
-                names,
-                Sequence,
-            )
-            or isinstance(
-                names,
-                (
-                    str,
-                    bytes,
-                    bytearray,
-                ),
-            )
+        if not isinstance(
+            names,
+            Sequence,
+        ) or isinstance(
+            names,
+            (
+                str,
+                bytes,
+                bytearray,
+            ),
         ):
             return ()
 
-        return tuple(
-            str(name)
-            for name in names
-        )
+        return tuple(str(name) for name in names)
 
     def _threshold(
         self,
         request: InferenceRequest,
         runtime: AnomalyRuntime,
     ) -> float:
-        candidate = request.options.get(
-            "threshold"
-        )
+        candidate = request.options.get("threshold")
 
         if candidate is None:
             return runtime.threshold
 
-        if not (
-            self.config.anomaly.
-            allow_request_threshold_override
-        ):
+        if not (self.config.anomaly.allow_request_threshold_override):
             raise AIAnomalyThresholdError(
-                "Request-level anomaly "
-                "threshold override is "
-                "disabled.",
+                "Request-level anomaly threshold override is disabled.",
                 details={
-                    "request_id": (
-                        request.request_id
-                    ),
+                    "request_id": (request.request_id),
                 },
             )
 
         try:
-            threshold = float(
-                candidate
-            )
+            threshold = float(candidate)
 
         except (
             TypeError,
             ValueError,
         ) as exc:
             raise AIAnomalyThresholdError(
-                "Request anomaly threshold "
-                "is invalid."
+                "Request anomaly threshold is invalid."
             ) from exc
 
         if (
-            not math.isfinite(
-                threshold
-            )
-            or threshold
-            < self.config.anomaly.
-            minimum_threshold
-            or threshold
-            > self.config.anomaly.
-            maximum_threshold
+            not math.isfinite(threshold)
+            or threshold < self.config.anomaly.minimum_threshold
+            or threshold > self.config.anomaly.maximum_threshold
         ):
             raise AIAnomalyThresholdError(
-                "Request anomaly threshold "
-                "is outside configured "
-                "limits."
+                "Request anomaly threshold is outside configured limits."
             )
 
         return threshold
@@ -1781,7 +1251,8 @@ class InfrastructureAnomalyModelAdapter(
         self,
         request: InferenceRequest,
         runtime: AnomalyRuntime,
-    ) -> Listpayload = request.payload
+    ) -> List[float]:
+        payload = request.payload
 
         raw = None
 
@@ -1796,107 +1267,69 @@ class InfrastructureAnomalyModelAdapter(
                 raw = payload[key]
                 break
 
-        if (
-            raw is None
-            and runtime.feature_names
-        ):
-            raw = [
-                payload.get(name)
-                for name
-                in runtime.feature_names
-            ]
+        if raw is None and runtime.feature_names:
+            raw = [payload.get(name) for name in runtime.feature_names]
 
-        if (
-            not isinstance(
-                raw,
-                Sequence,
-            )
-            or isinstance(
-                raw,
-                (
-                    str,
-                    bytes,
-                    bytearray,
-                ),
-            )
+        if not isinstance(
+            raw,
+            Sequence,
+        ) or isinstance(
+            raw,
+            (
+                str,
+                bytes,
+                bytearray,
+            ),
         ):
             raise AIAnomalyFeatureError(
-                "Anomaly inference request "
-                "contains no numeric feature "
-                "vector.",
+                "Anomaly inference request contains no numeric feature vector.",
                 details={
-                    "request_id": (
-                        request.request_id
-                    ),
+                    "request_id": (request.request_id),
                 },
             )
 
         values: List[float] = []
 
-        for index, item in enumerate(
-            raw
-        ):
-            if (
-                isinstance(
-                    item,
-                    bool,
-                )
-                or not isinstance(
-                    item,
-                    (
-                        int,
-                        float,
-                    ),
-                )
+        for index, item in enumerate(raw):
+            if isinstance(
+                item,
+                bool,
+            ) or not isinstance(
+                item,
+                (
+                    int,
+                    float,
+                ),
             ):
                 raise AIAnomalyFeatureError(
-                    "Anomaly feature must "
-                    "be numeric.",
+                    "Anomaly feature must be numeric.",
                     details={
                         "index": index,
                     },
                 )
 
-            value = float(
-                item
-            )
+            value = float(item)
 
-            if (
-                self.config.inference.
-                reject_non_finite_inputs
-                and not math.isfinite(
-                    value
-                )
+            if self.config.inference.reject_non_finite_inputs and not math.isfinite(
+                value
             ):
                 raise (
                     AIInferenceNonFiniteInputError(
-                        "Anomaly feature must "
-                        "be finite.",
+                        "Anomaly feature must be finite.",
                         details={
                             "index": index,
                         },
                     )
                 )
 
-            values.append(
-                value
-            )
+            values.append(value)
 
-        if (
-            len(values)
-            != runtime.input_dimension
-        ):
+        if len(values) != runtime.input_dimension:
             raise AIInferenceShapeError(
-                "Anomaly feature dimension "
-                "does not match the model.",
+                "Anomaly feature dimension does not match the model.",
                 details={
-                    "expected": (
-                        runtime.
-                        input_dimension
-                    ),
-                    "actual": len(
-                        values
-                    ),
+                    "expected": (runtime.input_dimension),
+                    "actual": len(values),
                 },
             )
 
@@ -1912,10 +1345,7 @@ class InfrastructureAnomalyModelAdapter(
             runtime,
             AnomalyRuntime,
         ):
-            raise AIInferenceExecutionError(
-                "Anomaly runtime is not "
-                "available."
-            )
+            raise AIInferenceExecutionError("Anomaly runtime is not available.")
 
         values = self._features(
             request,
@@ -1931,140 +1361,69 @@ class InfrastructureAnomalyModelAdapter(
 
         try:
             feature_tensor = torch.tensor(
-                [
-                    values
-                ],
+                [values],
                 dtype=torch.float32,
                 device=runtime.device,
             )
 
             use_mixed_precision = bool(
-                self.config.device.
-                mixed_precision
-                and runtime.
-                accelerator_selection.
-                device.accelerator
+                self.config.device.mixed_precision
+                and runtime.accelerator_selection.device.accelerator
             )
 
             with torch.inference_mode():
                 with torch.autocast(
                     device_type=(
                         "cuda"
-                        if runtime.
-                        accelerator_selection.
-                        device.accelerator
+                        if runtime.accelerator_selection.device.accelerator
                         else "cpu"
                     ),
-
                     dtype=(
                         torch.float16
-                        if runtime.
-                        accelerator_selection.
-                        device.accelerator
+                        if runtime.accelerator_selection.device.accelerator
                         else torch.bfloat16
                     ),
-
-                    enabled=(
-                        use_mixed_precision
-                    ),
+                    enabled=(use_mixed_precision),
                 ):
-                    output = runtime.model(
-                        feature_tensor
-                    )
+                    output = runtime.model(feature_tensor)
 
-            logits = output[
-                "anomaly_logits"
-            ]
+            logits = output["anomaly_logits"]
 
-            probabilities = output[
-                "anomaly_probability"
-            ]
+            probabilities = output["anomaly_probability"]
 
-            representation = output[
-                "representation"
-            ]
+            representation = output["representation"]
 
-            logit = float(
-                logits[0].item()
-            )
+            logit = float(logits[0].item())
 
-            probability = float(
-                probabilities[0].item()
-            )
+            probability = float(probabilities[0].item())
 
-            if not (
-                math.isfinite(
-                    logit
-                )
-                and math.isfinite(
-                    probability
-                )
-            ):
+            if not (math.isfinite(logit) and math.isfinite(probability)):
                 raise AIInferenceExecutionError(
-                    "Anomaly model produced "
-                    "a non-finite output."
+                    "Anomaly model produced a non-finite output."
                 )
 
-            anomalous = bool(
-                probability >= threshold
-            )
+            anomalous = bool(probability >= threshold)
 
-            latency_ms = (
-                time.perf_counter()
-                - started
-            ) * 1000.0
+            latency_ms = (time.perf_counter() - started) * 1000.0
 
-            anomaly_result = (
-                AnomalyInference(
-                    probability=probability,
-
-                    threshold=threshold,
-
-                    anomalous=(
-                        anomalous
-                    ),
-
-                    score=logit,
-
-                    representation_dimension=(
-                        int(
-                            representation.
-                            shape[-1]
-                        )
-                    ),
-
-                    attributes={
-                        "input_dimension": (
-                            runtime.
-                            input_dimension
-                        ),
-                    },
-                ).finalize()
-            )
+            anomaly_result = AnomalyInference(
+                probability=probability,
+                threshold=threshold,
+                anomalous=(anomalous),
+                score=logit,
+                representation_dimension=(int(representation.shape[-1])),
+                attributes={
+                    "input_dimension": (runtime.input_dimension),
+                },
+            ).finalize()
 
             prediction = Prediction(
-                label=(
-                    "anomaly"
-                    if anomalous
-                    else "normal"
-                ),
-
+                label=("anomaly" if anomalous else "normal"),
                 score=logit,
-
-                probability=(
-                    probability
-                    if anomalous
-                    else 1.0 - probability
-                ),
-
+                probability=(probability if anomalous else 1.0 - probability),
                 attributes={
-                    "anomaly_probability": (
-                        probability
-                    ),
-
-                    "threshold": (
-                        threshold
-                    ),
+                    "anomaly_probability": (probability),
+                    "threshold": (threshold),
                 },
             )
 
@@ -2072,65 +1431,24 @@ class InfrastructureAnomalyModelAdapter(
                 str,
                 Any,
             ] = {
-                "device": str(
-                    runtime.device
-                ),
-
-                "accelerator": (
-                    runtime.
-                    accelerator_selection.
-                    to_dict()
-                ),
-
-                "mixed_precision": (
-                    use_mixed_precision
-                ),
+                "device": str(runtime.device),
+                "accelerator": (runtime.accelerator_selection.to_dict()),
+                "mixed_precision": (use_mixed_precision),
             }
 
-            if (
-                self.config.inference.
-                include_representations
-            ):
-                attributes[
-                    "representation"
-                ] = (
-                    representation[0].
-                    detach().
-                    float().
-                    cpu().
-                    tolist()
+            if self.config.inference.include_representations:
+                attributes["representation"] = (
+                    representation[0].detach().float().cpu().tolist()
                 )
 
             return InferenceResult(
-                request_id=str(
-                    request.request_id
-                ),
-
-                model=(
-                    self.descriptor.identity
-                ),
-
-                state=(
-                    InferenceState.
-                    COMPLETED.value
-                ),
-
-                anomaly=(
-                    anomaly_result
-                ),
-
-                predictions=[
-                    prediction
-                ],
-
-                provenance=(
-                    request.provenance
-                ),
-
-                latency_ms=(
-                    latency_ms
-                ),
-
+                request_id=str(request.request_id),
+                model=(self.descriptor.identity),
+                state=(InferenceState.COMPLETED.value),
+                anomaly=(anomaly_result),
+                predictions=[prediction],
+                provenance=(request.provenance),
+                latency_ms=(latency_ms),
                 attributes=attributes,
             ).finalize()
 
@@ -2149,19 +1467,11 @@ class InfrastructureAnomalyModelAdapter(
                 details=(
                     safe_ai_error_details(
                         exc,
-                        operation=(
-                            "anomaly_inference"
-                        ),
-                        model_id=(
-                            self.model_id
-                        ),
+                        operation=("anomaly_inference"),
+                        model_id=(self.model_id),
                         family=self.family,
-                        request_id=(
-                            request.request_id
-                        ),
-                        device=str(
-                            runtime.device
-                        ),
+                        request_id=(request.request_id),
+                        device=str(runtime.device),
                     )
                 ),
             ) from exc
@@ -2171,12 +1481,11 @@ class InfrastructureAnomalyModelAdapter(
 # Adapter factory
 # ------------------------------------------------------------------
 
+
 def create_model_adapter(
     descriptor: AIModelDescriptor,
     *,
-    config: Optional[
-        AIConfig
-    ] = None,
+    config: Optional[AIConfig] = None,
 ):
     """
     Create the family-specific model adapter.
@@ -2187,44 +1496,25 @@ def create_model_adapter(
 
     descriptor.finalize()
 
-    family = (
-        descriptor.identity.family
-    )
+    family = descriptor.identity.family
 
-    if (
-        family
-        == AIModelFamily.EVENT.value
-    ):
-        return (
-            InfrastructureEventModelAdapter(
-                descriptor,
-                config=config,
-            )
+    if family == AIModelFamily.EVENT.value:
+        return InfrastructureEventModelAdapter(
+            descriptor,
+            config=config,
         )
 
-    if (
-        family
-        == AIModelFamily.
-        ANOMALY.value
-    ):
-        return (
-            InfrastructureAnomalyModelAdapter(
-                descriptor,
-                config=config,
-            )
+    if family == AIModelFamily.ANOMALY.value:
+        return InfrastructureAnomalyModelAdapter(
+            descriptor,
+            config=config,
         )
 
     raise AIModelConfigurationError(
-        "No concrete AI adapter is "
-        "registered for the requested "
-        "model family.",
+        "No concrete AI adapter is registered for the requested model family.",
         details={
             "family": family,
-
-            "model_id": (
-                descriptor.
-                identity.model_id
-            ),
+            "model_id": (descriptor.identity.model_id),
         },
     )
 
@@ -2236,23 +1526,16 @@ def create_model_adapter(
 __all__ = [
     "EventRuntime",
     "AnomalyRuntime",
-
     "require_torch",
-
     "accelerator_config_from_ai",
     "create_inference_accelerator_manager",
     "select_inference_accelerator",
-
     "load_torch_payload",
-
     "require_mapping",
     "require_model_state",
-
     "top_prediction",
     "release_accelerator_runtime",
-
     "InfrastructureEventModelAdapter",
     "InfrastructureAnomalyModelAdapter",
-
     "create_model_adapter",
 ]

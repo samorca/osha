@@ -35,42 +35,33 @@ WORKER_TRANSITIONS: Dict[
         WorkerState.STOPPED.value,
         WorkerState.FAILED.value,
     },
-
     WorkerState.STARTING.value: {
         WorkerState.IDLE.value,
         WorkerState.FAILED.value,
         WorkerState.STOPPING.value,
     },
-
     WorkerState.IDLE.value: {
         WorkerState.BUSY.value,
         WorkerState.DRAINING.value,
         WorkerState.STOPPING.value,
         WorkerState.FAILED.value,
     },
-
     WorkerState.BUSY.value: {
         WorkerState.IDLE.value,
         WorkerState.DRAINING.value,
         WorkerState.STOPPING.value,
         WorkerState.FAILED.value,
     },
-
     WorkerState.DRAINING.value: {
         WorkerState.IDLE.value,
         WorkerState.STOPPING.value,
         WorkerState.FAILED.value,
     },
-
     WorkerState.STOPPING.value: {
         WorkerState.STOPPED.value,
         WorkerState.FAILED.value,
     },
-
-    WorkerState.STOPPED.value: (
-        set()
-    ),
-
+    WorkerState.STOPPED.value: (set()),
     WorkerState.FAILED.value: {
         WorkerState.STOPPING.value,
         WorkerState.STOPPED.value,
@@ -91,49 +82,33 @@ JOB_TRANSITIONS: Dict[
         JobState.CANCELLED.value,
         JobState.EXPIRED.value,
     },
-
     JobState.READY.value: {
         JobState.LEASED.value,
         JobState.CANCELLED.value,
         JobState.EXPIRED.value,
     },
-
     JobState.LEASED.value: {
         JobState.RUNNING.value,
         JobState.READY.value,
         JobState.CANCELLED.value,
         JobState.EXPIRED.value,
     },
-
     JobState.RUNNING.value: {
         JobState.SUCCEEDED.value,
         JobState.RETRY_WAIT.value,
         JobState.FAILED.value,
         JobState.CANCELLED.value,
     },
-
     JobState.RETRY_WAIT.value: {
         JobState.READY.value,
         JobState.FAILED.value,
         JobState.CANCELLED.value,
         JobState.EXPIRED.value,
     },
-
-    JobState.SUCCEEDED.value: (
-        set()
-    ),
-
-    JobState.FAILED.value: (
-        set()
-    ),
-
-    JobState.CANCELLED.value: (
-        set()
-    ),
-
-    JobState.EXPIRED.value: (
-        set()
-    ),
+    JobState.SUCCEEDED.value: (set()),
+    JobState.FAILED.value: (set()),
+    JobState.CANCELLED.value: (set()),
+    JobState.EXPIRED.value: (set()),
 }
 
 
@@ -150,18 +125,9 @@ LEASE_TRANSITIONS: Dict[
         LeaseState.EXPIRED.value,
         LeaseState.COMPLETED.value,
     },
-
-    LeaseState.RELEASED.value: (
-        set()
-    ),
-
-    LeaseState.EXPIRED.value: (
-        set()
-    ),
-
-    LeaseState.COMPLETED.value: (
-        set()
-    ),
+    LeaseState.RELEASED.value: (set()),
+    LeaseState.EXPIRED.value: (set()),
+    LeaseState.COMPLETED.value: (set()),
 }
 
 
@@ -169,27 +135,23 @@ LEASE_TRANSITIONS: Dict[
 # Exceptions
 # ---------------------------------------------------------------
 
-class InvalidWorkerTransition(
-    ValueError
-):
+
+class InvalidWorkerTransition(ValueError):
     pass
 
 
-class InvalidJobTransition(
-    ValueError
-):
+class InvalidJobTransition(ValueError):
     pass
 
 
-class InvalidLeaseTransition(
-    ValueError
-):
+class InvalidLeaseTransition(ValueError):
     pass
 
 
 # ---------------------------------------------------------------
 # Transition record
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class StateTransition:
@@ -201,41 +163,30 @@ class StateTransition:
 
     reason: str
 
-    occurred_at: str = field(
-        default_factory=utc_now
-    )
+    occurred_at: str = field(default_factory=utc_now)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def to_dict(
         self,
     ) -> Dict[str, Any]:
         return {
             "subject": self.subject,
-            "previous_state": (
-                self.previous_state
-            ),
-            "next_state": (
-                self.next_state
-            ),
+            "previous_state": (self.previous_state),
+            "next_state": (self.next_state),
             "reason": self.reason,
-            "occurred_at": (
-                self.occurred_at
-            ),
-            "attributes": dict(
-                self.attributes
-            ),
+            "occurred_at": (self.occurred_at),
+            "attributes": dict(self.attributes),
         }
 
 
 # ---------------------------------------------------------------
 # Worker transition
 # ---------------------------------------------------------------
+
 
 def transition_worker(
     worker: WorkerStatus,
@@ -247,55 +198,29 @@ def transition_worker(
 
     previous = worker.state
 
-    if (
-        next_state != previous
-        and next_state
-        not in WORKER_TRANSITIONS.get(
-            previous,
-            set(),
-        )
+    if next_state != previous and next_state not in WORKER_TRANSITIONS.get(
+        previous,
+        set(),
     ):
         raise (
             InvalidWorkerTransition(
-                "Invalid worker "
-                "transition: "
-                f"{previous} -> "
-                f"{next_state}"
+                f"Invalid worker transition: {previous} -> {next_state}"
             )
         )
 
     # An IDLE worker must have no jobs.
-    if (
-        next_state
-        == WorkerState.IDLE.value
-        and worker.active_job_ids
-    ):
+    if next_state == WorkerState.IDLE.value and worker.active_job_ids:
         raise (
-            InvalidWorkerTransition(
-                "Worker cannot become "
-                "idle while jobs are "
-                "active"
-            )
+            InvalidWorkerTransition("Worker cannot become idle while jobs are active")
         )
 
     # A fully stopped worker must have
     # relinquished all active jobs.
-    if (
-        next_state
-        == WorkerState.STOPPED.value
-        and worker.active_job_ids
-    ):
-        raise (
-            InvalidWorkerTransition(
-                "Worker cannot stop while "
-                "jobs are active"
-            )
-        )
+    if next_state == WorkerState.STOPPED.value and worker.active_job_ids:
+        raise (InvalidWorkerTransition("Worker cannot stop while jobs are active"))
 
     event = StateTransition(
-        subject=(
-            f"worker:{worker.worker_id}"
-        ),
+        subject=(f"worker:{worker.worker_id}"),
         previous_state=previous,
         next_state=next_state,
         reason=reason,
@@ -303,30 +228,16 @@ def transition_worker(
 
     worker.state = next_state
 
-    if (
-        next_state
-        == WorkerState.STARTING.value
-        and worker.started_at
-        is None
-    ):
-        worker.started_at = (
-            utc_now()
-        )
+    if next_state == WorkerState.STARTING.value and worker.started_at is None:
+        worker.started_at = utc_now()
 
-    if (
-        next_state
-        == WorkerState.STOPPED.value
-    ):
-        worker.stopped_at = (
-            utc_now()
-        )
+    if next_state == WorkerState.STOPPED.value:
+        worker.stopped_at = utc_now()
 
     worker.attributes.setdefault(
         "state_transitions",
         [],
-    ).append(
-        event.to_dict()
-    )
+    ).append(event.to_dict())
 
     worker.finalize()
 
@@ -337,33 +248,24 @@ def transition_worker(
 # Job transition
 # ---------------------------------------------------------------
 
+
 def transition_job(
     job: WorkerJob,
     next_state: str,
     *,
     reason: str,
-    error: Optional[
-        str
-    ] = None,
+    error: Optional[str] = None,
 ) -> StateTransition:
     job.finalize()
 
     previous = job.state
 
-    if (
-        next_state != previous
-        and next_state
-        not in JOB_TRANSITIONS.get(
-            previous,
-            set(),
-        )
+    if next_state != previous and next_state not in JOB_TRANSITIONS.get(
+        previous,
+        set(),
     ):
         raise (
-            InvalidJobTransition(
-                "Invalid job transition: "
-                f"{previous} -> "
-                f"{next_state}"
-            )
+            InvalidJobTransition(f"Invalid job transition: {previous} -> {next_state}")
         )
 
     # LEASED/RUNNING require ownership.
@@ -375,49 +277,22 @@ def transition_job(
         }
         and job.lease is None
     ):
-        raise (
-            InvalidJobTransition(
-                "Job cannot become "
-                f"{next_state} without "
-                "a lease"
-            )
-        )
+        raise (InvalidJobTransition(f"Job cannot become {next_state} without a lease"))
 
     # ---------------------------------------------------------
     # Starting an attempt
     # ---------------------------------------------------------
 
-    if (
-        next_state
-        == JobState.RUNNING.value
-    ):
-        if (
-            job.lease is None
-            or job.lease.state
-            != LeaseState.ACTIVE.value
-        ):
-            raise (
-                InvalidJobTransition(
-                    "Job requires an "
-                    "active lease before "
-                    "running"
-                )
-            )
+    if next_state == JobState.RUNNING.value:
+        if job.lease is None or job.lease.state != LeaseState.ACTIVE.value:
+            raise (InvalidJobTransition("Job requires an active lease before running"))
 
         job.attempt += 1
 
-        if (
-            job.attempt
-            > job.max_attempts
-        ):
+        if job.attempt > job.max_attempts:
             job.attempt -= 1
 
-            raise (
-                InvalidJobTransition(
-                    "Job attempt limit "
-                    "has been reached"
-                )
-            )
+            raise (InvalidJobTransition("Job attempt limit has been reached"))
 
     if error is not None:
         job.error = error
@@ -426,23 +301,16 @@ def transition_job(
     # Terminal jobs
     # ---------------------------------------------------------
 
-    if (
-        next_state
-        in {
-            JobState.SUCCEEDED.value,
-            JobState.FAILED.value,
-            JobState.CANCELLED.value,
-            JobState.EXPIRED.value,
-        }
-    ):
-        job.completed_at = (
-            utc_now()
-        )
+    if next_state in {
+        JobState.SUCCEEDED.value,
+        JobState.FAILED.value,
+        JobState.CANCELLED.value,
+        JobState.EXPIRED.value,
+    }:
+        job.completed_at = utc_now()
 
     event = StateTransition(
-        subject=(
-            f"job:{job.job_id}"
-        ),
+        subject=(f"job:{job.job_id}"),
         previous_state=previous,
         next_state=next_state,
         reason=reason,
@@ -453,9 +321,7 @@ def transition_job(
     job.attributes.setdefault(
         "state_transitions",
         [],
-    ).append(
-        event.to_dict()
-    )
+    ).append(event.to_dict())
 
     job.finalize()
 
@@ -465,6 +331,7 @@ def transition_job(
 # ---------------------------------------------------------------
 # Lease transition
 # ---------------------------------------------------------------
+
 
 def transition_lease(
     lease: JobLease,
@@ -476,27 +343,18 @@ def transition_lease(
 
     previous = lease.state
 
-    if (
-        next_state != previous
-        and next_state
-        not in LEASE_TRANSITIONS.get(
-            previous,
-            set(),
-        )
+    if next_state != previous and next_state not in LEASE_TRANSITIONS.get(
+        previous,
+        set(),
     ):
         raise (
             InvalidLeaseTransition(
-                "Invalid lease "
-                "transition: "
-                f"{previous} -> "
-                f"{next_state}"
+                f"Invalid lease transition: {previous} -> {next_state}"
             )
         )
 
     event = StateTransition(
-        subject=(
-            f"lease:{lease.lease_id}"
-        ),
+        subject=(f"lease:{lease.lease_id}"),
         previous_state=previous,
         next_state=next_state,
         reason=reason,
@@ -513,27 +371,22 @@ def transition_lease(
 # Capacity
 # ---------------------------------------------------------------
 
+
 def worker_has_capacity(
     worker: WorkerStatus,
 ) -> bool:
     worker.finalize()
 
-    return (
-        len(
-            worker.active_job_ids
-        )
-        < worker.concurrency
-        and worker.state
-        in {
-            WorkerState.IDLE.value,
-            WorkerState.BUSY.value,
-        }
-    )
+    return len(worker.active_job_ids) < worker.concurrency and worker.state in {
+        WorkerState.IDLE.value,
+        WorkerState.BUSY.value,
+    }
 
 
 # ---------------------------------------------------------------
 # Assign job
 # ---------------------------------------------------------------
+
 
 def assign_job(
     worker: WorkerStatus,
@@ -551,77 +404,32 @@ def assign_job(
 
     job.finalize()
 
-    if not worker_has_capacity(
-        worker
-    ):
-        raise (
-            InvalidWorkerTransition(
-                "Worker has no available "
-                "job capacity"
-            )
-        )
+    if not worker_has_capacity(worker):
+        raise (InvalidWorkerTransition("Worker has no available job capacity"))
 
-    if (
-        job.lease is None
-        or job.lease.worker_id
-        != worker.worker_id
-    ):
-        raise (
-            InvalidLeaseTransition(
-                "Job lease does not "
-                "belong to this worker"
-            )
-        )
+    if job.lease is None or job.lease.worker_id != worker.worker_id:
+        raise (InvalidLeaseTransition("Job lease does not belong to this worker"))
 
-    if (
-        job.lease.state
-        != LeaseState.ACTIVE.value
-    ):
-        raise (
-            InvalidLeaseTransition(
-                "Job lease is not active"
-            )
-        )
+    if job.lease.state != LeaseState.ACTIVE.value:
+        raise (InvalidLeaseTransition("Job lease is not active"))
 
-    if (
-        job.state
-        != JobState.LEASED.value
-    ):
-        raise (
-            InvalidJobTransition(
-                "Only leased jobs can be "
-                "assigned to a worker"
-            )
-        )
+    if job.state != JobState.LEASED.value:
+        raise (InvalidJobTransition("Only leased jobs can be assigned to a worker"))
 
-    if (
-        job.job_id
-        not in worker.active_job_ids
-    ):
-        worker.active_job_ids.append(
-            job.job_id
-        )
+    if job.job_id not in worker.active_job_ids:
+        worker.active_job_ids.append(job.job_id)
 
     transition_job(
         job,
         JobState.RUNNING.value,
-        reason=(
-            "Worker began processing "
-            "the leased job."
-        ),
+        reason=("Worker began processing the leased job."),
     )
 
-    if (
-        worker.state
-        == WorkerState.IDLE.value
-    ):
+    if worker.state == WorkerState.IDLE.value:
         transition_worker(
             worker,
             WorkerState.BUSY.value,
-            reason=(
-                "Worker accepted an "
-                "active job."
-            ),
+            reason=("Worker accepted an active job."),
         )
 
     worker.finalize()
@@ -630,6 +438,7 @@ def assign_job(
 # ---------------------------------------------------------------
 # Release worker capacity
 # ---------------------------------------------------------------
+
 
 def release_job(
     worker: WorkerStatus,
@@ -644,13 +453,8 @@ def release_job(
     This handles worker accounting only.
     """
 
-    if (
-        job.job_id
-        in worker.active_job_ids
-    ):
-        worker.active_job_ids.remove(
-            job.job_id
-        )
+    if job.job_id in worker.active_job_ids:
+        worker.active_job_ids.remove(job.job_id)
 
     if success:
         worker.completed_jobs += 1
@@ -658,18 +462,11 @@ def release_job(
     else:
         worker.failed_jobs += 1
 
-    if (
-        not worker.active_job_ids
-        and worker.state
-        == WorkerState.BUSY.value
-    ):
+    if not worker.active_job_ids and worker.state == WorkerState.BUSY.value:
         transition_worker(
             worker,
             WorkerState.IDLE.value,
-            reason=(
-                "Worker has no remaining "
-                "active jobs."
-            ),
+            reason=("Worker has no remaining active jobs."),
         )
 
     worker.finalize()
@@ -678,6 +475,7 @@ def release_job(
 # ---------------------------------------------------------------
 # Worker state manager
 # ---------------------------------------------------------------
+
 
 class WorkerStateManager:
     """
@@ -698,17 +496,13 @@ class WorkerStateManager:
         transition_worker(
             worker,
             WorkerState.STARTING.value,
-            reason=(
-                "Worker startup began."
-            ),
+            reason=("Worker startup began."),
         )
 
         transition_worker(
             worker,
             WorkerState.IDLE.value,
-            reason=(
-                "Worker startup completed."
-            ),
+            reason=("Worker startup completed."),
         )
 
         return worker
@@ -717,21 +511,14 @@ class WorkerStateManager:
         self,
         worker: WorkerStatus,
     ) -> WorkerStatus:
-        if (
-            worker.state
-            in {
-                WorkerState.IDLE.value,
-                WorkerState.BUSY.value,
-            }
-        ):
+        if worker.state in {
+            WorkerState.IDLE.value,
+            WorkerState.BUSY.value,
+        }:
             transition_worker(
                 worker,
-                WorkerState.
-                DRAINING.value,
-                reason=(
-                    "Worker entered "
-                    "drain mode."
-                ),
+                WorkerState.DRAINING.value,
+                reason=("Worker entered drain mode."),
             )
 
         return worker
@@ -742,84 +529,48 @@ class WorkerStateManager:
     ) -> WorkerStatus:
         if worker.active_job_ids:
             raise (
-                InvalidWorkerTransition(
-                    "Worker cannot stop "
-                    "while jobs remain "
-                    "active"
-                )
+                InvalidWorkerTransition("Worker cannot stop while jobs remain active")
             )
 
-        if (
-            worker.state
-            == WorkerState.
-            DRAINING.value
-        ):
+        if worker.state == WorkerState.DRAINING.value:
             transition_worker(
                 worker,
-                WorkerState.
-                STOPPING.value,
-                reason=(
-                    "Worker drain "
-                    "completed; shutdown "
-                    "began."
-                ),
+                WorkerState.STOPPING.value,
+                reason=("Worker drain completed; shutdown began."),
             )
 
-        elif (
-            worker.state
-            in {
-                WorkerState.IDLE.value,
-                WorkerState.STARTING.value,
-                WorkerState.FAILED.value,
-            }
-        ):
+        elif worker.state in {
+            WorkerState.IDLE.value,
+            WorkerState.STARTING.value,
+            WorkerState.FAILED.value,
+        }:
             transition_worker(
                 worker,
-                WorkerState.
-                STOPPING.value,
-                reason=(
-                    "Worker shutdown began."
-                ),
+                WorkerState.STOPPING.value,
+                reason=("Worker shutdown began."),
             )
 
-        elif (
-            worker.state
-            == WorkerState.CREATED.value
-        ):
+        elif worker.state == WorkerState.CREATED.value:
             transition_worker(
                 worker,
-                WorkerState.
-                STOPPED.value,
-                reason=(
-                    "Worker stopped before "
-                    "startup."
-                ),
+                WorkerState.STOPPED.value,
+                reason=("Worker stopped before startup."),
             )
 
             return worker
 
-        elif (
-            worker.state
-            == WorkerState.STOPPED.value
-        ):
+        elif worker.state == WorkerState.STOPPED.value:
             return worker
 
         else:
             raise (
-                InvalidWorkerTransition(
-                    "Worker cannot stop "
-                    "from state "
-                    f"{worker.state}"
-                )
+                InvalidWorkerTransition(f"Worker cannot stop from state {worker.state}")
             )
 
         transition_worker(
             worker,
             WorkerState.STOPPED.value,
-            reason=(
-                "Worker shutdown "
-                "completed."
-            ),
+            reason=("Worker shutdown completed."),
         )
 
         return worker
@@ -829,9 +580,7 @@ class WorkerStateManager:
         worker: WorkerStatus,
         *,
         reason: str,
-        error: Optional[
-            str
-        ] = None,
+        error: Optional[str] = None,
     ) -> WorkerStatus:
         worker.last_error = error
 
@@ -854,9 +603,7 @@ class WorkerStateManager:
         transition_job(
             job,
             JobState.READY.value,
-            reason=(
-                "Job is ready for leasing."
-            ),
+            reason=("Job is ready for leasing."),
         )
 
         return job
@@ -880,27 +627,15 @@ class WorkerStateManager:
     ) -> WorkerJob:
         transition_job(
             job,
-            JobState.
-            SUCCEEDED.value,
-            reason=(
-                "Job completed "
-                "successfully."
-            ),
+            JobState.SUCCEEDED.value,
+            reason=("Job completed successfully."),
         )
 
-        if (
-            job.lease is not None
-            and job.lease.state
-            == LeaseState.ACTIVE.value
-        ):
+        if job.lease is not None and job.lease.state == LeaseState.ACTIVE.value:
             transition_lease(
                 job.lease,
-                LeaseState.
-                COMPLETED.value,
-                reason=(
-                    "Job completed under "
-                    "this lease."
-                ),
+                LeaseState.COMPLETED.value,
+                reason=("Job completed under this lease."),
             )
 
         release_job(
@@ -917,9 +652,7 @@ class WorkerStateManager:
         job: WorkerJob,
         *,
         retry: bool,
-        error: Optional[
-            str
-        ] = None,
+        error: Optional[str] = None,
     ) -> WorkerJob:
         """
         Finish an unsuccessful processing
@@ -931,53 +664,27 @@ class WorkerStateManager:
         """
 
         next_state = (
-            JobState.
-            RETRY_WAIT.value
-            if (
-                retry
-                and job.attempt
-                < job.max_attempts
-            )
-            else (
-                JobState.
-                FAILED.value
-            )
+            JobState.RETRY_WAIT.value
+            if (retry and job.attempt < job.max_attempts)
+            else (JobState.FAILED.value)
         )
 
         transition_job(
             job,
             next_state,
             reason=(
-                "Job will wait before "
-                "retry."
-                if (
-                    next_state
-                    == JobState.
-                    RETRY_WAIT.value
-                )
-                else (
-                    "Job processing "
-                    "failed."
-                )
+                "Job will wait before retry."
+                if (next_state == JobState.RETRY_WAIT.value)
+                else ("Job processing failed.")
             ),
             error=error,
         )
 
-        if (
-            job.lease is not None
-            and job.lease.state
-            == LeaseState.ACTIVE.value
-        ):
+        if job.lease is not None and job.lease.state == LeaseState.ACTIVE.value:
             transition_lease(
                 job.lease,
-                LeaseState.
-                RELEASED.value,
-                reason=(
-                    "Worker released the "
-                    "lease after "
-                    "unsuccessful "
-                    "processing."
-                ),
+                LeaseState.RELEASED.value,
+                reason=("Worker released the lease after unsuccessful processing."),
             )
 
         release_job(

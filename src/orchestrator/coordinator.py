@@ -44,6 +44,7 @@ StageHandler = Callable[
 # Stage execution result
 # ---------------------------------------------------------------
 
+
 @dataclass
 class StageExecution:
     """
@@ -71,47 +72,30 @@ class StageExecution:
 
     output: Any = None
 
-    output_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    output_ids: List[str] = field(default_factory=list)
 
-    output_count: Optional[
-        int
-    ] = None
+    output_count: Optional[int] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     skip: bool = False
 
     blocked: bool = False
 
-    stop_reason: str = (
-        StopReason.NONE.value
-    )
+    stop_reason: str = StopReason.NONE.value
 
-    reason: Optional[
-        str
-    ] = None
+    reason: Optional[str] = None
 
     def count(
         self,
     ) -> int:
-        if (
-            self.output_count
-            is not None
-        ):
+        if self.output_count is not None:
             return max(
                 0,
-                int(
-                    self.output_count
-                ),
+                int(self.output_count),
             )
 
         if self.output is None:
@@ -127,9 +111,7 @@ class StageExecution:
                 dict,
             ),
         ):
-            return len(
-                self.output
-            )
+            return len(self.output)
 
         return 1
 
@@ -137,6 +119,7 @@ class StageExecution:
 # ---------------------------------------------------------------
 # Coordinator context
 # ---------------------------------------------------------------
+
 
 @dataclass
 class CoordinatorContext:
@@ -156,25 +139,19 @@ class CoordinatorContext:
     artifacts: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     metadata: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def put(
         self,
         stage: str,
         value: Any,
     ) -> None:
-        self.artifacts[
-            stage
-        ] = value
+        self.artifacts[stage] = value
 
     def get(
         self,
@@ -190,6 +167,7 @@ class CoordinatorContext:
 # ---------------------------------------------------------------
 # Coordinator configuration
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class CoordinatorConfig:
@@ -212,6 +190,7 @@ class CoordinatorConfig:
 # Coordinator result
 # ---------------------------------------------------------------
 
+
 @dataclass
 class CoordinationResult:
     run: OrchestrationRun
@@ -226,15 +205,14 @@ class CoordinationResult:
     ) -> Dict[str, Any]:
         return {
             "run": self.run.to_dict(),
-            "artifact_stages": sorted(
-                self.artifacts
-            ),
+            "artifact_stages": sorted(self.artifacts),
         }
 
 
 # ---------------------------------------------------------------
 # Coordinator
 # ---------------------------------------------------------------
+
 
 class OrchestrationCoordinator:
     """
@@ -254,38 +232,20 @@ class OrchestrationCoordinator:
                 StageHandler,
             ]
         ] = None,
-        lifecycle: Optional[
-            OrchestrationLifecycle
-        ] = None,
-        state: Optional[
-            OrchestrationStateManager
-        ] = None,
-        config: Optional[
-            CoordinatorConfig
-        ] = None,
+        lifecycle: Optional[OrchestrationLifecycle] = None,
+        state: Optional[OrchestrationStateManager] = None,
+        config: Optional[CoordinatorConfig] = None,
     ) -> None:
         self.handlers: Dict[
             str,
             StageHandler,
-        ] = dict(
-            handlers
-            or {}
-        )
+        ] = dict(handlers or {})
 
-        self.lifecycle = (
-            lifecycle
-            or OrchestrationLifecycle()
-        )
+        self.lifecycle = lifecycle or OrchestrationLifecycle()
 
-        self.state = (
-            state
-            or OrchestrationStateManager()
-        )
+        self.state = state or OrchestrationStateManager()
 
-        self.config = (
-            config
-            or CoordinatorConfig()
-        )
+        self.config = config or CoordinatorConfig()
 
     # ---------------------------------------------------------
     # Registration
@@ -296,27 +256,13 @@ class OrchestrationCoordinator:
         stage: str,
         handler: StageHandler,
     ) -> None:
-        if (
-            stage
-            not in {
-                item.value
-                for item in StageName
-            }
-        ):
-            raise ValueError(
-                "Unknown orchestration "
-                f"stage: {stage}"
-            )
+        if stage not in {item.value for item in StageName}:
+            raise ValueError(f"Unknown orchestration stage: {stage}")
 
         if stage in self.handlers:
-            raise ValueError(
-                "Handler already registered "
-                f"for stage: {stage}"
-            )
+            raise ValueError(f"Handler already registered for stage: {stage}")
 
-        self.handlers[
-            stage
-        ] = handler
+        self.handlers[stage] = handler
 
     # ---------------------------------------------------------
     # Run creation
@@ -326,9 +272,7 @@ class OrchestrationCoordinator:
         self,
         context: OrchestrationContext,
     ) -> OrchestrationRun:
-        return OrchestrationRun(
-            context=context
-        ).finalize()
+        return OrchestrationRun(context=context).finalize()
 
     # ---------------------------------------------------------
     # Lifecycle gates
@@ -343,13 +287,9 @@ class OrchestrationCoordinator:
             return True
 
         if gate.stop:
-            run.stop_reason = (
-                gate.stop_reason
-            )
+            run.stop_reason = gate.stop_reason
 
-            run.attributes[
-                "stop_gate"
-            ] = gate.to_dict()
+            run.attributes["stop_gate"] = gate.to_dict()
 
         return False
 
@@ -363,67 +303,20 @@ class OrchestrationCoordinator:
         stage: str,
     ) -> int:
         dependencies = {
-            StageName.
-            COLLECTION.value: None,
-
-            StageName.
-            TELEMETRY.value: (
-                StageName.
-                COLLECTION.value
-            ),
-
-            StageName.
-            CORRELATION.value: (
-                StageName.
-                TELEMETRY.value
-            ),
-
-            StageName.
-            INTELLIGENCE.value: (
-                StageName.
-                CORRELATION.value
-            ),
-
-            StageName.
-            MEMORY.value: (
-                StageName.
-                INTELLIGENCE.value
-            ),
-
-            StageName.
-            DECISION.value: (
-                StageName.
-                INTELLIGENCE.value
-            ),
-
-            StageName.
-            REMEDIATION.value: (
-                StageName.
-                DECISION.value
-            ),
-
-            StageName.
-            SELF_HEALING.value: (
-                StageName.
-                REMEDIATION.value
-            ),
-
-            StageName.
-            OUTCOME.value: (
-                StageName.
-                SELF_HEALING.value
-            ),
+            StageName.COLLECTION.value: None,
+            StageName.TELEMETRY.value: (StageName.COLLECTION.value),
+            StageName.CORRELATION.value: (StageName.TELEMETRY.value),
+            StageName.INTELLIGENCE.value: (StageName.CORRELATION.value),
+            StageName.MEMORY.value: (StageName.INTELLIGENCE.value),
+            StageName.DECISION.value: (StageName.INTELLIGENCE.value),
+            StageName.REMEDIATION.value: (StageName.DECISION.value),
+            StageName.SELF_HEALING.value: (StageName.REMEDIATION.value),
+            StageName.OUTCOME.value: (StageName.SELF_HEALING.value),
         }
 
-        source = dependencies.get(
-            stage
-        )
+        source = dependencies.get(stage)
 
-        value = (
-            context.get(source)
-            if source
-            else None
-        )
+        value = context.get(source) if source else None
 
         if value is None:
             return 0
@@ -438,9 +331,7 @@ class OrchestrationCoordinator:
                 dict,
             ),
         ):
-            return len(
-                value
-            )
+            return len(value)
 
         return 1
 
@@ -452,9 +343,7 @@ class OrchestrationCoordinator:
         self,
         context: CoordinatorContext,
         stage: str,
-    ) -> Optional[
-        StageExecution
-    ]:
+    ) -> Optional[StageExecution]:
         """
         Execute one registered stage handler.
 
@@ -462,11 +351,9 @@ class OrchestrationCoordinator:
         orchestration state model.
         """
 
-        gate = (
-            self.lifecycle.can_enter(
-                context.run,
-                stage,
-            )
+        gate = self.lifecycle.can_enter(
+            context.run,
+            stage,
         )
 
         if not self._apply_gate(
@@ -475,9 +362,7 @@ class OrchestrationCoordinator:
         ):
             return None
 
-        handler = self.handlers.get(
-            stage
-        )
+        handler = self.handlers.get(stage)
 
         self.state.start_stage(
             context.run,
@@ -500,65 +385,39 @@ class OrchestrationCoordinator:
                 context.run,
                 stage,
                 reason=(
-                    "No coordinator handler "
-                    "is registered for this "
-                    "optional stage."
+                    "No coordinator handler is registered for this optional stage."
                 ),
             )
 
             return StageExecution(
                 skip=True,
-                reason=(
-                    "No handler registered."
-                ),
+                reason=("No handler registered."),
             )
 
         try:
-            execution = handler(
-                context
-            )
+            execution = handler(context)
 
             if not isinstance(
                 execution,
                 StageExecution,
             ):
-                execution = (
-                    StageExecution(
-                        output=execution
-                    )
-                )
+                execution = StageExecution(output=execution)
 
             # -----------------------------------------------
             # Controlled block
             # -----------------------------------------------
 
             if execution.blocked:
-                stop_reason = (
-                    execution.stop_reason
-                )
+                stop_reason = execution.stop_reason
 
-                if (
-                    stop_reason
-                    == StopReason.NONE.value
-                ):
-                    stop_reason = (
-                        StopReason.
-                        BLOCKED.value
-                    )
+                if stop_reason == StopReason.NONE.value:
+                    stop_reason = StopReason.BLOCKED.value
 
                 self.state.block_stage(
                     context.run,
                     stage,
-                    reason=(
-                        execution.reason
-                        or (
-                            "Stage was "
-                            "blocked."
-                        )
-                    ),
-                    stop_reason=(
-                        stop_reason
-                    ),
+                    reason=(execution.reason or ("Stage was blocked.")),
+                    stop_reason=(stop_reason),
                 )
 
                 return execution
@@ -571,21 +430,9 @@ class OrchestrationCoordinator:
                 end_stage(
                     context.run,
                     stage,
-                    status=(
-                        StageStatus.
-                        SKIPPED.value
-                    ),
-                    reason=(
-                        execution.reason
-                        or (
-                            "Stage was "
-                            "intentionally "
-                            "skipped."
-                        )
-                    ),
-                    attributes=(
-                        execution.attributes
-                    ),
+                    status=(StageStatus.SKIPPED.value),
+                    reason=(execution.reason or ("Stage was intentionally skipped.")),
+                    attributes=(execution.attributes),
                 )
 
                 return execution
@@ -602,52 +449,33 @@ class OrchestrationCoordinator:
             self.state.complete_stage(
                 context.run,
                 stage,
-                output_count=(
-                    execution.count()
-                ),
-                output_ids=(
-                    execution.output_ids
-                ),
+                output_count=(execution.count()),
+                output_ids=(execution.output_ids),
             )
 
-            result = (
-                context.run.stage(
-                    stage
-                )
-            )
+            result = context.run.stage(stage)
 
             if result is not None:
-                result.attributes.update(
-                    execution.attributes
-                )
+                result.attributes.update(execution.attributes)
 
             return execution
 
         except Exception as exc:
             error = (
-                "Unexpected stage "
-                "execution failure."
-                if self.config.
-                redact_exception_messages
-                else (
-                    f"{type(exc).__name__}: "
-                    f"{exc}"
-                )
+                "Unexpected stage execution failure."
+                if self.config.redact_exception_messages
+                else (f"{type(exc).__name__}: {exc}")
             )
 
             self.state.fail_stage(
                 context.run,
                 stage,
-                reason=(
-                    f"Stage {stage} failed."
-                ),
+                reason=(f"Stage {stage} failed."),
                 error=error,
             )
 
             if not self.config.fail_fast:
-                return StageExecution(
-                    reason=error
-                )
+                return StageExecution(reason=error)
 
             return None
 
@@ -659,9 +487,7 @@ class OrchestrationCoordinator:
         self,
         context: OrchestrationContext,
         *,
-        stages: Optional[
-            Iterable[str]
-        ] = None,
+        stages: Optional[Iterable[str]] = None,
     ) -> CoordinationResult:
         """
         Coordinate one orchestration run.
@@ -673,34 +499,18 @@ class OrchestrationCoordinator:
         composition root or pipeline.
         """
 
-        run = self.create_run(
-            context
-        )
+        run = self.create_run(context)
 
-        coordinator_context = (
-            CoordinatorContext(
-                run=run
-            )
-        )
+        coordinator_context = CoordinatorContext(run=run)
 
-        self.state.start(
-            run
-        )
+        self.state.start(run)
 
         selected = (
-            list(stages)
-            if stages is not None
-            else [
-                item.value
-                for item in StageName
-            ]
+            list(stages) if stages is not None else [item.value for item in StageName]
         )
 
         for stage in selected:
-            if (
-                run.stop_reason
-                != StopReason.NONE.value
-            ):
+            if run.stop_reason != StopReason.NONE.value:
                 break
 
             self.run_stage(
@@ -708,41 +518,28 @@ class OrchestrationCoordinator:
                 stage,
             )
 
-            stage_result = (
-                run.stage(stage)
-            )
+            stage_result = run.stage(stage)
 
             if stage_result is None:
                 continue
 
             if (
-                stage_result.status
-                == StageStatus.
-                FAILED.value
-                and self.config.
-                fail_fast
+                stage_result.status == StageStatus.FAILED.value
+                and self.config.fail_fast
             ):
                 break
 
             if (
-                stage_result.status
-                == StageStatus.
-                BLOCKED.value
-                and self.config.
-                stop_on_blocked_stage
+                stage_result.status == StageStatus.BLOCKED.value
+                and self.config.stop_on_blocked_stage
             ):
                 break
 
-        self.state.finish(
-            run
-        )
+        self.state.finish(run)
 
         return CoordinationResult(
             run=run,
-            artifacts=(
-                coordinator_context.
-                artifacts
-            ),
+            artifacts=(coordinator_context.artifacts),
         )
 
     # ---------------------------------------------------------
@@ -756,19 +553,10 @@ class OrchestrationCoordinator:
         action_available: bool,
         mutating_action: bool,
     ) -> LifecycleDecision:
-        return (
-            self.lifecycle.
-            decision_gate(
-                approval_required=(
-                    approval_required
-                ),
-                action_available=(
-                    action_available
-                ),
-                mutating_action=(
-                    mutating_action
-                ),
-            )
+        return self.lifecycle.decision_gate(
+            approval_required=(approval_required),
+            action_available=(action_available),
+            mutating_action=(mutating_action),
         )
 
     def gate_remediation(
@@ -779,14 +567,11 @@ class OrchestrationCoordinator:
         changed: bool,
         dry_run: bool,
     ) -> LifecycleDecision:
-        return (
-            self.lifecycle.
-            remediation_gate(
-                blocked=blocked,
-                failed=failed,
-                changed=changed,
-                dry_run=dry_run,
-            )
+        return self.lifecycle.remediation_gate(
+            blocked=blocked,
+            failed=failed,
+            changed=changed,
+            dry_run=dry_run,
         )
 
     def gate_healing(
@@ -795,14 +580,7 @@ class OrchestrationCoordinator:
         escalation_required: bool,
         outcome_available: bool,
     ) -> LifecycleDecision:
-        return (
-            self.lifecycle.
-            healing_gate(
-                escalation_required=(
-                    escalation_required
-                ),
-                outcome_available=(
-                    outcome_available
-                ),
-            )
+        return self.lifecycle.healing_gate(
+            escalation_required=(escalation_required),
+            outcome_available=(outcome_available),
         )

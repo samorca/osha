@@ -23,34 +23,23 @@ from src.training.anomaly_model import (
 def parse_args():
     parser = argparse.ArgumentParser(
         description=(
-            "Evaluate the OSHA anomaly detector "
-            "against labelled test telemetry."
+            "Evaluate the OSHA anomaly detector against labelled test telemetry."
         )
     )
 
     parser.add_argument(
         "--data",
-        default=(
-            "orchestration-ai-data/processed/"
-            "anomalies/records.jsonl"
-        ),
+        default=("orchestration-ai-data/processed/anomalies/records.jsonl"),
     )
 
     parser.add_argument(
         "--checkpoint",
-        default=(
-            "artifacts/models/"
-            "anomaly-understanding-v1/best.pt"
-        ),
+        default=("artifacts/models/anomaly-understanding-v1/best.pt"),
     )
 
     parser.add_argument(
         "--output",
-        default=(
-            "artifacts/models/"
-            "anomaly-understanding-v1/"
-            "evaluation"
-        ),
+        default=("artifacts/models/anomaly-understanding-v1/evaluation"),
     )
 
     parser.add_argument(
@@ -78,29 +67,25 @@ def safe_divide(numerator, denominator):
 def binary_metrics(labels, predictions):
     true_positive = sum(
         1
-        for label, prediction
-        in zip(labels, predictions)
+        for label, prediction in zip(labels, predictions)
         if label == 1 and prediction == 1
     )
 
     true_negative = sum(
         1
-        for label, prediction
-        in zip(labels, predictions)
+        for label, prediction in zip(labels, predictions)
         if label == 0 and prediction == 0
     )
 
     false_positive = sum(
         1
-        for label, prediction
-        in zip(labels, predictions)
+        for label, prediction in zip(labels, predictions)
         if label == 0 and prediction == 1
     )
 
     false_negative = sum(
         1
-        for label, prediction
-        in zip(labels, predictions)
+        for label, prediction in zip(labels, predictions)
         if label == 1 and prediction == 0
     )
 
@@ -129,9 +114,7 @@ def binary_metrics(labels, predictions):
         len(labels),
     )
 
-    balanced_accuracy = (
-        recall + specificity
-    ) / 2.0
+    balanced_accuracy = (recall + specificity) / 2.0
 
     false_positive_rate = safe_divide(
         false_positive,
@@ -155,12 +138,8 @@ def binary_metrics(labels, predictions):
         "specificity": specificity,
         "f1": f1,
         "balanced_accuracy": balanced_accuracy,
-        "false_positive_rate": (
-            false_positive_rate
-        ),
-        "false_negative_rate": (
-            false_negative_rate
-        ),
+        "false_positive_rate": (false_positive_rate),
+        "false_negative_rate": (false_negative_rate),
     }
 
 
@@ -173,11 +152,7 @@ def main():
         exist_ok=True,
     )
 
-    device = torch.device(
-        "cuda"
-        if torch.cuda.is_available()
-        else "cpu"
-    )
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     checkpoint = torch.load(
         args.checkpoint,
@@ -190,13 +165,9 @@ def main():
     threshold = checkpoint.get("threshold")
 
     if threshold is None:
-        raise ValueError(
-            "Checkpoint has no calibrated threshold"
-        )
+        raise ValueError("Checkpoint has no calibrated threshold")
 
-    scaler = RobustScaler.from_dict(
-        checkpoint["scaler"]
-    )
+    scaler = RobustScaler.from_dict(checkpoint["scaler"])
 
     test_rows = load_metric_rows(
         args.data,
@@ -209,11 +180,7 @@ def main():
         scaler=scaler,
         window_size=config["window_size"],
         stride=config["stride"],
-        expected_interval_seconds=(
-            config[
-                "expected_interval_seconds"
-            ]
-        ),
+        expected_interval_seconds=(config["expected_interval_seconds"]),
     )
 
     test_loader = DataLoader(
@@ -225,17 +192,13 @@ def main():
     )
 
     model = GRUAutoencoder(
-        number_features=config[
-            "number_features"
-        ],
+        number_features=config["number_features"],
         hidden_size=config["hidden_size"],
         latent_size=config["latent_size"],
         number_layers=config["number_layers"],
     ).to(device)
 
-    model.load_state_dict(
-        checkpoint["model_state_dict"]
-    )
+    model.load_state_dict(checkpoint["model_state_dict"])
 
     model.eval()
 
@@ -260,54 +223,27 @@ def main():
                 output["reconstruction"],
             ).cpu()
 
-            batch_predictions = (
-                batch_scores > threshold
-            ).long()
+            batch_predictions = (batch_scores > threshold).long()
 
-            labels.extend(
-                batch["label"].tolist()
-            )
+            labels.extend(batch["label"].tolist())
 
-            predictions.extend(
-                batch_predictions.tolist()
-            )
+            predictions.extend(batch_predictions.tolist())
 
-            scores.extend(
-                batch_scores.tolist()
-            )
+            scores.extend(batch_scores.tolist())
 
-            timestamps.extend(
-                list(batch["timestamp"])
-            )
+            timestamps.extend(list(batch["timestamp"]))
 
-            event_ids.extend(
-                list(batch["event_id"])
-            )
+            event_ids.extend(list(batch["event_id"]))
 
-            row_ids.extend(
-                batch["row_id"].tolist()
-            )
+            row_ids.extend(batch["row_id"].tolist())
 
-    valid = [
-        index
-        for index, label in enumerate(labels)
-        if label in (0, 1)
-    ]
+    valid = [index for index, label in enumerate(labels) if label in (0, 1)]
 
     labels = [labels[index] for index in valid]
-    predictions = [
-        predictions[index]
-        for index in valid
-    ]
+    predictions = [predictions[index] for index in valid]
     scores = [scores[index] for index in valid]
-    timestamps = [
-        timestamps[index]
-        for index in valid
-    ]
-    event_ids = [
-        event_ids[index]
-        for index in valid
-    ]
+    timestamps = [timestamps[index] for index in valid]
+    event_ids = [event_ids[index] for index in valid]
     row_ids = [row_ids[index] for index in valid]
 
     overall = binary_metrics(
@@ -327,19 +263,13 @@ def main():
         predictions,
         event_ids,
     ):
-        event_groups[event_id][
-            "labels"
-        ].append(label)
+        event_groups[event_id]["labels"].append(label)
 
-        event_groups[event_id][
-            "predictions"
-        ].append(prediction)
+        event_groups[event_id]["predictions"].append(prediction)
 
     per_event = {}
 
-    for event_id, values in sorted(
-        event_groups.items()
-    ):
+    for event_id, values in sorted(event_groups.items()):
         per_event[event_id] = binary_metrics(
             values["labels"],
             values["predictions"],
@@ -356,9 +286,7 @@ def main():
         "per_event": per_event,
     }
 
-    with (
-        output_directory / "metrics.json"
-    ).open(
+    with (output_directory / "metrics.json").open(
         "w",
         encoding="utf-8",
     ) as handle:
@@ -368,9 +296,7 @@ def main():
             indent=2,
         )
 
-    with (
-        output_directory / "predictions.csv"
-    ).open(
+    with (output_directory / "predictions.csv").open(
         "w",
         encoding="utf-8",
         newline="",
@@ -441,8 +367,7 @@ def main():
 
     print(
         "Predictions saved to:",
-        output_directory
-        / "predictions.csv",
+        output_directory / "predictions.csv",
     )
 
 

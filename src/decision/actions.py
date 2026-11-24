@@ -41,13 +41,9 @@ class ActionDefinition:
 
     mutating: bool
 
-    rollback_action_type: Optional[
-        str
-    ] = None
+    rollback_action_type: Optional[str] = None
 
-    expected_effect: Optional[
-        str
-    ] = None
+    expected_effect: Optional[str] = None
 
     enabled: bool = True
 
@@ -55,31 +51,21 @@ class ActionDefinition:
         self,
     ) -> None:
         if not self.action_type.strip():
-            raise ValueError(
-                "action_type is required"
-            )
+            raise ValueError("action_type is required")
 
         if not self.category.strip():
-            raise ValueError(
-                "category is required"
-            )
+            raise ValueError("category is required")
 
         if not self.title.strip():
-            raise ValueError(
-                "title is required"
-            )
+            raise ValueError("title is required")
 
         if (
             self.mutating
-            and self.reversibility
-            == Reversibility.FULL.value
-            and not self.
-            rollback_action_type
+            and self.reversibility == Reversibility.FULL.value
+            and not self.rollback_action_type
         ):
             raise ValueError(
-                "Fully reversible mutating "
-                "action requires "
-                "rollback_action_type"
+                "Fully reversible mutating action requires rollback_action_type"
             )
 
 
@@ -92,262 +78,121 @@ DEFAULT_ACTION_DEFINITIONS: Dict[
     ActionDefinition,
 ] = {
     "observe_resource": ActionDefinition(
-        action_type=(
-            "observe_resource"
-        ),
-        category=(
-            ActionCategory.
-            OBSERVATION.value
-        ),
-        title=(
-            "Observe affected resources"
-        ),
-        description=(
-            "Continue collecting bounded "
-            "health and state observations."
-        ),
-        reversibility=(
-            Reversibility.FULL.value
-        ),
+        action_type=("observe_resource"),
+        category=(ActionCategory.OBSERVATION.value),
+        title=("Observe affected resources"),
+        description=("Continue collecting bounded health and state observations."),
+        reversibility=(Reversibility.FULL.value),
         required_privilege="read",
         mutating=False,
-        rollback_action_type=(
-            "stop_observation"
-        ),
-        expected_effect=(
-            "Additional evidence without "
-            "changing infrastructure state."
-        ),
+        rollback_action_type=("stop_observation"),
+        expected_effect=("Additional evidence without changing infrastructure state."),
     ),
-
     "collect_diagnostics": (
         ActionDefinition(
-            action_type=(
-                "collect_diagnostics"
-            ),
-            category=(
-                ActionCategory.
-                INVESTIGATION.value
-            ),
-            title=(
-                "Collect diagnostics"
-            ),
+            action_type=("collect_diagnostics"),
+            category=(ActionCategory.INVESTIGATION.value),
+            title=("Collect diagnostics"),
             description=(
                 "Collect bounded logs, state "
                 "and health diagnostics for "
                 "affected resources."
             ),
-            reversibility=(
-                Reversibility.FULL.value
-            ),
+            reversibility=(Reversibility.FULL.value),
             required_privilege="read",
             mutating=False,
-            rollback_action_type=(
-                "discard_diagnostic_session"
-            ),
-            expected_effect=(
-                "More evidence for incident "
-                "and root-cause validation."
-            ),
+            rollback_action_type=("discard_diagnostic_session"),
+            expected_effect=("More evidence for incident and root-cause validation."),
         )
     ),
-
     "notify_operator": (
         ActionDefinition(
-            action_type=(
-                "notify_operator"
-            ),
-            category=(
-                ActionCategory.
-                NOTIFICATION.value
-            ),
+            action_type=("notify_operator"),
+            category=(ActionCategory.NOTIFICATION.value),
             title="Notify operator",
-            description=(
-                "Prepare an operator-facing "
-                "incident notification."
-            ),
-            reversibility=(
-                Reversibility.FULL.value
-            ),
+            description=("Prepare an operator-facing incident notification."),
+            reversibility=(Reversibility.FULL.value),
             required_privilege="none",
             mutating=False,
-            rollback_action_type=(
-                "withdraw_notification"
-            ),
-            expected_effect=(
-                "Human awareness and review "
-                "of the incident candidate."
-            ),
+            rollback_action_type=("withdraw_notification"),
+            expected_effect=("Human awareness and review of the incident candidate."),
         )
     ),
-
     "restart_service": (
         ActionDefinition(
-            action_type=(
-                "restart_service"
-            ),
-            category=(
-                ActionCategory.
-                SERVICE_CONTROL.value
-            ),
-            title=(
-                "Restart affected service"
-            ),
+            action_type=("restart_service"),
+            category=(ActionCategory.SERVICE_CONTROL.value),
+            title=("Restart affected service"),
             description=(
-                "Propose a controlled restart "
-                "of one explicitly targeted "
-                "service."
+                "Propose a controlled restart of one explicitly targeted service."
             ),
-            reversibility=(
-                Reversibility.FULL.value
-            ),
-            required_privilege=(
-                "operator"
-            ),
+            reversibility=(Reversibility.FULL.value),
+            required_privilege=("operator"),
             mutating=True,
-            rollback_action_type=(
-                "restore_service_state"
-            ),
-            expected_effect=(
-                "Restore service operation if "
-                "the failure is transient."
-            ),
+            rollback_action_type=("restore_service_state"),
+            expected_effect=("Restore service operation if the failure is transient."),
         )
     ),
-
     "reload_service": (
         ActionDefinition(
-            action_type=(
-                "reload_service"
-            ),
-            category=(
-                ActionCategory.
-                SERVICE_CONTROL.value
-            ),
-            title=(
-                "Reload affected service"
-            ),
-            description=(
-                "Propose a controlled service "
-                "configuration reload."
-            ),
-            reversibility=(
-                Reversibility.FULL.value
-            ),
-            required_privilege=(
-                "operator"
-            ),
+            action_type=("reload_service"),
+            category=(ActionCategory.SERVICE_CONTROL.value),
+            title=("Reload affected service"),
+            description=("Propose a controlled service configuration reload."),
+            reversibility=(Reversibility.FULL.value),
+            required_privilege=("operator"),
             mutating=True,
-            rollback_action_type=(
-                "restore_previous_"
-                "service_configuration"
-            ),
+            rollback_action_type=("restore_previous_service_configuration"),
             expected_effect=(
-                "Apply validated configuration "
-                "without a full service "
-                "restart."
+                "Apply validated configuration without a full service restart."
             ),
         )
     ),
-
     "rollback_configuration": (
         ActionDefinition(
-            action_type=(
-                "rollback_configuration"
-            ),
-            category=(
-                ActionCategory.
-                CONFIGURATION.value
-            ),
-            title=(
-                "Roll back configuration"
-            ),
+            action_type=("rollback_configuration"),
+            category=(ActionCategory.CONFIGURATION.value),
+            title=("Roll back configuration"),
             description=(
-                "Propose restoring a "
-                "previously verified "
-                "configuration version."
+                "Propose restoring a previously verified configuration version."
             ),
-            reversibility=(
-                Reversibility.FULL.value
-            ),
-            required_privilege=(
-                "administrator"
-            ),
+            reversibility=(Reversibility.FULL.value),
+            required_privilege=("administrator"),
             mutating=True,
-            rollback_action_type=(
-                "restore_replaced_"
-                "configuration"
-            ),
-            expected_effect=(
-                "Return the resource to a "
-                "known configuration state."
-            ),
+            rollback_action_type=("restore_replaced_configuration"),
+            expected_effect=("Return the resource to a known configuration state."),
         )
     ),
-
     "isolate_resource": (
         ActionDefinition(
-            action_type=(
-                "isolate_resource"
-            ),
-            category=(
-                ActionCategory.
-                SECURITY_CONTROL.value
-            ),
-            title=(
-                "Isolate affected resource"
-            ),
+            action_type=("isolate_resource"),
+            category=(ActionCategory.SECURITY_CONTROL.value),
+            title=("Isolate affected resource"),
             description=(
-                "Propose temporary isolation "
-                "of one explicitly targeted "
-                "resource."
+                "Propose temporary isolation of one explicitly targeted resource."
             ),
-            reversibility=(
-                Reversibility.FULL.value
-            ),
-            required_privilege=(
-                "administrator"
-            ),
+            reversibility=(Reversibility.FULL.value),
+            required_privilege=("administrator"),
             mutating=True,
-            rollback_action_type=(
-                "remove_resource_isolation"
-            ),
-            expected_effect=(
-                "Limit propagation while "
-                "preserving a rollback path."
-            ),
+            rollback_action_type=("remove_resource_isolation"),
+            expected_effect=("Limit propagation while preserving a rollback path."),
         )
     ),
-
     "scale_capacity": (
         ActionDefinition(
-            action_type=(
-                "scale_capacity"
-            ),
-            category=(
-                ActionCategory.
-                CAPACITY.value
-            ),
+            action_type=("scale_capacity"),
+            category=(ActionCategory.CAPACITY.value),
             title="Adjust capacity",
             description=(
                 "Propose a bounded capacity "
                 "adjustment for an explicitly "
                 "targeted service."
             ),
-            reversibility=(
-                Reversibility.FULL.value
-            ),
-            required_privilege=(
-                "operator"
-            ),
+            reversibility=(Reversibility.FULL.value),
+            required_privilege=("operator"),
             mutating=True,
-            rollback_action_type=(
-                "restore_previous_capacity"
-            ),
-            expected_effect=(
-                "Reduce verified capacity "
-                "pressure."
-            ),
+            rollback_action_type=("restore_previous_capacity"),
+            expected_effect=("Reduce verified capacity pressure."),
         )
     ),
 }
@@ -356,6 +201,7 @@ DEFAULT_ACTION_DEFINITIONS: Dict[
 # ---------------------------------------------------------------
 # Catalog lookup
 # ---------------------------------------------------------------
+
 
 def action_definition(
     action_type: str,
@@ -367,28 +213,17 @@ def action_definition(
         ]
     ] = None,
 ) -> ActionDefinition:
-    catalog = (
-        definitions
-        or DEFAULT_ACTION_DEFINITIONS
-    )
+    catalog = definitions or DEFAULT_ACTION_DEFINITIONS
 
-    definition = catalog.get(
-        action_type
-    )
+    definition = catalog.get(action_type)
 
     if definition is None:
-        raise KeyError(
-            "Unknown action type: "
-            f"{action_type}"
-        )
+        raise KeyError(f"Unknown action type: {action_type}")
 
     definition.validate()
 
     if not definition.enabled:
-        raise ValueError(
-            "Action type is disabled: "
-            f"{action_type}"
-        )
+        raise ValueError(f"Action type is disabled: {action_type}")
 
     return definition
 
@@ -397,22 +232,15 @@ def action_definition(
 # Candidate creation
 # ---------------------------------------------------------------
 
+
 def create_action(
     action_type: str,
     context: DecisionContext,
     *,
-    target_resource_ids: Iterable[
-        str
-    ] = (),
-    target_service_ids: Iterable[
-        str
-    ] = (),
-    parameters: Optional[
-        Dict[str, Any]
-    ] = None,
-    rationale: Optional[
-        str
-    ] = None,
+    target_resource_ids: Iterable[str] = (),
+    target_service_ids: Iterable[str] = (),
+    parameters: Optional[Dict[str, Any]] = None,
+    rationale: Optional[str] = None,
     definitions: Optional[
         Dict[
             str,
@@ -434,99 +262,45 @@ def create_action(
 
     context.finalize()
 
-    resources = sorted(
-        set(
-            target_resource_ids
-        )
-    )
+    resources = sorted(set(target_resource_ids))
 
-    services = sorted(
-        set(
-            target_service_ids
-        )
-    )
+    services = sorted(set(target_service_ids))
 
     evidence = [
         DecisionEvidence(
-            evidence_type=(
-                "action_generation"
-            ),
+            evidence_type=("action_generation"),
             description=(
-                "Action candidate was "
-                "generated from structured "
-                "decision context."
+                "Action candidate was generated from structured decision context."
             ),
-            score=(
-                context.
-                incident_confidence
-            ),
-            incident_id=(
-                context.incident_id
-            ),
+            score=(context.incident_confidence),
+            incident_id=(context.incident_id),
             resource_ids=resources,
             attributes={
-                "context_id": (
-                    context.context_id
-                ),
-                "action_type": (
-                    action_type
-                ),
-                "mutating": (
-                    definition.mutating
-                ),
+                "context_id": (context.context_id),
+                "action_type": (action_type),
+                "mutating": (definition.mutating),
             },
         )
     ]
 
     return ActionCandidate(
-        action_type=(
-            definition.action_type
-        ),
-        category=(
-            definition.category
-        ),
-        title=(
-            definition.title
-        ),
-        environment_id=(
-            context.environment_id
-        ),
-        target_resource_ids=(
-            resources
-        ),
-        target_service_ids=(
-            services
-        ),
-        description=(
-            definition.description
-        ),
+        action_type=(definition.action_type),
+        category=(definition.category),
+        title=(definition.title),
+        environment_id=(context.environment_id),
+        target_resource_ids=(resources),
+        target_service_ids=(services),
+        description=(definition.description),
         rationale=rationale,
-        parameters=dict(
-            parameters
-            or {}
-        ),
-        reversibility=(
-            definition.reversibility
-        ),
-        rollback_action_type=(
-            definition.
-            rollback_action_type
-        ),
-        expected_effect=(
-            definition.expected_effect
-        ),
+        parameters=dict(parameters or {}),
+        reversibility=(definition.reversibility),
+        rollback_action_type=(definition.rollback_action_type),
+        expected_effect=(definition.expected_effect),
         evidence=evidence,
         attributes={
-            "required_privilege": (
-                definition.
-                required_privilege
-            ),
-            "mutating": (
-                definition.mutating
-            ),
-            "context_id": (
-                context.context_id
-            ),
+            "required_privilege": (definition.required_privilege),
+            "mutating": (definition.mutating),
+            "context_id": (context.context_id),
         },
     ).finalize()
 
@@ -535,13 +309,12 @@ def create_action(
 # Default action generation
 # ---------------------------------------------------------------
 
+
 def default_actions_for_context(
     context: DecisionContext,
     *,
     include_mutating_candidates: bool = True,
-) -> List[
-    ActionCandidate
-]:
+) -> List[ActionCandidate]:
     """
     Generate conservative default candidates.
 
@@ -559,44 +332,28 @@ def default_actions_for_context(
         create_action(
             "observe_resource",
             context,
-            target_resource_ids=(
-                context.resource_ids
-            ),
-            target_service_ids=(
-                context.service_ids
-            ),
+            target_resource_ids=(context.resource_ids),
+            target_service_ids=(context.service_ids),
             rationale=(
-                "Continue observing the "
-                "affected scope while evidence "
-                "is evaluated."
+                "Continue observing the affected scope while evidence is evaluated."
             ),
         ),
-
         create_action(
             "collect_diagnostics",
             context,
-            target_resource_ids=(
-                context.resource_ids
-            ),
-            target_service_ids=(
-                context.service_ids
-            ),
+            target_resource_ids=(context.resource_ids),
+            target_service_ids=(context.service_ids),
             rationale=(
                 "Collect evidence needed to "
                 "validate incident and "
                 "root-cause hypotheses."
             ),
         ),
-
         create_action(
             "notify_operator",
             context,
-            target_resource_ids=(
-                context.resource_ids
-            ),
-            target_service_ids=(
-                context.service_ids
-            ),
+            target_resource_ids=(context.resource_ids),
+            target_service_ids=(context.service_ids),
             rationale=(
                 "Present the incident "
                 "candidate, limitations and "
@@ -608,23 +365,15 @@ def default_actions_for_context(
 
     if (
         include_mutating_candidates
-        and context.
-        root_cause_resource_id
+        and context.root_cause_resource_id
         and context.service_ids
     ):
         actions.append(
             create_action(
                 "restart_service",
                 context,
-                target_resource_ids=[
-                    context.
-                    root_cause_resource_id
-                ],
-                target_service_ids=(
-                    context.service_ids[
-                        :1
-                    ]
-                ),
+                target_resource_ids=[context.root_cause_resource_id],
+                target_service_ids=(context.service_ids[:1]),
                 parameters={
                     "maximum_targets": 1,
                 },
@@ -638,22 +387,17 @@ def default_actions_for_context(
             )
         )
 
-    return deduplicate_actions(
-        actions
-    )
+    return deduplicate_actions(actions)
 
 
 # ---------------------------------------------------------------
 # Deduplication and summaries
 # ---------------------------------------------------------------
 
+
 def deduplicate_actions(
-    actions: Iterable[
-        ActionCandidate
-    ],
-) -> List[
-    ActionCandidate
-]:
+    actions: Iterable[ActionCandidate],
+) -> List[ActionCandidate]:
     output: Dict[
         str,
         ActionCandidate,
@@ -663,9 +407,7 @@ def deduplicate_actions(
         action.finalize()
 
         if action.action_id:
-            output[
-                action.action_id
-            ] = action
+            output[action.action_id] = action
 
     return sorted(
         output.values(),
@@ -685,17 +427,9 @@ def action_catalog_summary(
         ]
     ] = None,
 ) -> Dict[str, Any]:
-    catalog = (
-        definitions
-        or DEFAULT_ACTION_DEFINITIONS
-    )
+    catalog = definitions or DEFAULT_ACTION_DEFINITIONS
 
-    enabled = [
-        item
-        for item
-        in catalog.values()
-        if item.enabled
-    ]
+    enabled = [item for item in catalog.values() if item.enabled]
 
     categories: Dict[
         str,
@@ -703,9 +437,7 @@ def action_catalog_summary(
     ] = {}
 
     for item in enabled:
-        categories[
-            item.category
-        ] = (
+        categories[item.category] = (
             categories.get(
                 item.category,
                 0,
@@ -714,25 +446,11 @@ def action_catalog_summary(
         )
 
     return {
-        "action_type_count": len(
-            catalog
-        ),
-        "enabled_action_type_count": (
-            len(enabled)
-        ),
-        "mutating_action_type_count": (
-            sum(
-                1
-                for item in enabled
-                if item.mutating
-            )
-        ),
+        "action_type_count": len(catalog),
+        "enabled_action_type_count": (len(enabled)),
+        "mutating_action_type_count": (sum(1 for item in enabled if item.mutating)),
         "read_only_action_type_count": (
-            sum(
-                1
-                for item in enabled
-                if not item.mutating
-            )
+            sum(1 for item in enabled if not item.mutating)
         ),
         "categories": categories,
     }
@@ -741,6 +459,7 @@ def action_catalog_summary(
 # ---------------------------------------------------------------
 # Catalog class
 # ---------------------------------------------------------------
+
 
 class ActionCatalog:
     """
@@ -752,17 +471,9 @@ class ActionCatalog:
     def __init__(
         self,
         *,
-        definitions: Optional[
-            Iterable[
-                ActionDefinition
-            ]
-        ] = None,
+        definitions: Optional[Iterable[ActionDefinition]] = None,
     ) -> None:
-        source = (
-            definitions
-            or DEFAULT_ACTION_DEFINITIONS.
-            values()
-        )
+        source = definitions or DEFAULT_ACTION_DEFINITIONS.values()
 
         self._definitions: Dict[
             str,
@@ -772,18 +483,10 @@ class ActionCatalog:
         for definition in source:
             definition.validate()
 
-            if (
-                definition.action_type
-                in self._definitions
-            ):
-                raise ValueError(
-                    "Duplicate action type: "
-                    f"{definition.action_type}"
-                )
+            if definition.action_type in self._definitions:
+                raise ValueError(f"Duplicate action type: {definition.action_type}")
 
-            self._definitions[
-                definition.action_type
-            ] = definition
+            self._definitions[definition.action_type] = definition
 
     def get(
         self,
@@ -791,9 +494,7 @@ class ActionCatalog:
     ) -> ActionDefinition:
         return action_definition(
             action_type,
-            definitions=(
-                self._definitions
-            ),
+            definitions=(self._definitions),
         )
 
     def create(
@@ -801,33 +502,19 @@ class ActionCatalog:
         action_type: str,
         context: DecisionContext,
         *,
-        target_resource_ids: Iterable[
-            str
-        ] = (),
-        target_service_ids: Iterable[
-            str
-        ] = (),
-        parameters: Optional[
-            Dict[str, Any]
-        ] = None,
-        rationale: Optional[
-            str
-        ] = None,
+        target_resource_ids: Iterable[str] = (),
+        target_service_ids: Iterable[str] = (),
+        parameters: Optional[Dict[str, Any]] = None,
+        rationale: Optional[str] = None,
     ) -> ActionCandidate:
         return create_action(
             action_type,
             context,
-            target_resource_ids=(
-                target_resource_ids
-            ),
-            target_service_ids=(
-                target_service_ids
-            ),
+            target_resource_ids=(target_resource_ids),
+            target_service_ids=(target_service_ids),
             parameters=parameters,
             rationale=rationale,
-            definitions=(
-                self._definitions
-            ),
+            definitions=(self._definitions),
         )
 
     def defaults(
@@ -835,9 +522,7 @@ class ActionCatalog:
         context: DecisionContext,
         *,
         include_mutating_candidates: bool = True,
-    ) -> List[
-        ActionCandidate
-    ]:
+    ) -> List[ActionCandidate]:
         """
         Generate default candidates using this
         catalog's definitions.
@@ -849,70 +534,43 @@ class ActionCatalog:
             self.create(
                 "observe_resource",
                 context,
-                target_resource_ids=(
-                    context.resource_ids
-                ),
-                target_service_ids=(
-                    context.service_ids
-                ),
+                target_resource_ids=(context.resource_ids),
+                target_service_ids=(context.service_ids),
                 rationale=(
-                    "Continue observing the "
-                    "affected scope while "
-                    "evidence is evaluated."
+                    "Continue observing the affected scope while evidence is evaluated."
                 ),
             ),
-
             self.create(
                 "collect_diagnostics",
                 context,
-                target_resource_ids=(
-                    context.resource_ids
-                ),
-                target_service_ids=(
-                    context.service_ids
-                ),
+                target_resource_ids=(context.resource_ids),
+                target_service_ids=(context.service_ids),
                 rationale=(
                     "Collect evidence needed "
                     "to validate incident and "
                     "root-cause hypotheses."
                 ),
             ),
-
             self.create(
                 "notify_operator",
                 context,
-                target_resource_ids=(
-                    context.resource_ids
-                ),
-                target_service_ids=(
-                    context.service_ids
-                ),
-                rationale=(
-                    "Present the incident "
-                    "candidate to an operator."
-                ),
+                target_resource_ids=(context.resource_ids),
+                target_service_ids=(context.service_ids),
+                rationale=("Present the incident candidate to an operator."),
             ),
         ]
 
         if (
             include_mutating_candidates
-            and context.
-            root_cause_resource_id
+            and context.root_cause_resource_id
             and context.service_ids
         ):
             actions.append(
                 self.create(
                     "restart_service",
                     context,
-                    target_resource_ids=[
-                        context.
-                        root_cause_resource_id
-                    ],
-                    target_service_ids=(
-                        context.service_ids[
-                            :1
-                        ]
-                    ),
+                    target_resource_ids=[context.root_cause_resource_id],
+                    target_service_ids=(context.service_ids[:1]),
                     parameters={
                         "maximum_targets": 1,
                     },
@@ -925,18 +583,12 @@ class ActionCatalog:
                 )
             )
 
-        return deduplicate_actions(
-            actions
-        )
+        return deduplicate_actions(actions)
 
     def definitions(
         self,
-    ) -> List[
-        ActionDefinition
-    ]:
+    ) -> List[ActionDefinition]:
         return sorted(
             self._definitions.values(),
-            key=lambda item: (
-                item.action_type
-            ),
+            key=lambda item: item.action_type,
         )

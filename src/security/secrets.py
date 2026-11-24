@@ -42,27 +42,20 @@ from src.security.schema import (
 # Errors
 # ---------------------------------------------------------------
 
-class SecretError(
-    RuntimeError
-):
+
+class SecretError(RuntimeError):
     pass
 
 
-class SecretProviderError(
-    SecretError
-):
+class SecretProviderError(SecretError):
     pass
 
 
-class SecretNotFoundError(
-    SecretError
-):
+class SecretNotFoundError(SecretError):
     pass
 
 
-class SecretProviderNotFoundError(
-    SecretError
-):
+class SecretProviderNotFoundError(SecretError):
     pass
 
 
@@ -71,9 +64,7 @@ class SecretProviderNotFoundError(
 # ---------------------------------------------------------------
 
 SecretProvider = Callable[
-    [
-        SecretReference
-    ],
+    [SecretReference],
     Optional[str],
 ]
 
@@ -81,6 +72,7 @@ SecretProvider = Callable[
 # ---------------------------------------------------------------
 # Opaque secret value
 # ---------------------------------------------------------------
+
 
 class SecretValue:
     """
@@ -93,23 +85,16 @@ class SecretValue:
     boundary that actually requires the value.
     """
 
-    __slots__ = (
-        "__value",
-    )
+    __slots__ = ("__value",)
 
     def __init__(
         self,
         value: str,
     ) -> None:
         if value is None:
-            raise SecretNotFoundError(
-                "Secret value is "
-                "unavailable."
-            )
+            raise SecretNotFoundError("Secret value is unavailable.")
 
-        self.__value = str(
-            value
-        )
+        self.__value = str(value)
 
     def reveal(
         self,
@@ -119,9 +104,7 @@ class SecretValue:
     def __repr__(
         self,
     ) -> str:
-        return (
-            "SecretValue([REDACTED])"
-        )
+        return "SecretValue([REDACTED])"
 
     def __str__(
         self,
@@ -131,21 +114,18 @@ class SecretValue:
     def __bool__(
         self,
     ) -> bool:
-        return bool(
-            self.__value
-        )
+        return bool(self.__value)
 
     def __len__(
         self,
     ) -> int:
-        return len(
-            self.__value
-        )
+        return len(self.__value)
 
 
 # ---------------------------------------------------------------
 # Cache record
 # ---------------------------------------------------------------
+
 
 @dataclass
 class CachedSecret:
@@ -164,6 +144,7 @@ class CachedSecret:
 # ---------------------------------------------------------------
 # Environment provider
 # ---------------------------------------------------------------
+
 
 class EnvironmentSecretProvider:
     """
@@ -186,11 +167,7 @@ class EnvironmentSecretProvider:
             ]
         ] = None,
     ) -> None:
-        self.environ = (
-            os.environ
-            if environ is None
-            else environ
-        )
+        self.environ = os.environ if environ is None else environ
 
     def __call__(
         self,
@@ -198,27 +175,21 @@ class EnvironmentSecretProvider:
     ) -> Optional[str]:
         reference.finalize()
 
-        key = (
-            reference.key
-            or reference.name
-        )
+        key = reference.key or reference.name
 
         key = required_string(
             key,
-            name=(
-                "environment secret key"
-            ),
+            name=("environment secret key"),
             maximum_length=512,
         )
 
-        return self.environ.get(
-            key
-        )
+        return self.environ.get(key)
 
 
 # ---------------------------------------------------------------
 # Secret manager
 # ---------------------------------------------------------------
+
 
 class SecretManager:
     """
@@ -232,14 +203,9 @@ class SecretManager:
     def __init__(
         self,
         *,
-        config: Optional[
-            SecretsConfig
-        ] = None,
+        config: Optional[SecretsConfig] = None,
     ) -> None:
-        self.config = (
-            config
-            or SecretsConfig()
-        )
+        self.config = config or SecretsConfig()
 
         self.config.validate()
 
@@ -270,33 +236,18 @@ class SecretManager:
             maximum_length=128,
         ).lower()
 
-        if (
-            normalized
-            not in set(
-                self.config.
-                allowed_providers
-            )
-        ):
+        if normalized not in set(self.config.allowed_providers):
             raise SecretProviderError(
-                "Secret provider is not "
-                "allowed by configuration: "
-                f"{normalized}"
+                f"Secret provider is not allowed by configuration: {normalized}"
             )
 
         with self._lock:
-            if (
-                normalized
-                in self._providers
-            ):
+            if normalized in self._providers:
                 raise SecretProviderError(
-                    "Secret provider already "
-                    "registered: "
-                    f"{normalized}"
+                    f"Secret provider already registered: {normalized}"
                 )
 
-            self._providers[
-                normalized
-            ] = provider
+            self._providers[normalized] = provider
 
     # ---------------------------------------------------------
     # Convenience environment provider
@@ -314,9 +265,7 @@ class SecretManager:
     ) -> None:
         self.register_provider(
             "environment",
-            EnvironmentSecretProvider(
-                environ
-            ),
+            EnvironmentSecretProvider(environ),
         )
 
     # ---------------------------------------------------------
@@ -332,14 +281,9 @@ class SecretManager:
         return "|".join(
             (
                 reference.provider,
-
                 reference.name,
-
-                reference.key
-                or "",
-
-                reference.version
-                or "",
+                reference.key or "",
+                reference.version or "",
             )
         )
 
@@ -361,64 +305,32 @@ class SecretManager:
         """
 
         if not self.config.enabled:
-            raise SecretProviderError(
-                "Secret resolution is "
-                "disabled."
-            )
+            raise SecretProviderError("Secret resolution is disabled.")
 
         reference.finalize()
 
-        provider_name = (
-            required_string(
-                (
-                    reference.provider
-                    or self.config.
-                    default_provider
-                ),
-                name="secret provider",
-                maximum_length=128,
-            ).lower()
-        )
+        provider_name = required_string(
+            (reference.provider or self.config.default_provider),
+            name="secret provider",
+            maximum_length=128,
+        ).lower()
 
-        if (
-            provider_name
-            not in set(
-                self.config.
-                allowed_providers
-            )
-        ):
+        if provider_name not in set(self.config.allowed_providers):
             raise SecretProviderError(
-                "Secret provider is not "
-                "allowed by configuration: "
-                f"{provider_name}"
+                f"Secret provider is not allowed by configuration: {provider_name}"
             )
 
-        cache_key = (
-            self._cache_key(
-                reference
-            )
-        )
+        cache_key = self._cache_key(reference)
 
         # -----------------------------------------------------
         # Cache lookup
         # -----------------------------------------------------
 
-        if (
-            self.config.cache_enabled
-        ):
+        if self.config.cache_enabled:
             with self._lock:
-                cached = (
-                    self._cache.get(
-                        cache_key
-                    )
-                )
+                cached = self._cache.get(cache_key)
 
-            if (
-                cached is not None
-                and not is_expired(
-                    cached.expires_at
-                )
-            ):
+            if cached is not None and not is_expired(cached.expires_at):
                 return cached.value
 
         # -----------------------------------------------------
@@ -426,18 +338,12 @@ class SecretManager:
         # -----------------------------------------------------
 
         with self._lock:
-            provider = (
-                self._providers.get(
-                    provider_name
-                )
-            )
+            provider = self._providers.get(provider_name)
 
         if provider is None:
             raise (
                 SecretProviderNotFoundError(
-                    "No secret provider is "
-                    "registered for: "
-                    f"{provider_name}"
+                    f"No secret provider is registered for: {provider_name}"
                 )
             )
 
@@ -446,42 +352,25 @@ class SecretManager:
         # -----------------------------------------------------
 
         try:
-            raw_value = provider(
-                reference
-            )
+            raw_value = provider(reference)
 
         except Exception as exc:
-            raise SecretProviderError(
-                "Secret provider failed."
-            ) from exc
+            raise SecretProviderError("Secret provider failed.") from exc
 
         if raw_value is None:
-            raise SecretNotFoundError(
-                "Secret was not found."
-            )
+            raise SecretNotFoundError("Secret was not found.")
 
-        secret = SecretValue(
-            raw_value
-        )
+        secret = SecretValue(raw_value)
 
         # -----------------------------------------------------
         # Optional short-lived cache
         # -----------------------------------------------------
 
-        if (
-            self.config.cache_enabled
-        ):
+        if self.config.cache_enabled:
             with self._lock:
-                self._cache[
-                    cache_key
-                ] = CachedSecret(
+                self._cache[cache_key] = CachedSecret(
                     value=secret,
-                    expires_at=(
-                        timestamp_after(
-                            self.config.
-                            cache_ttl_seconds
-                        )
-                    ),
+                    expires_at=(timestamp_after(self.config.cache_ttl_seconds)),
                 )
 
         return secret
@@ -494,9 +383,7 @@ class SecretManager:
         self,
         reference: SecretReference,
     ) -> bool:
-        key = self._cache_key(
-            reference
-        )
+        key = self._cache_key(reference)
 
         with self._lock:
             return (
@@ -515,9 +402,7 @@ class SecretManager:
         self,
     ) -> int:
         with self._lock:
-            count = len(
-                self._cache
-            )
+            count = len(self._cache)
 
             self._cache.clear()
 
@@ -533,11 +418,8 @@ class SecretManager:
         with self._lock:
             expired = [
                 key
-                for key, cached
-                in self._cache.items()
-                if is_expired(
-                    cached.expires_at
-                )
+                for key, cached in self._cache.items()
+                if is_expired(cached.expires_at)
             ]
 
             for key in expired:
@@ -546,9 +428,7 @@ class SecretManager:
                     None,
                 )
 
-            return len(
-                expired
-            )
+            return len(expired)
 
     # ---------------------------------------------------------
     # Safe summary
@@ -567,38 +447,12 @@ class SecretManager:
 
         with self._lock:
             return {
-                "enabled": (
-                    self.config.enabled
-                ),
-
-                "default_provider": (
-                    self.config.
-                    default_provider
-                ),
-
-                "allowed_providers": (
-                    list(
-                        self.config.
-                        allowed_providers
-                    )
-                ),
-
-                "registered_providers": (
-                    sorted(
-                        self._providers
-                    )
-                ),
-
-                "cache_enabled": (
-                    self.config.
-                    cache_enabled
-                ),
-
-                "cached_secret_count": (
-                    len(
-                        self._cache
-                    )
-                ),
+                "enabled": (self.config.enabled),
+                "default_provider": (self.config.default_provider),
+                "allowed_providers": (list(self.config.allowed_providers)),
+                "registered_providers": (sorted(self._providers)),
+                "cache_enabled": (self.config.cache_enabled),
+                "cached_secret_count": (len(self._cache)),
             }
 
 
@@ -611,13 +465,9 @@ __all__ = [
     "SecretProviderError",
     "SecretNotFoundError",
     "SecretProviderNotFoundError",
-
     "SecretProvider",
-
     "SecretValue",
     "CachedSecret",
-
     "EnvironmentSecretProvider",
-
     "SecretManager",
 ]

@@ -54,56 +54,36 @@ MEMORY_CLASSES: Dict[
     str,
     Type[MemoryRecord],
 ] = {
-    MemoryType.EPISODE.value: (
-        EpisodeMemory
-    ),
-    MemoryType.PATTERN.value: (
-        PatternMemory
-    ),
-    MemoryType.BASELINE.value: (
-        BaselineMemory
-    ),
-    MemoryType.INCIDENT.value: (
-        IncidentMemory
-    ),
-    MemoryType.ROOT_CAUSE.value: (
-        RootCauseMemory
-    ),
-    MemoryType.OUTCOME.value: (
-        OutcomeMemory
-    ),
+    MemoryType.EPISODE.value: (EpisodeMemory),
+    MemoryType.PATTERN.value: (PatternMemory),
+    MemoryType.BASELINE.value: (BaselineMemory),
+    MemoryType.INCIDENT.value: (IncidentMemory),
+    MemoryType.ROOT_CAUSE.value: (RootCauseMemory),
+    MemoryType.OUTCOME.value: (OutcomeMemory),
 }
 
 
-class MemoryStoreError(
-    RuntimeError
-):
+class MemoryStoreError(RuntimeError):
     """
     Base error for memory storage failures.
     """
 
 
-class MemoryNotFoundError(
-    MemoryStoreError
-):
+class MemoryNotFoundError(MemoryStoreError):
     """
     Raised when a required memory record does not
     exist.
     """
 
 
-class MemoryConflictError(
-    MemoryStoreError
-):
+class MemoryConflictError(MemoryStoreError):
     """
     Raised when a create-only write conflicts
     with an existing memory record.
     """
 
 
-class MemorySerializationError(
-    MemoryStoreError
-):
+class MemorySerializationError(MemoryStoreError):
     """
     Raised when memory cannot be serialized or
     reconstructed.
@@ -157,17 +137,10 @@ class MemoryQuery:
         self,
     ) -> None:
         if self.offset < 0:
-            raise ValueError(
-                "offset must be >= 0"
-            )
+            raise ValueError("offset must be >= 0")
 
-        if (
-            self.limit is not None
-            and self.limit < 1
-        ):
-            raise ValueError(
-                "limit must be >= 1"
-            )
+        if self.limit is not None and self.limit < 1:
+            raise ValueError("limit must be >= 1")
 
 
 @dataclass(frozen=True)
@@ -190,33 +163,20 @@ class MemoryStoreStats:
         self,
     ) -> Dict[str, Any]:
         return {
-            "memory_count": (
-                self.memory_count
-            ),
-            "active_count": (
-                self.active_count
-            ),
-            "archived_count": (
-                self.archived_count
-            ),
-            "expired_count": (
-                self.expired_count
-            ),
-            "verified_count": (
-                self.verified_count
-            ),
-            "environments": (
-                self.environments
-            ),
-            "memory_types": dict(
-                self.memory_types
-            ),
+            "memory_count": (self.memory_count),
+            "active_count": (self.active_count),
+            "archived_count": (self.archived_count),
+            "expired_count": (self.expired_count),
+            "verified_count": (self.verified_count),
+            "environments": (self.environments),
+            "memory_types": dict(self.memory_types),
         }
 
 
 # ---------------------------------------------------------------
 # Serialization
 # ---------------------------------------------------------------
+
 
 def memory_to_dict(
     memory: MemoryObject,
@@ -235,8 +195,7 @@ def memory_to_dict(
         dict,
     ):
         raise MemorySerializationError(
-            "Memory serialization did not "
-            "produce a dictionary"
+            "Memory serialization did not produce a dictionary"
         )
 
     return result
@@ -245,17 +204,10 @@ def memory_to_dict(
 def memory_class_for_type(
     memory_type: str,
 ) -> Type[MemoryRecord]:
-    memory_class = (
-        MEMORY_CLASSES.get(
-            memory_type
-        )
-    )
+    memory_class = MEMORY_CLASSES.get(memory_type)
 
     if memory_class is None:
-        raise MemorySerializationError(
-            "Unsupported memory_type: "
-            f"{memory_type}"
-        )
+        raise MemorySerializationError(f"Unsupported memory_type: {memory_type}")
 
     return memory_class
 
@@ -272,52 +224,34 @@ def memory_from_dict(
     not supplied when they use init=False.
     """
 
-    raw_type = value.get(
-        "memory_type"
-    )
+    raw_type = value.get("memory_type")
 
-    if not isinstance(
-        raw_type,
-        str,
-    ) or not raw_type.strip():
-        raise MemorySerializationError(
-            "Persisted memory has no "
-            "memory_type"
+    if (
+        not isinstance(
+            raw_type,
+            str,
         )
+        or not raw_type.strip()
+    ):
+        raise MemorySerializationError("Persisted memory has no memory_type")
 
-    memory_class = (
-        memory_class_for_type(
-            raw_type.strip()
-        )
-    )
+    memory_class = memory_class_for_type(raw_type.strip())
 
-    accepted_fields = {
-        item.name
-        for item in fields(
-            memory_class
-        )
-        if item.init
-    }
+    accepted_fields = {item.name for item in fields(memory_class) if item.init}
 
     constructor_values = {
-        key: deepcopy(item)
-        for key, item
-        in value.items()
-        if key in accepted_fields
+        key: deepcopy(item) for key, item in value.items() if key in accepted_fields
     }
 
     try:
-        memory = memory_class(
-            **constructor_values
-        )
+        memory = memory_class(**constructor_values)
 
     except (
         TypeError,
         ValueError,
     ) as exc:
         raise MemorySerializationError(
-            "Unable to reconstruct "
-            f"{raw_type} memory: {exc}"
+            f"Unable to reconstruct {raw_type} memory: {exc}"
         ) from exc
 
     memory.finalize()
@@ -335,9 +269,7 @@ def clone_memory(
     objects directly to callers.
     """
 
-    cloned = memory_from_dict(
-        memory_to_dict(memory)
-    )
+    cloned = memory_from_dict(memory_to_dict(memory))
 
     return cloned  # type: ignore[return-value]
 
@@ -345,6 +277,7 @@ def clone_memory(
 # ---------------------------------------------------------------
 # Query helpers
 # ---------------------------------------------------------------
+
 
 def parse_timestamp(
     value: Optional[str],
@@ -360,27 +293,18 @@ def parse_timestamp(
     text = value.strip()
 
     if text.endswith("Z"):
-        text = (
-            text[:-1]
-            + "+00:00"
-        )
+        text = text[:-1] + "+00:00"
 
     try:
-        parsed = datetime.fromisoformat(
-            text
-        )
+        parsed = datetime.fromisoformat(text)
 
     except ValueError:
         return None
 
     if parsed.tzinfo is None:
-        parsed = parsed.replace(
-            tzinfo=timezone.utc
-        )
+        parsed = parsed.replace(tzinfo=timezone.utc)
 
-    return parsed.astimezone(
-        timezone.utc
-    )
+    return parsed.astimezone(timezone.utc)
 
 
 def intersects(
@@ -390,11 +314,7 @@ def intersects(
     if not right:
         return True
 
-    return bool(
-        set(left).intersection(
-            right
-        )
-    )
+    return bool(set(left).intersection(right))
 
 
 def memory_matches(
@@ -405,48 +325,25 @@ def memory_matches(
     Evaluate one memory object against a query.
     """
 
-    if (
-        query.memory_ids
-        and memory.memory_id
-        not in query.memory_ids
-    ):
+    if query.memory_ids and memory.memory_id not in query.memory_ids:
         return False
 
-    if (
-        query.memory_types
-        and memory.memory_type
-        not in query.memory_types
-    ):
+    if query.memory_types and memory.memory_type not in query.memory_types:
         return False
 
-    if (
-        query.environment_ids
-        and memory.environment_id
-        not in query.environment_ids
-    ):
+    if query.environment_ids and memory.environment_id not in query.environment_ids:
         return False
 
-    if (
-        query.statuses
-        and memory.status
-        not in query.statuses
-    ):
+    if query.statuses and memory.status not in query.statuses:
         return False
 
     if (
         query.verification_statuses
-        and memory.verification_status
-        not in query.
-        verification_statuses
+        and memory.verification_status not in query.verification_statuses
     ):
         return False
 
-    if (
-        query.active_only
-        and not memory_is_active(
-            memory
-        )
-    ):
+    if query.active_only and not memory_is_active(memory):
         return False
 
     if not intersects(
@@ -467,39 +364,25 @@ def memory_matches(
     ):
         return False
 
-    updated = parse_timestamp(
-        memory.updated_at
-    )
+    updated = parse_timestamp(memory.updated_at)
 
-    after = parse_timestamp(
-        query.updated_after
-    )
+    after = parse_timestamp(query.updated_after)
 
-    before = parse_timestamp(
-        query.updated_before
-    )
+    before = parse_timestamp(query.updated_before)
 
     if after is not None:
-        if (
-            updated is None
-            or updated < after
-        ):
+        if updated is None or updated < after:
             return False
 
     if before is not None:
-        if (
-            updated is None
-            or updated > before
-        ):
+        if updated is None or updated > before:
             return False
 
     return True
 
 
 def apply_query(
-    memories: Iterable[
-        MemoryObject
-    ],
+    memories: Iterable[MemoryObject],
     query: MemoryQuery,
 ) -> List[MemoryObject]:
     query.validate()
@@ -515,12 +398,7 @@ def apply_query(
 
     output.sort(
         key=lambda item: (
-            parse_timestamp(
-                item.updated_at
-            )
-            or parse_timestamp(
-                item.created_at
-            )
+            parse_timestamp(item.updated_at) or parse_timestamp(item.created_at)
         ),
         reverse=query.newest_first,
     )
@@ -530,15 +408,13 @@ def apply_query(
     if query.limit is None:
         return output[start:]
 
-    return output[
-        start:
-        start + query.limit
-    ]
+    return output[start : start + query.limit]
 
 
 # ---------------------------------------------------------------
 # Abstract storage interface
 # ---------------------------------------------------------------
+
 
 class MemoryStore(ABC):
     """
@@ -571,9 +447,7 @@ class MemoryStore(ABC):
     @abstractmethod
     def query(
         self,
-        query: Optional[
-            MemoryQuery
-        ] = None,
+        query: Optional[MemoryQuery] = None,
     ) -> List[MemoryObject]:
         """
         Return memory records matching a query.
@@ -591,9 +465,7 @@ class MemoryStore(ABC):
     @abstractmethod
     def count(
         self,
-        query: Optional[
-            MemoryQuery
-        ] = None,
+        query: Optional[MemoryQuery] = None,
     ) -> int:
         """
         Count matching memory records.
@@ -611,32 +483,23 @@ class MemoryStore(ABC):
         self,
         memory_id: str,
     ) -> MemoryObject:
-        memory = self.get(
-            memory_id
-        )
+        memory = self.get(memory_id)
 
         if memory is None:
-            raise MemoryNotFoundError(
-                "Memory was not found: "
-                f"{memory_id}"
-            )
+            raise MemoryNotFoundError(f"Memory was not found: {memory_id}")
 
         return memory
 
     def put_many(
         self,
-        memories: Iterable[
-            MemoryObject
-        ],
+        memories: Iterable[MemoryObject],
         *,
         create_only: bool = False,
     ) -> List[MemoryObject]:
         return [
             self.put(
                 memory,
-                create_only=(
-                    create_only
-                ),
+                create_only=(create_only),
             )
             for memory in memories
         ]
@@ -657,13 +520,9 @@ class MemoryStore(ABC):
         self,
         memory_id: str,
     ) -> MemoryObject:
-        memory = self.require(
-            memory_id
-        )
+        memory = self.require(memory_id)
 
-        memory.status = (
-            MemoryStatus.ARCHIVED.value
-        )
+        memory.status = MemoryStatus.ARCHIVED.value
 
         memory.updated_at = utc_now()
 
@@ -673,13 +532,9 @@ class MemoryStore(ABC):
         self,
         memory_id: str,
     ) -> MemoryObject:
-        memory = self.require(
-            memory_id
-        )
+        memory = self.require(memory_id)
 
-        memory.status = (
-            MemoryStatus.EXPIRED.value
-        )
+        memory.status = MemoryStatus.EXPIRED.value
 
         memory.updated_at = utc_now()
 
@@ -689,30 +544,16 @@ class MemoryStore(ABC):
         self,
         memory_id: str,
         *,
-        status: str = (
-            VerificationStatus.
-            VERIFIED.value
-        ),
+        status: str = (VerificationStatus.VERIFIED.value),
     ) -> MemoryObject:
-        allowed = {
-            item.value
-            for item
-            in VerificationStatus
-        }
+        allowed = {item.value for item in VerificationStatus}
 
         if status not in allowed:
-            raise ValueError(
-                "Unsupported verification "
-                f"status: {status}"
-            )
+            raise ValueError(f"Unsupported verification status: {status}")
 
-        memory = self.require(
-            memory_id
-        )
+        memory = self.require(memory_id)
 
-        memory.verification_status = (
-            status
-        )
+        memory.verification_status = status
 
         memory.updated_at = utc_now()
 
@@ -721,9 +562,7 @@ class MemoryStore(ABC):
     def stats(
         self,
     ) -> MemoryStoreStats:
-        memories = self.query(
-            MemoryQuery()
-        )
+        memories = self.query(MemoryQuery())
 
         type_counts: Dict[
             str,
@@ -731,9 +570,7 @@ class MemoryStore(ABC):
         ] = {}
 
         for memory in memories:
-            type_counts[
-                memory.memory_type
-            ] = (
+            type_counts[memory.memory_type] = (
                 type_counts.get(
                     memory.memory_type,
                     0,
@@ -742,46 +579,22 @@ class MemoryStore(ABC):
             )
 
         return MemoryStoreStats(
-            memory_count=len(
-                memories
-            ),
+            memory_count=len(memories),
             active_count=sum(
-                1
-                for memory in memories
-                if memory.status
-                == MemoryStatus.
-                ACTIVE.value
+                1 for memory in memories if memory.status == MemoryStatus.ACTIVE.value
             ),
             archived_count=sum(
-                1
-                for memory in memories
-                if memory.status
-                == MemoryStatus.
-                ARCHIVED.value
+                1 for memory in memories if memory.status == MemoryStatus.ARCHIVED.value
             ),
             expired_count=sum(
-                1
-                for memory in memories
-                if memory.status
-                == MemoryStatus.
-                EXPIRED.value
+                1 for memory in memories if memory.status == MemoryStatus.EXPIRED.value
             ),
             verified_count=sum(
                 1
                 for memory in memories
-                if (
-                    memory.
-                    verification_status
-                    == VerificationStatus.
-                    VERIFIED.value
-                )
+                if (memory.verification_status == VerificationStatus.VERIFIED.value)
             ),
-            environments=len(
-                {
-                    memory.environment_id
-                    for memory in memories
-                }
-            ),
+            environments=len({memory.environment_id for memory in memories}),
             memory_types=type_counts,
         )
 
@@ -790,9 +603,8 @@ class MemoryStore(ABC):
 # In-memory implementation
 # ---------------------------------------------------------------
 
-class InMemoryMemoryStore(
-    MemoryStore
-):
+
+class InMemoryMemoryStore(MemoryStore):
     """
     Thread-safe development/test store.
 
@@ -802,9 +614,7 @@ class InMemoryMemoryStore(
 
     def __init__(
         self,
-        memories: Iterable[
-            MemoryObject
-        ] = (),
+        memories: Iterable[MemoryObject] = (),
     ) -> None:
         self._lock = RLock()
 
@@ -824,68 +634,41 @@ class InMemoryMemoryStore(
         memory.finalize()
 
         if not memory.memory_id:
-            raise MemoryStoreError(
-                "Memory has no memory_id "
-                "after finalize()"
-            )
+            raise MemoryStoreError("Memory has no memory_id after finalize()")
 
         with self._lock:
-            if (
-                create_only
-                and memory.memory_id
-                in self._memories
-            ):
-                raise MemoryConflictError(
-                    "Memory already exists: "
-                    f"{memory.memory_id}"
-                )
+            if create_only and memory.memory_id in self._memories:
+                raise MemoryConflictError(f"Memory already exists: {memory.memory_id}")
 
-            stored = clone_memory(
-                memory
-            )
+            stored = clone_memory(memory)
 
             stored.updated_at = utc_now()
 
-            self._memories[
-                stored.memory_id
-            ] = stored
+            self._memories[stored.memory_id] = stored
 
-            return clone_memory(
-                stored
-            )
+            return clone_memory(stored)
 
     def get(
         self,
         memory_id: str,
     ) -> Optional[MemoryObject]:
         with self._lock:
-            memory = self._memories.get(
-                memory_id
-            )
+            memory = self._memories.get(memory_id)
 
             if memory is None:
                 return None
 
             memory.mark_accessed()
 
-            self._memories[
-                memory_id
-            ] = memory
+            self._memories[memory_id] = memory
 
-            return clone_memory(
-                memory
-            )
+            return clone_memory(memory)
 
     def query(
         self,
-        query: Optional[
-            MemoryQuery
-        ] = None,
+        query: Optional[MemoryQuery] = None,
     ) -> List[MemoryObject]:
-        active_query = (
-            query
-            or MemoryQuery()
-        )
+        active_query = query or MemoryQuery()
 
         with self._lock:
             memories = apply_query(
@@ -893,10 +676,7 @@ class InMemoryMemoryStore(
                 active_query,
             )
 
-            return [
-                clone_memory(memory)
-                for memory in memories
-            ]
+            return [clone_memory(memory) for memory in memories]
 
     def delete(
         self,
@@ -913,13 +693,9 @@ class InMemoryMemoryStore(
 
     def count(
         self,
-        query: Optional[
-            MemoryQuery
-        ] = None,
+        query: Optional[MemoryQuery] = None,
     ) -> int:
-        return len(
-            self.query(query)
-        )
+        return len(self.query(query))
 
     def clear(
         self,
@@ -931,25 +707,20 @@ class InMemoryMemoryStore(
         self,
     ) -> int:
         with self._lock:
-            return len(
-                self._memories
-            )
+            return len(self._memories)
 
     def __iter__(
         self,
     ) -> Iterator[MemoryObject]:
-        return iter(
-            self.query()
-        )
+        return iter(self.query())
 
 
 # ---------------------------------------------------------------
 # Local JSON snapshot implementation
 # ---------------------------------------------------------------
 
-class JSONFileMemoryStore(
-    InMemoryMemoryStore
-):
+
+class JSONFileMemoryStore(InMemoryMemoryStore):
     """
     Local durable store backed by one JSON file.
 
@@ -969,9 +740,7 @@ class JSONFileMemoryStore(
     ) -> None:
         self.path = Path(path)
 
-        self.create_parent = (
-            create_parent
-        )
+        self.create_parent = create_parent
 
         super().__init__()
 
@@ -989,17 +758,14 @@ class JSONFileMemoryStore(
                     "r",
                     encoding="utf-8",
                 ) as source:
-                    payload = json.load(
-                        source
-                    )
+                    payload = json.load(source)
 
             except (
                 OSError,
                 json.JSONDecodeError,
             ) as exc:
                 raise MemoryStoreError(
-                    "Unable to load memory "
-                    f"store {self.path}: {exc}"
+                    f"Unable to load memory store {self.path}: {exc}"
                 ) from exc
 
             if isinstance(
@@ -1021,48 +787,37 @@ class JSONFileMemoryStore(
 
             else:
                 raise MemorySerializationError(
-                    "Memory store root must "
-                    "be an object or list"
+                    "Memory store root must be an object or list"
                 )
 
             if not isinstance(
                 raw_memories,
                 list,
             ):
-                raise MemorySerializationError(
-                    "'memories' must be a list"
-                )
+                raise MemorySerializationError("'memories' must be a list")
 
             loaded: Dict[
                 str,
                 MemoryObject,
             ] = {}
 
-            for index, raw_memory in enumerate(
-                raw_memories
-            ):
+            for index, raw_memory in enumerate(raw_memories):
                 if not isinstance(
                     raw_memory,
                     Mapping,
                 ):
                     raise (
                         MemorySerializationError(
-                            "Memory entry "
-                            f"{index} is not "
-                            "an object"
+                            f"Memory entry {index} is not an object"
                         )
                     )
 
-                memory = memory_from_dict(
-                    raw_memory
-                )
+                memory = memory_from_dict(raw_memory)
 
                 if not memory.memory_id:
                     continue
 
-                loaded[
-                    memory.memory_id
-                ] = memory
+                loaded[memory.memory_id] = memory
 
             self._memories = loaded
 
@@ -1090,12 +845,7 @@ class JSONFileMemoryStore(
                 "schema_version": "1",
                 "updated_at": utc_now(),
                 "memories": [
-                    memory_to_dict(
-                        memory
-                    )
-                    for memory in (
-                        self._memories.values()
-                    )
+                    memory_to_dict(memory) for memory in (self._memories.values())
                 ],
             }
 
@@ -1105,18 +855,12 @@ class JSONFileMemoryStore(
                 with tempfile.NamedTemporaryFile(
                     mode="w",
                     encoding="utf-8",
-                    dir=str(
-                        self.path.parent
-                    ),
-                    prefix=(
-                        f".{self.path.name}."
-                    ),
+                    dir=str(self.path.parent),
+                    prefix=(f".{self.path.name}."),
                     suffix=".tmp",
                     delete=False,
                 ) as temporary:
-                    temporary_path = Path(
-                        temporary.name
-                    )
+                    temporary_path = Path(temporary.name)
 
                     json.dump(
                         payload,
@@ -1130,9 +874,7 @@ class JSONFileMemoryStore(
 
                     temporary.flush()
 
-                    os.fsync(
-                        temporary.fileno()
-                    )
+                    os.fsync(temporary.fileno())
 
                 os.replace(
                     temporary_path,
@@ -1140,19 +882,14 @@ class JSONFileMemoryStore(
                 )
 
             except OSError as exc:
-                if (
-                    temporary_path
-                    is not None
-                    and temporary_path.exists()
-                ):
+                if temporary_path is not None and temporary_path.exists():
                     try:
                         temporary_path.unlink()
                     except OSError:
                         pass
 
                 raise MemoryStoreError(
-                    "Unable to persist memory "
-                    f"store {self.path}: {exc}"
+                    f"Unable to persist memory store {self.path}: {exc}"
                 ) from exc
 
     def put(
@@ -1164,9 +901,7 @@ class JSONFileMemoryStore(
         with self._lock:
             stored = super().put(
                 memory,
-                create_only=(
-                    create_only
-                ),
+                create_only=(create_only),
             )
 
             self.flush()
@@ -1178,9 +913,7 @@ class JSONFileMemoryStore(
         memory_id: str,
     ) -> Optional[MemoryObject]:
         with self._lock:
-            memory = super().get(
-                memory_id
-            )
+            memory = super().get(memory_id)
 
             if memory is not None:
                 # Persist last_accessed_at.
@@ -1193,9 +926,7 @@ class JSONFileMemoryStore(
         memory_id: str,
     ) -> bool:
         with self._lock:
-            deleted = super().delete(
-                memory_id
-            )
+            deleted = super().delete(memory_id)
 
             if deleted:
                 self.flush()
@@ -1214,9 +945,7 @@ class JSONFileMemoryStore(
 def create_memory_store(
     *,
     backend: str = "memory",
-    path: Optional[
-        Path | str
-    ] = None,
+    path: Optional[Path | str] = None,
 ) -> MemoryStore:
     """
     Convenience factory used by memory.pipeline.
@@ -1227,25 +956,15 @@ def create_memory_store(
       json
     """
 
-    normalized = (
-        backend.strip().lower()
-    )
+    normalized = backend.strip().lower()
 
     if normalized == "memory":
         return InMemoryMemoryStore()
 
     if normalized == "json":
         if path is None:
-            raise ValueError(
-                "path is required for "
-                "the JSON memory backend"
-            )
+            raise ValueError("path is required for the JSON memory backend")
 
-        return JSONFileMemoryStore(
-            path
-        )
+        return JSONFileMemoryStore(path)
 
-    raise ValueError(
-        "Unsupported memory backend: "
-        f"{backend}"
-    )
+    raise ValueError(f"Unsupported memory backend: {backend}")

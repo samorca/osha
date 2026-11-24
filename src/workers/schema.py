@@ -29,6 +29,7 @@ WORKERS_SCHEMA_VERSION = "1"
 # Worker state
 # ---------------------------------------------------------------
 
+
 class WorkerState(
     str,
     Enum,
@@ -53,6 +54,7 @@ class WorkerState(
 # ---------------------------------------------------------------
 # Job state
 # ---------------------------------------------------------------
+
 
 class JobState(
     str,
@@ -81,6 +83,7 @@ class JobState(
 # Job type
 # ---------------------------------------------------------------
 
+
 class JobType(
     str,
     Enum,
@@ -93,9 +96,7 @@ class JobType(
     workflows.
     """
 
-    ORCHESTRATION = (
-        "orchestration"
-    )
+    ORCHESTRATION = "orchestration"
 
     TELEMETRY = "telemetry"
 
@@ -111,6 +112,7 @@ class JobType(
 # ---------------------------------------------------------------
 # Lease state
 # ---------------------------------------------------------------
+
 
 class LeaseState(
     str,
@@ -129,10 +131,9 @@ class LeaseState(
 # Helpers
 # ---------------------------------------------------------------
 
+
 def utc_now() -> str:
-    return datetime.now(
-        timezone.utc
-    ).isoformat()
+    return datetime.now(timezone.utc).isoformat()
 
 
 def json_safe(
@@ -142,20 +143,15 @@ def json_safe(
     maximum_depth: int = 20,
 ) -> Any:
     if depth > maximum_depth:
-        return (
-            "[MAX_DEPTH_REACHED]"
-        )
+        return "[MAX_DEPTH_REACHED]"
 
-    if (
-        value is None
-        or isinstance(
-            value,
-            (
-                bool,
-                int,
-                str,
-            ),
-        )
+    if value is None or isinstance(
+        value,
+        (
+            bool,
+            int,
+            str,
+        ),
     ):
         return value
 
@@ -163,22 +159,14 @@ def json_safe(
         value,
         float,
     ):
-        return (
-            value
-            if math.isfinite(
-                value
-            )
-            else None
-        )
+        return value if math.isfinite(value) else None
 
     if isinstance(
         value,
         datetime,
     ):
         if value.tzinfo is None:
-            value = value.replace(
-                tzinfo=timezone.utc
-            )
+            value = value.replace(tzinfo=timezone.utc)
 
         return value.isoformat()
 
@@ -190,12 +178,9 @@ def json_safe(
             str(key): json_safe(
                 item,
                 depth=depth + 1,
-                maximum_depth=(
-                    maximum_depth
-                ),
+                maximum_depth=(maximum_depth),
             )
-            for key, item
-            in value.items()
+            for key, item in value.items()
         }
 
     if isinstance(
@@ -211,9 +196,7 @@ def json_safe(
             json_safe(
                 item,
                 depth=depth + 1,
-                maximum_depth=(
-                    maximum_depth
-                ),
+                maximum_depth=(maximum_depth),
             )
             for item in value
         ]
@@ -225,9 +208,7 @@ def json_safe(
         return json_safe(
             asdict(value),
             depth=depth + 1,
-            maximum_depth=(
-                maximum_depth
-            ),
+            maximum_depth=(maximum_depth),
         )
 
     return str(value)
@@ -248,18 +229,15 @@ def stable_hash(
             ":",
         ),
         default=str,
-    ).encode(
-        "utf-8"
-    )
+    ).encode("utf-8")
 
-    return hashlib.sha256(
-        encoded
-    ).hexdigest()
+    return hashlib.sha256(encoded).hexdigest()
 
 
 # ---------------------------------------------------------------
 # Job lease
 # ---------------------------------------------------------------
+
 
 @dataclass
 class JobLease:
@@ -278,63 +256,34 @@ class JobLease:
 
     expires_at: str
 
-    state: str = (
-        LeaseState.ACTIVE.value
-    )
+    state: str = LeaseState.ACTIVE.value
 
-    lease_id: Optional[
-        str
-    ] = None
+    lease_id: Optional[str] = None
 
     def build_lease_id(
         self,
     ) -> str:
-        return (
-            "worker:lease:"
-            + stable_hash(
-                {
-                    "worker_id": (
-                        self.worker_id
-                    ),
-                    "acquired_at": (
-                        self.acquired_at
-                    ),
-                    "expires_at": (
-                        self.expires_at
-                    ),
-                }
-            )
+        return "worker:lease:" + stable_hash(
+            {
+                "worker_id": (self.worker_id),
+                "acquired_at": (self.acquired_at),
+                "expires_at": (self.expires_at),
+            }
         )
 
     def finalize(
         self,
     ) -> "JobLease":
-        self.worker_id = (
-            self.worker_id.strip()
-        )
+        self.worker_id = self.worker_id.strip()
 
         if not self.worker_id:
-            raise ValueError(
-                "worker_id is required"
-            )
+            raise ValueError("worker_id is required")
 
-        if (
-            self.state
-            not in {
-                item.value
-                for item
-                in LeaseState
-            }
-        ):
-            raise ValueError(
-                "Unknown lease state: "
-                f"{self.state}"
-            )
+        if self.state not in {item.value for item in LeaseState}:
+            raise ValueError(f"Unknown lease state: {self.state}")
 
         if not self.lease_id:
-            self.lease_id = (
-                self.build_lease_id()
-            )
+            self.lease_id = self.build_lease_id()
 
         return self
 
@@ -343,14 +292,13 @@ class JobLease:
     ) -> Dict[str, Any]:
         self.finalize()
 
-        return json_safe(
-            asdict(self)
-        )
+        return json_safe(asdict(self))
 
 
 # ---------------------------------------------------------------
 # Worker job
 # ---------------------------------------------------------------
+
 
 @dataclass
 class WorkerJob:
@@ -371,13 +319,9 @@ class WorkerJob:
     payload: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    state: str = (
-        JobState.PENDING.value
-    )
+    state: str = JobState.PENDING.value
 
     priority: int = 100
 
@@ -385,164 +329,81 @@ class WorkerJob:
 
     attempt: int = 0
 
-    scheduled_for: Optional[
-        str
-    ] = None
+    scheduled_for: Optional[str] = None
 
-    expires_at: Optional[
-        str
-    ] = None
+    expires_at: Optional[str] = None
 
-    orchestration_context_id: Optional[
-        str
-    ] = None
+    orchestration_context_id: Optional[str] = None
 
-    lease: Optional[
-        JobLease
-    ] = None
+    lease: Optional[JobLease] = None
 
-    error: Optional[
-        str
-    ] = None
+    error: Optional[str] = None
 
-    result_reference_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    result_reference_ids: List[str] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    created_at: str = field(
-        default_factory=utc_now
-    )
+    created_at: str = field(default_factory=utc_now)
 
-    updated_at: str = field(
-        default_factory=utc_now
-    )
+    updated_at: str = field(default_factory=utc_now)
 
-    completed_at: Optional[
-        str
-    ] = None
+    completed_at: Optional[str] = None
 
-    job_id: Optional[
-        str
-    ] = None
+    job_id: Optional[str] = None
 
     def build_job_id(
         self,
     ) -> str:
-        return (
-            "worker:job:"
-            + stable_hash(
-                {
-                    "job_type": (
-                        self.job_type
-                    ),
-                    "environment_id": (
-                        self.environment_id
-                    ),
-                    "orchestration_context_id": (
-                        self.
-                        orchestration_context_id
-                    ),
-                    "created_at": (
-                        self.created_at
-                    ),
-                }
-            )
+        return "worker:job:" + stable_hash(
+            {
+                "job_type": (self.job_type),
+                "environment_id": (self.environment_id),
+                "orchestration_context_id": (self.orchestration_context_id),
+                "created_at": (self.created_at),
+            }
         )
 
     def finalize(
         self,
     ) -> "WorkerJob":
-        self.environment_id = (
-            self.environment_id.strip()
-        )
+        self.environment_id = self.environment_id.strip()
 
         if not self.environment_id:
-            raise ValueError(
-                "environment_id is required"
-            )
+            raise ValueError("environment_id is required")
 
-        if (
-            self.job_type
-            not in {
-                item.value
-                for item
-                in JobType
-            }
-        ):
-            raise ValueError(
-                "Unknown job type: "
-                f"{self.job_type}"
-            )
+        if self.job_type not in {item.value for item in JobType}:
+            raise ValueError(f"Unknown job type: {self.job_type}")
 
-        if (
-            self.state
-            not in {
-                item.value
-                for item
-                in JobState
-            }
-        ):
-            raise ValueError(
-                "Unknown job state: "
-                f"{self.state}"
-            )
+        if self.state not in {item.value for item in JobState}:
+            raise ValueError(f"Unknown job state: {self.state}")
 
-        self.priority = int(
-            self.priority
-        )
+        self.priority = int(self.priority)
 
         self.max_attempts = max(
             1,
-            int(
-                self.max_attempts
-            ),
+            int(self.max_attempts),
         )
 
         self.attempt = max(
             0,
-            int(
-                self.attempt
-            ),
+            int(self.attempt),
         )
 
-        if (
-            self.attempt
-            > self.max_attempts
-        ):
-            raise ValueError(
-                "attempt cannot exceed "
-                "max_attempts"
-            )
+        if self.attempt > self.max_attempts:
+            raise ValueError("attempt cannot exceed max_attempts")
 
         if self.lease is not None:
             self.lease.finalize()
 
-        self.result_reference_ids = (
-            sorted(
-                set(
-                    self.
-                    result_reference_ids
-                )
-            )
-        )
+        self.result_reference_ids = sorted(set(self.result_reference_ids))
 
         if not self.job_id:
-            self.job_id = (
-                self.build_job_id()
-            )
+            self.job_id = self.build_job_id()
 
-        self.updated_at = (
-            utc_now()
-        )
+        self.updated_at = utc_now()
 
         return self
 
@@ -553,62 +414,30 @@ class WorkerJob:
 
         return {
             "job_id": self.job_id,
-            "job_type": (
-                self.job_type
-            ),
-            "environment_id": (
-                self.environment_id
-            ),
+            "job_type": (self.job_type),
+            "environment_id": (self.environment_id),
             "state": self.state,
             "priority": self.priority,
-            "max_attempts": (
-                self.max_attempts
-            ),
+            "max_attempts": (self.max_attempts),
             "attempt": self.attempt,
-            "scheduled_for": (
-                self.scheduled_for
-            ),
-            "expires_at": (
-                self.expires_at
-            ),
-            "orchestration_context_id": (
-                self.
-                orchestration_context_id
-            ),
-            "lease": (
-                self.lease.to_dict()
-                if self.lease
-                else None
-            ),
-            "payload": (
-                json_safe(
-                    self.payload
-                )
-            ),
+            "scheduled_for": (self.scheduled_for),
+            "expires_at": (self.expires_at),
+            "orchestration_context_id": (self.orchestration_context_id),
+            "lease": (self.lease.to_dict() if self.lease else None),
+            "payload": (json_safe(self.payload)),
             "error": self.error,
-            "result_reference_ids": (
-                self.result_reference_ids
-            ),
-            "attributes": (
-                json_safe(
-                    self.attributes
-                )
-            ),
-            "created_at": (
-                self.created_at
-            ),
-            "updated_at": (
-                self.updated_at
-            ),
-            "completed_at": (
-                self.completed_at
-            ),
+            "result_reference_ids": (self.result_reference_ids),
+            "attributes": (json_safe(self.attributes)),
+            "created_at": (self.created_at),
+            "updated_at": (self.updated_at),
+            "completed_at": (self.completed_at),
         }
 
 
 # ---------------------------------------------------------------
 # Worker status
 # ---------------------------------------------------------------
+
 
 @dataclass
 class WorkerStatus:
@@ -618,117 +447,63 @@ class WorkerStatus:
 
     worker_id: str
 
-    state: str = (
-        WorkerState.CREATED.value
-    )
+    state: str = WorkerState.CREATED.value
 
     concurrency: int = 1
 
-    active_job_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    active_job_ids: List[str] = field(default_factory=list)
 
     completed_jobs: int = 0
 
     failed_jobs: int = 0
 
-    last_error: Optional[
-        str
-    ] = None
+    last_error: Optional[str] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    created_at: str = field(
-        default_factory=utc_now
-    )
+    created_at: str = field(default_factory=utc_now)
 
-    started_at: Optional[
-        str
-    ] = None
+    started_at: Optional[str] = None
 
-    stopped_at: Optional[
-        str
-    ] = None
+    stopped_at: Optional[str] = None
 
-    updated_at: str = field(
-        default_factory=utc_now
-    )
+    updated_at: str = field(default_factory=utc_now)
 
     def finalize(
         self,
     ) -> "WorkerStatus":
-        self.worker_id = (
-            self.worker_id.strip()
-        )
+        self.worker_id = self.worker_id.strip()
 
         if not self.worker_id:
-            raise ValueError(
-                "worker_id is required"
-            )
+            raise ValueError("worker_id is required")
 
-        if (
-            self.state
-            not in {
-                item.value
-                for item
-                in WorkerState
-            }
-        ):
-            raise ValueError(
-                "Unknown worker state: "
-                f"{self.state}"
-            )
+        if self.state not in {item.value for item in WorkerState}:
+            raise ValueError(f"Unknown worker state: {self.state}")
 
         self.concurrency = max(
             1,
-            int(
-                self.concurrency
-            ),
+            int(self.concurrency),
         )
 
-        self.active_job_ids = (
-            sorted(
-                set(
-                    self.active_job_ids
-                )
-            )
-        )
+        self.active_job_ids = sorted(set(self.active_job_ids))
 
-        if (
-            len(
-                self.active_job_ids
-            )
-            > self.concurrency
-        ):
-            raise ValueError(
-                "active_job_ids exceeds "
-                "worker concurrency"
-            )
+        if len(self.active_job_ids) > self.concurrency:
+            raise ValueError("active_job_ids exceeds worker concurrency")
 
         self.completed_jobs = max(
             0,
-            int(
-                self.completed_jobs
-            ),
+            int(self.completed_jobs),
         )
 
         self.failed_jobs = max(
             0,
-            int(
-                self.failed_jobs
-            ),
+            int(self.failed_jobs),
         )
 
-        self.updated_at = (
-            utc_now()
-        )
+        self.updated_at = utc_now()
 
         return self
 
@@ -737,14 +512,13 @@ class WorkerStatus:
     ) -> Dict[str, Any]:
         self.finalize()
 
-        return json_safe(
-            asdict(self)
-        )
+        return json_safe(asdict(self))
 
 
 # ---------------------------------------------------------------
 # Job result
 # ---------------------------------------------------------------
+
 
 @dataclass
 class JobResult:
@@ -765,51 +539,24 @@ class JobResult:
 
     state: str
 
-    result_reference_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    result_reference_ids: List[str] = field(default_factory=list)
 
-    error: Optional[
-        str
-    ] = None
+    error: Optional[str] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    completed_at: str = field(
-        default_factory=utc_now
-    )
+    completed_at: str = field(default_factory=utc_now)
 
     def finalize(
         self,
     ) -> "JobResult":
-        if (
-            self.state
-            not in {
-                item.value
-                for item
-                in JobState
-            }
-        ):
-            raise ValueError(
-                "Unknown job result "
-                f"state: {self.state}"
-            )
+        if self.state not in {item.value for item in JobState}:
+            raise ValueError(f"Unknown job result state: {self.state}")
 
-        self.result_reference_ids = (
-            sorted(
-                set(
-                    self.
-                    result_reference_ids
-                )
-            )
-        )
+        self.result_reference_ids = sorted(set(self.result_reference_ids))
 
         return self
 
@@ -818,58 +565,35 @@ class JobResult:
     ) -> Dict[str, Any]:
         self.finalize()
 
-        return json_safe(
-            asdict(self)
-        )
+        return json_safe(asdict(self))
 
 
 # ---------------------------------------------------------------
 # Aggregate worker result
 # ---------------------------------------------------------------
 
+
 @dataclass
 class WorkersResult:
-    workers: List[
-        WorkerStatus
-    ] = field(
-        default_factory=list
-    )
+    workers: List[WorkerStatus] = field(default_factory=list)
 
-    jobs: List[
-        WorkerJob
-    ] = field(
-        default_factory=list
-    )
+    jobs: List[WorkerJob] = field(default_factory=list)
 
-    generated_at: str = field(
-        default_factory=utc_now
-    )
+    generated_at: str = field(default_factory=utc_now)
 
     metadata: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    schema_version: str = (
-        WORKERS_SCHEMA_VERSION
-    )
+    schema_version: str = WORKERS_SCHEMA_VERSION
 
     def finalize(
         self,
     ) -> "WorkersResult":
-        self.workers = [
-            worker.finalize()
-            for worker
-            in self.workers
-        ]
+        self.workers = [worker.finalize() for worker in self.workers]
 
-        self.jobs = [
-            job.finalize()
-            for job
-            in self.jobs
-        ]
+        self.jobs = [job.finalize() for job in self.jobs]
 
         return self
 
@@ -889,9 +613,7 @@ class WorkersResult:
         ] = {}
 
         for worker in self.workers:
-            worker_states[
-                worker.state
-            ] = (
+            worker_states[worker.state] = (
                 worker_states.get(
                     worker.state,
                     0,
@@ -900,9 +622,7 @@ class WorkersResult:
             )
 
         for job in self.jobs:
-            job_states[
-                job.state
-            ] = (
+            job_states[job.state] = (
                 job_states.get(
                     job.state,
                     0,
@@ -911,37 +631,13 @@ class WorkersResult:
             )
 
         return {
-            "schema_version": (
-                self.schema_version
-            ),
-            "generated_at": (
-                self.generated_at
-            ),
-            "worker_count": len(
-                self.workers
-            ),
-            "job_count": len(
-                self.jobs
-            ),
-            "worker_states": (
-                worker_states
-            ),
-            "job_states": (
-                job_states
-            ),
-            "workers": [
-                worker.to_dict()
-                for worker
-                in self.workers
-            ],
-            "jobs": [
-                job.to_dict()
-                for job
-                in self.jobs
-            ],
-            "metadata": (
-                json_safe(
-                    self.metadata
-                )
-            ),
+            "schema_version": (self.schema_version),
+            "generated_at": (self.generated_at),
+            "worker_count": len(self.workers),
+            "job_count": len(self.jobs),
+            "worker_states": (worker_states),
+            "job_states": (job_states),
+            "workers": [worker.to_dict() for worker in self.workers],
+            "jobs": [job.to_dict() for job in self.jobs],
+            "metadata": (json_safe(self.metadata)),
         }

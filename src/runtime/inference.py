@@ -34,8 +34,7 @@ def read_jsonl(
                 yield json.loads(line)
             except json.JSONDecodeError as exc:
                 raise ValueError(
-                    f"Invalid JSON at "
-                    f"{path}:{line_number}: {exc}"
+                    f"Invalid JSON at {path}:{line_number}: {exc}"
                 ) from exc
 
 
@@ -49,36 +48,22 @@ def load_event_runtime(
         weights_only=False,
     )
 
-    config = checkpoint[
-        "model_config"
-    ]
+    config = checkpoint["model_config"]
 
-    vocabulary = Vocabulary.from_dict(
-        checkpoint["vocabulary"]
-    )
+    vocabulary = Vocabulary.from_dict(checkpoint["vocabulary"])
 
-    labels = LabelMaps.from_dict(
-        checkpoint["labels"]
-    )
+    labels = LabelMaps.from_dict(checkpoint["labels"])
 
     model = InfrastructureEventModel(
         vocab_size=config["vocab_size"],
         num_sources=config["num_sources"],
-        num_components=config[
-            "num_components"
-        ],
+        num_components=config["num_components"],
         num_events=config["num_events"],
-        embedding_dim=config[
-            "embedding_dim"
-        ],
+        embedding_dim=config["embedding_dim"],
         hidden_dim=config["hidden_dim"],
     ).to(device)
 
-    model.load_state_dict(
-        checkpoint[
-            "model_state_dict"
-        ]
-    )
+    model.load_state_dict(checkpoint["model_state_dict"])
 
     model.eval()
 
@@ -121,9 +106,7 @@ def top_predictions(
         output.append(
             {
                 "name": lookup[index],
-                "probability": float(
-                    probability
-                ),
+                "probability": float(probability),
             }
         )
 
@@ -143,9 +126,7 @@ def log_text_from_window(
     if not isinstance(logs, list):
         return ""
 
-    selected = logs[
-        -maximum_logs:
-    ]
+    selected = logs[-maximum_logs:]
 
     messages = []
 
@@ -155,9 +136,7 @@ def log_text_from_window(
             {},
         )
 
-        message = payload.get(
-            "message"
-        )
+        message = payload.get("message")
 
         if isinstance(message, str):
             text = message.strip()
@@ -187,39 +166,17 @@ def infer_window(
     base = {
         "schema_version": "1",
         "record_type": "runtime_inference",
-        "window_id": window.get(
-            "window_id"
-        ),
-        "window_start": window.get(
-            "window_start"
-        ),
-        "window_end": window.get(
-            "window_end"
-        ),
-        "environment_id": window.get(
-            "environment_id"
-        ),
-        "cluster_id": window.get(
-            "cluster_id"
-        ),
-        "namespace": window.get(
-            "namespace"
-        ),
-        "service_name": window.get(
-            "service_name"
-        ),
-        "resource_key": window.get(
-            "resource_key"
-        ),
-        "pod_name": window.get(
-            "pod_name"
-        ),
-        "node_name": window.get(
-            "node_name"
-        ),
-        "container_name": window.get(
-            "container_name"
-        ),
+        "window_id": window.get("window_id"),
+        "window_start": window.get("window_start"),
+        "window_end": window.get("window_end"),
+        "environment_id": window.get("environment_id"),
+        "cluster_id": window.get("cluster_id"),
+        "namespace": window.get("namespace"),
+        "service_name": window.get("service_name"),
+        "resource_key": window.get("resource_key"),
+        "pod_name": window.get("pod_name"),
+        "node_name": window.get("node_name"),
+        "container_name": window.get("container_name"),
         "signal_counts": window.get(
             "signal_counts",
             {},
@@ -246,11 +203,9 @@ def infer_window(
 
         return base
 
-    input_ids, attention_mask = (
-        vocabulary.encode(
-            text,
-            config["max_length"],
-        )
+    input_ids, attention_mask = vocabulary.encode(
+        text,
+        config["max_length"],
     )
 
     input_tensor = torch.tensor(
@@ -271,9 +226,7 @@ def infer_window(
             mask_tensor,
         )
 
-    representation = output[
-        "representation"
-    ][0].cpu().tolist()
+    representation = output["representation"][0].cpu().tolist()
 
     source_predictions = top_predictions(
         output["source_logits"],
@@ -283,9 +236,7 @@ def infer_window(
 
     component_predictions = (
         top_predictions(
-            output[
-                "component_logits"
-            ],
+            output["component_logits"],
             labels.id_to_component,
             top_k=top_k,
         )
@@ -302,35 +253,19 @@ def infer_window(
     # This is confidence, not correctness. Live Kubernetes
     # telemetry may differ substantially from LogHub.
     top_event_confidence = (
-        event_predictions[0][
-            "probability"
-        ]
-        if event_predictions
-        else 0.0
+        event_predictions[0]["probability"] if event_predictions else 0.0
     )
 
-    novelty_score = (
-        1.0 - top_event_confidence
-    )
+    novelty_score = 1.0 - top_event_confidence
 
     base.update(
         {
-            "source_predictions": (
-                source_predictions
-            ),
-            "component_predictions": (
-                component_predictions
-            ),
-            "event_predictions": (
-                event_predictions
-            ),
-            "top_event_confidence": (
-                top_event_confidence
-            ),
+            "source_predictions": (source_predictions),
+            "component_predictions": (component_predictions),
+            "event_predictions": (event_predictions),
+            "top_event_confidence": (top_event_confidence),
             "novelty_score": novelty_score,
-            "event_embedding": (
-                representation
-            ),
+            "event_embedding": (representation),
             "model_checkpoint": (
                 str(
                     config.get(
@@ -353,11 +288,7 @@ def run_inference(
     top_k: int,
     maximum_logs: int,
 ) -> dict:
-    device = torch.device(
-        "cuda"
-        if torch.cuda.is_available()
-        else "cpu"
-    )
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     (
         model,
@@ -382,13 +313,8 @@ def run_inference(
         "w",
         encoding="utf-8",
     ) as output_handle:
-        for window in read_jsonl(
-            input_path
-        ):
-            if (
-                window.get("record_type")
-                != "correlated_window"
-            ):
+        for window in read_jsonl(input_path):
+            if window.get("record_type") != "correlated_window":
                 continue
 
             windows += 1
@@ -422,43 +348,29 @@ def run_inference(
         "windows_read": windows,
         "windows_processed": processed,
         "windows_without_logs": no_logs,
-        "checkpoint": str(
-            checkpoint_path
-        ),
+        "checkpoint": str(checkpoint_path),
         "output": str(output_path),
     }
 
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description=(
-            "Run OSHA event inference on "
-            "correlated telemetry windows."
-        )
+        description=("Run OSHA event inference on correlated telemetry windows.")
     )
 
     parser.add_argument(
         "--input",
-        default=(
-            "orchestration-ai-data/processed/"
-            "live/kubernetes/windows.jsonl"
-        ),
+        default=("orchestration-ai-data/processed/live/kubernetes/windows.jsonl"),
     )
 
     parser.add_argument(
         "--output",
-        default=(
-            "orchestration-ai-data/processed/"
-            "live/kubernetes/predictions.jsonl"
-        ),
+        default=("orchestration-ai-data/processed/live/kubernetes/predictions.jsonl"),
     )
 
     parser.add_argument(
         "--checkpoint",
-        default=(
-            "artifacts/models/"
-            "event-understanding-v1/best.pt"
-        ),
+        default=("artifacts/models/event-understanding-v1/best.pt"),
     )
 
     parser.add_argument(
@@ -480,21 +392,15 @@ def main():
     args = parse_args()
 
     if args.top_k < 1:
-        raise ValueError(
-            "top-k must be positive"
-        )
+        raise ValueError("top-k must be positive")
 
     if args.maximum_logs < 1:
-        raise ValueError(
-            "maximum-logs must be positive"
-        )
+        raise ValueError("maximum-logs must be positive")
 
     report = run_inference(
         input_path=Path(args.input),
         output_path=Path(args.output),
-        checkpoint_path=Path(
-            args.checkpoint
-        ),
+        checkpoint_path=Path(args.checkpoint),
         top_k=args.top_k,
         maximum_logs=args.maximum_logs,
     )

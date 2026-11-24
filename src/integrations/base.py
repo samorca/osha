@@ -61,9 +61,8 @@ from src.security.secrets import (
 # Integration adapter
 # ---------------------------------------------------------------
 
-class IntegrationAdapter(
-    ABC
-):
+
+class IntegrationAdapter(ABC):
     """
     Provider-neutral integration lifecycle and
     operation-dispatch boundary.
@@ -84,37 +83,22 @@ class IntegrationAdapter(
         self,
         *,
         target: IntegrationTarget,
-        config: Optional[
-            IntegrationsConfig
-        ] = None,
+        config: Optional[IntegrationsConfig] = None,
     ) -> None:
-        self.target = (
-            target.finalize()
-        )
+        self.target = target.finalize()
 
-        self.config = (
-            config
-            or IntegrationsConfig()
-        )
+        self.config = config or IntegrationsConfig()
 
         self.config.validate()
 
-        if not self.config.provider_enabled(
-            self.target.provider
-        ):
+        if not self.config.provider_enabled(self.target.provider):
             raise (
                 IntegrationConnectionError(
-                    "Integration provider "
-                    "is disabled: "
-                    f"{self.target.provider}"
+                    f"Integration provider is disabled: {self.target.provider}"
                 )
             )
 
-        self.status = (
-            IntegrationStatus(
-                target=self.target
-            ).finalize()
-        )
+        self.status = IntegrationStatus(target=self.target).finalize()
 
         self._client: Any = None
 
@@ -129,32 +113,19 @@ class IntegrationAdapter(
         # Register advertised capabilities
         # -----------------------------------------------------
 
-        for capability in (
-            self.define_capabilities()
-        ):
+        for capability in self.define_capabilities():
             capability.finalize()
 
-            if (
-                capability.name
-                in self._capabilities
-            ):
+            if capability.name in self._capabilities:
                 raise (
                     IntegrationCapabilityError(
-                        "Duplicate integration "
-                        "capability: "
-                        f"{capability.name}"
+                        f"Duplicate integration capability: {capability.name}"
                     )
                 )
 
-            self._capabilities[
-                capability.name
-            ] = capability
+            self._capabilities[capability.name] = capability
 
-        self.status.capabilities = (
-            sorted(
-                self._capabilities
-            )
-        )
+        self.status.capabilities = sorted(self._capabilities)
 
         self.status.finalize()
 
@@ -165,9 +136,7 @@ class IntegrationAdapter(
     @abstractmethod
     def define_capabilities(
         self,
-    ) -> Iterable[
-        IntegrationCapability
-    ]:
+    ) -> Iterable[IntegrationCapability]:
         """
         Return capabilities explicitly supported
         by this adapter.
@@ -178,9 +147,7 @@ class IntegrationAdapter(
     @abstractmethod
     def connect_client(
         self,
-        credential: Optional[
-            SecretValue
-        ],
+        credential: Optional[SecretValue],
     ) -> Any:
         """
         Create and authenticate the
@@ -240,11 +207,8 @@ class IntegrationAdapter(
     ) -> bool:
         with self._lock:
             return bool(
-                self.status.state
-                == IntegrationState.
-                READY.value
-                and self._client
-                is not None
+                self.status.state == IntegrationState.READY.value
+                and self._client is not None
             )
 
     # ---------------------------------------------------------
@@ -259,17 +223,10 @@ class IntegrationAdapter(
             if not self.ready:
                 raise (
                     IntegrationUnavailableError(
-                        "Integration adapter "
-                        "is not ready.",
+                        "Integration adapter is not ready.",
                         details={
-                            "provider": (
-                                self.target.
-                                provider
-                            ),
-                            "target_id": (
-                                self.target.
-                                target_id
-                            ),
+                            "provider": (self.target.provider),
+                            "target_id": (self.target.target_id),
                         },
                     )
                 )
@@ -282,30 +239,16 @@ class IntegrationAdapter(
 
     def capabilities(
         self,
-    ) -> List[
-        IntegrationCapability
-    ]:
+    ) -> List[IntegrationCapability]:
         with self._lock:
-            return [
-                self._capabilities[
-                    name
-                ]
-                for name
-                in sorted(
-                    self._capabilities
-                )
-            ]
+            return [self._capabilities[name] for name in sorted(self._capabilities)]
 
     def capability(
         self,
         name: str,
-    ) -> Optional[
-        IntegrationCapability
-    ]:
+    ) -> Optional[IntegrationCapability]:
         with self._lock:
-            return self._capabilities.get(
-                name
-            )
+            return self._capabilities.get(name)
 
     # ---------------------------------------------------------
     # Connect
@@ -314,46 +257,27 @@ class IntegrationAdapter(
     def connect(
         self,
         *,
-        credential: Optional[
-            SecretValue
-        ] = None,
+        credential: Optional[SecretValue] = None,
     ) -> IntegrationStatus:
         with self._lock:
             if self.ready:
                 return self.status
 
-            if (
-                self.status.state
-                not in {
-                    IntegrationState.
-                    CREATED.value,
-
-                    IntegrationState.
-                    CLOSED.value,
-
-                    IntegrationState.
-                    FAILED.value,
-
-                    IntegrationState.
-                    DEGRADED.value,
-                }
-            ):
+            if self.status.state not in {
+                IntegrationState.CREATED.value,
+                IntegrationState.CLOSED.value,
+                IntegrationState.FAILED.value,
+                IntegrationState.DEGRADED.value,
+            }:
                 raise (
                     IntegrationConnectionError(
-                        "Integration cannot "
-                        "connect from state "
-                        f"{self.status.state}."
+                        f"Integration cannot connect from state {self.status.state}."
                     )
                 )
 
-            self.status.state = (
-                IntegrationState.
-                CONNECTING.value
-            )
+            self.status.state = IntegrationState.CONNECTING.value
 
-            self.status.last_error_type = (
-                None
-            )
+            self.status.last_error_type = None
 
             self.status.finalize()
 
@@ -362,34 +286,24 @@ class IntegrationAdapter(
         # -----------------------------------------------------
 
         try:
-            client = self.connect_client(
-                credential
-            )
+            client = self.connect_client(credential)
 
             if client is None:
                 raise (
                     IntegrationConnectionError(
-                        "Integration adapter "
-                        "returned no provider "
-                        "client."
+                        "Integration adapter returned no provider client."
                     )
                 )
 
-            if not self.ping_client(
-                client
-            ):
+            if not self.ping_client(client):
                 try:
-                    self.close_client(
-                        client
-                    )
+                    self.close_client(client)
                 except Exception:
                     pass
 
                 raise (
                     IntegrationUnavailableError(
-                        "Integration target "
-                        "did not pass "
-                        "readiness validation."
+                        "Integration target did not pass readiness validation."
                     )
                 )
 
@@ -397,14 +311,9 @@ class IntegrationAdapter(
             with self._lock:
                 self._client = None
 
-                self.status.state = (
-                    IntegrationState.
-                    FAILED.value
-                )
+                self.status.state = IntegrationState.FAILED.value
 
-                self.status.last_error_type = (
-                    type(exc).__name__
-                )
+                self.status.last_error_type = type(exc).__name__
 
                 self.status.finalize()
 
@@ -414,33 +323,19 @@ class IntegrationAdapter(
             with self._lock:
                 self._client = None
 
-                self.status.state = (
-                    IntegrationState.
-                    FAILED.value
-                )
+                self.status.state = IntegrationState.FAILED.value
 
-                self.status.last_error_type = (
-                    type(exc).__name__
-                )
+                self.status.last_error_type = type(exc).__name__
 
                 self.status.finalize()
 
             raise wrap_provider_error(
                 exc,
-                provider=(
-                    self.target.provider
-                ),
-                target_id=(
-                    self.target.target_id
-                ),
-                message=(
-                    "Integration connection "
-                    "failed."
-                ),
+                provider=(self.target.provider),
+                target_id=(self.target.target_id),
+                message=("Integration connection failed."),
                 retryable=True,
-                code=(
-                    "integration_connection_failed"
-                ),
+                code=("integration_connection_failed"),
             ) from exc
 
         # -----------------------------------------------------
@@ -450,22 +345,13 @@ class IntegrationAdapter(
         with self._lock:
             self._client = client
 
-            self.status.state = (
-                IntegrationState.
-                READY.value
-            )
+            self.status.state = IntegrationState.READY.value
 
-            self.status.connected_at = (
-                utc_now()
-            )
+            self.status.connected_at = utc_now()
 
-            self.status.closed_at = (
-                None
-            )
+            self.status.closed_at = None
 
-            self.status.last_error_type = (
-                None
-            )
+            self.status.last_error_type = None
 
             self.status.finalize()
 
@@ -485,22 +371,13 @@ class IntegrationAdapter(
             return False
 
         try:
-            healthy = bool(
-                self.ping_client(
-                    client
-                )
-            )
+            healthy = bool(self.ping_client(client))
 
         except Exception as exc:
             with self._lock:
-                self.status.state = (
-                    IntegrationState.
-                    DEGRADED.value
-                )
+                self.status.state = IntegrationState.DEGRADED.value
 
-                self.status.last_error_type = (
-                    type(exc).__name__
-                )
+                self.status.last_error_type = type(exc).__name__
 
                 self.status.finalize()
 
@@ -508,19 +385,13 @@ class IntegrationAdapter(
 
         with self._lock:
             self.status.state = (
-                IntegrationState.
-                READY.value
+                IntegrationState.READY.value
                 if healthy
-                else (
-                    IntegrationState.
-                    DEGRADED.value
-                )
+                else (IntegrationState.DEGRADED.value)
             )
 
             if healthy:
-                self.status.last_error_type = (
-                    None
-                )
+                self.status.last_error_type = None
 
             self.status.finalize()
 
@@ -534,70 +405,42 @@ class IntegrationAdapter(
         self,
     ) -> IntegrationStatus:
         with self._lock:
-            if (
-                self.status.state
-                == IntegrationState.
-                CLOSED.value
-            ):
+            if self.status.state == IntegrationState.CLOSED.value:
                 return self.status
 
             client = self._client
 
-            self.status.state = (
-                IntegrationState.
-                CLOSING.value
-            )
+            self.status.state = IntegrationState.CLOSING.value
 
             self.status.finalize()
 
         if client is not None:
             try:
-                self.close_client(
-                    client
-                )
+                self.close_client(client)
 
             except Exception as exc:
                 with self._lock:
-                    self.status.state = (
-                        IntegrationState.
-                        FAILED.value
-                    )
+                    self.status.state = IntegrationState.FAILED.value
 
-                    self.status.last_error_type = (
-                        type(exc).__name__
-                    )
+                    self.status.last_error_type = type(exc).__name__
 
                     self.status.finalize()
 
                 raise wrap_provider_error(
                     exc,
-                    provider=(
-                        self.target.provider
-                    ),
-                    target_id=(
-                        self.target.target_id
-                    ),
-                    message=(
-                        "Integration close "
-                        "failed."
-                    ),
+                    provider=(self.target.provider),
+                    target_id=(self.target.target_id),
+                    message=("Integration close failed."),
                     retryable=False,
-                    code=(
-                        "integration_close_failed"
-                    ),
+                    code=("integration_close_failed"),
                 ) from exc
 
         with self._lock:
             self._client = None
 
-            self.status.state = (
-                IntegrationState.
-                CLOSED.value
-            )
+            self.status.state = IntegrationState.CLOSED.value
 
-            self.status.closed_at = (
-                utc_now()
-            )
+            self.status.closed_at = utc_now()
 
             self.status.finalize()
 
@@ -613,41 +456,24 @@ class IntegrationAdapter(
     ) -> None:
         operation.finalize()
 
-        if (
-            operation.target.provider
-            != self.target.provider
-        ):
+        if operation.target.provider != self.target.provider:
             raise (
                 IntegrationOperationBlockedError(
-                    "Operation provider does "
-                    "not match adapter "
-                    "provider."
+                    "Operation provider does not match adapter provider."
                 )
             )
 
-        if (
-            operation.target.
-            environment_id
-            != self.target.
-            environment_id
-        ):
+        if operation.target.environment_id != self.target.environment_id:
             raise (
                 IntegrationOperationBlockedError(
-                    "Operation environment "
-                    "does not match adapter "
-                    "environment."
+                    "Operation environment does not match adapter environment."
                 )
             )
 
-        if (
-            operation.target.target_id
-            != self.target.target_id
-        ):
+        if operation.target.target_id != self.target.target_id:
             raise (
                 IntegrationOperationBlockedError(
-                    "Operation target does "
-                    "not match adapter "
-                    "target."
+                    "Operation target does not match adapter target."
                 )
             )
 
@@ -659,23 +485,16 @@ class IntegrationAdapter(
         self,
         operation: IntegrationOperation,
     ) -> IntegrationCapability:
-        capability = self.capability(
-            operation.capability
-        )
+        capability = self.capability(operation.capability)
 
         if capability is None:
             raise (
                 IntegrationCapabilityError(
-                    "Adapter does not "
-                    "advertise capability: "
-                    f"{operation.capability}"
+                    f"Adapter does not advertise capability: {operation.capability}"
                 )
             )
 
-        if (
-            operation.action
-            not in capability.actions
-        ):
+        if operation.action not in capability.actions:
             raise (
                 IntegrationCapabilityError(
                     f"Capability "
@@ -696,25 +515,17 @@ class IntegrationAdapter(
         self,
         *,
         capability: IntegrationCapability,
-        security_context: Optional[
-            SecurityContext
-        ],
+        security_context: Optional[SecurityContext],
     ) -> None:
         # -----------------------------------------------------
         # Read-only operation
         # -----------------------------------------------------
 
         if capability.read_only:
-            if not (
-                self.config.
-                operations.
-                allow_read_operations
-            ):
+            if not (self.config.operations.allow_read_operations):
                 raise (
                     IntegrationOperationBlockedError(
-                        "Read integration "
-                        "operations are "
-                        "disabled."
+                        "Read integration operations are disabled."
                     )
                 )
 
@@ -724,16 +535,10 @@ class IntegrationAdapter(
         # Mutation globally disabled
         # -----------------------------------------------------
 
-        if not (
-            self.config.
-            operations.
-            allow_mutating_operations
-        ):
+        if not (self.config.operations.allow_mutating_operations):
             raise (
                 IntegrationOperationBlockedError(
-                    "Mutating integration "
-                    "operations are "
-                    "disabled."
+                    "Mutating integration operations are disabled."
                 )
             )
 
@@ -741,56 +546,34 @@ class IntegrationAdapter(
         # Require authorized security context
         # -----------------------------------------------------
 
-        if (
-            self.config.
-            operations.
-            require_security_context_for_mutations
-        ):
+        if self.config.operations.require_security_context_for_mutations:
             if security_context is None:
                 raise (
                     IntegrationOperationBlockedError(
-                        "Mutating operation "
-                        "requires a "
-                        "security context."
+                        "Mutating operation requires a security context."
                     )
                 )
 
             security_context.finalize()
 
-            if (
-                security_context.
-                authorization
-                is None
-            ):
+            if security_context.authorization is None:
                 raise (
                     IntegrationOperationBlockedError(
-                        "Mutating operation "
-                        "requires an "
-                        "authorization "
-                        "result."
+                        "Mutating operation requires an authorization result."
                     )
                 )
 
             if (
-                security_context.
-                authorization.
-                decision
-                != AuthorizationDecision.
-                ALLOW.value
+                security_context.authorization.decision
+                != AuthorizationDecision.ALLOW.value
             ):
                 raise (
                     IntegrationOperationBlockedError(
-                        "Mutating operation "
-                        "was not authorized."
+                        "Mutating operation was not authorized."
                     )
                 )
 
-            if (
-                security_context.
-                environment_id
-                != self.target.
-                environment_id
-            ):
+            if security_context.environment_id != self.target.environment_id:
                 raise (
                     IntegrationOperationBlockedError(
                         "Security context "
@@ -808,9 +591,7 @@ class IntegrationAdapter(
         self,
         operation: IntegrationOperation,
         *,
-        security_context: Optional[
-            SecurityContext
-        ] = None,
+        security_context: Optional[SecurityContext] = None,
     ) -> IntegrationResult:
         """
         Validate and execute one integration
@@ -825,107 +606,51 @@ class IntegrationAdapter(
 
         try:
             if not self.ready:
-                raise (
-                    IntegrationUnavailableError(
-                        "Integration adapter "
-                        "is not ready."
-                    )
-                )
+                raise (IntegrationUnavailableError("Integration adapter is not ready."))
 
-            self._validate_operation_target(
-                operation
-            )
+            self._validate_operation_target(operation)
 
-            capability = (
-                self._validate_capability(
-                    operation
-                )
-            )
+            capability = self._validate_capability(operation)
 
             self._validate_security_context(
                 capability=capability,
-                security_context=(
-                    security_context
-                ),
+                security_context=(security_context),
             )
 
-            value = (
-                self.execute_operation(
-                    self.client,
-                    operation,
-                )
+            value = self.execute_operation(
+                self.client,
+                operation,
             )
 
-            return (
-                IntegrationResult(
-                    operation_id=(
-                        operation.operation_id
-                    ),
-                    status=(
-                        OperationStatus.
-                        SUCCEEDED.value
-                    ),
-                    value=value,
-                    reference_ids=list(
-                        operation.
-                        reference_ids
-                    ),
-                    attributes={
-                        "provider": (
-                            self.target.
-                            provider
-                        ),
-                        "target_id": (
-                            self.target.
-                            target_id
-                        ),
-                        "capability": (
-                            capability.name
-                        ),
-                        "read_only": (
-                            capability.
-                            read_only
-                        ),
-                    },
-                ).finalize()
-            )
+            return IntegrationResult(
+                operation_id=(operation.operation_id),
+                status=(OperationStatus.SUCCEEDED.value),
+                value=value,
+                reference_ids=list(operation.reference_ids),
+                attributes={
+                    "provider": (self.target.provider),
+                    "target_id": (self.target.target_id),
+                    "capability": (capability.name),
+                    "read_only": (capability.read_only),
+                },
+            ).finalize()
 
         # -----------------------------------------------------
         # Deliberately blocked
         # -----------------------------------------------------
 
-        except (
-            IntegrationOperationBlockedError
-        ) as exc:
-            return (
-                IntegrationResult(
-                    operation_id=(
-                        operation.operation_id
-                    ),
-                    status=(
-                        OperationStatus.
-                        BLOCKED.value
-                    ),
-                    error_type=(
-                        type(exc).__name__
-                    ),
-                    retryable=False,
-                    reference_ids=list(
-                        operation.
-                        reference_ids
-                    ),
-                    attributes={
-                        "provider": (
-                            self.target.
-                            provider
-                        ),
-                        "target_id": (
-                            self.target.
-                            target_id
-                        ),
-                    },
-                ).finalize()
-            )
+        except IntegrationOperationBlockedError as exc:
+            return IntegrationResult(
+                operation_id=(operation.operation_id),
+                status=(OperationStatus.BLOCKED.value),
+                error_type=(type(exc).__name__),
+                retryable=False,
+                reference_ids=list(operation.reference_ids),
+                attributes={
+                    "provider": (self.target.provider),
+                    "target_id": (self.target.target_id),
+                },
+            ).finalize()
 
         # -----------------------------------------------------
         # Invalid/unsupported operation
@@ -942,145 +667,68 @@ class IntegrationAdapter(
         # Target unavailable
         # -----------------------------------------------------
 
-        except (
-            IntegrationUnavailableError
-        ) as exc:
-            return (
-                IntegrationResult(
-                    operation_id=(
-                        operation.operation_id
-                    ),
-                    status=(
-                        OperationStatus.
-                        FAILED.value
-                    ),
-                    error_type=(
-                        type(exc).__name__
-                    ),
-                    retryable=True,
-                    reference_ids=list(
-                        operation.
-                        reference_ids
-                    ),
-                    attributes={
-                        "provider": (
-                            self.target.
-                            provider
-                        ),
-                        "target_id": (
-                            self.target.
-                            target_id
-                        ),
-                    },
-                ).finalize()
-            )
+        except IntegrationUnavailableError as exc:
+            return IntegrationResult(
+                operation_id=(operation.operation_id),
+                status=(OperationStatus.FAILED.value),
+                error_type=(type(exc).__name__),
+                retryable=True,
+                reference_ids=list(operation.reference_ids),
+                attributes={
+                    "provider": (self.target.provider),
+                    "target_id": (self.target.target_id),
+                },
+            ).finalize()
 
         # -----------------------------------------------------
         # Known operation error
         # -----------------------------------------------------
 
-        except (
-            IntegrationOperationError
-        ) as exc:
-            return (
-                IntegrationResult(
-                    operation_id=(
-                        operation.operation_id
-                    ),
-                    status=(
-                        OperationStatus.
-                        FAILED.value
-                    ),
-                    error_type=(
-                        type(exc).__name__
-                    ),
-                    retryable=bool(
-                        getattr(
-                            exc,
-                            "retryable",
-                            False,
-                        )
-                    ),
-                    reference_ids=list(
-                        operation.
-                        reference_ids
-                    ),
-                    attributes={
-                        "provider": (
-                            self.target.
-                            provider
-                        ),
-                        "target_id": (
-                            self.target.
-                            target_id
-                        ),
-                    },
-                ).finalize()
-            )
+        except IntegrationOperationError as exc:
+            return IntegrationResult(
+                operation_id=(operation.operation_id),
+                status=(OperationStatus.FAILED.value),
+                error_type=(type(exc).__name__),
+                retryable=bool(
+                    getattr(
+                        exc,
+                        "retryable",
+                        False,
+                    )
+                ),
+                reference_ids=list(operation.reference_ids),
+                attributes={
+                    "provider": (self.target.provider),
+                    "target_id": (self.target.target_id),
+                },
+            ).finalize()
 
         # -----------------------------------------------------
         # Raw provider/client failure
         # -----------------------------------------------------
 
         except Exception as exc:
-            wrapped = (
-                wrap_provider_error(
-                    exc,
-                    provider=(
-                        self.target.
-                        provider
-                    ),
-                    target_id=(
-                        self.target.
-                        target_id
-                    ),
-                    message=(
-                        "Integration "
-                        "operation failed."
-                    ),
-                    retryable=False,
-                    code=(
-                        "integration_operation_failed"
-                    ),
-                )
+            wrapped = wrap_provider_error(
+                exc,
+                provider=(self.target.provider),
+                target_id=(self.target.target_id),
+                message=("Integration operation failed."),
+                retryable=False,
+                code=("integration_operation_failed"),
             )
 
-            return (
-                IntegrationResult(
-                    operation_id=(
-                        operation.operation_id
-                    ),
-                    status=(
-                        OperationStatus.
-                        FAILED.value
-                    ),
-                    error_type=(
-                        type(
-                            wrapped
-                        ).__name__
-                    ),
-                    retryable=(
-                        wrapped.retryable
-                    ),
-                    reference_ids=list(
-                        operation.
-                        reference_ids
-                    ),
-                    attributes={
-                        "provider": (
-                            self.target.
-                            provider
-                        ),
-                        "target_id": (
-                            self.target.
-                            target_id
-                        ),
-                        **dict(
-                            wrapped.details
-                        ),
-                    },
-                ).finalize()
-            )
+            return IntegrationResult(
+                operation_id=(operation.operation_id),
+                status=(OperationStatus.FAILED.value),
+                error_type=(type(wrapped).__name__),
+                retryable=(wrapped.retryable),
+                reference_ids=list(operation.reference_ids),
+                attributes={
+                    "provider": (self.target.provider),
+                    "target_id": (self.target.target_id),
+                    **dict(wrapped.details),
+                },
+            ).finalize()
 
     # ---------------------------------------------------------
     # Context manager
@@ -1111,35 +759,14 @@ class IntegrationAdapter(
         self,
     ) -> Dict[str, Any]:
         return {
-            "status": (
-                self.status.to_dict()
-            ),
-
-            "ready": (
-                self.ready
-            ),
-
-            "adapter": (
-                type(
-                    self
-                ).__name__
-            ),
-
-            "capabilities": [
-                item.to_dict()
-                for item
-                in self.capabilities()
-            ],
-
+            "status": (self.status.to_dict()),
+            "ready": (self.ready),
+            "adapter": (type(self).__name__),
+            "capabilities": [item.to_dict() for item in self.capabilities()],
             "mutating_operations_enabled": (
-                self.config.
-                operations.
-                allow_mutating_operations
+                self.config.operations.allow_mutating_operations
             ),
-
-            "credential_value_exposed": (
-                False
-            ),
+            "credential_value_exposed": (False),
         }
 
 

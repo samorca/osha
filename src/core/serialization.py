@@ -47,17 +47,11 @@ from src.core.time import (
 # Serialization markers
 # ---------------------------------------------------------------
 
-DEFAULT_REDACTED_MARKER = (
-    "[REDACTED]"
-)
+DEFAULT_REDACTED_MARKER = "[REDACTED]"
 
-DEFAULT_CYCLE_MARKER = (
-    "[CYCLE]"
-)
+DEFAULT_CYCLE_MARKER = "[CYCLE]"
 
-DEFAULT_UNSUPPORTED_MARKER = (
-    "[UNSUPPORTED]"
-)
+DEFAULT_UNSUPPORTED_MARKER = "[UNSUPPORTED]"
 
 
 # ---------------------------------------------------------------
@@ -68,22 +62,16 @@ DEFAULT_SENSITIVE_KEYS = frozenset(
     {
         "password",
         "passwd",
-
         "secret",
-
         "token",
         "access_token",
         "refresh_token",
-
         "api_key",
         "apikey",
-
         "authorization",
         "cookie",
-
         "private_key",
         "client_secret",
-
         "credential",
         "credentials",
     }
@@ -94,22 +82,13 @@ DEFAULT_SENSITIVE_KEYS = frozenset(
 # Sensitive-key helpers
 # ---------------------------------------------------------------
 
-def _normalized_keys(
-    keys: Optional[
-        Iterable[str]
-    ],
-) -> Set[str]:
-    values = (
-        DEFAULT_SENSITIVE_KEYS
-        if keys is None
-        else keys
-    )
 
-    return {
-        str(item).strip().lower()
-        for item in values
-        if str(item).strip()
-    }
+def _normalized_keys(
+    keys: Optional[Iterable[str]],
+) -> Set[str]:
+    values = DEFAULT_SENSITIVE_KEYS if keys is None else keys
+
+    return {str(item).strip().lower() for item in values if str(item).strip()}
 
 
 def _is_sensitive(
@@ -117,36 +96,24 @@ def _is_sensitive(
     *,
     sensitive_keys: Set[str],
 ) -> bool:
-    return (
-        str(key).strip().lower()
-        in sensitive_keys
-    )
+    return str(key).strip().lower() in sensitive_keys
 
 
 # ---------------------------------------------------------------
 # JSON-safe conversion
 # ---------------------------------------------------------------
 
+
 def to_json_safe(
     value: Any,
     *,
-    maximum_depth: int = (
-        DEFAULT_MAX_SERIALIZATION_DEPTH
-    ),
+    maximum_depth: int = (DEFAULT_MAX_SERIALIZATION_DEPTH),
     redact_sensitive: bool = True,
-    sensitive_keys: Optional[
-        Iterable[str]
-    ] = None,
-    redacted_marker: str = (
-        DEFAULT_REDACTED_MARKER
-    ),
-    unsupported_marker: str = (
-        DEFAULT_UNSUPPORTED_MARKER
-    ),
+    sensitive_keys: Optional[Iterable[str]] = None,
+    redacted_marker: str = (DEFAULT_REDACTED_MARKER),
+    unsupported_marker: str = (DEFAULT_UNSUPPORTED_MARKER),
     _depth: int = 0,
-    _seen: Optional[
-        Set[int]
-    ] = None,
+    _seen: Optional[Set[int]] = None,
 ) -> Any:
     """
     Convert known values into bounded,
@@ -174,29 +141,22 @@ def to_json_safe(
     """
 
     if maximum_depth < 0:
-        raise SerializationError(
-            "maximum_depth must be >= 0."
-        )
+        raise SerializationError("maximum_depth must be >= 0.")
 
     if _depth > maximum_depth:
-        return (
-            MAX_DEPTH_REACHED_MARKER
-        )
+        return MAX_DEPTH_REACHED_MARKER
 
     # ---------------------------------------------------------
     # Simple values
     # ---------------------------------------------------------
 
-    if (
-        value is None
-        or isinstance(
-            value,
-            (
-                str,
-                bool,
-                int,
-            ),
-        )
+    if value is None or isinstance(
+        value,
+        (
+            str,
+            bool,
+            int,
+        ),
     ):
         return value
 
@@ -210,13 +170,7 @@ def to_json_safe(
     ):
         # JSON NaN/Infinity behavior varies
         # between consumers. Keep output strict.
-        return (
-            value
-            if math.isfinite(
-                value
-            )
-            else None
-        )
+        return value if math.isfinite(value) else None
 
     # ---------------------------------------------------------
     # Enum
@@ -228,21 +182,11 @@ def to_json_safe(
     ):
         return to_json_safe(
             value.value,
-            maximum_depth=(
-                maximum_depth
-            ),
-            redact_sensitive=(
-                redact_sensitive
-            ),
-            sensitive_keys=(
-                sensitive_keys
-            ),
-            redacted_marker=(
-                redacted_marker
-            ),
-            unsupported_marker=(
-                unsupported_marker
-            ),
+            maximum_depth=(maximum_depth),
+            redact_sensitive=(redact_sensitive),
+            sensitive_keys=(sensitive_keys),
+            redacted_marker=(redacted_marker),
+            unsupported_marker=(unsupported_marker),
             _depth=_depth + 1,
             _seen=_seen,
         )
@@ -255,9 +199,7 @@ def to_json_safe(
         value,
         datetime,
     ):
-        return ensure_utc(
-            value
-        ).isoformat()
+        return ensure_utc(value).isoformat()
 
     if isinstance(
         value,
@@ -273,53 +215,34 @@ def to_json_safe(
         value,
         Path,
     ):
-        return str(
-            value
-        )
+        return str(value)
 
     # ---------------------------------------------------------
     # Cycle tracking
     # ---------------------------------------------------------
 
-    seen = (
-        set()
-        if _seen is None
-        else _seen
-    )
+    seen = set() if _seen is None else _seen
 
-    track_identity = (
-        isinstance(
-            value,
-            (
-                Mapping,
-                list,
-                tuple,
-                set,
-                frozenset,
-            ),
-        )
-        or is_dataclass(
-            value
-        )
-    )
+    track_identity = isinstance(
+        value,
+        (
+            Mapping,
+            list,
+            tuple,
+            set,
+            frozenset,
+        ),
+    ) or is_dataclass(value)
 
-    identity = id(
-        value
-    )
+    identity = id(value)
 
     if track_identity:
         if identity in seen:
-            return (
-                DEFAULT_CYCLE_MARKER
-            )
+            return DEFAULT_CYCLE_MARKER
 
-        seen.add(
-            identity
-        )
+        seen.add(identity)
 
-    keys = _normalized_keys(
-        sensitive_keys
-    )
+    keys = _normalized_keys(sensitive_keys)
 
     try:
         # -----------------------------------------------------
@@ -335,43 +258,24 @@ def to_json_safe(
                 Any,
             ] = {}
 
-            for key, item in (
-                value.items()
-            ):
-                key_text = str(
-                    key
-                )
+            for key, item in value.items():
+                key_text = str(key)
 
-                if (
-                    redact_sensitive
-                    and _is_sensitive(
-                        key_text,
-                        sensitive_keys=keys,
-                    )
+                if redact_sensitive and _is_sensitive(
+                    key_text,
+                    sensitive_keys=keys,
                 ):
-                    output[
-                        key_text
-                    ] = redacted_marker
+                    output[key_text] = redacted_marker
 
                     continue
 
-                output[
-                    key_text
-                ] = to_json_safe(
+                output[key_text] = to_json_safe(
                     item,
-                    maximum_depth=(
-                        maximum_depth
-                    ),
-                    redact_sensitive=(
-                        redact_sensitive
-                    ),
+                    maximum_depth=(maximum_depth),
+                    redact_sensitive=(redact_sensitive),
                     sensitive_keys=keys,
-                    redacted_marker=(
-                        redacted_marker
-                    ),
-                    unsupported_marker=(
-                        unsupported_marker
-                    ),
+                    redacted_marker=(redacted_marker),
+                    unsupported_marker=(unsupported_marker),
                     _depth=_depth + 1,
                     _seen=seen,
                 )
@@ -382,58 +286,36 @@ def to_json_safe(
         # Dataclass
         # -----------------------------------------------------
 
-        if (
-            is_dataclass(
-                value
-            )
-            and not isinstance(
-                value,
-                type,
-            )
+        if is_dataclass(value) and not isinstance(
+            value,
+            type,
         ):
             output: Dict[
                 str,
                 Any,
             ] = {}
 
-            for definition in fields(
-                value
-            ):
+            for definition in fields(value):
                 key = definition.name
 
-                if (
-                    redact_sensitive
-                    and _is_sensitive(
-                        key,
-                        sensitive_keys=keys,
-                    )
+                if redact_sensitive and _is_sensitive(
+                    key,
+                    sensitive_keys=keys,
                 ):
-                    output[
-                        key
-                    ] = redacted_marker
+                    output[key] = redacted_marker
 
                     continue
 
-                output[
-                    key
-                ] = to_json_safe(
+                output[key] = to_json_safe(
                     getattr(
                         value,
                         key,
                     ),
-                    maximum_depth=(
-                        maximum_depth
-                    ),
-                    redact_sensitive=(
-                        redact_sensitive
-                    ),
+                    maximum_depth=(maximum_depth),
+                    redact_sensitive=(redact_sensitive),
                     sensitive_keys=keys,
-                    redacted_marker=(
-                        redacted_marker
-                    ),
-                    unsupported_marker=(
-                        unsupported_marker
-                    ),
+                    redacted_marker=(redacted_marker),
+                    unsupported_marker=(unsupported_marker),
                     _depth=_depth + 1,
                     _seen=seen,
                 )
@@ -454,19 +336,11 @@ def to_json_safe(
             return [
                 to_json_safe(
                     item,
-                    maximum_depth=(
-                        maximum_depth
-                    ),
-                    redact_sensitive=(
-                        redact_sensitive
-                    ),
+                    maximum_depth=(maximum_depth),
+                    redact_sensitive=(redact_sensitive),
                     sensitive_keys=keys,
-                    redacted_marker=(
-                        redacted_marker
-                    ),
-                    unsupported_marker=(
-                        unsupported_marker
-                    ),
+                    redacted_marker=(redacted_marker),
+                    unsupported_marker=(unsupported_marker),
                     _depth=_depth + 1,
                     _seen=seen,
                 )
@@ -487,19 +361,11 @@ def to_json_safe(
             serialized = [
                 to_json_safe(
                     item,
-                    maximum_depth=(
-                        maximum_depth
-                    ),
-                    redact_sensitive=(
-                        redact_sensitive
-                    ),
+                    maximum_depth=(maximum_depth),
+                    redact_sensitive=(redact_sensitive),
                     sensitive_keys=keys,
-                    redacted_marker=(
-                        redacted_marker
-                    ),
-                    unsupported_marker=(
-                        unsupported_marker
-                    ),
+                    redacted_marker=(redacted_marker),
+                    unsupported_marker=(unsupported_marker),
                     _depth=_depth + 1,
                     _seen=seen,
                 )
@@ -511,11 +377,9 @@ def to_json_safe(
             # the serialized output is stable.
             return sorted(
                 serialized,
-                key=lambda item: (
-                    canonical_json(
-                        item,
-                        redact_sensitive=False,
-                    )
+                key=lambda item: canonical_json(
+                    item,
+                    redact_sensitive=False,
                 ),
             )
 
@@ -527,22 +391,19 @@ def to_json_safe(
 
     finally:
         if track_identity:
-            seen.discard(
-                identity
-            )
+            seen.discard(identity)
 
 
 # ---------------------------------------------------------------
 # Canonical JSON
 # ---------------------------------------------------------------
 
+
 def canonical_json(
     value: Any,
     *,
     redact_sensitive: bool = True,
-    sensitive_keys: Optional[
-        Iterable[str]
-    ] = None,
+    sensitive_keys: Optional[Iterable[str]] = None,
 ) -> str:
     """
     Return deterministic compact JSON.
@@ -556,12 +417,8 @@ def canonical_json(
 
     safe = to_json_safe(
         value,
-        redact_sensitive=(
-            redact_sensitive
-        ),
-        sensitive_keys=(
-            sensitive_keys
-        ),
+        redact_sensitive=(redact_sensitive),
+        sensitive_keys=(sensitive_keys),
     )
 
     try:
@@ -581,9 +438,7 @@ def canonical_json(
         ValueError,
     ) as exc:
         raise SerializationError(
-            "Value could not be "
-            "serialized to canonical "
-            "JSON."
+            "Value could not be serialized to canonical JSON."
         ) from exc
 
 
@@ -591,14 +446,13 @@ def canonical_json(
 # Pretty JSON
 # ---------------------------------------------------------------
 
+
 def pretty_json(
     value: Any,
     *,
     indent: int = 2,
     redact_sensitive: bool = True,
-    sensitive_keys: Optional[
-        Iterable[str]
-    ] = None,
+    sensitive_keys: Optional[Iterable[str]] = None,
 ) -> str:
     """
     Return readable JSON suitable for bounded
@@ -606,18 +460,12 @@ def pretty_json(
     """
 
     if indent < 0:
-        raise SerializationError(
-            "indent must be >= 0."
-        )
+        raise SerializationError("indent must be >= 0.")
 
     safe = to_json_safe(
         value,
-        redact_sensitive=(
-            redact_sensitive
-        ),
-        sensitive_keys=(
-            sensitive_keys
-        ),
+        redact_sensitive=(redact_sensitive),
+        sensitive_keys=(sensitive_keys),
     )
 
     try:
@@ -633,15 +481,13 @@ def pretty_json(
         TypeError,
         ValueError,
     ) as exc:
-        raise SerializationError(
-            "Value could not be "
-            "serialized to JSON."
-        ) from exc
+        raise SerializationError("Value could not be serialized to JSON.") from exc
 
 
 # ---------------------------------------------------------------
 # Explicit mapping redaction
 # ---------------------------------------------------------------
+
 
 def redact_mapping(
     value: Mapping[
@@ -649,9 +495,7 @@ def redact_mapping(
         Any,
     ],
     *,
-    sensitive_keys: Optional[
-        Iterable[str]
-    ] = None,
+    sensitive_keys: Optional[Iterable[str]] = None,
 ) -> Dict[str, Any]:
     """
     Convert a mapping to a JSON-safe redacted
@@ -661,19 +505,14 @@ def redact_mapping(
     safe = to_json_safe(
         value,
         redact_sensitive=True,
-        sensitive_keys=(
-            sensitive_keys
-        ),
+        sensitive_keys=(sensitive_keys),
     )
 
     if not isinstance(
         safe,
         dict,
     ):
-        raise SerializationError(
-            "Expected a mapping "
-            "serialization result."
-        )
+        raise SerializationError("Expected a mapping serialization result.")
 
     return safe
 
@@ -687,11 +526,8 @@ __all__ = [
     "DEFAULT_CYCLE_MARKER",
     "DEFAULT_UNSUPPORTED_MARKER",
     "DEFAULT_SENSITIVE_KEYS",
-
     "to_json_safe",
-
     "canonical_json",
     "pretty_json",
-
     "redact_mapping",
 ]

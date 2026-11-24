@@ -37,14 +37,13 @@ from src.integrations.schema import (
 # Environment prefix
 # ---------------------------------------------------------------
 
-DEFAULT_ENV_PREFIX = (
-    "OSHA_INTEGRATIONS_"
-)
+DEFAULT_ENV_PREFIX = "OSHA_INTEGRATIONS_"
 
 
 # ---------------------------------------------------------------
 # Timeout configuration
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class TimeoutConfig:
@@ -80,6 +79,7 @@ class TimeoutConfig:
 # Retry configuration
 # ---------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class RetryConfig:
     enabled: bool = True
@@ -103,17 +103,13 @@ class RetryConfig:
 
         number(
             self.initial_delay_seconds,
-            name=(
-                "initial_delay_seconds"
-            ),
+            name=("initial_delay_seconds"),
             minimum=0.0,
         )
 
         number(
             self.maximum_delay_seconds,
-            name=(
-                "maximum_delay_seconds"
-            ),
+            name=("maximum_delay_seconds"),
             minimum=0.0,
         )
 
@@ -123,20 +119,16 @@ class RetryConfig:
             minimum=1.0,
         )
 
-        if (
-            self.maximum_delay_seconds
-            < self.initial_delay_seconds
-        ):
+        if self.maximum_delay_seconds < self.initial_delay_seconds:
             raise ValueError(
-                "maximum_delay_seconds "
-                "cannot be less than "
-                "initial_delay_seconds"
+                "maximum_delay_seconds cannot be less than initial_delay_seconds"
             )
 
 
 # ---------------------------------------------------------------
 # Concurrency configuration
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class ConcurrencyConfig:
@@ -163,26 +155,20 @@ class ConcurrencyConfig:
 
         integer(
             self.maximum_mutating_operations,
-            name=(
-                "maximum_mutating_operations"
-            ),
+            name=("maximum_mutating_operations"),
             minimum=1,
         )
 
-        if (
-            self.maximum_mutating_operations
-            > self.maximum_operations
-        ):
+        if self.maximum_mutating_operations > self.maximum_operations:
             raise ValueError(
-                "maximum_mutating_operations "
-                "cannot exceed "
-                "maximum_operations"
+                "maximum_mutating_operations cannot exceed maximum_operations"
             )
 
 
 # ---------------------------------------------------------------
 # Health configuration
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class HealthConfig:
@@ -203,9 +189,7 @@ class HealthConfig:
 
         number(
             self.degraded_latency_seconds,
-            name=(
-                "degraded_latency_seconds"
-            ),
+            name=("degraded_latency_seconds"),
             minimum=0.001,
         )
 
@@ -213,6 +197,7 @@ class HealthConfig:
 # ---------------------------------------------------------------
 # Operation policy
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class OperationPolicyConfig:
@@ -238,21 +223,16 @@ class OperationPolicyConfig:
     def validate(
         self,
     ) -> None:
-        if (
-            self.allow_mutating_operations
-            and not self.
-            require_explicit_capability
-        ):
+        if self.allow_mutating_operations and not self.require_explicit_capability:
             raise ValueError(
-                "Mutating integrations "
-                "require explicit "
-                "capability validation."
+                "Mutating integrations require explicit capability validation."
             )
 
 
 # ---------------------------------------------------------------
 # Main configuration
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class IntegrationsConfig:
@@ -269,34 +249,20 @@ class IntegrationsConfig:
         ProviderKind.MINIO.value,
     )
 
-    timeouts: TimeoutConfig = field(
-        default_factory=TimeoutConfig
-    )
+    timeouts: TimeoutConfig = field(default_factory=TimeoutConfig)
 
-    retries: RetryConfig = field(
-        default_factory=RetryConfig
-    )
+    retries: RetryConfig = field(default_factory=RetryConfig)
 
-    concurrency: ConcurrencyConfig = field(
-        default_factory=ConcurrencyConfig
-    )
+    concurrency: ConcurrencyConfig = field(default_factory=ConcurrencyConfig)
 
-    health: HealthConfig = field(
-        default_factory=HealthConfig
-    )
+    health: HealthConfig = field(default_factory=HealthConfig)
 
-    operations: OperationPolicyConfig = field(
-        default_factory=(
-            OperationPolicyConfig
-        )
-    )
+    operations: OperationPolicyConfig = field(default_factory=(OperationPolicyConfig))
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def validate(
         self,
@@ -307,28 +273,12 @@ class IntegrationsConfig:
             allow_empty=False,
         )
 
-        known = {
-            item.value
-            for item
-            in ProviderKind
-        }
+        known = {item.value for item in ProviderKind}
 
-        unknown = [
-            provider
-            for provider
-            in providers
-            if provider
-            not in known
-        ]
+        unknown = [provider for provider in providers if provider not in known]
 
         if unknown:
-            raise ValueError(
-                "Unknown integration "
-                "providers: "
-                + ", ".join(
-                    unknown
-                )
-            )
+            raise ValueError("Unknown integration providers: " + ", ".join(unknown))
 
         self.timeouts.validate()
         self.retries.validate()
@@ -346,21 +296,13 @@ class IntegrationsConfig:
     ) -> bool:
         self.validate()
 
-        normalized = (
-            required_string(
-                provider,
-                name="provider",
-                maximum_length=128,
-            ).lower()
-        )
+        normalized = required_string(
+            provider,
+            name="provider",
+            maximum_length=128,
+        ).lower()
 
-        return bool(
-            self.enabled
-            and normalized
-            in set(
-                self.enabled_providers
-            )
-        )
+        return bool(self.enabled and normalized in set(self.enabled_providers))
 
     # ---------------------------------------------------------
     # Serialization
@@ -372,117 +314,51 @@ class IntegrationsConfig:
         self.validate()
 
         return {
-            "enabled": (
-                self.enabled
-            ),
-
-            "enabled_providers": (
-                list(
-                    self.enabled_providers
-                )
-            ),
-
+            "enabled": (self.enabled),
+            "enabled_providers": (list(self.enabled_providers)),
             "timeouts": {
-                "connect_seconds": (
-                    self.timeouts.
-                    connect_seconds
-                ),
-
-                "operation_seconds": (
-                    self.timeouts.
-                    operation_seconds
-                ),
-
-                "health_seconds": (
-                    self.timeouts.
-                    health_seconds
-                ),
+                "connect_seconds": (self.timeouts.connect_seconds),
+                "operation_seconds": (self.timeouts.operation_seconds),
+                "health_seconds": (self.timeouts.health_seconds),
             },
-
             "retries": {
-                "enabled": (
-                    self.retries.enabled
-                ),
-
-                "maximum_attempts": (
-                    self.retries.
-                    maximum_attempts
-                ),
-
-                "initial_delay_seconds": (
-                    self.retries.
-                    initial_delay_seconds
-                ),
-
-                "maximum_delay_seconds": (
-                    self.retries.
-                    maximum_delay_seconds
-                ),
-
-                "multiplier": (
-                    self.retries.multiplier
-                ),
+                "enabled": (self.retries.enabled),
+                "maximum_attempts": (self.retries.maximum_attempts),
+                "initial_delay_seconds": (self.retries.initial_delay_seconds),
+                "maximum_delay_seconds": (self.retries.maximum_delay_seconds),
+                "multiplier": (self.retries.multiplier),
             },
-
             "concurrency": {
-                "maximum_operations": (
-                    self.concurrency.
-                    maximum_operations
-                ),
-
+                "maximum_operations": (self.concurrency.maximum_operations),
                 "maximum_mutating_operations": (
-                    self.concurrency.
-                    maximum_mutating_operations
+                    self.concurrency.maximum_mutating_operations
                 ),
             },
-
             "health": {
-                "enabled": (
-                    self.health.enabled
-                ),
-
-                "interval_seconds": (
-                    self.health.
-                    interval_seconds
-                ),
-
-                "degraded_latency_seconds": (
-                    self.health.
-                    degraded_latency_seconds
-                ),
+                "enabled": (self.health.enabled),
+                "interval_seconds": (self.health.interval_seconds),
+                "degraded_latency_seconds": (self.health.degraded_latency_seconds),
             },
-
             "operations": {
-                "allow_read_operations": (
-                    self.operations.
-                    allow_read_operations
-                ),
-
+                "allow_read_operations": (self.operations.allow_read_operations),
                 "allow_mutating_operations": (
-                    self.operations.
-                    allow_mutating_operations
+                    self.operations.allow_mutating_operations
                 ),
-
                 "require_security_context_for_mutations": (
-                    self.operations.
-                    require_security_context_for_mutations
+                    self.operations.require_security_context_for_mutations
                 ),
-
                 "require_explicit_capability": (
-                    self.operations.
-                    require_explicit_capability
+                    self.operations.require_explicit_capability
                 ),
             },
-
-            "attributes": dict(
-                self.attributes
-            ),
+            "attributes": dict(self.attributes),
         }
 
 
 # ---------------------------------------------------------------
 # Parsing helpers
 # ---------------------------------------------------------------
+
 
 def _get(
     values: Mapping[
@@ -514,10 +390,7 @@ def _bool(
         name,
     )
 
-    if (
-        value is None
-        or str(value).strip() == ""
-    ):
+    if value is None or str(value).strip() == "":
         return default
 
     return boolean(
@@ -541,10 +414,7 @@ def _int(
         name,
     )
 
-    if (
-        value is None
-        or str(value).strip() == ""
-    ):
+    if value is None or str(value).strip() == "":
         return default
 
     return integer(
@@ -571,10 +441,7 @@ def _float(
         name,
     )
 
-    if (
-        value is None
-        or str(value).strip() == ""
-    ):
+    if value is None or str(value).strip() == "":
         return default
 
     return number(
@@ -605,19 +472,13 @@ def _csv(
         name,
     )
 
-    if (
-        value is None
-        or str(value).strip() == ""
-    ):
+    if value is None or str(value).strip() == "":
         return default
 
     return tuple(
         item.lower()
-        for item
-        in unique_strings(
-            str(value).split(
-                ","
-            ),
+        for item in unique_strings(
+            str(value).split(","),
             name=prefix + name,
             allow_empty=False,
         )
@@ -628,6 +489,7 @@ def _csv(
 # Mapping loader
 # ---------------------------------------------------------------
 
+
 def from_mapping(
     values: Mapping[
         str,
@@ -636,9 +498,7 @@ def from_mapping(
     *,
     prefix: str = DEFAULT_ENV_PREFIX,
 ) -> IntegrationsConfig:
-    defaults = (
-        IntegrationsConfig()
-    )
+    defaults = IntegrationsConfig()
 
     config = IntegrationsConfig(
         enabled=_bool(
@@ -647,15 +507,12 @@ def from_mapping(
             "ENABLED",
             True,
         ),
-
         enabled_providers=_csv(
             values,
             prefix,
             "ENABLED_PROVIDERS",
-            defaults.
-            enabled_providers,
+            defaults.enabled_providers,
         ),
-
         timeouts=TimeoutConfig(
             connect_seconds=_float(
                 values,
@@ -663,14 +520,12 @@ def from_mapping(
                 "CONNECT_TIMEOUT_SECONDS",
                 10.0,
             ),
-
             operation_seconds=_float(
                 values,
                 prefix,
                 "OPERATION_TIMEOUT_SECONDS",
                 30.0,
             ),
-
             health_seconds=_float(
                 values,
                 prefix,
@@ -678,7 +533,6 @@ def from_mapping(
                 5.0,
             ),
         ),
-
         retries=RetryConfig(
             enabled=_bool(
                 values,
@@ -686,14 +540,12 @@ def from_mapping(
                 "RETRY_ENABLED",
                 True,
             ),
-
             maximum_attempts=_int(
                 values,
                 prefix,
                 "RETRY_MAX_ATTEMPTS",
                 3,
             ),
-
             initial_delay_seconds=(
                 _float(
                     values,
@@ -703,7 +555,6 @@ def from_mapping(
                     minimum=0.0,
                 )
             ),
-
             maximum_delay_seconds=(
                 _float(
                     values,
@@ -713,7 +564,6 @@ def from_mapping(
                     minimum=0.0,
                 )
             ),
-
             multiplier=_float(
                 values,
                 prefix,
@@ -722,7 +572,6 @@ def from_mapping(
                 minimum=1.0,
             ),
         ),
-
         concurrency=ConcurrencyConfig(
             maximum_operations=_int(
                 values,
@@ -730,7 +579,6 @@ def from_mapping(
                 "MAX_OPERATIONS",
                 16,
             ),
-
             maximum_mutating_operations=(
                 _int(
                     values,
@@ -740,7 +588,6 @@ def from_mapping(
                 )
             ),
         ),
-
         health=HealthConfig(
             enabled=_bool(
                 values,
@@ -748,14 +595,12 @@ def from_mapping(
                 "HEALTH_ENABLED",
                 True,
             ),
-
             interval_seconds=_float(
                 values,
                 prefix,
                 "HEALTH_INTERVAL_SECONDS",
                 30.0,
             ),
-
             degraded_latency_seconds=(
                 _float(
                     values,
@@ -765,7 +610,6 @@ def from_mapping(
                 )
             ),
         ),
-
         operations=OperationPolicyConfig(
             allow_read_operations=(
                 _bool(
@@ -775,7 +619,6 @@ def from_mapping(
                     True,
                 )
             ),
-
             allow_mutating_operations=(
                 _bool(
                     values,
@@ -784,7 +627,6 @@ def from_mapping(
                     False,
                 )
             ),
-
             require_security_context_for_mutations=(
                 _bool(
                     values,
@@ -793,7 +635,6 @@ def from_mapping(
                     True,
                 )
             ),
-
             require_explicit_capability=(
                 _bool(
                     values,
@@ -803,14 +644,9 @@ def from_mapping(
                 )
             ),
         ),
-
         attributes={
-            "config_source": (
-                "mapping"
-            ),
-            "environment_prefix": (
-                prefix
-            ),
+            "config_source": ("mapping"),
+            "environment_prefix": (prefix),
         },
     )
 
@@ -823,6 +659,7 @@ def from_mapping(
 # Environment loader
 # ---------------------------------------------------------------
 
+
 def from_environment(
     *,
     environ: Optional[
@@ -833,11 +670,7 @@ def from_environment(
     ] = None,
     prefix: str = DEFAULT_ENV_PREFIX,
 ) -> IntegrationsConfig:
-    source = (
-        os.environ
-        if environ is None
-        else environ
-    )
+    source = os.environ if environ is None else environ
 
     config = from_mapping(
         source,
@@ -846,28 +679,15 @@ def from_environment(
 
     return IntegrationsConfig(
         enabled=config.enabled,
-
-        enabled_providers=(
-            config.enabled_providers
-        ),
-
+        enabled_providers=(config.enabled_providers),
         timeouts=config.timeouts,
-
         retries=config.retries,
-
-        concurrency=(
-            config.concurrency
-        ),
-
+        concurrency=(config.concurrency),
         health=config.health,
-
         operations=config.operations,
-
         attributes={
             **config.attributes,
-            "config_source": (
-                "environment"
-            ),
+            "config_source": ("environment"),
         },
     )
 
@@ -875,6 +695,7 @@ def from_environment(
 # ---------------------------------------------------------------
 # Safe summary
 # ---------------------------------------------------------------
+
 
 def safe_config_summary(
     config: IntegrationsConfig,
@@ -887,73 +708,22 @@ def safe_config_summary(
     config.validate()
 
     return {
-        "enabled": (
-            config.enabled
-        ),
-
-        "enabled_providers": (
-            list(
-                config.
-                enabled_providers
-            )
-        ),
-
-        "connect_timeout_seconds": (
-            config.timeouts.
-            connect_seconds
-        ),
-
-        "operation_timeout_seconds": (
-            config.timeouts.
-            operation_seconds
-        ),
-
-        "retry_enabled": (
-            config.retries.enabled
-        ),
-
-        "retry_maximum_attempts": (
-            config.retries.
-            maximum_attempts
-        ),
-
-        "maximum_operations": (
-            config.concurrency.
-            maximum_operations
-        ),
-
-        "maximum_mutating_operations": (
-            config.concurrency.
-            maximum_mutating_operations
-        ),
-
-        "health_enabled": (
-            config.health.enabled
-        ),
-
-        "allow_read_operations": (
-            config.operations.
-            allow_read_operations
-        ),
-
-        "allow_mutating_operations": (
-            config.operations.
-            allow_mutating_operations
-        ),
-
+        "enabled": (config.enabled),
+        "enabled_providers": (list(config.enabled_providers)),
+        "connect_timeout_seconds": (config.timeouts.connect_seconds),
+        "operation_timeout_seconds": (config.timeouts.operation_seconds),
+        "retry_enabled": (config.retries.enabled),
+        "retry_maximum_attempts": (config.retries.maximum_attempts),
+        "maximum_operations": (config.concurrency.maximum_operations),
+        "maximum_mutating_operations": (config.concurrency.maximum_mutating_operations),
+        "health_enabled": (config.health.enabled),
+        "allow_read_operations": (config.operations.allow_read_operations),
+        "allow_mutating_operations": (config.operations.allow_mutating_operations),
         "require_security_context_for_mutations": (
-            config.operations.
-            require_security_context_for_mutations
+            config.operations.require_security_context_for_mutations
         ),
-
-        "require_explicit_capability": (
-            config.operations.
-            require_explicit_capability
-        ),
-
-        "credentials_present": (
-            False
-        ),
+        "require_explicit_capability": (config.operations.require_explicit_capability),
+        "credentials_present": (False),
     }
 
 
@@ -963,17 +733,13 @@ def safe_config_summary(
 
 __all__ = [
     "DEFAULT_ENV_PREFIX",
-
     "TimeoutConfig",
     "RetryConfig",
     "ConcurrencyConfig",
     "HealthConfig",
     "OperationPolicyConfig",
-
     "IntegrationsConfig",
-
     "from_mapping",
     "from_environment",
-
     "safe_config_summary",
 ]

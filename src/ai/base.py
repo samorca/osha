@@ -58,9 +58,8 @@ from src.ai.schema import (
 # Base AI model adapter
 # ---------------------------------------------------------------
 
-class AIModelAdapter(
-    ABC
-):
+
+class AIModelAdapter(ABC):
     """
     Base interface for a runtime model adapter.
 
@@ -85,43 +84,25 @@ class AIModelAdapter(
         self,
         descriptor: AIModelDescriptor,
         *,
-        config: Optional[
-            AIConfig
-        ] = None,
+        config: Optional[AIConfig] = None,
     ) -> None:
-        self.config = (
-            config
-            or AIConfig()
-        )
+        self.config = config or AIConfig()
 
         self.config.validate()
 
         self.descriptor = descriptor
         self.descriptor.finalize()
 
-        self._model: Optional[
-            Any
-        ] = None
+        self._model: Optional[Any] = None
 
         self._lock = RLock()
 
-        if (
-            self.descriptor.
-            identity.family
-            != self.family
-        ):
+        if self.descriptor.identity.family != self.family:
             raise AIModelStateError(
-                "Model descriptor family "
-                "does not match adapter "
-                "family.",
+                "Model descriptor family does not match adapter family.",
                 details={
-                    "descriptor_family": (
-                        self.descriptor.
-                        identity.family
-                    ),
-                    "adapter_family": (
-                        self.family
-                    ),
+                    "descriptor_family": (self.descriptor.identity.family),
+                    "adapter_family": (self.family),
                 },
             )
 
@@ -133,10 +114,7 @@ class AIModelAdapter(
     def model_id(
         self,
     ) -> str:
-        return (
-            self.descriptor.
-            identity.model_id
-        )
+        return self.descriptor.identity.model_id
 
     @property
     def model(
@@ -160,8 +138,7 @@ class AIModelAdapter(
     ) -> bool:
         return (
             self._model is not None
-            and self.descriptor.state
-            == AIModelState.READY.value
+            and self.descriptor.state == AIModelState.READY.value
         )
 
     @property
@@ -178,35 +155,20 @@ class AIModelAdapter(
         self,
         state: str,
         *,
-        error: Optional[
-            BaseException
-        ] = None,
+        error: Optional[BaseException] = None,
     ) -> None:
-        if (
-            state
-            not in {
-                item.value
-                for item
-                in AIModelState
-            }
-        ):
+        if state not in {item.value for item in AIModelState}:
             raise AIModelStateError(
                 "Unknown AI model state.",
                 details={
                     "state": state,
-                    "model_id": (
-                        self.model_id
-                    ),
+                    "model_id": (self.model_id),
                 },
             )
 
         self.descriptor.state = state
 
-        self.descriptor.error_type = (
-            type(error).__name__
-            if error is not None
-            else None
-        )
+        self.descriptor.error_type = type(error).__name__ if error is not None else None
 
     # ---------------------------------------------------------
     # Request validation
@@ -225,69 +187,38 @@ class AIModelAdapter(
 
         request.finalize()
 
-        if (
-            request.family
-            != self.family
-        ):
+        if request.family != self.family:
             raise AIInferenceRequestError(
-                "Inference request family "
-                "does not match the model "
-                "adapter.",
+                "Inference request family does not match the model adapter.",
                 details={
-                    "request_id": (
-                        request.request_id
-                    ),
-                    "request_family": (
-                        request.family
-                    ),
-                    "adapter_family": (
-                        self.family
-                    ),
-                    "model_id": (
-                        self.model_id
-                    ),
+                    "request_id": (request.request_id),
+                    "request_family": (request.family),
+                    "adapter_family": (self.family),
+                    "model_id": (self.model_id),
                 },
             )
 
         if (
-            request.model_name
-            is not None
-            and request.model_name
-            != self.descriptor.
-            identity.model_name
+            request.model_name is not None
+            and request.model_name != self.descriptor.identity.model_name
         ):
             raise AIInferenceRequestError(
-                "Inference request model "
-                "name does not match the "
-                "selected model.",
+                "Inference request model name does not match the selected model.",
                 details={
-                    "request_id": (
-                        request.request_id
-                    ),
-                    "model_id": (
-                        self.model_id
-                    ),
+                    "request_id": (request.request_id),
+                    "model_id": (self.model_id),
                 },
             )
 
         if (
-            request.model_version
-            is not None
-            and request.model_version
-            != self.descriptor.
-            identity.version
+            request.model_version is not None
+            and request.model_version != self.descriptor.identity.version
         ):
             raise AIInferenceRequestError(
-                "Inference request model "
-                "version does not match "
-                "the selected model.",
+                "Inference request model version does not match the selected model.",
                 details={
-                    "request_id": (
-                        request.request_id
-                    ),
-                    "model_id": (
-                        self.model_id
-                    ),
+                    "request_id": (request.request_id),
+                    "model_id": (self.model_id),
                 },
             )
 
@@ -301,12 +232,8 @@ class AIModelAdapter(
         if not self.ready:
             raise AIModelUnavailableError(
                 details={
-                    "model_id": (
-                        self.model_id
-                    ),
-                    "state": (
-                        self.descriptor.state
-                    ),
+                    "model_id": (self.model_id),
+                    "state": (self.descriptor.state),
                 },
             )
 
@@ -327,24 +254,16 @@ class AIModelAdapter(
             if self.ready:
                 return self
 
-            self.set_state(
-                AIModelState.LOADING.value
-            )
+            self.set_state(AIModelState.LOADING.value)
 
             try:
-                model = (
-                    self._load_model()
-                )
+                model = self._load_model()
 
                 if model is None:
                     raise AIModelStateError(
-                        "Model adapter loader "
-                        "returned no runtime "
-                        "model.",
+                        "Model adapter loader returned no runtime model.",
                         details={
-                            "model_id": (
-                                self.model_id
-                            ),
+                            "model_id": (self.model_id),
                         },
                     )
 
@@ -352,9 +271,7 @@ class AIModelAdapter(
 
                 self._after_load()
 
-                self.set_state(
-                    AIModelState.READY.value
-                )
+                self.set_state(AIModelState.READY.value)
 
             except Exception as exc:
                 self._model = None
@@ -388,21 +305,14 @@ class AIModelAdapter(
 
             try:
                 if model is not None:
-                    self._release_model(
-                        model
-                    )
+                    self._release_model(model)
 
             finally:
                 self._model = None
 
-                self.descriptor.loaded_at = (
-                    None
-                )
+                self.descriptor.loaded_at = None
 
-                self.set_state(
-                    AIModelState.
-                    UNLOADED.value
-                )
+                self.set_state(AIModelState.UNLOADED.value)
 
     # ---------------------------------------------------------
     # Inference entrypoint
@@ -421,78 +331,48 @@ class AIModelAdapter(
 
         request.finalize()
 
-        self.validate_request(
-            request
-        )
+        self.validate_request(request)
 
         self.require_ready()
 
-        result = self._infer(
-            request
-        )
+        result = self._infer(request)
 
         if not isinstance(
             result,
             InferenceResult,
         ):
             raise AIModelStateError(
-                "AI model adapter did not "
-                "return InferenceResult.",
+                "AI model adapter did not return InferenceResult.",
                 details={
-                    "model_id": (
-                        self.model_id
-                    ),
-                    "request_id": (
-                        request.request_id
-                    ),
+                    "model_id": (self.model_id),
+                    "request_id": (request.request_id),
                 },
             )
 
         result.finalize()
 
-        if (
-            result.request_id
-            != request.request_id
-        ):
+        if result.request_id != request.request_id:
             raise AIModelStateError(
-                "Inference result request "
-                "identity does not match "
-                "the input request.",
+                "Inference result request identity does not match the input request.",
                 details={
-                    "model_id": (
-                        self.model_id
-                    ),
+                    "model_id": (self.model_id),
                 },
             )
 
-        if (
-            result.model.model_id
-            != self.descriptor.
-            identity.model_id
-        ):
+        if result.model.model_id != self.descriptor.identity.model_id:
             raise AIModelStateError(
-                "Inference result model "
-                "identity does not match "
-                "the executing adapter."
+                "Inference result model identity does not match the executing adapter."
             )
 
-        if (
-            result.state
-            != InferenceState.
-            COMPLETED.value
-        ):
+        if result.state != InferenceState.COMPLETED.value:
             raise AIModelStateError(
                 "Successful adapter "
                 "execution must return a "
                 "completed inference "
                 "result.",
                 details={
-                    "request_id": (
-                        request.request_id
-                    ),
-                    "state": (
-                        result.state
-                    ),
+                    "request_id": (request.request_id),
+                    "state": (result.state),
                 },
             )
 
@@ -555,46 +435,17 @@ class AIModelAdapter(
         self,
     ) -> Dict[str, Any]:
         return {
-            "model_id": (
-                self.model_id
-            ),
-
+            "model_id": (self.model_id),
             "family": self.family,
-
-            "model_name": (
-                self.descriptor.
-                identity.model_name
-            ),
-
-            "version": (
-                self.descriptor.
-                identity.version
-            ),
-
-            "state": (
-                self.descriptor.state
-            ),
-
+            "model_name": (self.descriptor.identity.model_name),
+            "version": (self.descriptor.identity.version),
+            "state": (self.descriptor.state),
             "loaded": self.loaded,
-
             "ready": self.ready,
-
-            "device": (
-                self.descriptor.device
-            ),
-
-            "capabilities": list(
-                self.descriptor.
-                capabilities
-            ),
-
-            "training_supported": (
-                False
-            ),
-
-            "remediation_supported": (
-                False
-            ),
+            "device": (self.descriptor.device),
+            "capabilities": list(self.descriptor.capabilities),
+            "training_supported": (False),
+            "remediation_supported": (False),
         }
 
 
@@ -602,24 +453,19 @@ class AIModelAdapter(
 # Event adapter base
 # ---------------------------------------------------------------
 
-class EventModelAdapter(
-    AIModelAdapter
-):
+
+class EventModelAdapter(AIModelAdapter):
     """
     Base adapter for event-understanding models.
     """
 
-    family = (
-        AIModelFamily.EVENT.value
-    )
+    family = AIModelFamily.EVENT.value
 
     def validate_request(
         self,
         request: InferenceRequest,
     ) -> None:
-        super().validate_request(
-            request
-        )
+        super().validate_request(request)
 
         payload = request.payload
 
@@ -627,34 +473,26 @@ class EventModelAdapter(
             payload,
             dict,
         ):
-            raise AIInferenceRequestError(
-                "Event inference payload "
-                "must be an object."
-            )
+            raise AIInferenceRequestError("Event inference payload must be an object.")
 
 
 # ---------------------------------------------------------------
 # Anomaly adapter base
 # ---------------------------------------------------------------
 
-class AnomalyModelAdapter(
-    AIModelAdapter
-):
+
+class AnomalyModelAdapter(AIModelAdapter):
     """
     Base adapter for anomaly-detection models.
     """
 
-    family = (
-        AIModelFamily.ANOMALY.value
-    )
+    family = AIModelFamily.ANOMALY.value
 
     def validate_request(
         self,
         request: InferenceRequest,
     ) -> None:
-        super().validate_request(
-            request
-        )
+        super().validate_request(request)
 
         payload = request.payload
 
@@ -663,15 +501,14 @@ class AnomalyModelAdapter(
             dict,
         ):
             raise AIInferenceRequestError(
-                "Anomaly inference "
-                "payload must be an "
-                "object."
+                "Anomaly inference payload must be an object."
             )
 
 
 # ---------------------------------------------------------------
 # Adapter type check
 # ---------------------------------------------------------------
+
 
 def require_adapter_family(
     adapter: AIModelAdapter,
@@ -682,25 +519,15 @@ def require_adapter_family(
     model family.
     """
 
-    expected = str(
-        family
-    ).strip().lower()
+    expected = str(family).strip().lower()
 
     if adapter.family != expected:
         raise AIModelStateError(
-            "AI model adapter family "
-            "does not match the expected "
-            "family.",
+            "AI model adapter family does not match the expected family.",
             details={
-                "adapter_family": (
-                    adapter.family
-                ),
-                "expected_family": (
-                    expected
-                ),
-                "model_id": (
-                    adapter.model_id
-                ),
+                "adapter_family": (adapter.family),
+                "expected_family": (expected),
+                "model_id": (adapter.model_id),
             },
         )
 
@@ -713,9 +540,7 @@ def require_adapter_family(
 
 __all__ = [
     "AIModelAdapter",
-
     "EventModelAdapter",
     "AnomalyModelAdapter",
-
     "require_adapter_family",
 ]

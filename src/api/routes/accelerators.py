@@ -86,10 +86,7 @@ def list_accelerators(
     refresh: Annotated[
         bool,
         Query(
-            description=(
-                "Refresh backend discovery before "
-                "returning the inventory."
-            )
+            description=("Refresh backend discovery before returning the inventory.")
         ),
     ] = False,
 ) -> AcceleratorInventoryResponse:

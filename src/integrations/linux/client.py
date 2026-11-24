@@ -58,17 +58,15 @@ except ImportError:
 # Client error
 # ---------------------------------------------------------------
 
-class LinuxClientError(
-    IntegrationOperationError
-):
-    default_code = (
-        "linux_client_error"
-    )
+
+class LinuxClientError(IntegrationOperationError):
+    default_code = "linux_client_error"
 
 
 # ---------------------------------------------------------------
 # Named tuple conversion
 # ---------------------------------------------------------------
+
 
 def _as_dict(
     value: Any,
@@ -82,20 +80,14 @@ def _as_dict(
         None,
     )
 
-    if callable(
-        method
-    ):
-        return dict(
-            method()
-        )
+    if callable(method):
+        return dict(method())
 
     if isinstance(
         value,
         dict,
     ):
-        return dict(
-            value
-        )
+        return dict(value)
 
     return {}
 
@@ -103,6 +95,7 @@ def _as_dict(
 # ---------------------------------------------------------------
 # Linux client
 # ---------------------------------------------------------------
+
 
 class LinuxClient:
     """
@@ -118,17 +111,13 @@ class LinuxClient:
         self,
         *,
         config: LinuxConfig,
-        credential: Optional[
-            SecretValue
-        ] = None,
+        credential: Optional[SecretValue] = None,
     ) -> None:
         self.config = config
 
         self.config.validate()
 
-        self.credential = (
-            credential
-        )
+        self.credential = credential
 
         self._connected = False
 
@@ -152,10 +141,7 @@ class LinuxClient:
         if self.connected:
             return self
 
-        if (
-            self.config.connection.mode
-            != LinuxMode.LOCAL.value
-        ):
+        if self.config.connection.mode != LinuxMode.LOCAL.value:
             raise (
                 IntegrationConnectionError(
                     "Remote Linux "
@@ -166,12 +152,7 @@ class LinuxClient:
             )
 
         if psutil is None:
-            raise (
-                IntegrationConnectionError(
-                    "psutil is not "
-                    "installed."
-                )
-            )
+            raise (IntegrationConnectionError("psutil is not installed."))
 
         self._connected = True
 
@@ -220,67 +201,27 @@ class LinuxClient:
 
         try:
             value = {
-                "hostname": (
-                    socket.gethostname()
-                ),
-
-                "fqdn": (
-                    socket.getfqdn()
-                ),
-
-                "system": (
-                    platform.system()
-                ),
-
-                "release": (
-                    platform.release()
-                ),
-
-                "version": (
-                    platform.version()
-                ),
-
-                "machine": (
-                    platform.machine()
-                ),
-
-                "architecture": (
-                    platform.architecture()[
-                        0
-                    ]
-                ),
-
-                "python_version": (
-                    platform.
-                    python_version()
-                ),
+                "hostname": (socket.gethostname()),
+                "fqdn": (socket.getfqdn()),
+                "system": (platform.system()),
+                "release": (platform.release()),
+                "version": (platform.version()),
+                "machine": (platform.machine()),
+                "architecture": (platform.architecture()[0]),
+                "python_version": (platform.python_version()),
             }
 
-            if (
-                self.config.
-                include_boot_info
-            ):
-                boot_timestamp = (
-                    psutil.boot_time()
-                )
+            if self.config.include_boot_info:
+                boot_timestamp = psutil.boot_time()
 
-                value[
-                    "boot_time"
-                ] = (
-                    datetime.fromtimestamp(
-                        boot_timestamp,
-                        tz=timezone.utc,
-                    ).isoformat()
-                )
+                value["boot_time"] = datetime.fromtimestamp(
+                    boot_timestamp,
+                    tz=timezone.utc,
+                ).isoformat()
 
-                value[
-                    "uptime_seconds"
-                ] = max(
+                value["uptime_seconds"] = max(
                     0.0,
-                    datetime.now(
-                        timezone.utc
-                    ).timestamp()
-                    - boot_timestamp,
+                    datetime.now(timezone.utc).timestamp() - boot_timestamp,
                 )
 
             return value
@@ -288,8 +229,7 @@ class LinuxClient:
         except Exception as exc:
             raise self._operation_error(
                 exc,
-                "Linux host information "
-                "collection failed.",
+                "Linux host information collection failed.",
             ) from exc
 
     # ---------------------------------------------------------
@@ -305,56 +245,21 @@ class LinuxClient:
         )
 
         try:
-            frequency = (
-                psutil.cpu_freq()
-            )
+            frequency = psutil.cpu_freq()
 
             return {
-                "logical_count": (
-                    psutil.cpu_count(
-                        logical=True
-                    )
-                ),
-
-                "physical_count": (
-                    psutil.cpu_count(
-                        logical=False
-                    )
-                ),
-
-                "percent": (
-                    psutil.cpu_percent(
-                        interval=None
-                    )
-                ),
-
-                "times": (
-                    _as_dict(
-                        psutil.cpu_times()
-                    )
-                ),
-
-                "stats": (
-                    _as_dict(
-                        psutil.cpu_stats()
-                    )
-                ),
-
-                "frequency": (
-                    _as_dict(
-                        frequency
-                    )
-                    if frequency
-                    is not None
-                    else None
-                ),
+                "logical_count": (psutil.cpu_count(logical=True)),
+                "physical_count": (psutil.cpu_count(logical=False)),
+                "percent": (psutil.cpu_percent(interval=None)),
+                "times": (_as_dict(psutil.cpu_times())),
+                "stats": (_as_dict(psutil.cpu_stats())),
+                "frequency": (_as_dict(frequency) if frequency is not None else None),
             }
 
         except Exception as exc:
             raise self._operation_error(
                 exc,
-                "Linux CPU information "
-                "collection failed.",
+                "Linux CPU information collection failed.",
             ) from exc
 
     # ---------------------------------------------------------
@@ -365,33 +270,20 @@ class LinuxClient:
         self,
     ) -> Dict[str, Any]:
         self._require_enabled(
-            self.config.
-            include_memory,
+            self.config.include_memory,
             "memory",
         )
 
         try:
             return {
-                "virtual": (
-                    _as_dict(
-                        psutil.
-                        virtual_memory()
-                    )
-                ),
-
-                "swap": (
-                    _as_dict(
-                        psutil.
-                        swap_memory()
-                    )
-                ),
+                "virtual": (_as_dict(psutil.virtual_memory())),
+                "swap": (_as_dict(psutil.swap_memory())),
             }
 
         except Exception as exc:
             raise self._operation_error(
                 exc,
-                "Linux memory information "
-                "collection failed.",
+                "Linux memory information collection failed.",
             ) from exc
 
     # ---------------------------------------------------------
@@ -402,8 +294,7 @@ class LinuxClient:
         self,
     ) -> Dict[str, Any]:
         self._require_enabled(
-            self.config.
-            include_disks,
+            self.config.include_disks,
             "disks",
         )
 
@@ -415,60 +306,31 @@ class LinuxClient:
                 ]
             ] = []
 
-            for partition in (
-                psutil.disk_partitions(
-                    all=False
-                )
-            ):
-                item = _as_dict(
-                    partition
-                )
+            for partition in psutil.disk_partitions(all=False):
+                item = _as_dict(partition)
 
                 try:
-                    item[
-                        "usage"
-                    ] = _as_dict(
-                        psutil.disk_usage(
-                            partition.mountpoint
-                        )
-                    )
+                    item["usage"] = _as_dict(psutil.disk_usage(partition.mountpoint))
 
                 except (
                     PermissionError,
                     OSError,
                 ):
-                    item[
-                        "usage"
-                    ] = None
+                    item["usage"] = None
 
-                partitions.append(
-                    item
-                )
+                partitions.append(item)
 
-            io = (
-                psutil.
-                disk_io_counters()
-            )
+            io = psutil.disk_io_counters()
 
             return {
-                "partitions": (
-                    partitions
-                ),
-
-                "io": (
-                    _as_dict(
-                        io
-                    )
-                    if io is not None
-                    else None
-                ),
+                "partitions": (partitions),
+                "io": (_as_dict(io) if io is not None else None),
             }
 
         except Exception as exc:
             raise self._operation_error(
                 exc,
-                "Linux disk information "
-                "collection failed.",
+                "Linux disk information collection failed.",
             ) from exc
 
     # ---------------------------------------------------------
@@ -479,8 +341,7 @@ class LinuxClient:
         self,
     ) -> Dict[str, Any]:
         self._require_enabled(
-            self.config.
-            include_network,
+            self.config.include_network,
             "network",
         )
 
@@ -490,57 +351,30 @@ class LinuxClient:
             for (
                 interface,
                 interface_addresses,
-            ) in (
-                psutil.net_if_addrs().
-                items()
-            ):
-                addresses[
-                    interface
-                ] = [
-                    _as_dict(
-                        address
-                    )
-                    for address
-                    in interface_addresses
+            ) in psutil.net_if_addrs().items():
+                addresses[interface] = [
+                    _as_dict(address) for address in interface_addresses
                 ]
 
             stats = {
-                name: _as_dict(
-                    value
-                )
-                for name, value
-                in psutil.net_if_stats().
-                items()
+                name: _as_dict(value) for name, value in psutil.net_if_stats().items()
             }
 
             io = {
-                name: _as_dict(
-                    value
-                )
-                for name, value
-                in psutil.net_io_counters(
-                    pernic=True
-                ).items()
+                name: _as_dict(value)
+                for name, value in psutil.net_io_counters(pernic=True).items()
             }
 
             return {
-                "interfaces": (
-                    addresses
-                ),
-
-                "statistics": (
-                    stats
-                ),
-
+                "interfaces": (addresses),
+                "statistics": (stats),
                 "io": io,
             }
 
         except Exception as exc:
             raise self._operation_error(
                 exc,
-                "Linux network "
-                "information collection "
-                "failed.",
+                "Linux network information collection failed.",
             ) from exc
 
     # ---------------------------------------------------------
@@ -550,9 +384,7 @@ class LinuxClient:
     def processes(
         self,
         *,
-        limit: Optional[
-            int
-        ] = None,
+        limit: Optional[int] = None,
     ) -> List[
         Dict[
             str,
@@ -567,19 +399,12 @@ class LinuxClient:
         """
 
         self._require_enabled(
-            self.config.
-            include_processes,
+            self.config.include_processes,
             "processes",
         )
 
-        if (
-            limit is not None
-            and limit < 1
-        ):
-            raise ValueError(
-                "process limit must "
-                "be >= 1"
-            )
+        if limit is not None and limit < 1:
+            raise ValueError("process limit must be >= 1")
 
         output: List[
             Dict[
@@ -589,26 +414,22 @@ class LinuxClient:
         ] = []
 
         try:
-            iterator = (
-                psutil.process_iter(
-                    attrs=[
-                        "pid",
-                        "ppid",
-                        "name",
-                        "username",
-                        "status",
-                        "create_time",
-                        "cpu_percent",
-                        "memory_percent",
-                    ]
-                )
+            iterator = psutil.process_iter(
+                attrs=[
+                    "pid",
+                    "ppid",
+                    "name",
+                    "username",
+                    "status",
+                    "create_time",
+                    "cpu_percent",
+                    "memory_percent",
+                ]
             )
 
             for process in iterator:
                 try:
-                    info = dict(
-                        process.info
-                    )
+                    info = dict(process.info)
 
                 except (
                     psutil.NoSuchProcess,
@@ -617,17 +438,9 @@ class LinuxClient:
                 ):
                     continue
 
-                output.append(
-                    info
-                )
+                output.append(info)
 
-                if (
-                    limit is not None
-                    and len(
-                        output
-                    )
-                    >= limit
-                ):
+                if limit is not None and len(output) >= limit:
                     break
 
             return output
@@ -635,9 +448,7 @@ class LinuxClient:
         except Exception as exc:
             raise self._operation_error(
                 exc,
-                "Linux process "
-                "information collection "
-                "failed.",
+                "Linux process information collection failed.",
             ) from exc
 
     # ---------------------------------------------------------
@@ -657,14 +468,11 @@ class LinuxClient:
         """
 
         self._require_enabled(
-            self.config.
-            include_environment,
+            self.config.include_environment,
             "environment",
         )
 
-        return dict(
-            os.environ
-        )
+        return dict(os.environ)
 
     # ---------------------------------------------------------
     # Complete snapshot
@@ -673,9 +481,7 @@ class LinuxClient:
     def snapshot(
         self,
         *,
-        process_limit: Optional[
-            int
-        ] = None,
+        process_limit: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Collect only categories enabled by
@@ -688,37 +494,23 @@ class LinuxClient:
             str,
             Any,
         ] = {
-            "host": (
-                self.host_info()
-            ),
+            "host": (self.host_info()),
         }
 
         if self.config.include_cpu:
-            value[
-                "cpu"
-            ] = self.cpu_info()
+            value["cpu"] = self.cpu_info()
 
         if self.config.include_memory:
-            value[
-                "memory"
-            ] = self.memory_info()
+            value["memory"] = self.memory_info()
 
         if self.config.include_disks:
-            value[
-                "disks"
-            ] = self.disk_info()
+            value["disks"] = self.disk_info()
 
         if self.config.include_network:
-            value[
-                "network"
-            ] = self.network_info()
+            value["network"] = self.network_info()
 
         if self.config.include_processes:
-            value[
-                "processes"
-            ] = self.processes(
-                limit=process_limit
-            )
+            value["processes"] = self.processes(limit=process_limit)
 
         # Deliberately do not add environment
         # automatically even when enabled.
@@ -735,12 +527,7 @@ class LinuxClient:
         self,
     ) -> None:
         if not self.connected:
-            raise (
-                IntegrationConnectionError(
-                    "Linux client is not "
-                    "connected."
-                )
-            )
+            raise (IntegrationConnectionError("Linux client is not connected."))
 
     def _require_enabled(
         self,
@@ -752,9 +539,7 @@ class LinuxClient:
         if not enabled:
             raise (
                 IntegrationCapabilityError(
-                    "Linux information "
-                    "category is disabled: "
-                    f"{capability}"
+                    f"Linux information category is disabled: {capability}"
                 )
             )
 
@@ -767,30 +552,20 @@ class LinuxClient:
         error: BaseException,
         message: str,
     ) -> LinuxClientError:
-        wrapped = (
-            wrap_provider_error(
-                error,
-                provider="linux",
-                target_id=(
-                    self.config.target_id
-                ),
-                message=message,
-                retryable=False,
-                code=(
-                    "linux_read_failed"
-                ),
-            )
+        wrapped = wrap_provider_error(
+            error,
+            provider="linux",
+            target_id=(self.config.target_id),
+            message=message,
+            retryable=False,
+            code=("linux_read_failed"),
         )
 
         return LinuxClientError(
             message,
             code=wrapped.code,
-            retryable=(
-                wrapped.retryable
-            ),
-            details=(
-                wrapped.details
-            ),
+            retryable=(wrapped.retryable),
+            details=(wrapped.details),
         )
 
     # ---------------------------------------------------------
@@ -801,62 +576,20 @@ class LinuxClient:
         self,
     ) -> Dict[str, Any]:
         return {
-            "connected": (
-                self.connected
-            ),
-
-            "mode": (
-                self.config.connection.
-                mode
-            ),
-
-            "target_id": (
-                self.config.target_id
-            ),
-
+            "connected": (self.connected),
+            "mode": (self.config.connection.mode),
+            "target_id": (self.config.target_id),
             "categories": {
-                "cpu": (
-                    self.config.
-                    include_cpu
-                ),
-
-                "memory": (
-                    self.config.
-                    include_memory
-                ),
-
-                "disks": (
-                    self.config.
-                    include_disks
-                ),
-
-                "network": (
-                    self.config.
-                    include_network
-                ),
-
-                "processes": (
-                    self.config.
-                    include_processes
-                ),
-
-                "environment": (
-                    self.config.
-                    include_environment
-                ),
+                "cpu": (self.config.include_cpu),
+                "memory": (self.config.include_memory),
+                "disks": (self.config.include_disks),
+                "network": (self.config.include_network),
+                "processes": (self.config.include_processes),
+                "environment": (self.config.include_environment),
             },
-
-            "remote_execution_enabled": (
-                False
-            ),
-
-            "arbitrary_command_execution_enabled": (
-                False
-            ),
-
-            "credential_value_exposed": (
-                False
-            ),
+            "remote_execution_enabled": (False),
+            "arbitrary_command_execution_enabled": (False),
+            "credential_value_exposed": (False),
         }
 
 
@@ -866,6 +599,5 @@ class LinuxClient:
 
 __all__ = [
     "LinuxClientError",
-
     "LinuxClient",
 ]

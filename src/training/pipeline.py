@@ -23,75 +23,59 @@ The task-specific optimization loops remain in:
     train_anomalies.py
 """
 
+import builtins
 import math
 import random
-
+from collections.abc import Iterable, Mapping
 from pathlib import Path
-
 from threading import (
     RLock,
 )
-
 from typing import (
     Any,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Tuple,
+    Self,
 )
 
 from src.core.time import (
     utc_now,
 )
-
 from src.training.artifacts import (
     ModelArtifactManager,
     ModelArtifactRegistry,
 )
-
 from src.training.assembly import (
     AssemblyResult,
     ExampleBuilder,
     TrainingDatasetAssembler,
 )
-
 from src.training.checkpoints import (
     CheckpointManager,
     CheckpointRegistry,
 )
-
 from src.training.config import (
     TrainingConfig,
     safe_config_summary,
 )
-
 from src.training.errors import (
     EvaluationMetricError,
     EvaluationThresholdError,
     TrainingConfigurationError,
-    TrainingError,
     TrainingNumericalError,
     TrainingStateError,
     TrainingTaskMismatchError,
 )
-
 from src.training.features import (
-    FeatureBuildResult,
     FeatureBuilder,
+    FeatureBuildResult,
     FeatureExtractor,
     FeatureExtractorRegistry,
     FeatureSchema,
 )
-
 from src.training.health import (
     TrainingHealth,
     TrainingHealthChecker,
 )
-
 from src.training.schema import (
-    ArtifactState,
     EvaluationResult,
     EvaluationSplit,
     ModelArtifact,
@@ -101,17 +85,14 @@ from src.training.schema import (
     TrainingRun,
     TrainingState,
 )
-
 from src.training.sources import (
     DiscoveredTrainingSource,
     TrainingSourceManager,
 )
-
 from src.training.splits import (
     TrainingSplitResult,
     TrainingSplitter,
 )
-
 
 # ---------------------------------------------------------------
 # Optional dependencies
@@ -135,6 +116,7 @@ except ImportError:
 # Training run registry
 # ---------------------------------------------------------------
 
+
 class TrainingRunRegistry:
     """
     Thread-safe in-memory registry of training
@@ -148,7 +130,7 @@ class TrainingRunRegistry:
     def __init__(
         self,
     ) -> None:
-        self._runs: Dict[
+        self._runs: dict[
             str,
             TrainingRun,
         ] = {}
@@ -167,27 +149,18 @@ class TrainingRunRegistry:
     ) -> TrainingRun:
         run.finalize()
 
-        run_id = str(
-            run.run_id
-        )
+        run_id = str(run.run_id)
 
         with self._lock:
-            if (
-                run_id
-                in self._runs
-                and not replace
-            ):
+            if run_id in self._runs and not replace:
                 raise TrainingStateError(
-                    "Training run is "
-                    "already registered.",
+                    "Training run is already registered.",
                     details={
                         "run_id": run_id,
                     },
                 )
 
-            self._runs[
-                run_id
-            ] = run
+            self._runs[run_id] = run
 
         return run
 
@@ -198,15 +171,9 @@ class TrainingRunRegistry:
     def get(
         self,
         run_id: str,
-    ) -> Optional[
-        TrainingRun
-    ]:
+    ) -> TrainingRun | None:
         with self._lock:
-            return self._runs.get(
-                str(
-                    run_id
-                )
-            )
+            return self._runs.get(str(run_id))
 
     # ---------------------------------------------------------
     # Require
@@ -216,14 +183,11 @@ class TrainingRunRegistry:
         self,
         run_id: str,
     ) -> TrainingRun:
-        run = self.get(
-            run_id
-        )
+        run = self.get(run_id)
 
         if run is None:
             raise TrainingStateError(
-                "Training run is not "
-                "registered.",
+                "Training run is not registered.",
                 details={
                     "run_id": run_id,
                 },
@@ -238,58 +202,32 @@ class TrainingRunRegistry:
     def list(
         self,
         *,
-        task: Optional[
-            str
-        ] = None,
-        state: Optional[
-            str
-        ] = None,
-        model_name: Optional[
-            str
-        ] = None,
-    ) -> List[
-        TrainingRun
-    ]:
+        task: str | None = None,
+        state: str | None = None,
+        model_name: str | None = None,
+    ) -> builtins.list[TrainingRun]:
         with self._lock:
-            values = list(
-                self._runs.values()
-            )
+            values = list(self._runs.values())
 
-        output: List[
-            TrainingRun
-        ] = []
+        output: list[TrainingRun] = []
 
         for run in values:
-            if (
-                task is not None
-                and run.task != task
-            ):
+            if task is not None and run.task != task:
                 continue
 
-            if (
-                state is not None
-                and run.state != state
-            ):
+            if state is not None and run.state != state:
                 continue
 
-            if (
-                model_name is not None
-                and run.model_name
-                != model_name
-            ):
+            if model_name is not None and run.model_name != model_name:
                 continue
 
-            output.append(
-                run
-            )
+            output.append(run)
 
         return sorted(
             output,
             key=lambda item: (
-                item.started_at
-                or "",
-                item.run_id
-                or "",
+                item.started_at or "",
+                item.run_id or "",
             ),
         )
 
@@ -299,23 +237,21 @@ class TrainingRunRegistry:
 
     def summary(
         self,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         runs = self.list()
 
-        by_state: Dict[
+        by_state: dict[
             str,
             int,
         ] = {}
 
-        by_task: Dict[
+        by_task: dict[
             str,
             int,
         ] = {}
 
         for run in runs:
-            by_state[
-                run.state
-            ] = (
+            by_state[run.state] = (
                 by_state.get(
                     run.state,
                     0,
@@ -323,9 +259,7 @@ class TrainingRunRegistry:
                 + 1
             )
 
-            by_task[
-                run.task
-            ] = (
+            by_task[run.task] = (
                 by_task.get(
                     run.task,
                     0,
@@ -334,23 +268,16 @@ class TrainingRunRegistry:
             )
 
         return {
-            "run_count": len(
-                runs
-            ),
-
-            "by_state": (
-                by_state
-            ),
-
-            "by_task": (
-                by_task
-            ),
+            "run_count": len(runs),
+            "by_state": (by_state),
+            "by_task": (by_task),
         }
 
 
 # ---------------------------------------------------------------
 # Evaluation registry
 # ---------------------------------------------------------------
+
 
 class EvaluationRegistry:
     """
@@ -360,7 +287,7 @@ class EvaluationRegistry:
     def __init__(
         self,
     ) -> None:
-        self._evaluations: Dict[
+        self._evaluations: dict[
             str,
             EvaluationResult,
         ] = {}
@@ -379,29 +306,18 @@ class EvaluationRegistry:
     ) -> EvaluationResult:
         evaluation.finalize()
 
-        evaluation_id = str(
-            evaluation.evaluation_id
-        )
+        evaluation_id = str(evaluation.evaluation_id)
 
         with self._lock:
-            if (
-                evaluation_id
-                in self._evaluations
-                and not replace
-            ):
+            if evaluation_id in self._evaluations and not replace:
                 raise TrainingStateError(
-                    "Evaluation is already "
-                    "registered.",
+                    "Evaluation is already registered.",
                     details={
-                        "evaluation_id": (
-                            evaluation_id
-                        ),
+                        "evaluation_id": (evaluation_id),
                     },
                 )
 
-            self._evaluations[
-                evaluation_id
-            ] = evaluation
+            self._evaluations[evaluation_id] = evaluation
 
         return evaluation
 
@@ -412,15 +328,9 @@ class EvaluationRegistry:
     def get(
         self,
         evaluation_id: str,
-    ) -> Optional[
-        EvaluationResult
-    ]:
+    ) -> EvaluationResult | None:
         with self._lock:
-            return self._evaluations.get(
-                str(
-                    evaluation_id
-                )
-            )
+            return self._evaluations.get(str(evaluation_id))
 
     # ---------------------------------------------------------
     # Require
@@ -430,18 +340,13 @@ class EvaluationRegistry:
         self,
         evaluation_id: str,
     ) -> EvaluationResult:
-        evaluation = self.get(
-            evaluation_id
-        )
+        evaluation = self.get(evaluation_id)
 
         if evaluation is None:
             raise TrainingStateError(
-                "Evaluation is not "
-                "registered.",
+                "Evaluation is not registered.",
                 details={
-                    "evaluation_id": (
-                        evaluation_id
-                    ),
+                    "evaluation_id": (evaluation_id),
                 },
             )
 
@@ -454,59 +359,32 @@ class EvaluationRegistry:
     def list(
         self,
         *,
-        run_id: Optional[
-            str
-        ] = None,
-        split: Optional[
-            str
-        ] = None,
-        passed: Optional[
-            bool
-        ] = None,
-    ) -> List[
-        EvaluationResult
-    ]:
+        run_id: str | None = None,
+        split: str | None = None,
+        passed: bool | None = None,
+    ) -> builtins.list[EvaluationResult]:
         with self._lock:
-            values = list(
-                self._evaluations.values()
-            )
+            values = list(self._evaluations.values())
 
-        output: List[
-            EvaluationResult
-        ] = []
+        output: list[EvaluationResult] = []
 
         for evaluation in values:
-            if (
-                run_id is not None
-                and evaluation.run_id
-                != run_id
-            ):
+            if run_id is not None and evaluation.run_id != run_id:
                 continue
 
-            if (
-                split is not None
-                and evaluation.split
-                != split
-            ):
+            if split is not None and evaluation.split != split:
                 continue
 
-            if (
-                passed is not None
-                and evaluation.passed
-                is not passed
-            ):
+            if passed is not None and evaluation.passed is not passed:
                 continue
 
-            output.append(
-                evaluation
-            )
+            output.append(evaluation)
 
         return sorted(
             output,
             key=lambda item: (
                 item.evaluated_at,
-                item.evaluation_id
-                or "",
+                item.evaluation_id or "",
             ),
         )
 
@@ -518,12 +396,8 @@ class EvaluationRegistry:
         self,
         *,
         run_id: str,
-        split: Optional[
-            str
-        ] = None,
-    ) -> Optional[
-        EvaluationResult
-    ]:
+        split: str | None = None,
+    ) -> EvaluationResult | None:
         values = self.list(
             run_id=run_id,
             split=split,
@@ -532,9 +406,7 @@ class EvaluationRegistry:
         if not values:
             return None
 
-        return values[
-            -1
-        ]
+        return values[-1]
 
     # ---------------------------------------------------------
     # Summary
@@ -542,47 +414,25 @@ class EvaluationRegistry:
 
     def summary(
         self,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         values = self.list()
 
-        passed = sum(
-            1
-            for evaluation
-            in values
-            if evaluation.passed
-            is True
-        )
+        passed = sum(1 for evaluation in values if evaluation.passed is True)
 
-        failed = sum(
-            1
-            for evaluation
-            in values
-            if evaluation.passed
-            is False
-        )
+        failed = sum(1 for evaluation in values if evaluation.passed is False)
 
         return {
-            "evaluation_count": len(
-                values
-            ),
-
+            "evaluation_count": len(values),
             "passed": passed,
-
             "failed": failed,
-
-            "undetermined": (
-                len(
-                    values
-                )
-                - passed
-                - failed
-            ),
+            "undetermined": (len(values) - passed - failed),
         }
 
 
 # ---------------------------------------------------------------
 # Training preparation result
 # ---------------------------------------------------------------
+
 
 class TrainingPreparation:
     """
@@ -613,21 +463,17 @@ class TrainingPreparation:
 
     def to_dict(
         self,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         return {
-            "assembly": (
-                self.assembly.to_dict()
-            ),
-
-            "split": (
-                self.split.to_dict()
-            ),
+            "assembly": (self.assembly.to_dict()),
+            "split": (self.split.to_dict()),
         }
 
 
 # ---------------------------------------------------------------
 # Encoded split result
 # ---------------------------------------------------------------
+
 
 class EncodedTrainingSplits:
     """
@@ -642,57 +488,30 @@ class EncodedTrainingSplits:
         *,
         schema: FeatureSchema,
         train: FeatureBuildResult,
-        validation: Optional[
-            FeatureBuildResult
-        ],
-        test: Optional[
-            FeatureBuildResult
-        ],
+        validation: FeatureBuildResult | None,
+        test: FeatureBuildResult | None,
     ) -> None:
         self.schema = schema
         self.train = train
-        self.validation = (
-            validation
-        )
+        self.validation = validation
         self.test = test
 
     def to_dict(
         self,
         *,
         include_examples: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         return {
-            "schema": (
-                self.schema.to_dict()
-            ),
-
-            "train": (
-                self.train.to_dict(
-                    include_examples=(
-                        include_examples
-                    )
-                )
-            ),
-
+            "schema": (self.schema.to_dict()),
+            "train": (self.train.to_dict(include_examples=(include_examples))),
             "validation": (
-                self.validation.to_dict(
-                    include_examples=(
-                        include_examples
-                    )
-                )
-                if self.validation
-                is not None
+                self.validation.to_dict(include_examples=(include_examples))
+                if self.validation is not None
                 else None
             ),
-
             "test": (
-                self.test.to_dict(
-                    include_examples=(
-                        include_examples
-                    )
-                )
-                if self.test
-                is not None
+                self.test.to_dict(include_examples=(include_examples))
+                if self.test is not None
                 else None
             ),
         }
@@ -701,6 +520,7 @@ class EncodedTrainingSplits:
 # ---------------------------------------------------------------
 # Training pipeline
 # ---------------------------------------------------------------
+
 
 class TrainingPipeline:
     """
@@ -716,38 +536,17 @@ class TrainingPipeline:
     def __init__(
         self,
         *,
-        config: Optional[
-            TrainingConfig
-        ] = None,
-        sources: Optional[
-            TrainingSourceManager
-        ] = None,
-        assembler: Optional[
-            TrainingDatasetAssembler
-        ] = None,
-        splitter: Optional[
-            TrainingSplitter
-        ] = None,
-        feature_builders: Optional[
-            FeatureExtractorRegistry
-        ] = None,
-        checkpoints: Optional[
-            CheckpointManager
-        ] = None,
-        artifacts: Optional[
-            ModelArtifactManager
-        ] = None,
-        runs: Optional[
-            TrainingRunRegistry
-        ] = None,
-        evaluations: Optional[
-            EvaluationRegistry
-        ] = None,
+        config: TrainingConfig | None = None,
+        sources: TrainingSourceManager | None = None,
+        assembler: TrainingDatasetAssembler | None = None,
+        splitter: TrainingSplitter | None = None,
+        feature_builders: FeatureExtractorRegistry | None = None,
+        checkpoints: CheckpointManager | None = None,
+        artifacts: ModelArtifactManager | None = None,
+        runs: TrainingRunRegistry | None = None,
+        evaluations: EvaluationRegistry | None = None,
     ) -> None:
-        self.config = (
-            config
-            or TrainingConfig()
-        )
+        self.config = config or TrainingConfig()
 
         self.config.validate()
 
@@ -755,91 +554,46 @@ class TrainingPipeline:
         # Shared services
         # -----------------------------------------------------
 
-        self.sources = (
-            sources
-            or TrainingSourceManager(
-                config=self.config
-            )
+        self.sources = sources or TrainingSourceManager(config=self.config)
+
+        self.assembler = assembler or TrainingDatasetAssembler(
+            config=self.config,
+            sources=self.sources,
         )
 
-        self.assembler = (
-            assembler
-            or TrainingDatasetAssembler(
-                config=self.config,
-                sources=self.sources,
-            )
-        )
+        self.splitter = splitter or TrainingSplitter(config=self.config)
 
-        self.splitter = (
-            splitter
-            or TrainingSplitter(
-                config=self.config
-            )
-        )
+        self.feature_extractors = feature_builders or FeatureExtractorRegistry()
 
-        self.feature_extractors = (
-            feature_builders
-            or FeatureExtractorRegistry()
-        )
-
-        self.feature_builder = (
-            FeatureBuilder(
-                registry=(
-                    self.
-                    feature_extractors
-                )
-            )
-        )
+        self.feature_builder = FeatureBuilder(registry=(self.feature_extractors))
 
         # -----------------------------------------------------
         # Lifecycle storage
         # -----------------------------------------------------
 
-        self.checkpoints = (
-            checkpoints
-            or CheckpointManager(
-                config=self.config,
-                registry=(
-                    CheckpointRegistry()
-                ),
-            )
+        self.checkpoints = checkpoints or CheckpointManager(
+            config=self.config,
+            registry=(CheckpointRegistry()),
         )
 
-        self.artifacts = (
-            artifacts
-            or ModelArtifactManager(
-                config=self.config,
-                registry=(
-                    ModelArtifactRegistry()
-                ),
-            )
+        self.artifacts = artifacts or ModelArtifactManager(
+            config=self.config,
+            registry=(ModelArtifactRegistry()),
         )
 
-        self.runs = (
-            runs
-            or TrainingRunRegistry()
-        )
+        self.runs = runs or TrainingRunRegistry()
 
-        self.evaluations = (
-            evaluations
-            or EvaluationRegistry()
-        )
+        self.evaluations = evaluations or EvaluationRegistry()
 
         # -----------------------------------------------------
         # Health
         # -----------------------------------------------------
 
-        self.health = (
-            TrainingHealthChecker(
-                config=self.config,
-                sources=self.sources,
-                checkpoints=(
-                    self.checkpoints
-                ),
-                artifacts=(
-                    self.artifacts
-                ),
-            )
+        self.health = TrainingHealthChecker(
+            config=self.config,
+            source_manager=self.sources,
+            checkpoints=(self.checkpoints),
+            artifacts=(self.artifacts),
         )
 
     # ---------------------------------------------------------
@@ -850,10 +604,7 @@ class TrainingPipeline:
         self,
     ) -> None:
         if not self.config.enabled:
-            raise TrainingConfigurationError(
-                "Training subsystem is "
-                "disabled."
-            )
+            raise TrainingConfigurationError("Training subsystem is disabled.")
 
     def _require_task(
         self,
@@ -861,16 +612,11 @@ class TrainingPipeline:
     ) -> str:
         self._require_enabled()
 
-        normalized = str(
-            task
-        ).strip().lower()
+        normalized = str(task).strip().lower()
 
-        if not self.config.task_allowed(
-            normalized
-        ):
+        if not self.config.task_allowed(normalized):
             raise TrainingTaskMismatchError(
-                "Training task is not "
-                "enabled.",
+                "Training task is not enabled.",
                 details={
                     "task": normalized,
                 },
@@ -884,7 +630,7 @@ class TrainingPipeline:
 
     def initialize_directories(
         self,
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """
         Create output directories owned by the
         training subsystem.
@@ -896,10 +642,7 @@ class TrainingPipeline:
 
         self._require_enabled()
 
-        paths = (
-            self.config.
-            paths.resolved()
-        )
+        paths = self.config.paths.resolved()
 
         output_keys = (
             "checkpoints",
@@ -910,34 +653,20 @@ class TrainingPipeline:
 
         try:
             for key in output_keys:
-                Path(
-                    paths[
-                        key
-                    ]
-                ).mkdir(
+                Path(paths[key]).mkdir(
                     parents=True,
                     exist_ok=True,
                 )
 
         except OSError as exc:
             raise TrainingConfigurationError(
-                "Training output "
-                "directories could not "
-                "be initialized.",
+                "Training output directories could not be initialized.",
                 details={
-                    "error_type": (
-                        type(exc).__name__
-                    ),
+                    "error_type": (type(exc).__name__),
                 },
             ) from exc
 
-        return {
-            key: paths[
-                key
-            ]
-            for key
-            in output_keys
-        }
+        return {key: paths[key] for key in output_keys}
 
     # ---------------------------------------------------------
     # Reproducibility
@@ -945,7 +674,7 @@ class TrainingPipeline:
 
     def apply_reproducibility(
         self,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Apply configured random seeds.
 
@@ -953,64 +682,38 @@ class TrainingPipeline:
         when the relevant framework is installed.
         """
 
-        seed = (
-            self.config.
-            reproducibility.
-            random_seed
-        )
+        seed = self.config.reproducibility.random_seed
 
-        random.seed(
-            seed
-        )
+        random.seed(seed)
 
         numpy_seeded = False
         torch_seeded = False
 
         if np is not None:
-            np.random.seed(
-                seed
-            )
+            np.random.seed(seed)
 
             numpy_seeded = True
 
         if torch is not None:
-            torch.manual_seed(
-                seed
-            )
+            torch.manual_seed(seed)
 
             if torch.cuda.is_available():
-                torch.cuda.manual_seed_all(
-                    seed
-                )
+                torch.cuda.manual_seed_all(seed)
 
-            deterministic = (
-                self.config.
-                reproducibility.
-                deterministic
-            )
+            deterministic = self.config.reproducibility.deterministic
 
-            benchmark = (
-                self.config.
-                reproducibility.
-                benchmark
-            )
+            benchmark = self.config.reproducibility.benchmark
 
             if hasattr(
                 torch.backends,
                 "cudnn",
             ):
-                torch.backends.cudnn.deterministic = (
-                    deterministic
-                )
+                torch.backends.cudnn.deterministic = deterministic
 
-                torch.backends.cudnn.benchmark = (
-                    benchmark
-                )
+                torch.backends.cudnn.benchmark = benchmark
 
             try:
-                torch.use_deterministic_algorithms(
-                    deterministic
-                )
+                torch.use_deterministic_algorithms(deterministic)
 
             except (
                 AttributeError,
@@ -1026,28 +729,11 @@ class TrainingPipeline:
 
         return {
             "random_seed": seed,
-
             "python_seeded": True,
-
-            "numpy_seeded": (
-                numpy_seeded
-            ),
-
-            "torch_seeded": (
-                torch_seeded
-            ),
-
-            "deterministic_requested": (
-                self.config.
-                reproducibility.
-                deterministic
-            ),
-
-            "benchmark": (
-                self.config.
-                reproducibility.
-                benchmark
-            ),
+            "numpy_seeded": (numpy_seeded),
+            "torch_seeded": (torch_seeded),
+            "deterministic_requested": (self.config.reproducibility.deterministic),
+            "benchmark": (self.config.reproducibility.benchmark),
         }
 
     # ---------------------------------------------------------
@@ -1060,17 +746,10 @@ class TrainingPipeline:
     ) -> None:
         self._require_enabled()
 
-        if not callable(
-            builder
-        ):
-            raise TrainingConfigurationError(
-                "Example builder must be "
-                "callable."
-            )
+        if not callable(builder):
+            raise TrainingConfigurationError("Example builder must be callable.")
 
-        self.assembler.builder = (
-            builder
-        )
+        self.assembler.builder = builder
 
     def register_feature_extractor(
         self,
@@ -1079,9 +758,7 @@ class TrainingPipeline:
         extractor: FeatureExtractor,
         replace: bool = False,
     ) -> None:
-        task = self._require_task(
-            task
-        )
+        task = self._require_task(task)
 
         self.feature_extractors.register(
             task=task,
@@ -1095,9 +772,7 @@ class TrainingPipeline:
 
     def discover_sources(
         self,
-    ) -> List[
-        DiscoveredTrainingSource
-    ]:
+    ) -> list[DiscoveredTrainingSource]:
         self._require_enabled()
 
         return self.sources.discover()
@@ -1112,11 +787,7 @@ class TrainingPipeline:
         task: str,
         dataset_id: str,
         version: str = "1",
-        sources: Optional[
-            Iterable[
-                DiscoveredTrainingSource
-            ]
-        ] = None,
+        sources: Iterable[DiscoveredTrainingSource] | None = None,
         require_labels: bool = True,
     ) -> TrainingPreparation:
         """
@@ -1126,25 +797,17 @@ class TrainingPipeline:
         No feature schema is fitted here.
         """
 
-        task = self._require_task(
-            task
-        )
+        task = self._require_task(task)
 
         assembly = self.assembler.assemble(
             task=task,
             dataset_id=dataset_id,
             version=version,
-            discovered_sources=(
-                sources
-            ),
-            require_labels=(
-                require_labels
-            ),
+            discovered_sources=(sources),
+            require_labels=(require_labels),
         )
 
-        split = self.splitter.split(
-            assembly.dataset
-        )
+        split = self.splitter.split(assembly.dataset)
 
         return TrainingPreparation(
             assembly=assembly,
@@ -1180,22 +843,16 @@ class TrainingPipeline:
         schema = self.feature_builder.fit(
             split.train,
             task=split.task,
-            version=(
-                schema_version
-            ),
+            version=(schema_version),
         )
 
-        train = (
-            self.feature_builder.
-            transform(
-                split.train,
-                schema=schema,
-            )
+        train = self.feature_builder.transform(
+            split.train,
+            schema=schema,
         )
 
         validation = (
-            self.feature_builder.
-            transform(
+            self.feature_builder.transform(
                 split.validation,
                 schema=schema,
             )
@@ -1204,8 +861,7 @@ class TrainingPipeline:
         )
 
         test = (
-            self.feature_builder.
-            transform(
+            self.feature_builder.transform(
                 split.test,
                 schema=schema,
             )
@@ -1230,52 +886,21 @@ class TrainingPipeline:
         task: str,
         dataset_id: str,
         model_name: str,
-        accelerator: Optional[
-            str
-        ] = None,
-        attributes: Optional[
-            Mapping[
-                str,
-                Any,
-            ]
-        ] = None,
+        accelerator: str | None = None,
+        attributes: Mapping[str, Any] | None = None,
     ) -> TrainingRun:
-        task = self._require_task(
-            task
-        )
+        task = self._require_task(task)
 
         run = TrainingRun(
             task=task,
-
-            dataset_id=(
-                dataset_id
-            ),
-
-            state=(
-                TrainingState.
-                CREATED.value
-            ),
-
-            model_name=(
-                model_name
-            ),
-
-            accelerator=(
-                accelerator
-                or self.config.
-                accelerator.
-                preferred
-            ),
-
-            attributes=dict(
-                attributes
-                or {}
-            ),
+            dataset_id=(dataset_id),
+            state=(TrainingState.CREATED.value),
+            model_name=(model_name),
+            accelerator=(accelerator or self.config.accelerator.preferred),
+            attributes=dict(attributes or {}),
         ).finalize()
 
-        return self.runs.register(
-            run
-        )
+        return self.runs.register(run)
 
     # ---------------------------------------------------------
     # State transition
@@ -1286,150 +911,80 @@ class TrainingPipeline:
         run: TrainingRun,
         state: str,
         *,
-        error: Optional[
-            BaseException
-        ] = None,
+        error: BaseException | None = None,
     ) -> TrainingRun:
         run.finalize()
 
-        allowed_states = {
-            item.value
-            for item
-            in TrainingState
-        }
+        allowed_states = {item.value for item in TrainingState}
 
         if state not in allowed_states:
             raise TrainingStateError(
-                "Unknown training run "
-                "state.",
+                "Unknown training run state.",
                 details={
                     "state": state,
                 },
             )
 
         transitions = {
-            TrainingState.
-            CREATED.value: {
-                TrainingState.
-                ASSEMBLING.value,
-                TrainingState.
-                READY.value,
-                TrainingState.
-                CANCELLED.value,
-                TrainingState.
-                FAILED.value,
+            TrainingState.CREATED.value: {
+                TrainingState.ASSEMBLING.value,
+                TrainingState.READY.value,
+                TrainingState.CANCELLED.value,
+                TrainingState.FAILED.value,
             },
-
-            TrainingState.
-            ASSEMBLING.value: {
-                TrainingState.
-                READY.value,
-                TrainingState.
-                FAILED.value,
-                TrainingState.
-                CANCELLED.value,
+            TrainingState.ASSEMBLING.value: {
+                TrainingState.READY.value,
+                TrainingState.FAILED.value,
+                TrainingState.CANCELLED.value,
             },
-
-            TrainingState.
-            READY.value: {
-                TrainingState.
-                TRAINING.value,
-                TrainingState.
-                CANCELLED.value,
-                TrainingState.
-                FAILED.value,
+            TrainingState.READY.value: {
+                TrainingState.TRAINING.value,
+                TrainingState.CANCELLED.value,
+                TrainingState.FAILED.value,
             },
-
-            TrainingState.
-            TRAINING.value: {
-                TrainingState.
-                EVALUATING.value,
-                TrainingState.
-                COMPLETED.value,
-                TrainingState.
-                FAILED.value,
-                TrainingState.
-                CANCELLED.value,
+            TrainingState.TRAINING.value: {
+                TrainingState.EVALUATING.value,
+                TrainingState.COMPLETED.value,
+                TrainingState.FAILED.value,
+                TrainingState.CANCELLED.value,
             },
-
-            TrainingState.
-            EVALUATING.value: {
-                TrainingState.
-                COMPLETED.value,
-                TrainingState.
-                FAILED.value,
-                TrainingState.
-                CANCELLED.value,
+            TrainingState.EVALUATING.value: {
+                TrainingState.COMPLETED.value,
+                TrainingState.FAILED.value,
+                TrainingState.CANCELLED.value,
             },
-
-            TrainingState.
-            COMPLETED.value: set(),
-
-            TrainingState.
-            FAILED.value: set(),
-
-            TrainingState.
-            CANCELLED.value: set(),
+            TrainingState.COMPLETED.value: set(),
+            TrainingState.FAILED.value: set(),
+            TrainingState.CANCELLED.value: set(),
         }
 
-        if (
-            state != run.state
-            and state
-            not in transitions.get(
-                run.state,
-                set(),
-            )
+        if state != run.state and state not in transitions.get(
+            run.state,
+            set(),
         ):
             raise TrainingStateError(
-                "Invalid training run "
-                "state transition.",
+                "Invalid training run state transition.",
                 details={
-                    "run_id": (
-                        run.run_id
-                    ),
-                    "current_state": (
-                        run.state
-                    ),
-                    "requested_state": (
-                        state
-                    ),
+                    "run_id": (run.run_id),
+                    "current_state": (run.state),
+                    "requested_state": (state),
                 },
             )
 
         run.state = state
 
-        if (
-            state
-            == TrainingState.
-            TRAINING.value
-            and run.started_at
-            is None
-        ):
-            run.started_at = (
-                utc_now()
-            )
+        if state == TrainingState.TRAINING.value and run.started_at is None:
+            run.started_at = utc_now()
 
-        if (
-            state
-            in {
-                TrainingState.
-                COMPLETED.value,
-
-                TrainingState.
-                FAILED.value,
-
-                TrainingState.
-                CANCELLED.value,
-            }
-        ):
-            run.completed_at = (
-                utc_now()
-            )
+        if state in {
+            TrainingState.COMPLETED.value,
+            TrainingState.FAILED.value,
+            TrainingState.CANCELLED.value,
+        }:
+            run.completed_at = utc_now()
 
         if error is not None:
-            run.error_type = (
-                type(error).__name__
-            )
+            run.error_type = type(error).__name__
 
         self.runs.register(
             run,
@@ -1448,32 +1003,19 @@ class TrainingPipeline:
         *,
         name: str,
         value: float,
-        step: Optional[
-            int
-        ] = None,
-        epoch: Optional[
-            int
-        ] = None,
-        split: Optional[
-            str
-        ] = None,
+        step: int | None = None,
+        epoch: int | None = None,
+        split: str | None = None,
     ) -> TrainingMetric:
         run.finalize()
 
-        numeric = float(
-            value
-        )
+        numeric = float(value)
 
-        if not math.isfinite(
-            numeric
-        ):
+        if not math.isfinite(numeric):
             raise TrainingNumericalError(
-                "Training metric must be "
-                "finite.",
+                "Training metric must be finite.",
                 details={
-                    "run_id": (
-                        run.run_id
-                    ),
+                    "run_id": (run.run_id),
                     "metric": name,
                 },
             )
@@ -1486,9 +1028,7 @@ class TrainingPipeline:
             split=split,
         ).finalize()
 
-        run.metrics.append(
-            metric
-        )
+        run.metrics.append(metric)
 
         self.runs.register(
             run,
@@ -1506,114 +1046,51 @@ class TrainingPipeline:
         *,
         run: TrainingRun,
         model: Any,
-        optimizer: Optional[
-            Any
-        ] = None,
-        scheduler: Optional[
-            Any
-        ] = None,
-        scaler: Optional[
-            Any
-        ] = None,
-        epoch: Optional[
-            int
-        ] = None,
-        step: Optional[
-            int
-        ] = None,
-        score: Optional[
-            float
-        ] = None,
-        score_name: Optional[
-            str
-        ] = None,
-        vocabulary: Optional[
-            Mapping[
-                str,
-                Any,
-            ]
-        ] = None,
-        labels: Optional[
-            Mapping[
-                str,
-                Any,
-            ]
-        ] = None,
-        feature_schema: Optional[
-            Mapping[
-                str,
-                Any,
-            ]
-        ] = None,
-        model_config: Optional[
-            Mapping[
-                str,
-                Any,
-            ]
-        ] = None,
-        extra: Optional[
-            Mapping[
-                str,
-                Any,
-            ]
-        ] = None,
+        optimizer: Any | None = None,
+        scheduler: Any | None = None,
+        scaler: Any | None = None,
+        epoch: int | None = None,
+        step: int | None = None,
+        score: float | None = None,
+        score_name: str | None = None,
+        vocabulary: Mapping[str, Any] | None = None,
+        labels: Mapping[str, Any] | None = None,
+        feature_schema: Mapping[str, Any] | None = None,
+        model_config: Mapping[str, Any] | None = None,
+        extra: Mapping[str, Any] | None = None,
     ) -> TrainingCheckpoint:
         run.finalize()
 
-        if not (
-            self.config.
-            checkpoint.enabled
-        ):
-            raise TrainingConfigurationError(
-                "Checkpointing is "
-                "disabled."
-            )
+        if not (self.config.checkpoint.enabled):
+            raise TrainingConfigurationError("Checkpointing is disabled.")
 
-        if (
-            run.state
-            not in {
-                TrainingState.
-                TRAINING.value,
-
-                TrainingState.
-                EVALUATING.value,
-            }
-        ):
+        if run.state not in {
+            TrainingState.TRAINING.value,
+            TrainingState.EVALUATING.value,
+        }:
             raise TrainingStateError(
-                "Checkpoint can only be "
-                "saved while a run is "
-                "training or evaluating.",
+                "Checkpoint can only be saved while a run is training or evaluating.",
                 details={
-                    "run_id": (
-                        run.run_id
-                    ),
+                    "run_id": (run.run_id),
                     "state": run.state,
                 },
             )
 
-        checkpoint = (
-            self.checkpoints.save(
-                run=run,
-                model=model,
-                optimizer=optimizer,
-                scheduler=scheduler,
-                scaler=scaler,
-                epoch=epoch,
-                step=step,
-                score=score,
-                score_name=(
-                    score_name
-                ),
-                vocabulary=vocabulary,
-                labels=labels,
-                feature_schema=(
-                    feature_schema
-                ),
-                model_config=(
-                    model_config
-                ),
-                extra=extra,
-            )
+        checkpoint = self.checkpoints.save(
+            run=run,
+            model=model,
+            optimizer=optimizer,
+            scheduler=scheduler,
+            scaler=scaler,
+            epoch=epoch,
+            step=step,
+            score=score,
+            score_name=(score_name),
+            vocabulary=vocabulary,
+            labels=labels,
+            feature_schema=(feature_schema),
+            model_config=(model_config),
+            extra=extra,
         )
 
         self.runs.register(
@@ -1621,11 +1098,7 @@ class TrainingPipeline:
             replace=True,
         )
 
-        self.checkpoints.apply_retention(
-            run_id=str(
-                run.run_id
-            )
-        )
+        self.checkpoints.apply_retention(run_id=str(run.run_id))
 
         return checkpoint
 
@@ -1639,39 +1112,18 @@ class TrainingPipeline:
         metric_name: str,
         value: float,
         threshold: float,
-        directions: Optional[
-            Mapping[
-                str,
-                str,
-            ]
-        ] = None,
+        directions: Mapping[str, str] | None = None,
     ) -> bool:
-        direction = (
-            str(
-                (
-                    directions
-                    or {}
-                ).get(
-                    metric_name,
-                    ""
-                )
-            ).strip().lower()
-        )
+        direction = str((directions or {}).get(metric_name, "")).strip().lower()
 
         if not direction:
-            lowered = (
-                metric_name.lower()
-            )
+            lowered = metric_name.lower()
 
             if (
-                "loss"
-                in lowered
-                or "error"
-                in lowered
-                or "false_positive"
-                in lowered
-                or "false_negative"
-                in lowered
+                "loss" in lowered
+                or "error" in lowered
+                or "false_positive" in lowered
+                or "false_negative" in lowered
             ):
                 direction = "max"
 
@@ -1681,21 +1133,15 @@ class TrainingPipeline:
         if direction == "min":
             # Minimum required value:
             # accuracy >= threshold.
-            return (
-                value >= threshold
-            )
+            return value >= threshold
 
         if direction == "max":
             # Maximum allowed value:
             # loss <= threshold.
-            return (
-                value <= threshold
-            )
+            return value <= threshold
 
         raise EvaluationThresholdError(
-            "Evaluation threshold "
-            "direction must be min or "
-            "max.",
+            "Evaluation threshold direction must be min or max.",
             details={
                 "metric": metric_name,
                 "direction": direction,
@@ -1715,130 +1161,69 @@ class TrainingPipeline:
             str,
             float,
         ],
-        thresholds: Optional[
-            Mapping[
-                str,
-                float,
-            ]
-        ] = None,
-        threshold_directions: Optional[
-            Mapping[
-                str,
-                str,
-            ]
-        ] = None,
-        attributes: Optional[
-            Mapping[
-                str,
-                Any,
-            ]
-        ] = None,
+        thresholds: Mapping[str, float] | None = None,
+        threshold_directions: Mapping[str, str] | None = None,
+        attributes: Mapping[str, Any] | None = None,
     ) -> EvaluationResult:
         run.finalize()
 
-        split_name = str(
-            split
-        ).strip().lower()
+        split_name = str(split).strip().lower()
 
-        if (
-            split_name
-            not in {
-                item.value
-                for item
-                in EvaluationSplit
-            }
-        ):
+        if split_name not in {item.value for item in EvaluationSplit}:
             raise EvaluationMetricError(
-                "Unknown evaluation "
-                "split.",
+                "Unknown evaluation split.",
                 details={
                     "split": split_name,
                 },
             )
 
         if not metrics:
-            raise EvaluationMetricError(
-                "Evaluation requires at "
-                "least one metric."
-            )
+            raise EvaluationMetricError("Evaluation requires at least one metric.")
 
-        metric_values: List[
-            TrainingMetric
-        ] = []
+        metric_values: list[TrainingMetric] = []
 
-        normalized_metrics: Dict[
+        normalized_metrics: dict[
             str,
             float,
         ] = {}
 
-        for name, raw_value in (
-            metrics.items()
-        ):
-            value = float(
-                raw_value
-            )
+        for name, raw_value in metrics.items():
+            value = float(raw_value)
 
-            if (
-                self.config.
-                evaluation.
-                fail_on_non_finite_metric
-                and not math.isfinite(
-                    value
-                )
+            if self.config.evaluation.fail_on_non_finite_metric and not math.isfinite(
+                value
             ):
                 raise EvaluationMetricError(
-                    "Evaluation metric "
-                    "must be finite.",
+                    "Evaluation metric must be finite.",
                     details={
                         "metric": name,
                     },
                 )
 
-            normalized_metrics[
-                str(
-                    name
-                )
-            ] = value
+            normalized_metrics[str(name)] = value
 
             metric_values.append(
                 TrainingMetric(
-                    name=str(
-                        name
-                    ),
+                    name=str(name),
                     value=value,
                     split=split_name,
                 ).finalize()
             )
 
         required_thresholds = dict(
-            thresholds
-            if thresholds
-            is not None
-            else self.config.
-            evaluation.
-            thresholds
+            thresholds if thresholds is not None else self.config.evaluation.thresholds
         )
 
-        passed: Optional[
-            bool
-        ]
+        passed: bool | None
 
         if required_thresholds:
-            checks: List[
-                bool
-            ] = []
+            checks: list[bool] = []
 
-            for name, threshold in (
-                required_thresholds.
-                items()
-            ):
-                if name not in (
-                    normalized_metrics
-                ):
+            for name, threshold in required_thresholds.items():
+                if name not in (normalized_metrics):
                     raise (
                         EvaluationThresholdError(
-                            "Required evaluation "
-                            "metric is missing.",
+                            "Required evaluation metric is missing.",
                             details={
                                 "metric": name,
                             },
@@ -1848,70 +1233,34 @@ class TrainingPipeline:
                 checks.append(
                     self._threshold_passed(
                         metric_name=name,
-                        value=(
-                            normalized_metrics[
-                                name
-                            ]
-                        ),
-                        threshold=float(
-                            threshold
-                        ),
-                        directions=(
-                            threshold_directions
-                        ),
+                        value=(normalized_metrics[name]),
+                        threshold=float(threshold),
+                        directions=(threshold_directions),
                     )
                 )
 
-            passed = all(
-                checks
-            )
+            passed = all(checks)
 
         else:
             passed = None
 
         evaluation = EvaluationResult(
-            run_id=str(
-                run.run_id
-            ),
-
-            model_name=str(
-                run.model_name
-                or "unnamed-model"
-            ),
-
+            run_id=str(run.run_id),
+            model_name=str(run.model_name or "unnamed-model"),
             split=split_name,
-
             metrics=metric_values,
-
             passed=passed,
-
             thresholds={
-                str(
-                    name
-                ): float(
-                    threshold
-                )
-                for name, threshold
-                in required_thresholds.
-                items()
+                str(name): float(threshold)
+                for name, threshold in required_thresholds.items()
             },
-
             attributes={
-                **dict(
-                    attributes
-                    or {}
-                ),
-
-                "threshold_directions": dict(
-                    threshold_directions
-                    or {}
-                ),
+                **dict(attributes or {}),
+                "threshold_directions": dict(threshold_directions or {}),
             },
         ).finalize()
 
-        self.evaluations.register(
-            evaluation
-        )
+        self.evaluations.register(evaluation)
 
         return evaluation
 
@@ -1925,24 +1274,17 @@ class TrainingPipeline:
         checkpoint: TrainingCheckpoint,
         task: str,
         version: str,
-        evaluation: Optional[
-            EvaluationResult
-        ] = None,
+        evaluation: EvaluationResult | None = None,
         overwrite: bool = False,
     ) -> ModelArtifact:
-        task = self._require_task(
-            task
-        )
+        task = self._require_task(task)
 
-        return (
-            self.artifacts.
-            create_candidate(
-                checkpoint=checkpoint,
-                task=task,
-                version=version,
-                evaluation=evaluation,
-                overwrite=overwrite,
-            )
+        return self.artifacts.create_candidate(
+            checkpoint=checkpoint,
+            task=task,
+            version=version,
+            evaluation=evaluation,
+            overwrite=overwrite,
         )
 
     # ---------------------------------------------------------
@@ -1953,9 +1295,7 @@ class TrainingPipeline:
         self,
         artifact: ModelArtifact,
         *,
-        evaluation: Optional[
-            EvaluationResult
-        ] = None,
+        evaluation: EvaluationResult | None = None,
     ) -> ModelArtifact:
         self._require_enabled()
 
@@ -1998,7 +1338,7 @@ class TrainingPipeline:
         self,
         *,
         discover_existing: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Initialize shared training infrastructure.
 
@@ -2009,77 +1349,36 @@ class TrainingPipeline:
             return {
                 "enabled": False,
                 "started": False,
-                "training_started": (
-                    False
-                ),
+                "training_started": (False),
             }
 
-        paths = (
-            self.
-            initialize_directories()
-        )
+        paths = self.initialize_directories()
 
-        reproducibility = (
-            self.
-            apply_reproducibility()
-        )
+        reproducibility = self.apply_reproducibility()
 
         discovered_checkpoints = 0
         discovered_artifacts = 0
         discovered_models = 0
 
         if discover_existing:
-            discovered_checkpoints = len(
-                self.checkpoints.
-                discover()
-            )
+            discovered_checkpoints = len(self.checkpoints.discover())
 
-            discovered_artifacts = len(
-                self.artifacts.
-                discover(
-                    promoted=False
-                )
-            )
+            discovered_artifacts = len(self.artifacts.discover(promoted=False))
 
-            discovered_models = len(
-                self.artifacts.
-                discover(
-                    promoted=True
-                )
-            )
+            discovered_models = len(self.artifacts.discover(promoted=True))
 
         health = self.health_check()
 
         return {
             "enabled": True,
-
             "started": True,
-
             "paths": paths,
-
-            "reproducibility": (
-                reproducibility
-            ),
-
-            "discovered_checkpoints": (
-                discovered_checkpoints
-            ),
-
-            "discovered_artifacts": (
-                discovered_artifacts
-            ),
-
-            "discovered_models": (
-                discovered_models
-            ),
-
-            "health": (
-                health.to_dict()
-            ),
-
-            "training_started": (
-                False
-            ),
+            "reproducibility": (reproducibility),
+            "discovered_checkpoints": (discovered_checkpoints),
+            "discovered_artifacts": (discovered_artifacts),
+            "discovered_models": (discovered_models),
+            "health": (health.to_dict()),
+            "training_started": (False),
         }
 
     # ---------------------------------------------------------
@@ -2088,7 +1387,7 @@ class TrainingPipeline:
 
     def stop(
         self,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         The common training facade owns no
         persistent optimization worker.
@@ -2099,14 +1398,8 @@ class TrainingPipeline:
 
         return {
             "stopped": True,
-
-            "active_training_workers": (
-                0
-            ),
-
-            "training_cancelled": (
-                False
-            ),
+            "active_training_workers": (0),
+            "training_cancelled": (False),
         }
 
     # ---------------------------------------------------------
@@ -2115,7 +1408,7 @@ class TrainingPipeline:
 
     def __enter__(
         self,
-    ) -> "TrainingPipeline":
+    ) -> Self:
         self.start()
 
         return self
@@ -2136,75 +1429,24 @@ class TrainingPipeline:
 
     def summary(
         self,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         return {
-            "config": (
-                safe_config_summary(
-                    self.config
-                )
-            ),
-
-            "sources": (
-                self.sources.summary()
-            ),
-
-            "assembler": (
-                self.assembler.summary()
-            ),
-
-            "splitter": (
-                self.splitter.summary()
-            ),
-
-            "features": (
-                self.feature_builder.
-                summary()
-            ),
-
-            "runs": (
-                self.runs.summary()
-            ),
-
-            "evaluations": (
-                self.evaluations.
-                summary()
-            ),
-
-            "checkpoints": (
-                self.checkpoints.
-                summary()
-            ),
-
-            "artifacts": (
-                self.artifacts.
-                summary()
-            ),
-
-            "health": (
-                self.health.summary()
-            ),
-
+            "config": (safe_config_summary(self.config)),
+            "sources": (self.sources.summary()),
+            "assembler": (self.assembler.summary()),
+            "splitter": (self.splitter.summary()),
+            "features": (self.feature_builder.summary()),
+            "runs": (self.runs.summary()),
+            "evaluations": (self.evaluations.summary()),
+            "checkpoints": (self.checkpoints.summary()),
+            "artifacts": (self.artifacts.summary()),
+            "health": (self.health.summary()),
             "task_specific_training_loops": {
-                "event": (
-                    "src.training."
-                    "train_events"
-                ),
-
-                "anomaly": (
-                    "src.training."
-                    "train_anomalies"
-                ),
+                "event": ("src.training.train_events"),
+                "anomaly": ("src.training.train_anomalies"),
             },
-
-            "optimization_loop_implemented_here": (
-                False
-            ),
-
-            "automatic_model_promotion": (
-                self.config.
-                promotion.
-                automatic
-            ),
+            "optimization_loop_implemented_here": (False),
+            "automatic_model_promotion": (self.config.promotion.automatic),
         }
 
 
@@ -2213,11 +1455,9 @@ class TrainingPipeline:
 # ---------------------------------------------------------------
 
 __all__ = [
-    "TrainingRunRegistry",
-    "EvaluationRegistry",
-
-    "TrainingPreparation",
     "EncodedTrainingSplits",
-
+    "EvaluationRegistry",
     "TrainingPipeline",
+    "TrainingPreparation",
+    "TrainingRunRegistry",
 ]

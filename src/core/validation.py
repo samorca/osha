@@ -58,14 +58,13 @@ _ENVIRONMENT_ID_RE = re.compile(
 # Required string
 # ---------------------------------------------------------------
 
+
 def required_string(
     value: Any,
     *,
     name: str = "value",
     minimum_length: int = 1,
-    maximum_length: Optional[
-        int
-    ] = None,
+    maximum_length: Optional[int] = None,
     strip: bool = True,
 ) -> str:
     """
@@ -73,51 +72,27 @@ def required_string(
     """
 
     if value is None:
-        raise ValidationError(
-            f"{name} is required."
-        )
+        raise ValidationError(f"{name} is required.")
 
     if minimum_length < 0:
-        raise ValidationError(
-            "minimum_length must be >= 0."
-        )
+        raise ValidationError("minimum_length must be >= 0.")
 
-    if (
-        maximum_length is not None
-        and maximum_length
-        < minimum_length
-    ):
-        raise ValidationError(
-            "maximum_length cannot be "
-            "less than minimum_length."
-        )
+    if maximum_length is not None and maximum_length < minimum_length:
+        raise ValidationError("maximum_length cannot be less than minimum_length.")
 
-    result = str(
-        value
-    )
+    result = str(value)
 
     if strip:
         result = result.strip()
 
-    if (
-        len(result)
-        < minimum_length
-    ):
+    if len(result) < minimum_length:
         raise ValidationError(
-            f"{name} must contain at "
-            f"least {minimum_length} "
-            "character(s)."
+            f"{name} must contain at least {minimum_length} character(s)."
         )
 
-    if (
-        maximum_length is not None
-        and len(result)
-        > maximum_length
-    ):
+    if maximum_length is not None and len(result) > maximum_length:
         raise ValidationError(
-            f"{name} must contain at "
-            f"most {maximum_length} "
-            "character(s)."
+            f"{name} must contain at most {maximum_length} character(s)."
         )
 
     return result
@@ -127,13 +102,12 @@ def required_string(
 # Optional string
 # ---------------------------------------------------------------
 
+
 def optional_string(
     value: Any,
     *,
     name: str = "value",
-    maximum_length: Optional[
-        int
-    ] = None,
+    maximum_length: Optional[int] = None,
 ) -> Optional[str]:
     """
     Normalize an optional string.
@@ -144,9 +118,7 @@ def optional_string(
     if value is None:
         return None
 
-    result = str(
-        value
-    ).strip()
+    result = str(value).strip()
 
     if not result:
         return None
@@ -154,9 +126,7 @@ def optional_string(
     return required_string(
         result,
         name=name,
-        maximum_length=(
-            maximum_length
-        ),
+        maximum_length=(maximum_length),
     )
 
 
@@ -164,16 +134,13 @@ def optional_string(
 # Integer
 # ---------------------------------------------------------------
 
+
 def integer(
     value: Any,
     *,
     name: str = "value",
-    minimum: Optional[
-        int
-    ] = None,
-    maximum: Optional[
-        int
-    ] = None,
+    minimum: Optional[int] = None,
+    maximum: Optional[int] = None,
 ) -> int:
     """
     Convert and validate an integer.
@@ -186,40 +153,22 @@ def integer(
         value,
         bool,
     ):
-        raise ValidationError(
-            f"{name} must be an integer."
-        )
+        raise ValidationError(f"{name} must be an integer.")
 
     try:
-        result = int(
-            value
-        )
+        result = int(value)
 
     except (
         TypeError,
         ValueError,
     ) as exc:
-        raise ValidationError(
-            f"{name} must be an integer."
-        ) from exc
+        raise ValidationError(f"{name} must be an integer.") from exc
 
-    if (
-        minimum is not None
-        and result < minimum
-    ):
-        raise ValidationError(
-            f"{name} must be >= "
-            f"{minimum}."
-        )
+    if minimum is not None and result < minimum:
+        raise ValidationError(f"{name} must be >= {minimum}.")
 
-    if (
-        maximum is not None
-        and result > maximum
-    ):
-        raise ValidationError(
-            f"{name} must be <= "
-            f"{maximum}."
-        )
+    if maximum is not None and result > maximum:
+        raise ValidationError(f"{name} must be <= {maximum}.")
 
     return result
 
@@ -228,16 +177,13 @@ def integer(
 # Number
 # ---------------------------------------------------------------
 
+
 def number(
     value: Any,
     *,
     name: str = "value",
-    minimum: Optional[
-        float
-    ] = None,
-    maximum: Optional[
-        float
-    ] = None,
+    minimum: Optional[float] = None,
+    maximum: Optional[float] = None,
     finite: bool = True,
 ) -> float:
     """
@@ -248,50 +194,25 @@ def number(
         value,
         bool,
     ):
-        raise ValidationError(
-            f"{name} must be numeric."
-        )
+        raise ValidationError(f"{name} must be numeric.")
 
     try:
-        result = float(
-            value
-        )
+        result = float(value)
 
     except (
         TypeError,
         ValueError,
     ) as exc:
-        raise ValidationError(
-            f"{name} must be numeric."
-        ) from exc
+        raise ValidationError(f"{name} must be numeric.") from exc
 
-    if (
-        finite
-        and not math.isfinite(
-            result
-        )
-    ):
-        raise ValidationError(
-            f"{name} must be finite."
-        )
+    if finite and not math.isfinite(result):
+        raise ValidationError(f"{name} must be finite.")
 
-    if (
-        minimum is not None
-        and result < minimum
-    ):
-        raise ValidationError(
-            f"{name} must be >= "
-            f"{minimum}."
-        )
+    if minimum is not None and result < minimum:
+        raise ValidationError(f"{name} must be >= {minimum}.")
 
-    if (
-        maximum is not None
-        and result > maximum
-    ):
-        raise ValidationError(
-            f"{name} must be <= "
-            f"{maximum}."
-        )
+    if maximum is not None and result > maximum:
+        raise ValidationError(f"{name} must be <= {maximum}.")
 
     return result
 
@@ -299,6 +220,7 @@ def number(
 # ---------------------------------------------------------------
 # Boolean
 # ---------------------------------------------------------------
+
 
 def boolean(
     value: Any,
@@ -319,9 +241,7 @@ def boolean(
         value,
         str,
     ):
-        normalized = (
-            value.strip().lower()
-        )
+        normalized = value.strip().lower()
 
         if normalized in {
             "1",
@@ -339,14 +259,13 @@ def boolean(
         }:
             return False
 
-    raise ValidationError(
-        f"{name} must be a boolean."
-    )
+    raise ValidationError(f"{name} must be a boolean.")
 
 
 # ---------------------------------------------------------------
 # Allowed value
 # ---------------------------------------------------------------
+
 
 def one_of(
     value: Any,
@@ -359,15 +278,10 @@ def one_of(
     collection.
     """
 
-    values = tuple(
-        allowed
-    )
+    values = tuple(allowed)
 
     if value not in values:
-        raise ValidationError(
-            f"{name} must be one of "
-            f"{list(values)}."
-        )
+        raise ValidationError(f"{name} must be one of {list(values)}.")
 
     return value
 
@@ -375,6 +289,7 @@ def one_of(
 # ---------------------------------------------------------------
 # Enum value
 # ---------------------------------------------------------------
+
 
 def enum_value(
     value: Any,
@@ -391,26 +306,14 @@ def enum_value(
         value,
         enum_type,
     ):
-        return str(
-            value.value
-        )
+        return str(value.value)
 
-    allowed = {
-        str(
-            item.value
-        )
-        for item in enum_type
-    }
+    allowed = {str(item.value) for item in enum_type}
 
-    result = str(
-        value
-    )
+    result = str(value)
 
     if result not in allowed:
-        raise ValidationError(
-            f"{name} must be one of "
-            f"{sorted(allowed)}."
-        )
+        raise ValidationError(f"{name} must be one of {sorted(allowed)}.")
 
     return result
 
@@ -418,6 +321,7 @@ def enum_value(
 # ---------------------------------------------------------------
 # Mapping
 # ---------------------------------------------------------------
+
 
 def mapping(
     value: Any,
@@ -428,19 +332,14 @@ def mapping(
     Any,
     Any,
 ]:
-    if (
-        value is None
-        and allow_none
-    ):
+    if value is None and allow_none:
         return {}
 
     if not isinstance(
         value,
         Mapping,
     ):
-        raise ValidationError(
-            f"{name} must be a mapping."
-        )
+        raise ValidationError(f"{name} must be a mapping.")
 
     return value
 
@@ -449,15 +348,14 @@ def mapping(
 # Sequence
 # ---------------------------------------------------------------
 
+
 def sequence(
     value: Any,
     *,
     name: str = "value",
     allow_string: bool = False,
     minimum_items: int = 0,
-    maximum_items: Optional[
-        int
-    ] = None,
+    maximum_items: Optional[int] = None,
 ) -> Sequence[Any]:
     """
     Validate a sequence.
@@ -476,37 +374,19 @@ def sequence(
         )
         and not allow_string
     ):
-        raise ValidationError(
-            f"{name} must be a sequence, "
-            "not a string."
-        )
+        raise ValidationError(f"{name} must be a sequence, not a string.")
 
     if not isinstance(
         value,
         Sequence,
     ):
-        raise ValidationError(
-            f"{name} must be a sequence."
-        )
+        raise ValidationError(f"{name} must be a sequence.")
 
-    if (
-        len(value)
-        < minimum_items
-    ):
-        raise ValidationError(
-            f"{name} must contain at least "
-            f"{minimum_items} item(s)."
-        )
+    if len(value) < minimum_items:
+        raise ValidationError(f"{name} must contain at least {minimum_items} item(s).")
 
-    if (
-        maximum_items is not None
-        and len(value)
-        > maximum_items
-    ):
-        raise ValidationError(
-            f"{name} must contain at most "
-            f"{maximum_items} item(s)."
-        )
+    if maximum_items is not None and len(value) > maximum_items:
+        raise ValidationError(f"{name} must contain at most {maximum_items} item(s).")
 
     return value
 
@@ -514,6 +394,7 @@ def sequence(
 # ---------------------------------------------------------------
 # Unique strings
 # ---------------------------------------------------------------
+
 
 def unique_strings(
     values: Iterable[Any],
@@ -526,34 +407,23 @@ def unique_strings(
     preserving first-seen order.
     """
 
-    result: list[
-        str
-    ] = []
+    result: list[str] = []
 
     seen = set()
 
     for item in values:
-        text = str(
-            item
-        ).strip()
+        text = str(item).strip()
 
         if not text:
             if allow_empty:
                 continue
 
-            raise ValidationError(
-                f"{name} cannot contain "
-                "empty values."
-            )
+            raise ValidationError(f"{name} cannot contain empty values.")
 
         if text not in seen:
-            seen.add(
-                text
-            )
+            seen.add(text)
 
-            result.append(
-                text
-            )
+            result.append(text)
 
     return result
 
@@ -561,6 +431,7 @@ def unique_strings(
 # ---------------------------------------------------------------
 # Safe simple name
 # ---------------------------------------------------------------
+
 
 def safe_name(
     value: Any,
@@ -579,24 +450,19 @@ def safe_name(
     result = required_string(
         value,
         name=name,
-        maximum_length=(
-            maximum_length
-        ),
+        maximum_length=(maximum_length),
     )
 
-    if not _SAFE_NAME_RE.fullmatch(
-        result
-    ):
+    if not _SAFE_NAME_RE.fullmatch(result):
         raise ValidationError(
-            f"{name} may contain only "
-            "letters, numbers, dots, "
-            "underscores, and hyphens."
+            f"{name} may contain only letters, numbers, dots, underscores, and hyphens."
         )
 
     return result
 
 
 # -----------------------------------------------------------------------------------------------------------------
+
 
 def environment_id(
     value: Any,
@@ -617,13 +483,8 @@ def environment_id(
         maximum_length=256,
     )
 
-    if not _ENVIRONMENT_ID_RE.fullmatch(
-        result
-    ):
-        raise ValidationError(
-            f"{name} contains unsupported "
-            "characters."
-        )
+    if not _ENVIRONMENT_ID_RE.fullmatch(result):
+        raise ValidationError(f"{name} contains unsupported characters.")
 
     return result
 
@@ -632,13 +493,12 @@ def environment_id(
 # Identifier
 # ---------------------------------------------------------------
 
+
 def identifier(
     value: Any,
     *,
     name: str = "identifier",
-    expected_prefix: Optional[
-        str
-    ] = None,
+    expected_prefix: Optional[str] = None,
 ) -> str:
     """
     Validate a namespaced OSHA identifier.
@@ -647,18 +507,14 @@ def identifier(
     try:
         return validate_identifier(
             str(value),
-            expected_prefix=(
-                expected_prefix
-            ),
+            expected_prefix=(expected_prefix),
         )
 
     except IdentifierError as exc:
         raise ValidationError(
             f"{name} is invalid.",
             details={
-                "expected_prefix": (
-                    expected_prefix
-                ),
+                "expected_prefix": (expected_prefix),
             },
         ) from exc
 
@@ -666,6 +522,7 @@ def identifier(
 # ---------------------------------------------------------------
 # Presence helper
 # ---------------------------------------------------------------
+
 
 def _present(
     value: Any,
@@ -684,9 +541,7 @@ def _present(
         value,
         str,
     ):
-        return bool(
-            value.strip()
-        )
+        return bool(value.strip())
 
     if isinstance(
         value,
@@ -698,9 +553,7 @@ def _present(
             frozenset,
         ),
     ):
-        return bool(
-            value
-        )
+        return bool(value)
 
     return True
 
@@ -708,6 +561,7 @@ def _present(
 # ---------------------------------------------------------------
 # At least one field
 # ---------------------------------------------------------------
+
 
 def require_any(
     fields: Mapping[
@@ -722,30 +576,18 @@ def require_any(
     present.
     """
 
-    name_list = list(
-        names
-    )
+    name_list = list(names)
 
-    selected = [
-        name
-        for name in name_list
-        if _present(
-            fields.get(
-                name
-            )
-        )
-    ]
+    selected = [name for name in name_list if _present(fields.get(name))]
 
     if not selected:
-        raise ValidationError(
-            "At least one of "
-            f"{name_list} is required."
-        )
+        raise ValidationError(f"At least one of {name_list} is required.")
 
 
 # ---------------------------------------------------------------
 # Exactly one field
 # ---------------------------------------------------------------
+
 
 def require_exactly_one(
     fields: Mapping[
@@ -761,34 +603,20 @@ def require_exactly_one(
     Returns the selected field name.
     """
 
-    name_list = list(
-        names
-    )
+    name_list = list(names)
 
-    selected = [
-        name
-        for name in name_list
-        if _present(
-            fields.get(
-                name
-            )
-        )
-    ]
+    selected = [name for name in name_list if _present(fields.get(name))]
 
     if len(selected) != 1:
-        raise ValidationError(
-            "Exactly one of "
-            f"{name_list} is required."
-        )
+        raise ValidationError(f"Exactly one of {name_list} is required.")
 
-    return selected[
-        0
-    ]
+    return selected[0]
 
 
 # ---------------------------------------------------------------
 # Mutually exclusive fields
 # ---------------------------------------------------------------
+
 
 def mutually_exclusive(
     fields: Mapping[
@@ -803,25 +631,12 @@ def mutually_exclusive(
     or more.
     """
 
-    name_list = list(
-        names
-    )
+    name_list = list(names)
 
-    selected = [
-        name
-        for name in name_list
-        if _present(
-            fields.get(
-                name
-            )
-        )
-    ]
+    selected = [name for name in name_list if _present(fields.get(name))]
 
     if len(selected) > 1:
-        raise ValidationError(
-            "Fields are mutually "
-            f"exclusive: {selected}."
-        )
+        raise ValidationError(f"Fields are mutually exclusive: {selected}.")
 
 
 # ---------------------------------------------------------------
@@ -831,22 +646,17 @@ def mutually_exclusive(
 __all__ = [
     "required_string",
     "optional_string",
-
     "integer",
     "number",
     "boolean",
-
     "one_of",
     "enum_value",
-
     "mapping",
     "sequence",
     "unique_strings",
-
     "safe_name",
     "environment_id",
     "identifier",
-
     "require_any",
     "require_exactly_one",
     "mutually_exclusive",

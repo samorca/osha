@@ -58,13 +58,9 @@ class BaselineConfig:
         when True.
     """
 
-    minimum_samples: int = (
-        DEFAULT_MINIMUM_SAMPLES
-    )
+    minimum_samples: int = DEFAULT_MINIMUM_SAMPLES
 
-    anomaly_z_score: float = (
-        DEFAULT_ANOMALY_Z_SCORE
-    )
+    anomaly_z_score: float = DEFAULT_ANOMALY_Z_SCORE
 
     use_sample_variance: bool = True
 
@@ -74,22 +70,10 @@ class BaselineConfig:
         self,
     ) -> None:
         if self.minimum_samples < 2:
-            raise ValueError(
-                "minimum_samples must "
-                "be >= 2"
-            )
+            raise ValueError("minimum_samples must be >= 2")
 
-        if (
-            not math.isfinite(
-                self.anomaly_z_score
-            )
-            or self.anomaly_z_score
-            <= 0
-        ):
-            raise ValueError(
-                "anomaly_z_score must "
-                "be finite and > 0"
-            )
+        if not math.isfinite(self.anomaly_z_score) or self.anomaly_z_score <= 0:
+            raise ValueError("anomaly_z_score must be finite and > 0")
 
 
 @dataclass(frozen=True)
@@ -113,9 +97,7 @@ class BaselineAssessment:
 
     mean: Optional[float]
 
-    standard_deviation: Optional[
-        float
-    ]
+    standard_deviation: Optional[float]
 
     z_score: Optional[float]
 
@@ -129,25 +111,15 @@ class BaselineAssessment:
         self,
     ) -> Dict[str, Any]:
         return {
-            "baseline_memory_id": (
-                self.baseline_memory_id
-            ),
+            "baseline_memory_id": (self.baseline_memory_id),
             "ready": self.ready,
             "value": self.value,
-            "sample_count": (
-                self.sample_count
-            ),
+            "sample_count": (self.sample_count),
             "mean": self.mean,
-            "standard_deviation": (
-                self.standard_deviation
-            ),
+            "standard_deviation": (self.standard_deviation),
             "z_score": self.z_score,
-            "anomaly_score": (
-                self.anomaly_score
-            ),
-            "anomalous": (
-                self.anomalous
-            ),
+            "anomaly_score": (self.anomaly_score),
+            "anomalous": (self.anomalous),
             "reason": self.reason,
         }
 
@@ -166,48 +138,33 @@ def optional_string(
 def parse_timestamp(
     value: Any,
 ) -> Optional[datetime]:
-    text = optional_string(
-        value
-    )
+    text = optional_string(value)
 
     if text is None:
         return None
 
     if text.endswith("Z"):
-        text = (
-            text[:-1]
-            + "+00:00"
-        )
+        text = text[:-1] + "+00:00"
 
     try:
-        parsed = datetime.fromisoformat(
-            text
-        )
+        parsed = datetime.fromisoformat(text)
 
     except ValueError:
         return None
 
     if parsed.tzinfo is None:
-        parsed = parsed.replace(
-            tzinfo=timezone.utc
-        )
+        parsed = parsed.replace(tzinfo=timezone.utc)
 
-    return parsed.astimezone(
-        timezone.utc
-    )
+    return parsed.astimezone(timezone.utc)
 
 
 def earliest_timestamp(
     left: Optional[str],
     right: Optional[str],
 ) -> Optional[str]:
-    left_time = parse_timestamp(
-        left
-    )
+    left_time = parse_timestamp(left)
 
-    right_time = parse_timestamp(
-        right
-    )
+    right_time = parse_timestamp(right)
 
     if left_time is None:
         return right
@@ -215,24 +172,16 @@ def earliest_timestamp(
     if right_time is None:
         return left
 
-    return (
-        left
-        if left_time <= right_time
-        else right
-    )
+    return left if left_time <= right_time else right
 
 
 def latest_timestamp(
     left: Optional[str],
     right: Optional[str],
 ) -> Optional[str]:
-    left_time = parse_timestamp(
-        left
-    )
+    left_time = parse_timestamp(left)
 
-    right_time = parse_timestamp(
-        right
-    )
+    right_time = parse_timestamp(right)
 
     if left_time is None:
         return right
@@ -240,11 +189,7 @@ def latest_timestamp(
     if right_time is None:
         return left
 
-    return (
-        left
-        if left_time >= right_time
-        else right
-    )
+    return left if left_time >= right_time else right
 
 
 def finite_number(
@@ -273,9 +218,7 @@ def finite_number(
     ):
         return None
 
-    if not math.isfinite(
-        number
-    ):
+    if not math.isfinite(number):
         return None
 
     return number
@@ -289,17 +232,12 @@ def metric_value(
     metric signal.
     """
 
-    direct = finite_number(
-        telemetry.signal.value
-    )
+    direct = finite_number(telemetry.signal.value)
 
     if direct is not None:
         return direct
 
-    attributes = (
-        telemetry.signal.attributes
-        or {}
-    )
+    attributes = telemetry.signal.attributes or {}
 
     for key in (
         "value",
@@ -309,9 +247,7 @@ def metric_value(
         if key not in attributes:
             continue
 
-        value = finite_number(
-            attributes.get(key)
-        )
+        value = finite_number(attributes.get(key))
 
         if value is not None:
             return value
@@ -322,23 +258,14 @@ def metric_value(
 def metric_name(
     telemetry: TelemetryRecord,
 ) -> Optional[str]:
-    name = optional_string(
-        telemetry.signal.signal_name
-    )
+    name = optional_string(telemetry.signal.signal_name)
 
     if name:
         return name
 
-    attributes = (
-        telemetry.signal.attributes
-        or {}
-    )
+    attributes = telemetry.signal.attributes or {}
 
-    return optional_string(
-        attributes.get(
-            "metric_name"
-        )
-    )
+    return optional_string(attributes.get("metric_name"))
 
 
 def baseline_key(
@@ -356,39 +283,22 @@ def baseline_key(
     unrelated systems are not mixed.
     """
 
-    unit_component = (
-        unit
-        if unit
-        else "unitless"
-    )
+    unit_component = unit if unit else "unitless"
 
-    return (
-        f"{environment_id}::"
-        f"{resource_id}::"
-        f"{signal_name}::"
-        f"{unit_component}"
-    )
+    return f"{environment_id}::{resource_id}::{signal_name}::{unit_component}"
 
 
 def baseline_key_for_record(
     telemetry: TelemetryRecord,
 ) -> Optional[str]:
-    name = metric_name(
-        telemetry
-    )
+    name = metric_name(telemetry)
 
     if name is None:
         return None
 
     return baseline_key(
-        environment_id=(
-            telemetry.resource.
-            environment_id
-        ),
-        resource_id=(
-            telemetry.resource.
-            effective_id()
-        ),
+        environment_id=(telemetry.resource.environment_id),
+        resource_id=(telemetry.resource.effective_id()),
         signal_name=name,
         unit=telemetry.signal.unit,
     )
@@ -406,17 +316,9 @@ def baseline_m2(
     field.
     """
 
-    value = finite_number(
-        baseline.attributes.get(
-            "m2"
-        )
-    )
+    value = finite_number(baseline.attributes.get("m2"))
 
-    return (
-        value
-        if value is not None
-        else 0.0
-    )
+    return value if value is not None else 0.0
 
 
 def calculate_variance(
@@ -432,19 +334,12 @@ def calculate_variance(
         if sample_count < 2:
             return None
 
-        denominator = (
-            sample_count - 1
-        )
+        denominator = sample_count - 1
 
     else:
-        denominator = (
-            sample_count
-        )
+        denominator = sample_count
 
-    variance = (
-        m2
-        / denominator
-    )
+    variance = m2 / denominator
 
     # Small negative values may occur because of
     # floating-point rounding.
@@ -463,89 +358,50 @@ def standard_deviation(
     if variance < 0:
         return None
 
-    return math.sqrt(
-        variance
-    )
+    return math.sqrt(variance)
 
 
 def empty_baseline(
     telemetry: TelemetryRecord,
     *,
     config: BaselineConfig,
-) -> Optional[
-    BaselineMemory
-]:
+) -> Optional[BaselineMemory]:
     """
     Create an empty baseline contract for one
     metric stream.
     """
 
-    name = metric_name(
-        telemetry
-    )
+    name = metric_name(telemetry)
 
-    key = baseline_key_for_record(
-        telemetry
-    )
+    key = baseline_key_for_record(telemetry)
 
-    if (
-        name is None
-        or key is None
-    ):
+    if name is None or key is None:
         return None
 
     telemetry.finalize()
 
     memory = BaselineMemory(
-        environment_id=(
-            telemetry.resource.
-            environment_id
-        ),
+        environment_id=(telemetry.resource.environment_id),
         baseline_key=key,
-        resource_id=(
-            telemetry.resource.
-            effective_id()
-        ),
+        resource_id=(telemetry.resource.effective_id()),
         signal_name=name,
-        metric_unit=(
-            telemetry.signal.unit
-        ),
+        metric_unit=(telemetry.signal.unit),
         sample_count=0,
         model_type=(
-            "welford_sample"
-            if config.
-            use_sample_variance
-            else "welford_population"
+            "welford_sample" if config.use_sample_variance else "welford_population"
         ),
-        resource_ids=[
-            telemetry.resource.
-            effective_id()
-        ],
-        source_ids=(
-            [telemetry.record_id]
-            if telemetry.record_id
-            else []
-        ),
+        resource_ids=[telemetry.resource.effective_id()],
+        source_ids=([telemetry.record_id] if telemetry.record_id else []),
         tags=[
             "metric_baseline",
             "online_statistics",
         ],
-        verification_status=(
-            VerificationStatus.
-            UNVERIFIED.value
-        ),
+        verification_status=(VerificationStatus.UNVERIFIED.value),
         attributes={
             "m2": 0.0,
-            "minimum_samples": (
-                config.minimum_samples
-            ),
-            "anomaly_z_score": (
-                config.anomaly_z_score
-            ),
-            "sample_variance": (
-                config.
-                use_sample_variance
-            ),
+            "minimum_samples": (config.minimum_samples),
+            "anomaly_z_score": (config.anomaly_z_score),
+            "sample_variance": (config.use_sample_variance),
         },
     )
 
@@ -558,9 +414,7 @@ def update_baseline_value(
     *,
     timestamp: Optional[str] = None,
     source_id: Optional[str] = None,
-    config: Optional[
-        BaselineConfig
-    ] = None,
+    config: Optional[BaselineConfig] = None,
 ) -> BaselineMemory:
     """
     Update one baseline using Welford's online
@@ -569,76 +423,43 @@ def update_baseline_value(
     This function mutates and returns `baseline`.
     """
 
-    configuration = (
-        config
-        or BaselineConfig(
-            use_sample_variance=(
-                baseline.attributes.get(
-                    "sample_variance",
-                    True,
-                )
-                is not False
+    configuration = config or BaselineConfig(
+        use_sample_variance=(
+            baseline.attributes.get(
+                "sample_variance",
+                True,
             )
+            is not False
         )
     )
 
     configuration.validate()
 
-    number = finite_number(
-        value
-    )
+    number = finite_number(value)
 
     if number is None:
-        raise ValueError(
-            "Baseline value must be "
-            "a finite number"
-        )
+        raise ValueError("Baseline value must be a finite number")
 
     old_count = max(
         0,
-        int(
-            baseline.sample_count
-        ),
+        int(baseline.sample_count),
     )
 
-    old_mean = (
-        float(baseline.mean)
-        if baseline.mean
-        is not None
-        else 0.0
-    )
+    old_mean = float(baseline.mean) if baseline.mean is not None else 0.0
 
-    old_m2 = baseline_m2(
-        baseline
-    )
+    old_m2 = baseline_m2(baseline)
 
-    new_count = (
-        old_count + 1
-    )
+    new_count = old_count + 1
 
-    delta = (
-        number - old_mean
-    )
+    delta = number - old_mean
 
-    new_mean = (
-        old_mean
-        + delta
-        / new_count
-    )
+    new_mean = old_mean + delta / new_count
 
-    delta2 = (
-        number - new_mean
-    )
+    delta2 = number - new_mean
 
-    new_m2 = (
-        old_m2
-        + delta
-        * delta2
-    )
+    new_m2 = old_m2 + delta * delta2
 
-    baseline.sample_count = (
-        new_count
-    )
+    baseline.sample_count = new_count
 
     baseline.mean = new_mean
 
@@ -646,9 +467,7 @@ def update_baseline_value(
         number
         if baseline.minimum is None
         else min(
-            float(
-                baseline.minimum
-            ),
+            float(baseline.minimum),
             number,
         )
     )
@@ -657,80 +476,41 @@ def update_baseline_value(
         number
         if baseline.maximum is None
         else max(
-            float(
-                baseline.maximum
-            ),
+            float(baseline.maximum),
             number,
         )
     )
 
     variance = calculate_variance(
-        sample_count=(
-            new_count
-        ),
+        sample_count=(new_count),
         m2=new_m2,
-        sample_variance=(
-            configuration.
-            use_sample_variance
-        ),
+        sample_variance=(configuration.use_sample_variance),
     )
 
     baseline.variance = variance
 
-    baseline.standard_deviation = (
-        standard_deviation(
-            variance
-        )
+    baseline.standard_deviation = standard_deviation(variance)
+
+    baseline.attributes["m2"] = new_m2
+
+    baseline.attributes["minimum_samples"] = configuration.minimum_samples
+
+    baseline.attributes["anomaly_z_score"] = configuration.anomaly_z_score
+
+    baseline.attributes["sample_variance"] = configuration.use_sample_variance
+
+    baseline.first_sample_at = earliest_timestamp(
+        baseline.first_sample_at,
+        timestamp,
     )
 
-    baseline.attributes[
-        "m2"
-    ] = new_m2
-
-    baseline.attributes[
-        "minimum_samples"
-    ] = (
-        configuration.
-        minimum_samples
-    )
-
-    baseline.attributes[
-        "anomaly_z_score"
-    ] = (
-        configuration.
-        anomaly_z_score
-    )
-
-    baseline.attributes[
-        "sample_variance"
-    ] = (
-        configuration.
-        use_sample_variance
-    )
-
-    baseline.first_sample_at = (
-        earliest_timestamp(
-            baseline.first_sample_at,
-            timestamp,
-        )
-    )
-
-    baseline.last_sample_at = (
-        latest_timestamp(
-            baseline.last_sample_at,
-            timestamp,
-        )
+    baseline.last_sample_at = latest_timestamp(
+        baseline.last_sample_at,
+        timestamp,
     )
 
     if source_id:
-        baseline.source_ids = sorted(
-            set(
-                baseline.source_ids
-            )
-            | {
-                source_id
-            }
-        )
+        baseline.source_ids = sorted(set(baseline.source_ids) | {source_id})
 
     baseline.touch()
 
@@ -741,31 +521,20 @@ def update_baseline_from_record(
     baseline: BaselineMemory,
     telemetry: TelemetryRecord,
     *,
-    config: Optional[
-        BaselineConfig
-    ] = None,
+    config: Optional[BaselineConfig] = None,
 ) -> BaselineMemory:
-    value = metric_value(
-        telemetry
-    )
+    value = metric_value(telemetry)
 
     if value is None:
-        raise ValueError(
-            "Telemetry record does not "
-            "contain a numeric metric value"
-        )
+        raise ValueError("Telemetry record does not contain a numeric metric value")
 
     telemetry.finalize()
 
     return update_baseline_value(
         baseline,
         value,
-        timestamp=(
-            telemetry.signal.timestamp
-        ),
-        source_id=(
-            telemetry.record_id
-        ),
+        timestamp=(telemetry.signal.timestamp),
+        source_id=(telemetry.record_id),
         config=config,
     )
 
@@ -775,26 +544,19 @@ def find_baseline(
     *,
     environment_id: str,
     baseline_key_value: str,
-) -> Optional[
-    BaselineMemory
-]:
+) -> Optional[BaselineMemory]:
     query = MemoryQuery(
-        memory_types=(
-            "baseline",
-        ),
+        memory_types=("baseline",),
         newest_first=True,
     )
 
-    for memory in store.query(
-        query
-    ):
+    for memory in store.query(query):
         if (
             isinstance(
                 memory,
                 BaselineMemory,
             )
-            and memory.baseline_key
-            == baseline_key_value
+            and memory.baseline_key == baseline_key_value
         ):
             return memory
 
@@ -805,12 +567,8 @@ def remember_metric(
     store: MemoryStore,
     telemetry: TelemetryRecord,
     *,
-    config: Optional[
-        BaselineConfig
-    ] = None,
-) -> Optional[
-    BaselineMemory
-]:
+    config: Optional[BaselineConfig] = None,
+) -> Optional[BaselineMemory]:
     """
     Add one canonical metric observation to its
     persistent baseline.
@@ -819,42 +577,26 @@ def remember_metric(
     None.
     """
 
-    configuration = (
-        config
-        or BaselineConfig()
-    )
+    configuration = config or BaselineConfig()
 
     configuration.validate()
 
     if (
-        configuration.
-        require_metric_signal
-        and telemetry.signal.
-        signal_type
-        != SignalType.METRIC.value
+        configuration.require_metric_signal
+        and telemetry.signal.signal_type != SignalType.METRIC.value
     ):
         return None
 
-    value = metric_value(
-        telemetry
-    )
+    value = metric_value(telemetry)
 
-    key = baseline_key_for_record(
-        telemetry
-    )
+    key = baseline_key_for_record(telemetry)
 
-    if (
-        value is None
-        or key is None
-    ):
+    if value is None or key is None:
         return None
 
     baseline = find_baseline(
         store,
-        environment_id=(
-            telemetry.resource.
-            environment_id
-        ),
+        environment_id=(telemetry.resource.environment_id),
         baseline_key_value=key,
     )
 
@@ -867,42 +609,29 @@ def remember_metric(
     if baseline is None:
         return None
 
-    baseline = (
-        update_baseline_from_record(
-            baseline,
-            telemetry,
-            config=configuration,
-        )
+    baseline = update_baseline_from_record(
+        baseline,
+        telemetry,
+        config=configuration,
     )
 
-    stored = store.put(
-        baseline
-    )
+    stored = store.put(baseline)
 
     if not isinstance(
         stored,
         BaselineMemory,
     ):
-        raise TypeError(
-            "Memory store returned a "
-            "non-BaselineMemory object"
-        )
+        raise TypeError("Memory store returned a non-BaselineMemory object")
 
     return stored
 
 
 def remember_metrics(
     store: MemoryStore,
-    records: Iterable[
-        TelemetryRecord
-    ],
+    records: Iterable[TelemetryRecord],
     *,
-    config: Optional[
-        BaselineConfig
-    ] = None,
-) -> List[
-    BaselineMemory
-]:
+    config: Optional[BaselineConfig] = None,
+) -> List[BaselineMemory]:
     """
     Incrementally update baselines for a telemetry
     batch.
@@ -911,10 +640,7 @@ def remember_metrics(
     each baseline touched by the batch.
     """
 
-    configuration = (
-        config
-        or BaselineConfig()
-    )
+    configuration = config or BaselineConfig()
 
     configuration.validate()
 
@@ -930,48 +656,32 @@ def remember_metrics(
             config=configuration,
         )
 
-        if (
-            baseline is None
-            or not baseline.memory_id
-        ):
+        if baseline is None or not baseline.memory_id:
             continue
 
-        touched[
-            baseline.memory_id
-        ] = baseline
+        touched[baseline.memory_id] = baseline
 
-    return list(
-        touched.values()
-    )
+    return list(touched.values())
 
 
 # ---------------------------------------------------------------
 # Assessment
 # ---------------------------------------------------------------
 
+
 def baseline_ready(
     baseline: BaselineMemory,
     *,
-    config: Optional[
-        BaselineConfig
-    ] = None,
+    config: Optional[BaselineConfig] = None,
 ) -> bool:
-    configuration = (
-        config
-        or BaselineConfig()
-    )
+    configuration = config or BaselineConfig()
 
     configuration.validate()
 
     return (
-        baseline.sample_count
-        >= configuration.
-        minimum_samples
-        and baseline.mean
-        is not None
-        and baseline.
-        standard_deviation
-        is not None
+        baseline.sample_count >= configuration.minimum_samples
+        and baseline.mean is not None
+        and baseline.standard_deviation is not None
     )
 
 
@@ -979,28 +689,15 @@ def z_score(
     value: float,
     baseline: BaselineMemory,
 ) -> Optional[float]:
-    number = finite_number(
-        value
-    )
+    number = finite_number(value)
 
-    if (
-        number is None
-        or baseline.mean is None
-        or baseline.
-        standard_deviation
-        is None
-    ):
+    if number is None or baseline.mean is None or baseline.standard_deviation is None:
         return None
 
-    deviation = float(
-        baseline.
-        standard_deviation
-    )
+    deviation = float(baseline.standard_deviation)
 
     if deviation <= 0:
-        if number == float(
-            baseline.mean
-        ):
+        if number == float(baseline.mean):
             return 0.0
 
         # A zero-variance baseline followed by a
@@ -1008,54 +705,35 @@ def z_score(
         # but there is no finite z-score.
         return math.inf
 
-    return (
-        number
-        - float(
-            baseline.mean
-        )
-    ) / deviation
+    return (number - float(baseline.mean)) / deviation
 
 
 def anomaly_score_from_z(
-    z_score_value: Optional[
-        float
-    ],
+    z_score_value: Optional[float],
     *,
     threshold: float,
 ) -> float:
     if z_score_value is None:
         return 0.0
 
-    if math.isinf(
-        z_score_value
-    ):
+    if math.isinf(z_score_value):
         return 1.0
 
-    absolute = abs(
-        z_score_value
-    )
+    absolute = abs(z_score_value)
 
     if absolute <= 0:
         return 0.0
 
     # Reaches 1.0 at twice the configured
     # threshold.
-    return checked_score(
-        absolute
-        / (
-            threshold
-            * 2.0
-        )
-    )
+    return checked_score(absolute / (threshold * 2.0))
 
 
 def assess_value(
     baseline: BaselineMemory,
     value: Any,
     *,
-    config: Optional[
-        BaselineConfig
-    ] = None,
+    config: Optional[BaselineConfig] = None,
 ) -> BaselineAssessment:
     """
     Assess a value without updating the baseline.
@@ -1065,39 +743,24 @@ def assess_value(
     appropriate for baseline learning.
     """
 
-    configuration = (
-        config
-        or BaselineConfig()
-    )
+    configuration = config or BaselineConfig()
 
     configuration.validate()
 
-    number = finite_number(
-        value
-    )
+    number = finite_number(value)
 
     if number is None:
         return BaselineAssessment(
-            baseline_memory_id=(
-                baseline.memory_id
-            ),
+            baseline_memory_id=(baseline.memory_id),
             ready=False,
             value=None,
-            sample_count=(
-                baseline.sample_count
-            ),
+            sample_count=(baseline.sample_count),
             mean=baseline.mean,
-            standard_deviation=(
-                baseline.
-                standard_deviation
-            ),
+            standard_deviation=(baseline.standard_deviation),
             z_score=None,
             anomaly_score=0.0,
             anomalous=False,
-            reason=(
-                "Value is not a finite "
-                "numeric measurement."
-            ),
+            reason=("Value is not a finite numeric measurement."),
         )
 
     ready = baseline_ready(
@@ -1107,26 +770,16 @@ def assess_value(
 
     if not ready:
         return BaselineAssessment(
-            baseline_memory_id=(
-                baseline.memory_id
-            ),
+            baseline_memory_id=(baseline.memory_id),
             ready=False,
             value=number,
-            sample_count=(
-                baseline.sample_count
-            ),
+            sample_count=(baseline.sample_count),
             mean=baseline.mean,
-            standard_deviation=(
-                baseline.
-                standard_deviation
-            ),
+            standard_deviation=(baseline.standard_deviation),
             z_score=None,
             anomaly_score=0.0,
             anomalous=False,
-            reason=(
-                "Baseline does not yet have "
-                "enough samples."
-            ),
+            reason=("Baseline does not yet have enough samples."),
         )
 
     score_value = z_score(
@@ -1134,57 +787,29 @@ def assess_value(
         baseline,
     )
 
-    anomaly_score = (
-        anomaly_score_from_z(
-            score_value,
-            threshold=(
-                configuration.
-                anomaly_z_score
-            ),
-        )
+    anomaly_score = anomaly_score_from_z(
+        score_value,
+        threshold=(configuration.anomaly_z_score),
     )
 
-    anomalous = (
-        score_value is not None
-        and (
-            math.isinf(
-                score_value
-            )
-            or abs(
-                score_value
-            )
-            >= configuration.
-            anomaly_z_score
-        )
+    anomalous = score_value is not None and (
+        math.isinf(score_value) or abs(score_value) >= configuration.anomaly_z_score
     )
 
     return BaselineAssessment(
-        baseline_memory_id=(
-            baseline.memory_id
-        ),
+        baseline_memory_id=(baseline.memory_id),
         ready=True,
         value=number,
-        sample_count=(
-            baseline.sample_count
-        ),
+        sample_count=(baseline.sample_count),
         mean=baseline.mean,
-        standard_deviation=(
-            baseline.
-            standard_deviation
-        ),
+        standard_deviation=(baseline.standard_deviation),
         z_score=score_value,
-        anomaly_score=(
-            anomaly_score
-        ),
+        anomaly_score=(anomaly_score),
         anomalous=anomalous,
         reason=(
-            "Value exceeded the configured "
-            "z-score threshold."
+            "Value exceeded the configured z-score threshold."
             if anomalous
-            else (
-                "Value is within the "
-                "configured baseline range."
-            )
+            else ("Value is within the configured baseline range.")
         ),
     )
 
@@ -1193,32 +818,20 @@ def assess_record(
     store: MemoryStore,
     telemetry: TelemetryRecord,
     *,
-    config: Optional[
-        BaselineConfig
-    ] = None,
+    config: Optional[BaselineConfig] = None,
 ) -> BaselineAssessment:
     """
     Assess one metric against already persisted
     history without learning from the value.
     """
 
-    configuration = (
-        config
-        or BaselineConfig()
-    )
+    configuration = config or BaselineConfig()
 
-    key = baseline_key_for_record(
-        telemetry
-    )
+    key = baseline_key_for_record(telemetry)
 
-    value = metric_value(
-        telemetry
-    )
+    value = metric_value(telemetry)
 
-    if (
-        key is None
-        or value is None
-    ):
+    if key is None or value is None:
         return BaselineAssessment(
             baseline_memory_id=None,
             ready=False,
@@ -1238,10 +851,7 @@ def assess_record(
 
     baseline = find_baseline(
         store,
-        environment_id=(
-            telemetry.resource.
-            environment_id
-        ),
+        environment_id=(telemetry.resource.environment_id),
         baseline_key_value=key,
     )
 
@@ -1256,10 +866,7 @@ def assess_record(
             z_score=None,
             anomaly_score=0.0,
             anomalous=False,
-            reason=(
-                "No historical baseline "
-                "exists for this metric."
-            ),
+            reason=("No historical baseline exists for this metric."),
         )
 
     return assess_value(
@@ -1273,9 +880,7 @@ def assess_then_remember(
     store: MemoryStore,
     telemetry: TelemetryRecord,
     *,
-    config: Optional[
-        BaselineConfig
-    ] = None,
+    config: Optional[BaselineConfig] = None,
     learn_anomalies: bool = False,
 ) -> Tuple[
     BaselineAssessment,
@@ -1290,10 +895,7 @@ def assess_then_remember(
     reduce immediate baseline contamination.
     """
 
-    configuration = (
-        config
-        or BaselineConfig()
-    )
+    configuration = config or BaselineConfig()
 
     assessment = assess_record(
         store,
@@ -1301,10 +903,7 @@ def assess_then_remember(
         config=configuration,
     )
 
-    if (
-        assessment.anomalous
-        and not learn_anomalies
-    ):
+    if assessment.anomalous and not learn_anomalies:
         return (
             assessment,
             None,
@@ -1326,46 +925,26 @@ def assess_then_remember(
 # Queries and summaries
 # ---------------------------------------------------------------
 
+
 def list_baselines(
     store: MemoryStore,
     *,
-    environment_id: Optional[
-        str
-    ] = None,
-    resource_id: Optional[
-        str
-    ] = None,
+    environment_id: Optional[str] = None,
+    resource_id: Optional[str] = None,
     active_only: bool = False,
     limit: Optional[int] = None,
-) -> List[
-    BaselineMemory
-]:
+) -> List[BaselineMemory]:
     query = MemoryQuery(
-        memory_types=(
-            "baseline",
-        ),
-        environment_ids=(
-            (
-                environment_id,
-            )
-            if environment_id
-            else ()
-        ),
-        resource_ids=(
-            (
-                resource_id,
-            )
-            if resource_id
-            else ()
-        ),
+        memory_types=("baseline",),
+        environment_ids=((environment_id,) if environment_id else ()),
+        resource_ids=((resource_id,) if resource_id else ()),
         active_only=active_only,
         limit=limit,
     )
 
     return [
         memory
-        for memory
-        in store.query(query)
+        for memory in store.query(query)
         if isinstance(
             memory,
             BaselineMemory,
@@ -1374,64 +953,33 @@ def list_baselines(
 
 
 def baseline_summary(
-    baselines: Iterable[
-        BaselineMemory
-    ],
+    baselines: Iterable[BaselineMemory],
     *,
-    config: Optional[
-        BaselineConfig
-    ] = None,
+    config: Optional[BaselineConfig] = None,
 ) -> Dict[str, Any]:
-    configuration = (
-        config
-        or BaselineConfig()
-    )
+    configuration = config or BaselineConfig()
 
-    baseline_list = list(
-        baselines
-    )
+    baseline_list = list(baselines)
 
     return {
-        "baseline_count": len(
-            baseline_list
-        ),
+        "baseline_count": len(baseline_list),
         "ready_baseline_count": sum(
             1
-            for baseline
-            in baseline_list
+            for baseline in baseline_list
             if baseline_ready(
                 baseline,
                 config=configuration,
             )
         ),
-        "sample_count": sum(
-            baseline.sample_count
-            for baseline
-            in baseline_list
-        ),
+        "sample_count": sum(baseline.sample_count for baseline in baseline_list),
         "resource_count": len(
-            {
-                baseline.resource_id
-                for baseline
-                in baseline_list
-                if baseline.resource_id
-            }
+            {baseline.resource_id for baseline in baseline_list if baseline.resource_id}
         ),
         "signal_count": len(
-            {
-                baseline.signal_name
-                for baseline
-                in baseline_list
-                if baseline.signal_name
-            }
+            {baseline.signal_name for baseline in baseline_list if baseline.signal_name}
         ),
         "environment_count": len(
-            {
-                baseline.
-                environment_id
-                for baseline
-                in baseline_list
-            }
+            {baseline.environment_id for baseline in baseline_list}
         ),
     }
 
@@ -1446,25 +994,18 @@ class BaselineManager:
         self,
         store: MemoryStore,
         *,
-        config: Optional[
-            BaselineConfig
-        ] = None,
+        config: Optional[BaselineConfig] = None,
     ) -> None:
         self.store = store
 
-        self.config = (
-            config
-            or BaselineConfig()
-        )
+        self.config = config or BaselineConfig()
 
         self.config.validate()
 
     def remember(
         self,
         telemetry: TelemetryRecord,
-    ) -> Optional[
-        BaselineMemory
-    ]:
+    ) -> Optional[BaselineMemory]:
         return remember_metric(
             self.store,
             telemetry,
@@ -1473,12 +1014,8 @@ class BaselineManager:
 
     def remember_many(
         self,
-        records: Iterable[
-            TelemetryRecord
-        ],
-    ) -> List[
-        BaselineMemory
-    ]:
+        records: Iterable[TelemetryRecord],
+    ) -> List[BaselineMemory]:
         return remember_metrics(
             self.store,
             records,
@@ -1508,35 +1045,21 @@ class BaselineManager:
             self.store,
             telemetry,
             config=self.config,
-            learn_anomalies=(
-                learn_anomalies
-            ),
+            learn_anomalies=(learn_anomalies),
         )
 
     def list(
         self,
         *,
-        environment_id: Optional[
-            str
-        ] = None,
-        resource_id: Optional[
-            str
-        ] = None,
+        environment_id: Optional[str] = None,
+        resource_id: Optional[str] = None,
         active_only: bool = False,
         limit: Optional[int] = None,
-    ) -> List[
-        BaselineMemory
-    ]:
+    ) -> List[BaselineMemory]:
         return list_baselines(
             self.store,
-            environment_id=(
-                environment_id
-            ),
-            resource_id=(
-                resource_id
-            ),
-            active_only=(
-                active_only
-            ),
+            environment_id=(environment_id),
+            resource_id=(resource_id),
+            active_only=(active_only),
             limit=limit,
         )

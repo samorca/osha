@@ -1,0 +1,191 @@
+{{/*
+OSHA shared non-secret configuration.
+
+Consumed by:
+
+    API
+    Runtime
+    Workers
+
+Secrets and credentials MUST NOT be added here.
+*/}}
+
+---
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: {{ include "osha.configMapName" . }}
+  namespace: {{ include "osha.namespace" . }}
+
+  labels:
+    {{- include "osha.labels" . | nindent 4 }}
+    app.kubernetes.io/component: configuration
+
+  annotations:
+    osha.atonixcorp.io/description: >-
+      Non-secret shared configuration for OSHA API,
+      runtime, and worker workloads.
+
+
+data:
+  # =================================================================
+  # Environment / runtime identity
+  # =================================================================
+
+  OSHA_ENVIRONMENT_ID: {{ .Values.config.environmentId | quote }}
+
+  OSHA_INSTANCE_NAME: {{ .Values.config.instanceName | quote }}
+
+
+  # =================================================================
+  # Runtime safety
+  # =================================================================
+
+  OSHA_DRY_RUN: {{ .Values.global.dryRun | toString | quote }}
+
+  OSHA_FAIL_FAST: {{ .Values.config.failFast | toString | quote }}
+
+
+  # =================================================================
+  # Runtime lifecycle
+  # =================================================================
+
+  OSHA_STARTUP_TIMEOUT_SECONDS: {{ .Values.config.startupTimeoutSeconds | toString | quote }}
+
+  OSHA_SHUTDOWN_TIMEOUT_SECONDS: {{ .Values.config.shutdownTimeoutSeconds | toString | quote }}
+
+  OSHA_HEALTH_INTERVAL_SECONDS: {{ .Values.config.healthIntervalSeconds | toString | quote }}
+
+  OSHA_RUNTIME_LOG_LEVEL: {{ .Values.config.runtimeLogLevel | quote }}
+
+
+  # =================================================================
+  # Python process
+  # =================================================================
+
+  PYTHONUNBUFFERED: "1"
+
+  PYTHONDONTWRITEBYTECODE: "1"
+
+
+  # =================================================================
+  # API
+  # =================================================================
+
+  OSHA_API_HOST: {{ .Values.api.host | quote }}
+
+  OSHA_API_PORT: {{ .Values.api.port | toString | quote }}
+
+  OSHA_API_WORKERS: {{ .Values.api.workers | toString | quote }}
+
+  OSHA_API_LOG_LEVEL: {{ .Values.api.logLevel | quote }}
+
+  OSHA_API_GRACEFUL_TIMEOUT: {{ .Values.api.gracefulTimeoutSeconds | toString | quote }}
+
+  OSHA_API_LIMIT_CONCURRENCY: {{ .Values.api.limitConcurrency | toString | quote }}
+
+  OSHA_API_LIMIT_MAX_REQUESTS: {{ .Values.api.limitMaxRequests | toString | quote }}
+
+
+  # =================================================================
+  # Proxy configuration
+  # =================================================================
+
+  OSHA_FORWARDED_ALLOW_IPS: {{ .Values.api.forwardedAllowIPs | quote }}
+
+
+  # =================================================================
+  # Internal filesystem layout
+  # =================================================================
+
+  OSHA_ARTIFACTS_DIR: {{ .Values.paths.artifacts | quote }}
+
+  OSHA_CHECKPOINTS_DIR: {{ .Values.paths.checkpoints | quote }}
+
+  OSHA_MODELS_DIR: {{ .Values.paths.models | quote }}
+
+  OSHA_LOGS_DIR: {{ .Values.paths.logs | quote }}
+
+  OSHA_DATA_DIR: {{ .Values.paths.data | quote }}
+
+
+  # =================================================================
+  # Accelerator selection
+  # =================================================================
+
+  OSHA_ACCELERATOR: {{ .Values.accelerator.preferred | quote }}
+
+  OSHA_ALLOW_CPU_FALLBACK: {{ .Values.accelerator.allowCPUFallback | toString | quote }}
+
+
+  # =================================================================
+  # Telemetry
+  # =================================================================
+
+  OSHA_TELEMETRY_ENABLED: {{ .Values.telemetry.enabled | toString | quote }}
+
+  OSHA_TELEMETRY_INTERVAL_SECONDS: {{ .Values.telemetry.intervalSeconds | toString | quote }}
+
+
+  # =================================================================
+  # Collectors
+  # =================================================================
+
+  OSHA_COLLECTORS_ENABLED: {{ .Values.collectors.enabled | toString | quote }}
+
+  OSHA_COLLECTOR_INTERVAL_SECONDS: {{ .Values.collectors.intervalSeconds | toString | quote }}
+
+
+  # =================================================================
+  # Workers
+  # =================================================================
+
+  OSHA_WORKERS_ENABLED: {{ .Values.worker.enabled | toString | quote }}
+
+  OSHA_WORKER_TYPE: {{ .Values.worker.type | quote }}
+
+  OSHA_WORKER_CONCURRENCY: {{ .Values.worker.concurrency | toString | quote }}
+
+  OSHA_WORKER_POLL_INTERVAL_SECONDS: {{ .Values.worker.pollIntervalSeconds | toString | quote }}
+
+  OSHA_WORKER_GRACEFUL_SHUTDOWN_SECONDS: {{ .Values.worker.gracefulShutdownSeconds | toString | quote }}
+
+
+  # =================================================================
+  # Remediation
+  # =================================================================
+  #
+  # OSHA remains safe-by-default.
+  #
+  # Production values do not implicitly enable
+  # automatic/destructive remediation.
+  # =================================================================
+
+  OSHA_REMEDIATION_ENABLED: {{ .Values.remediation.enabled | toString | quote }}
+
+  OSHA_REMEDIATION_DRY_RUN: {{ .Values.remediation.dryRun | toString | quote }}
+
+  OSHA_REMEDIATION_AUTOMATIC_EXECUTION: {{ .Values.remediation.automaticExecution | toString | quote }}
+
+  OSHA_REMEDIATION_REQUIRE_APPROVAL: {{ .Values.remediation.requireApproval | toString | quote }}
+
+  OSHA_REMEDIATION_ALLOW_DESTRUCTIVE_ACTIONS: {{ .Values.remediation.allowDestructiveActions | toString | quote }}
+
+
+  # =================================================================
+  # Observability
+  # =================================================================
+  #
+  # These remain enabled at the chart level.
+  #
+  # More detailed exporter/logging configuration can
+  # be added when the observability deployment layer
+  # is introduced.
+  # =================================================================
+
+  OSHA_OBSERVABILITY_ENABLED: "true"
+
+  OSHA_METRICS_ENABLED: "true"
+
+  OSHA_LOGGING_ENABLED: "true"

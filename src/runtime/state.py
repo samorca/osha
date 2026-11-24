@@ -36,35 +36,27 @@ RUNTIME_TRANSITIONS: Dict[
         RuntimeState.STOPPED.value,
         RuntimeState.FAILED.value,
     },
-
     RuntimeState.STARTING.value: {
         RuntimeState.RUNNING.value,
         RuntimeState.DEGRADED.value,
         RuntimeState.STOPPING.value,
         RuntimeState.FAILED.value,
     },
-
     RuntimeState.RUNNING.value: {
         RuntimeState.DEGRADED.value,
         RuntimeState.STOPPING.value,
         RuntimeState.FAILED.value,
     },
-
     RuntimeState.DEGRADED.value: {
         RuntimeState.RUNNING.value,
         RuntimeState.STOPPING.value,
         RuntimeState.FAILED.value,
     },
-
     RuntimeState.STOPPING.value: {
         RuntimeState.STOPPED.value,
         RuntimeState.FAILED.value,
     },
-
-    RuntimeState.STOPPED.value: (
-        set()
-    ),
-
+    RuntimeState.STOPPED.value: (set()),
     RuntimeState.FAILED.value: {
         RuntimeState.STOPPING.value,
         RuntimeState.STOPPED.value,
@@ -85,35 +77,27 @@ SERVICE_TRANSITIONS: Dict[
         ServiceState.STOPPED.value,
         ServiceState.FAILED.value,
     },
-
     ServiceState.STARTING.value: {
         ServiceState.RUNNING.value,
         ServiceState.DEGRADED.value,
         ServiceState.STOPPING.value,
         ServiceState.FAILED.value,
     },
-
     ServiceState.RUNNING.value: {
         ServiceState.DEGRADED.value,
         ServiceState.STOPPING.value,
         ServiceState.FAILED.value,
     },
-
     ServiceState.DEGRADED.value: {
         ServiceState.RUNNING.value,
         ServiceState.STOPPING.value,
         ServiceState.FAILED.value,
     },
-
     ServiceState.STOPPING.value: {
         ServiceState.STOPPED.value,
         ServiceState.FAILED.value,
     },
-
-    ServiceState.STOPPED.value: (
-        set()
-    ),
-
+    ServiceState.STOPPED.value: (set()),
     ServiceState.FAILED.value: {
         ServiceState.STOPPING.value,
         ServiceState.STOPPED.value,
@@ -125,21 +109,19 @@ SERVICE_TRANSITIONS: Dict[
 # Exceptions
 # ---------------------------------------------------------------
 
-class InvalidRuntimeTransition(
-    ValueError
-):
+
+class InvalidRuntimeTransition(ValueError):
     pass
 
 
-class InvalidServiceTransition(
-    ValueError
-):
+class InvalidServiceTransition(ValueError):
     pass
 
 
 # ---------------------------------------------------------------
 # Transition record
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class StateTransition:
@@ -155,35 +137,23 @@ class StateTransition:
 
     reason: str
 
-    occurred_at: str = field(
-        default_factory=utc_now
-    )
+    occurred_at: str = field(default_factory=utc_now)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def to_dict(
         self,
     ) -> Dict[str, Any]:
         return {
             "subject": self.subject,
-            "previous_state": (
-                self.previous_state
-            ),
-            "next_state": (
-                self.next_state
-            ),
+            "previous_state": (self.previous_state),
+            "next_state": (self.next_state),
             "reason": self.reason,
-            "occurred_at": (
-                self.occurred_at
-            ),
-            "attributes": dict(
-                self.attributes
-            ),
+            "occurred_at": (self.occurred_at),
+            "attributes": dict(self.attributes),
         }
 
 
@@ -191,56 +161,35 @@ class StateTransition:
 # Runtime transition
 # ---------------------------------------------------------------
 
+
 def transition_runtime(
     runtime: RuntimeStatus,
     next_state: str,
     *,
     reason: str,
-    shutdown_reason: Optional[
-        str
-    ] = None,
+    shutdown_reason: Optional[str] = None,
 ) -> StateTransition:
     runtime.finalize()
 
     previous = runtime.state
 
-    if (
-        next_state != previous
-        and next_state
-        not in RUNTIME_TRANSITIONS.get(
-            previous,
-            set(),
-        )
+    if next_state != previous and next_state not in RUNTIME_TRANSITIONS.get(
+        previous,
+        set(),
     ):
         raise (
             InvalidRuntimeTransition(
-                "Invalid runtime "
-                "transition: "
-                f"{previous} -> "
-                f"{next_state}"
+                f"Invalid runtime transition: {previous} -> {next_state}"
             )
         )
 
     if shutdown_reason is not None:
-        if (
-            shutdown_reason
-            not in {
-                item.value
-                for item
-                in ShutdownReason
-            }
-        ):
+        if shutdown_reason not in {item.value for item in ShutdownReason}:
             raise (
-                InvalidRuntimeTransition(
-                    "Unknown shutdown "
-                    f"reason: "
-                    f"{shutdown_reason}"
-                )
+                InvalidRuntimeTransition(f"Unknown shutdown reason: {shutdown_reason}")
             )
 
-        runtime.shutdown_reason = (
-            shutdown_reason
-        )
+        runtime.shutdown_reason = shutdown_reason
 
     event = StateTransition(
         subject="runtime",
@@ -249,69 +198,35 @@ def transition_runtime(
         reason=reason,
     )
 
-    runtime.state = (
-        next_state
-    )
+    runtime.state = next_state
 
     # ---------------------------------------------------------
     # Runtime timestamps/readiness
     # ---------------------------------------------------------
 
-    if (
-        next_state
-        == RuntimeState.STARTING.value
-        and runtime.started_at
-        is None
-    ):
-        runtime.started_at = (
-            utc_now()
-        )
+    if next_state == RuntimeState.STARTING.value and runtime.started_at is None:
+        runtime.started_at = utc_now()
 
-    if (
-        next_state
-        == RuntimeState.RUNNING.value
-    ):
-        runtime.readiness = (
-            ReadinessStatus.READY.value
-        )
+    if next_state == RuntimeState.RUNNING.value:
+        runtime.readiness = ReadinessStatus.READY.value
 
-    elif (
-        next_state
-        == RuntimeState.DEGRADED.value
-    ):
-        runtime.readiness = (
-            ReadinessStatus.
-            DEGRADED.value
-        )
+    elif next_state == RuntimeState.DEGRADED.value:
+        runtime.readiness = ReadinessStatus.DEGRADED.value
 
-    elif (
-        next_state
-        in {
-            RuntimeState.CREATED.value,
-            RuntimeState.STARTING.value,
-            RuntimeState.STOPPING.value,
-        }
-    ):
-        runtime.readiness = (
-            ReadinessStatus.
-            NOT_READY.value
-        )
+    elif next_state in {
+        RuntimeState.CREATED.value,
+        RuntimeState.STARTING.value,
+        RuntimeState.STOPPING.value,
+    }:
+        runtime.readiness = ReadinessStatus.NOT_READY.value
 
-    elif (
-        next_state
-        in {
-            RuntimeState.STOPPED.value,
-            RuntimeState.FAILED.value,
-        }
-    ):
-        runtime.readiness = (
-            ReadinessStatus.
-            NOT_READY.value
-        )
+    elif next_state in {
+        RuntimeState.STOPPED.value,
+        RuntimeState.FAILED.value,
+    }:
+        runtime.readiness = ReadinessStatus.NOT_READY.value
 
-        runtime.stopped_at = (
-            utc_now()
-        )
+        runtime.stopped_at = utc_now()
 
     # ---------------------------------------------------------
     # Transition history
@@ -320,30 +235,16 @@ def transition_runtime(
     runtime.attributes.setdefault(
         "state_transitions",
         [],
-    ).append(
-        event.to_dict()
-    )
+    ).append(event.to_dict())
 
     runtime.evidence.append(
         RuntimeEvidence(
-            evidence_type=(
-                "runtime_transition"
-            ),
-            description=(
-                f"{previous} -> "
-                f"{next_state}: "
-                f"{reason}"
-            ),
-            source_id=(
-                runtime.runtime_id
-            ),
+            evidence_type=("runtime_transition"),
+            description=(f"{previous} -> {next_state}: {reason}"),
+            source_id=(runtime.runtime_id),
             attributes={
-                "previous_state": (
-                    previous
-                ),
-                "next_state": (
-                    next_state
-                ),
+                "previous_state": (previous),
+                "next_state": (next_state),
             },
         )
     )
@@ -357,37 +258,27 @@ def transition_runtime(
 # Service transition
 # ---------------------------------------------------------------
 
+
 def transition_service(
     runtime: RuntimeStatus,
     service_name: str,
     next_state: str,
     *,
     reason: str,
-    error: Optional[
-        str
-    ] = None,
+    error: Optional[str] = None,
 ) -> StateTransition:
     runtime.finalize()
 
-    service = runtime.service(
-        service_name
-    )
+    service = runtime.service(service_name)
 
     if service is None:
-        raise InvalidServiceTransition(
-            "Unknown runtime service: "
-            f"{service_name}"
-        )
+        raise InvalidServiceTransition(f"Unknown runtime service: {service_name}")
 
     previous = service.state
 
-    if (
-        next_state != previous
-        and next_state
-        not in SERVICE_TRANSITIONS.get(
-            previous,
-            set(),
-        )
+    if next_state != previous and next_state not in SERVICE_TRANSITIONS.get(
+        previous,
+        set(),
     ):
         raise (
             InvalidServiceTransition(
@@ -400,121 +291,58 @@ def transition_service(
         )
 
     event = StateTransition(
-        subject=(
-            f"service:{service_name}"
-        ),
+        subject=(f"service:{service_name}"),
         previous_state=previous,
         next_state=next_state,
         reason=reason,
     )
 
-    service.state = (
-        next_state
-    )
+    service.state = next_state
 
     if error is not None:
-        service.last_error = (
-            error
-        )
+        service.last_error = error
 
     # ---------------------------------------------------------
     # Service state/readiness
     # ---------------------------------------------------------
 
-    if (
-        next_state
-        == ServiceState.
-        STARTING.value
-    ):
+    if next_state == ServiceState.STARTING.value:
         if service.started_at is None:
-            service.started_at = (
-                utc_now()
-            )
+            service.started_at = utc_now()
 
-        service.readiness = (
-            ReadinessStatus.
-            NOT_READY.value
-        )
+        service.readiness = ReadinessStatus.NOT_READY.value
 
-    elif (
-        next_state
-        == ServiceState.
-        RUNNING.value
-    ):
-        service.readiness = (
-            ReadinessStatus.
-            READY.value
-        )
+    elif next_state == ServiceState.RUNNING.value:
+        service.readiness = ReadinessStatus.READY.value
 
-    elif (
-        next_state
-        == ServiceState.
-        DEGRADED.value
-    ):
-        service.readiness = (
-            ReadinessStatus.
-            DEGRADED.value
-        )
+    elif next_state == ServiceState.DEGRADED.value:
+        service.readiness = ReadinessStatus.DEGRADED.value
 
-    elif (
-        next_state
-        == ServiceState.
-        STOPPING.value
-    ):
-        service.readiness = (
-            ReadinessStatus.
-            NOT_READY.value
-        )
+    elif next_state == ServiceState.STOPPING.value:
+        service.readiness = ReadinessStatus.NOT_READY.value
 
-    elif (
-        next_state
-        in {
-            ServiceState.
-            STOPPED.value,
-            ServiceState.
-            FAILED.value,
-        }
-    ):
-        service.readiness = (
-            ReadinessStatus.
-            NOT_READY.value
-        )
+    elif next_state in {
+        ServiceState.STOPPED.value,
+        ServiceState.FAILED.value,
+    }:
+        service.readiness = ReadinessStatus.NOT_READY.value
 
-        service.stopped_at = (
-            utc_now()
-        )
+        service.stopped_at = utc_now()
 
     service.attributes.setdefault(
         "state_transitions",
         [],
-    ).append(
-        event.to_dict()
-    )
+    ).append(event.to_dict())
 
     runtime.evidence.append(
         RuntimeEvidence(
-            evidence_type=(
-                "service_transition"
-            ),
-            description=(
-                f"{service_name}: "
-                f"{previous} -> "
-                f"{next_state}: "
-                f"{reason}"
-            ),
-            source_id=(
-                runtime.runtime_id
-            ),
+            evidence_type=("service_transition"),
+            description=(f"{service_name}: {previous} -> {next_state}: {reason}"),
+            source_id=(runtime.runtime_id),
             attributes={
-                "service": (
-                    service_name
-                ),
-                "previous_state": (
-                    previous
-                ),
-                "next_state": (
-                    next_state
-                ),
+                "service": (service_name),
+                "previous_state": (previous),
+                "next_state": (next_state),
             },
         )
     )
@@ -527,6 +355,7 @@ def transition_service(
 # ---------------------------------------------------------------
 # Readiness calculation
 # ---------------------------------------------------------------
+
 
 def recompute_readiness(
     runtime: RuntimeStatus,
@@ -541,80 +370,33 @@ def recompute_readiness(
 
     runtime.finalize()
 
-    required = [
-        service
-        for service
-        in runtime.services
-        if service.required
-    ]
+    required = [service for service in runtime.services if service.required]
 
-    if (
-        runtime.state
-        in {
-            RuntimeState.STOPPING.value,
-            RuntimeState.STOPPED.value,
-            RuntimeState.FAILED.value,
-        }
-    ):
-        runtime.readiness = (
-            ReadinessStatus.
-            NOT_READY.value
-        )
+    if runtime.state in {
+        RuntimeState.STOPPING.value,
+        RuntimeState.STOPPED.value,
+        RuntimeState.FAILED.value,
+    }:
+        runtime.readiness = ReadinessStatus.NOT_READY.value
+
+    elif any(service.state == ServiceState.FAILED.value for service in required):
+        runtime.readiness = ReadinessStatus.NOT_READY.value
 
     elif any(
-        service.state
-        == ServiceState.FAILED.value
-        for service
-        in required
+        service.readiness == ReadinessStatus.DEGRADED.value for service in required
     ):
-        runtime.readiness = (
-            ReadinessStatus.
-            NOT_READY.value
-        )
+        runtime.readiness = ReadinessStatus.DEGRADED.value
 
-    elif any(
-        service.readiness
-        == ReadinessStatus.
-        DEGRADED.value
-        for service
-        in required
+    elif required and all(
+        service.readiness == ReadinessStatus.READY.value for service in required
     ):
-        runtime.readiness = (
-            ReadinessStatus.
-            DEGRADED.value
-        )
+        runtime.readiness = ReadinessStatus.READY.value
 
-    elif (
-        required
-        and all(
-            service.readiness
-            == ReadinessStatus.
-            READY.value
-            for service
-            in required
-        )
-    ):
-        runtime.readiness = (
-            ReadinessStatus.
-            READY.value
-        )
-
-    elif (
-        not required
-        and runtime.state
-        == RuntimeState.
-        RUNNING.value
-    ):
-        runtime.readiness = (
-            ReadinessStatus.
-            READY.value
-        )
+    elif not required and runtime.state == RuntimeState.RUNNING.value:
+        runtime.readiness = ReadinessStatus.READY.value
 
     else:
-        runtime.readiness = (
-            ReadinessStatus.
-            NOT_READY.value
-        )
+        runtime.readiness = ReadinessStatus.NOT_READY.value
 
     runtime.finalize()
 
@@ -624,6 +406,7 @@ def recompute_readiness(
 # ---------------------------------------------------------------
 # State manager
 # ---------------------------------------------------------------
+
 
 class RuntimeStateManager:
     """
@@ -639,11 +422,8 @@ class RuntimeStateManager:
     ) -> RuntimeStatus:
         transition_runtime(
             runtime,
-            RuntimeState.
-            STARTING.value,
-            reason=(
-                "Runtime startup began."
-            ),
+            RuntimeState.STARTING.value,
+            reason=("Runtime startup began."),
         )
 
         return runtime
@@ -655,15 +435,10 @@ class RuntimeStateManager:
         transition_runtime(
             runtime,
             RuntimeState.RUNNING.value,
-            reason=(
-                "Runtime startup "
-                "completed."
-            ),
+            reason=("Runtime startup completed."),
         )
 
-        recompute_readiness(
-            runtime
-        )
+        recompute_readiness(runtime)
 
         return runtime
 
@@ -675,14 +450,11 @@ class RuntimeStateManager:
     ) -> RuntimeStatus:
         transition_runtime(
             runtime,
-            RuntimeState.
-            DEGRADED.value,
+            RuntimeState.DEGRADED.value,
             reason=reason,
         )
 
-        recompute_readiness(
-            runtime
-        )
+        recompute_readiness(runtime)
 
         return runtime
 
@@ -691,9 +463,7 @@ class RuntimeStateManager:
         runtime: RuntimeStatus,
         *,
         reason: str,
-        error: Optional[
-            str
-        ] = None,
+        error: Optional[str] = None,
     ) -> RuntimeStatus:
         runtime.error = error
 
@@ -701,10 +471,7 @@ class RuntimeStateManager:
             runtime,
             RuntimeState.FAILED.value,
             reason=reason,
-            shutdown_reason=(
-                ShutdownReason.
-                FAILURE.value
-            ),
+            shutdown_reason=(ShutdownReason.FAILURE.value),
         )
 
         return runtime
@@ -714,19 +481,13 @@ class RuntimeStateManager:
         runtime: RuntimeStatus,
         *,
         reason: str,
-        shutdown_reason: str = (
-            ShutdownReason.
-            REQUESTED.value
-        ),
+        shutdown_reason: str = (ShutdownReason.REQUESTED.value),
     ) -> RuntimeStatus:
         transition_runtime(
             runtime,
-            RuntimeState.
-            STOPPING.value,
+            RuntimeState.STOPPING.value,
             reason=reason,
-            shutdown_reason=(
-                shutdown_reason
-            ),
+            shutdown_reason=(shutdown_reason),
         )
 
         return runtime
@@ -757,21 +518,14 @@ class RuntimeStateManager:
         transition_service(
             runtime,
             name,
-            ServiceState.
-            STARTING.value,
-            reason=(
-                "Service startup began."
-            ),
+            ServiceState.STARTING.value,
+            reason=("Service startup began."),
         )
 
-        service = runtime.service(
-            name
-        )
+        service = runtime.service(name)
 
         if service is None:
-            raise InvalidServiceTransition(
-                f"Unknown service: {name}"
-            )
+            raise InvalidServiceTransition(f"Unknown service: {name}")
 
         return service
 
@@ -784,24 +538,15 @@ class RuntimeStateManager:
             runtime,
             name,
             ServiceState.RUNNING.value,
-            reason=(
-                "Service startup "
-                "completed."
-            ),
+            reason=("Service startup completed."),
         )
 
-        recompute_readiness(
-            runtime
-        )
+        recompute_readiness(runtime)
 
-        service = runtime.service(
-            name
-        )
+        service = runtime.service(name)
 
         if service is None:
-            raise InvalidServiceTransition(
-                f"Unknown service: {name}"
-            )
+            raise InvalidServiceTransition(f"Unknown service: {name}")
 
         return service
 
@@ -811,9 +556,7 @@ class RuntimeStateManager:
         name: str,
         *,
         reason: str,
-        error: Optional[
-            str
-        ] = None,
+        error: Optional[str] = None,
     ) -> ServiceStatus:
         transition_service(
             runtime,
@@ -823,18 +566,12 @@ class RuntimeStateManager:
             error=error,
         )
 
-        recompute_readiness(
-            runtime
-        )
+        recompute_readiness(runtime)
 
-        service = runtime.service(
-            name
-        )
+        service = runtime.service(name)
 
         if service is None:
-            raise InvalidServiceTransition(
-                f"Unknown service: {name}"
-            )
+            raise InvalidServiceTransition(f"Unknown service: {name}")
 
         return service
 
@@ -847,19 +584,13 @@ class RuntimeStateManager:
             runtime,
             name,
             ServiceState.STOPPING.value,
-            reason=(
-                "Service shutdown began."
-            ),
+            reason=("Service shutdown began."),
         )
 
-        service = runtime.service(
-            name
-        )
+        service = runtime.service(name)
 
         if service is None:
-            raise InvalidServiceTransition(
-                f"Unknown service: {name}"
-            )
+            raise InvalidServiceTransition(f"Unknown service: {name}")
 
         return service
 
@@ -872,23 +603,14 @@ class RuntimeStateManager:
             runtime,
             name,
             ServiceState.STOPPED.value,
-            reason=(
-                "Service shutdown "
-                "completed."
-            ),
+            reason=("Service shutdown completed."),
         )
 
-        recompute_readiness(
-            runtime
-        )
+        recompute_readiness(runtime)
 
-        service = runtime.service(
-            name
-        )
+        service = runtime.service(name)
 
         if service is None:
-            raise InvalidServiceTransition(
-                f"Unknown service: {name}"
-            )
+            raise InvalidServiceTransition(f"Unknown service: {name}")
 
         return service

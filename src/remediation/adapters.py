@@ -33,25 +33,20 @@ from src.remediation.validator import (
 # Errors
 # ---------------------------------------------------------------
 
-class AdapterError(
-    RuntimeError
-):
+
+class AdapterError(RuntimeError):
     """
     Base adapter-layer error.
     """
 
 
-class AdapterNotFoundError(
-    AdapterError
-):
+class AdapterNotFoundError(AdapterError):
     """
     No compatible adapter could be resolved.
     """
 
 
-class AdapterExecutionDisabledError(
-    AdapterError
-):
+class AdapterExecutionDisabledError(AdapterError):
     """
     Adapter was asked to perform unsupported
     real execution.
@@ -62,9 +57,8 @@ class AdapterExecutionDisabledError(
 # Base adapter
 # ---------------------------------------------------------------
 
-class RemediationAdapter(
-    ABC
-):
+
+class RemediationAdapter(ABC):
     """
     Abstract provider boundary.
 
@@ -87,56 +81,27 @@ class RemediationAdapter(
         self,
         request: RemediationRequest,
     ) -> bool:
-        capability = (
-            self.capability
-        )
+        capability = self.capability
 
         capability.validate()
 
-        environment = (
-            request.environment_id
-            .strip()
-            .lower()
-        )
+        environment = request.environment_id.strip().lower()
 
-        environments = {
-            item.lower()
-            for item
-            in capability.
-            supported_environments
-        }
+        environments = {item.lower() for item in capability.supported_environments}
 
         if not capability.enabled:
             return False
 
-        if (
-            request.action_type
-            not in capability.
-            supported_action_types
-        ):
+        if request.action_type not in capability.supported_action_types:
             return False
 
-        if (
-            environments
-            and environment
-            not in environments
-        ):
+        if environments and environment not in environments:
             return False
 
-        if (
-            request.mode
-            == RemediationMode.
-            EXECUTE.value
-        ):
-            return (
-                capability.
-                execution_supported
-            )
+        if request.mode == RemediationMode.EXECUTE.value:
+            return capability.execution_supported
 
-        return (
-            capability.
-            dry_run_supported
-        )
+        return capability.dry_run_supported
 
     @abstractmethod
     def execute(
@@ -153,16 +118,10 @@ class RemediationAdapter(
         self,
         request: RemediationRequest,
     ) -> bool:
-        rollback_type = (
-            request.
-            rollback_action_type
-        )
+        rollback_type = request.rollback_action_type
 
         return bool(
-            rollback_type
-            and rollback_type
-            in self.capability.
-            supported_rollback_types
+            rollback_type and rollback_type in self.capability.supported_rollback_types
         )
 
     def rollback(
@@ -175,23 +134,11 @@ class RemediationAdapter(
         """
 
         return RollbackResult(
-            status=(
-                RollbackStatus.
-                UNAVAILABLE.value
-            ),
+            status=(RollbackStatus.UNAVAILABLE.value),
             success=False,
-            action_type=(
-                request.
-                rollback_action_type
-            ),
-            adapter_name=(
-                self.capability.
-                adapter_name
-            ),
-            reason=(
-                "Adapter does not implement "
-                "rollback execution."
-            ),
+            action_type=(request.rollback_action_type),
+            adapter_name=(self.capability.adapter_name),
+            reason=("Adapter does not implement rollback execution."),
         ).finalize()
 
 
@@ -199,9 +146,8 @@ class RemediationAdapter(
 # Dry-run adapter
 # ---------------------------------------------------------------
 
-class DryRunAdapter(
-    RemediationAdapter
-):
+
+class DryRunAdapter(RemediationAdapter):
     """
     Safe development adapter.
 
@@ -216,56 +162,42 @@ class DryRunAdapter(
         self,
         *,
         name: str = "dry-run",
-        supported_action_types: Optional[
-            Iterable[str]
-        ] = None,
-        supported_rollback_types: Optional[
-            Iterable[str]
-        ] = None,
-        supported_environments: Iterable[
-            str
-        ] = (),
+        supported_action_types: Optional[Iterable[str]] = None,
+        supported_rollback_types: Optional[Iterable[str]] = None,
+        supported_environments: Iterable[str] = (),
     ) -> None:
-        self._capability = (
-            AdapterCapability(
-                adapter_name=name,
-                supported_action_types=tuple(
-                    supported_action_types
-                    or (
-                        "observe_resource",
-                        "collect_diagnostics",
-                        "notify_operator",
-                        "restart_service",
-                        "reload_service",
-                        "rollback_configuration",
-                        "isolate_resource",
-                        "scale_capacity",
-                    )
-                ),
-                supported_rollback_types=tuple(
-                    supported_rollback_types
-                    or (
-                        "stop_observation",
-                        "discard_diagnostic_session",
-                        "withdraw_notification",
-                        "restore_service_state",
-                        "restore_previous_"
-                        "service_configuration",
-                        "restore_replaced_"
-                        "configuration",
-                        "remove_resource_"
-                        "isolation",
-                        "restore_previous_"
-                        "capacity",
-                    )
-                ),
-                supported_environments=tuple(
-                    supported_environments
-                ),
-                execution_supported=False,
-                dry_run_supported=True,
-                enabled=True,
-            )
+        self._capability = AdapterCapability(
+            adapter_name=name,
+            supported_action_types=tuple(
+                supported_action_types
+                or (
+                    "observe_resource",
+                    "collect_diagnostics",
+                    "notify_operator",
+                    "restart_service",
+                    "reload_service",
+                    "rollback_configuration",
+                    "isolate_resource",
+                    "scale_capacity",
+                )
+            ),
+            supported_rollback_types=tuple(
+                supported_rollback_types
+                or (
+                    "stop_observation",
+                    "discard_diagnostic_session",
+                    "withdraw_notification",
+                    "restore_service_state",
+                    "restore_previous_service_configuration",
+                    "restore_replaced_configuration",
+                    "remove_resource_isolation",
+                    "restore_previous_capacity",
+                )
+            ),
+            supported_environments=tuple(supported_environments),
+            execution_supported=False,
+            dry_run_supported=True,
+            enabled=True,
         )
 
         self._capability.validate()
@@ -282,22 +214,14 @@ class DryRunAdapter(
     ) -> ExecutionResult:
         request.finalize()
 
-        if (
-            request.mode
-            != RemediationMode.
-            DRY_RUN.value
-        ):
+        if request.mode != RemediationMode.DRY_RUN.value:
             raise (
                 AdapterExecutionDisabledError(
-                    "DryRunAdapter only "
-                    "accepts dry_run "
-                    "remediation requests"
+                    "DryRunAdapter only accepts dry_run remediation requests"
                 )
             )
 
-        if not self.supports(
-            request
-        ):
+        if not self.supports(request):
             raise AdapterError(
                 "Dry-run adapter does not "
                 "support action "
@@ -307,45 +231,28 @@ class DryRunAdapter(
 
         started = utc_now()
 
-        monotonic_started = (
-            time.monotonic()
-        )
+        monotonic_started = time.monotonic()
 
         # Intentionally NO infrastructure
         # operation occurs here.
 
-        duration = (
-            time.monotonic()
-            - monotonic_started
-        )
+        duration = time.monotonic() - monotonic_started
 
         return ExecutionResult(
-            status=(
-                ExecutionStatus.
-                DRY_RUN.value
-            ),
+            status=(ExecutionStatus.DRY_RUN.value),
             success=True,
-            adapter_name=(
-                self.capability.
-                adapter_name
-            ),
-            operation=(
-                request.action_type
-            ),
+            adapter_name=(self.capability.adapter_name),
+            operation=(request.action_type),
             started_at=started,
             finished_at=utc_now(),
-            duration_seconds=(
-                duration
-            ),
+            duration_seconds=(duration),
             exit_code=None,
             stdout=None,
             stderr=None,
             changed=False,
             evidence=[
                 RemediationEvidence(
-                    evidence_type=(
-                        "dry_run"
-                    ),
+                    evidence_type=("dry_run"),
                     description=(
                         "The adapter validated "
                         "the requested operation "
@@ -353,38 +260,18 @@ class DryRunAdapter(
                         "infrastructure."
                     ),
                     score=1.0,
-                    source_id=(
-                        request.request_id
-                    ),
-                    resource_ids=list(
-                        request.
-                        target_resource_ids
-                    ),
+                    source_id=(request.request_id),
+                    resource_ids=list(request.target_resource_ids),
                     attributes={
-                        "action_type": (
-                            request.
-                            action_type
-                        ),
-                        "target_service_ids": (
-                            list(
-                                request.
-                                target_service_ids
-                            )
-                        ),
+                        "action_type": (request.action_type),
+                        "target_service_ids": (list(request.target_service_ids)),
                     },
                 )
             ],
             attributes={
-                "mode": (
-                    RemediationMode.
-                    DRY_RUN.value
-                ),
-                "request_id": (
-                    request.request_id
-                ),
-                "parameters": dict(
-                    request.parameters
-                ),
+                "mode": (RemediationMode.DRY_RUN.value),
+                "request_id": (request.request_id),
+                "parameters": dict(request.parameters),
             },
         ).finalize()
 
@@ -399,74 +286,36 @@ class DryRunAdapter(
 
         request.finalize()
 
-        if (
-            request.mode
-            != RemediationMode.
-            DRY_RUN.value
-        ):
-            return super().rollback(
-                request
-            )
+        if request.mode != RemediationMode.DRY_RUN.value:
+            return super().rollback(request)
 
-        if not (
-            request.
-            rollback_action_type
-        ):
+        if not (request.rollback_action_type):
             return RollbackResult(
-                status=(
-                    RollbackStatus.
-                    NOT_REQUIRED.value
-                ),
+                status=(RollbackStatus.NOT_REQUIRED.value),
                 success=False,
-                adapter_name=(
-                    self.capability.
-                    adapter_name
-                ),
-                reason=(
-                    "Dry-run request has no "
-                    "rollback action."
-                ),
+                adapter_name=(self.capability.adapter_name),
+                reason=("Dry-run request has no rollback action."),
             ).finalize()
 
-        supported = (
-            self.supports_rollback(
-                request
-            )
-        )
+        supported = self.supports_rollback(request)
 
         return RollbackResult(
             status=(
-                RollbackStatus.
-                AVAILABLE.value
+                RollbackStatus.AVAILABLE.value
                 if supported
-                else RollbackStatus.
-                UNAVAILABLE.value
+                else RollbackStatus.UNAVAILABLE.value
             ),
             success=False,
-            action_type=(
-                request.
-                rollback_action_type
-            ),
-            adapter_name=(
-                self.capability.
-                adapter_name
-            ),
+            action_type=(request.rollback_action_type),
+            adapter_name=(self.capability.adapter_name),
             reason=(
-                "Rollback is represented by "
-                "the dry-run adapter but was "
-                "not executed."
+                "Rollback is represented by the dry-run adapter but was not executed."
                 if supported
-                else (
-                    "Rollback type is not "
-                    "supported by the "
-                    "dry-run adapter."
-                )
+                else ("Rollback type is not supported by the dry-run adapter.")
             ),
             evidence=[
                 RemediationEvidence(
-                    evidence_type=(
-                        "rollback_capability"
-                    ),
+                    evidence_type=("rollback_capability"),
                     description=(
                         "Dry-run rollback "
                         "capability was "
@@ -474,18 +323,9 @@ class DryRunAdapter(
                         "infrastructure "
                         "mutation."
                     ),
-                    score=(
-                        1.0
-                        if supported
-                        else 0.0
-                    ),
-                    source_id=(
-                        request.request_id
-                    ),
-                    resource_ids=list(
-                        request.
-                        target_resource_ids
-                    ),
+                    score=(1.0 if supported else 0.0),
+                    source_id=(request.request_id),
+                    resource_ids=list(request.target_resource_ids),
                 )
             ],
         ).finalize()
@@ -494,6 +334,7 @@ class DryRunAdapter(
 # ---------------------------------------------------------------
 # Adapter registry
 # ---------------------------------------------------------------
+
 
 class AdapterRegistry:
     """
@@ -505,9 +346,7 @@ class AdapterRegistry:
 
     def __init__(
         self,
-        adapters: Iterable[
-            RemediationAdapter
-        ] = (),
+        adapters: Iterable[RemediationAdapter] = (),
     ) -> None:
         self._adapters: Dict[
             str,
@@ -515,38 +354,23 @@ class AdapterRegistry:
         ] = {}
 
         for adapter in adapters:
-            self.register(
-                adapter
-            )
+            self.register(adapter)
 
     def register(
         self,
         adapter: RemediationAdapter,
     ) -> None:
-        name = (
-            adapter.capability.
-            adapter_name.strip()
-        )
+        name = adapter.capability.adapter_name.strip()
 
         if not name:
-            raise ValueError(
-                "Adapter name is required"
-            )
+            raise ValueError("Adapter name is required")
 
-        if (
-            name
-            in self._adapters
-        ):
-            raise ValueError(
-                "Duplicate remediation "
-                f"adapter: {name}"
-            )
+        if name in self._adapters:
+            raise ValueError(f"Duplicate remediation adapter: {name}")
 
         adapter.capability.validate()
 
-        self._adapters[
-            name
-        ] = adapter
+        self._adapters[name] = adapter
 
     def unregister(
         self,
@@ -563,51 +387,31 @@ class AdapterRegistry:
     def get(
         self,
         adapter_name: str,
-    ) -> Optional[
-        RemediationAdapter
-    ]:
-        return self._adapters.get(
-            adapter_name
-        )
+    ) -> Optional[RemediationAdapter]:
+        return self._adapters.get(adapter_name)
 
     def require(
         self,
         adapter_name: str,
     ) -> RemediationAdapter:
-        adapter = self.get(
-            adapter_name
-        )
+        adapter = self.get(adapter_name)
 
         if adapter is None:
             raise (
-                AdapterNotFoundError(
-                    "Remediation adapter "
-                    "not found: "
-                    f"{adapter_name}"
-                )
+                AdapterNotFoundError(f"Remediation adapter not found: {adapter_name}")
             )
 
         return adapter
 
     def capabilities(
         self,
-    ) -> List[
-        AdapterCapability
-    ]:
-        return [
-            adapter.capability
-            for _, adapter
-            in sorted(
-                self._adapters.items()
-            )
-        ]
+    ) -> List[AdapterCapability]:
+        return [adapter.capability for _, adapter in sorted(self._adapters.items())]
 
     def compatible(
         self,
         request: RemediationRequest,
-    ) -> List[
-        RemediationAdapter
-    ]:
+    ) -> List[RemediationAdapter]:
         """
         Return adapters that declare support for
         the request's action, environment and
@@ -616,33 +420,22 @@ class AdapterRegistry:
 
         return [
             adapter
-            for _, adapter
-            in sorted(
-                self._adapters.items()
-            )
-            if adapter.supports(
-                request
-            )
+            for _, adapter in sorted(self._adapters.items())
+            if adapter.supports(request)
         ]
 
     def resolve(
         self,
         request: RemediationRequest,
         *,
-        preferred_adapter: Optional[
-            str
-        ] = None,
+        preferred_adapter: Optional[str] = None,
     ) -> RemediationAdapter:
         request.finalize()
 
         if preferred_adapter:
-            adapter = self.require(
-                preferred_adapter
-            )
+            adapter = self.require(preferred_adapter)
 
-            if not adapter.supports(
-                request
-            ):
+            if not adapter.supports(request):
                 raise (
                     AdapterNotFoundError(
                         "Adapter "
@@ -655,9 +448,7 @@ class AdapterRegistry:
 
             return adapter
 
-        matches = self.compatible(
-            request
-        )
+        matches = self.compatible(request)
 
         if not matches:
             raise (
@@ -678,69 +469,27 @@ class AdapterRegistry:
     def summary(
         self,
     ) -> Dict[str, Any]:
-        capabilities = (
-            self.capabilities()
-        )
+        capabilities = self.capabilities()
 
         return {
-            "adapter_count": len(
-                capabilities
-            ),
+            "adapter_count": len(capabilities),
             "execution_capable_count": (
-                sum(
-                    1
-                    for item
-                    in capabilities
-                    if item.
-                    execution_supported
-                )
+                sum(1 for item in capabilities if item.execution_supported)
             ),
             "dry_run_capable_count": (
-                sum(
-                    1
-                    for item
-                    in capabilities
-                    if item.
-                    dry_run_supported
-                )
+                sum(1 for item in capabilities if item.dry_run_supported)
             ),
             "adapters": [
                 {
-                    "adapter_name": (
-                        item.adapter_name
-                    ),
-                    "supported_action_types": (
-                        list(
-                            item.
-                            supported_action_types
-                        )
-                    ),
-                    "supported_rollback_types": (
-                        list(
-                            item.
-                            supported_rollback_types
-                        )
-                    ),
-                    "supported_environments": (
-                        list(
-                            item.
-                            supported_environments
-                        )
-                    ),
-                    "execution_supported": (
-                        item.
-                        execution_supported
-                    ),
-                    "dry_run_supported": (
-                        item.
-                        dry_run_supported
-                    ),
-                    "enabled": (
-                        item.enabled
-                    ),
+                    "adapter_name": (item.adapter_name),
+                    "supported_action_types": (list(item.supported_action_types)),
+                    "supported_rollback_types": (list(item.supported_rollback_types)),
+                    "supported_environments": (list(item.supported_environments)),
+                    "execution_supported": (item.execution_supported),
+                    "dry_run_supported": (item.dry_run_supported),
+                    "enabled": (item.enabled),
                 }
-                for item
-                in capabilities
+                for item in capabilities
             ],
         }
 
@@ -749,8 +498,8 @@ class AdapterRegistry:
 # Safe default registry
 # ---------------------------------------------------------------
 
-def default_adapter_registry(
-) -> AdapterRegistry:
+
+def default_adapter_registry() -> AdapterRegistry:
     """
     Development registry.
 
@@ -758,8 +507,4 @@ def default_adapter_registry(
     is registered.
     """
 
-    return AdapterRegistry(
-        [
-            DryRunAdapter()
-        ]
-    )
+    return AdapterRegistry([DryRunAdapter()])

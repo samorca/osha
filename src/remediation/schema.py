@@ -29,6 +29,7 @@ REMEDIATION_SCHEMA_VERSION = "1"
 # Lifecycle enums
 # ---------------------------------------------------------------
 
+
 class RemediationMode(
     str,
     Enum,
@@ -68,13 +69,9 @@ class RemediationStatus(
 
     VERIFIED = "verified"
 
-    VERIFICATION_FAILED = (
-        "verification_failed"
-    )
+    VERIFICATION_FAILED = "verification_failed"
 
-    ROLLING_BACK = (
-        "rolling_back"
-    )
+    ROLLING_BACK = "rolling_back"
 
     ROLLED_BACK = "rolled_back"
 
@@ -137,9 +134,7 @@ class RollbackStatus(
     Rollback lifecycle.
     """
 
-    NOT_REQUIRED = (
-        "not_required"
-    )
+    NOT_REQUIRED = "not_required"
 
     AVAILABLE = "available"
 
@@ -188,19 +183,16 @@ class ValidationStatus(
 # Common helpers
 # ---------------------------------------------------------------
 
+
 def utc_now() -> str:
-    return datetime.now(
-        timezone.utc
-    ).isoformat()
+    return datetime.now(timezone.utc).isoformat()
 
 
 def checked_score(
     value: Any,
 ) -> float:
     try:
-        number = float(
-            value
-        )
+        number = float(value)
 
     except (
         TypeError,
@@ -208,9 +200,7 @@ def checked_score(
     ):
         return 0.0
 
-    if not math.isfinite(
-        number
-    ):
+    if not math.isfinite(number):
         return 0.0
 
     return min(
@@ -229,9 +219,7 @@ def json_safe(
     maximum_depth: int = 20,
 ) -> Any:
     if depth > maximum_depth:
-        return (
-            "[MAX_DEPTH_REACHED]"
-        )
+        return "[MAX_DEPTH_REACHED]"
 
     if value is None:
         return None
@@ -250,22 +238,14 @@ def json_safe(
         value,
         float,
     ):
-        return (
-            value
-            if math.isfinite(
-                value
-            )
-            else None
-        )
+        return value if math.isfinite(value) else None
 
     if isinstance(
         value,
         datetime,
     ):
         if value.tzinfo is None:
-            value = value.replace(
-                tzinfo=timezone.utc
-            )
+            value = value.replace(tzinfo=timezone.utc)
 
         return value.isoformat()
 
@@ -286,12 +266,9 @@ def json_safe(
             str(key): json_safe(
                 item,
                 depth=depth + 1,
-                maximum_depth=(
-                    maximum_depth
-                ),
+                maximum_depth=(maximum_depth),
             )
-            for key, item
-            in value.items()
+            for key, item in value.items()
         }
 
     if isinstance(
@@ -307,9 +284,7 @@ def json_safe(
             json_safe(
                 item,
                 depth=depth + 1,
-                maximum_depth=(
-                    maximum_depth
-                ),
+                maximum_depth=(maximum_depth),
             )
             for item in value
         ]
@@ -321,9 +296,7 @@ def json_safe(
         return json_safe(
             asdict(value),
             depth=depth + 1,
-            maximum_depth=(
-                maximum_depth
-            ),
+            maximum_depth=(maximum_depth),
         )
 
     return str(value)
@@ -344,18 +317,15 @@ def stable_hash(
             ":",
         ),
         default=str,
-    ).encode(
-        "utf-8"
-    )
+    ).encode("utf-8")
 
-    return hashlib.sha256(
-        encoded
-    ).hexdigest()
+    return hashlib.sha256(encoded).hexdigest()
 
 
 # ---------------------------------------------------------------
 # Audit evidence
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class RemediationEvidence:
@@ -373,66 +343,35 @@ class RemediationEvidence:
 
     score: float = 0.0
 
-    source_id: Optional[
-        str
-    ] = None
+    source_id: Optional[str] = None
 
-    resource_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    resource_ids: List[str] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    observed_at: str = field(
-        default_factory=utc_now
-    )
+    observed_at: str = field(default_factory=utc_now)
 
     def to_dict(
         self,
     ) -> Dict[str, Any]:
         return {
-            "evidence_type": (
-                self.evidence_type
-            ),
-            "description": (
-                self.description
-            ),
-            "score": (
-                checked_score(
-                    self.score
-                )
-            ),
-            "source_id": (
-                self.source_id
-            ),
-            "resource_ids": (
-                sorted(
-                    set(
-                        self.resource_ids
-                    )
-                )
-            ),
-            "attributes": (
-                json_safe(
-                    self.attributes
-                )
-            ),
-            "observed_at": (
-                self.observed_at
-            ),
+            "evidence_type": (self.evidence_type),
+            "description": (self.description),
+            "score": (checked_score(self.score)),
+            "source_id": (self.source_id),
+            "resource_ids": (sorted(set(self.resource_ids))),
+            "attributes": (json_safe(self.attributes)),
+            "observed_at": (self.observed_at),
         }
 
 
 # ---------------------------------------------------------------
 # Guardrails
 # ---------------------------------------------------------------
+
 
 @dataclass
 class GuardrailCheck:
@@ -459,58 +398,36 @@ class GuardrailCheck:
 
     blocking: bool = True
 
-    evidence: List[
-        RemediationEvidence
-    ] = field(
-        default_factory=list
-    )
+    evidence: List[RemediationEvidence] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def passed(
         self,
     ) -> bool:
-        return (
-            self.status
-            == GuardrailStatus.
-            PASSED.value
-        )
+        return self.status == GuardrailStatus.PASSED.value
 
     def to_dict(
         self,
     ) -> Dict[str, Any]:
         return {
-            "guardrail_id": (
-                self.guardrail_id
-            ),
+            "guardrail_id": (self.guardrail_id),
             "name": self.name,
             "status": self.status,
-            "description": (
-                self.description
-            ),
-            "blocking": (
-                self.blocking
-            ),
-            "evidence": [
-                item.to_dict()
-                for item in self.evidence
-            ],
-            "attributes": (
-                json_safe(
-                    self.attributes
-                )
-            ),
+            "description": (self.description),
+            "blocking": (self.blocking),
+            "evidence": [item.to_dict() for item in self.evidence],
+            "attributes": (json_safe(self.attributes)),
         }
 
 
 # ---------------------------------------------------------------
 # Validation
 # ---------------------------------------------------------------
+
 
 @dataclass
 class ValidationResult:
@@ -521,89 +438,48 @@ class ValidationResult:
     as executable.
     """
 
-    status: str = (
-        ValidationStatus.
-        INVALID.value
-    )
+    status: str = ValidationStatus.INVALID.value
 
     valid: bool = False
 
-    checks: List[
-        GuardrailCheck
-    ] = field(
-        default_factory=list
-    )
+    checks: List[GuardrailCheck] = field(default_factory=list)
 
-    blocking_reasons: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    blocking_reasons: List[str] = field(default_factory=list)
 
-    warnings: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    warnings: List[str] = field(default_factory=list)
 
-    validated_at: str = field(
-        default_factory=utc_now
-    )
+    validated_at: str = field(default_factory=utc_now)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
     ) -> "ValidationResult":
-        self.blocking_reasons = list(
-            dict.fromkeys(
-                self.blocking_reasons
-            )
-        )
+        self.blocking_reasons = list(dict.fromkeys(self.blocking_reasons))
 
-        self.warnings = list(
-            dict.fromkeys(
-                self.warnings
-            )
-        )
+        self.warnings = list(dict.fromkeys(self.warnings))
 
         blocking_failures = [
-            check
-            for check in self.checks
-            if (
-                check.blocking
-                and not check.passed()
-            )
+            check for check in self.checks if (check.blocking and not check.passed())
         ]
 
         if blocking_failures:
             self.valid = False
 
-            self.status = (
-                ValidationStatus.
-                INVALID.value
-            )
+            self.status = ValidationStatus.INVALID.value
 
         elif self.warnings:
             self.valid = True
 
-            self.status = (
-                ValidationStatus.
-                CONDITIONAL.value
-            )
+            self.status = ValidationStatus.CONDITIONAL.value
 
         else:
             self.valid = True
 
-            self.status = (
-                ValidationStatus.
-                VALID.value
-            )
+            self.status = ValidationStatus.VALID.value
 
         return self
 
@@ -615,30 +491,18 @@ class ValidationResult:
         return {
             "status": self.status,
             "valid": self.valid,
-            "checks": [
-                check.to_dict()
-                for check in self.checks
-            ],
-            "blocking_reasons": (
-                self.blocking_reasons
-            ),
-            "warnings": (
-                self.warnings
-            ),
-            "validated_at": (
-                self.validated_at
-            ),
-            "attributes": (
-                json_safe(
-                    self.attributes
-                )
-            ),
+            "checks": [check.to_dict() for check in self.checks],
+            "blocking_reasons": (self.blocking_reasons),
+            "warnings": (self.warnings),
+            "validated_at": (self.validated_at),
+            "attributes": (json_safe(self.attributes)),
         }
 
 
 # ---------------------------------------------------------------
 # Remediation request
 # ---------------------------------------------------------------
+
 
 @dataclass
 class RemediationRequest:
@@ -658,173 +522,78 @@ class RemediationRequest:
 
     environment_id: str
 
-    mode: str = (
-        RemediationMode.
-        DRY_RUN.value
-    )
+    mode: str = RemediationMode.DRY_RUN.value
 
-    decision_id: Optional[
-        str
-    ] = None
+    decision_id: Optional[str] = None
 
-    plan_id: Optional[
-        str
-    ] = None
+    plan_id: Optional[str] = None
 
-    incident_id: Optional[
-        str
-    ] = None
+    incident_id: Optional[str] = None
 
-    target_resource_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    target_resource_ids: List[str] = field(default_factory=list)
 
-    target_service_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    target_service_ids: List[str] = field(default_factory=list)
 
     parameters: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    requested_by: Optional[
-        str
-    ] = None
+    requested_by: Optional[str] = None
 
-    approval_status: Optional[
-        str
-    ] = None
+    approval_status: Optional[str] = None
 
-    approval_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    approval_ids: List[str] = field(default_factory=list)
 
-    risk_level: Optional[
-        str
-    ] = None
+    risk_level: Optional[str] = None
 
     risk_score: float = 0.0
 
-    reversibility: Optional[
-        str
-    ] = None
+    reversibility: Optional[str] = None
 
-    rollback_action_type: Optional[
-        str
-    ] = None
+    rollback_action_type: Optional[str] = None
 
-    requested_at: str = field(
-        default_factory=utc_now
-    )
+    requested_at: str = field(default_factory=utc_now)
 
-    expires_at: Optional[
-        str
-    ] = None
+    expires_at: Optional[str] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    request_id: Optional[
-        str
-    ] = None
+    request_id: Optional[str] = None
 
     def build_request_id(
         self,
     ) -> str:
-        return (
-            "remediation:request:"
-            + stable_hash(
-                {
-                    "action_id": (
-                        self.action_id
-                    ),
-                    "environment_id": (
-                        self.environment_id
-                    ),
-                    "targets": (
-                        sorted(
-                            set(
-                                self.
-                                target_resource_ids
-                            )
-                        )
-                    ),
-                    "services": (
-                        sorted(
-                            set(
-                                self.
-                                target_service_ids
-                            )
-                        )
-                    ),
-                    "parameters": (
-                        self.parameters
-                    ),
-                    "mode": self.mode,
-                }
-            )
+        return "remediation:request:" + stable_hash(
+            {
+                "action_id": (self.action_id),
+                "environment_id": (self.environment_id),
+                "targets": (sorted(set(self.target_resource_ids))),
+                "services": (sorted(set(self.target_service_ids))),
+                "parameters": (self.parameters),
+                "mode": self.mode,
+            }
         )
 
     def finalize(
         self,
     ) -> "RemediationRequest":
-        self.target_resource_ids = (
-            sorted(
-                set(
-                    self.
-                    target_resource_ids
-                )
-            )
-        )
+        self.target_resource_ids = sorted(set(self.target_resource_ids))
 
-        self.target_service_ids = (
-            sorted(
-                set(
-                    self.
-                    target_service_ids
-                )
-            )
-        )
+        self.target_service_ids = sorted(set(self.target_service_ids))
 
-        self.approval_ids = sorted(
-            set(
-                self.approval_ids
-            )
-        )
+        self.approval_ids = sorted(set(self.approval_ids))
 
-        self.risk_score = (
-            checked_score(
-                self.risk_score
-            )
-        )
+        self.risk_score = checked_score(self.risk_score)
 
-        if self.mode not in {
-            item.value
-            for item
-            in RemediationMode
-        }:
-            raise ValueError(
-                "Unsupported remediation "
-                f"mode: {self.mode}"
-            )
+        if self.mode not in {item.value for item in RemediationMode}:
+            raise ValueError(f"Unsupported remediation mode: {self.mode}")
 
         if not self.request_id:
-            self.request_id = (
-                self.build_request_id()
-            )
+            self.request_id = self.build_request_id()
 
         return self
 
@@ -833,15 +602,14 @@ class RemediationRequest:
     ) -> Dict[str, Any]:
         self.finalize()
 
-        return json_safe(
-            asdict(self)
-        )
+        return json_safe(asdict(self))
 
 
 # -
 # ---------------------------------------------------------------
 # Execution result
 # ---------------------------------------------------------------
+
 
 @dataclass
 class ExecutionResult:
@@ -853,83 +621,48 @@ class ExecutionResult:
     must redact and truncate them before storing.
     """
 
-    status: str = (
-        ExecutionStatus.
-        NOT_STARTED.value
-    )
+    status: str = ExecutionStatus.NOT_STARTED.value
 
     success: bool = False
 
-    adapter_name: Optional[
-        str
-    ] = None
+    adapter_name: Optional[str] = None
 
-    operation: Optional[
-        str
-    ] = None
+    operation: Optional[str] = None
 
-    started_at: onal[
-        str
-    ] = None
+    started_at: onal[str] = None
 
-    finished_at: Optional[
-        str
-    ] = None
+    finished_at: Optional[str] = None
 
-    duration_seconds: Optional[
-        float
-    ] = None
+    duration_seconds: Optional[float] = None
 
-    exit_code: Optional[
-        int
-    ] = None
+    exit_code: Optional[int] = None
 
-    stdout: Optional[
-        str
-    ] = None
+    stdout: Optional[str] = None
 
-    stderr: Optional[
-        str
-    ] = None
+    stderr: Optional[str] = None
 
     changed: bool = False
 
-    evidence: List[
-        RemediationEvidence
-    ] = field(
-        default_factory=list
-    )
+    evidence: List[RemediationEvidence] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
     ) -> "ExecutionResult":
-        if (
-            self.duration_seconds
-            is not None
-        ):
+        if self.duration_seconds is not None:
             self.duration_seconds = max(
                 0.0,
-                float(
-                    self.duration_seconds
-                ),
+                float(self.duration_seconds),
             )
 
-        self.success = (
-            self.status
-            in {
-                ExecutionStatus.
-                SUCCEEDED.value,
-                ExecutionStatus.
-                DRY_RUN.value,
-            }
-        )
+        self.success = self.status in {
+            ExecutionStatus.SUCCEEDED.value,
+            ExecutionStatus.DRY_RUN.value,
+        }
 
         return self
 
@@ -938,14 +671,13 @@ class ExecutionResult:
     ) -> Dict[str, Any]:
         self.finalize()
 
-        return json_safe(
-            asdict(self)
-        )
+        return json_safe(asdict(self))
 
 
 # ---------------------------------------------------------------
 # Verification result
 # ---------------------------------------------------------------
+
 
 @dataclass
 class VerificationResult:
@@ -957,88 +689,43 @@ class VerificationResult:
     are deliberately separate concepts.
     """
 
-    status: str = (
-        VerificationStatus.
-        NOT_RUN.value
-    )
+    status: str = VerificationStatus.NOT_RUN.value
 
     passed: bool = False
 
-    health_before: Optional[
-        float
-    ] = None
+    health_before: Optional[float] = None
 
-    health_after: Optional[
-        float
-    ] = None
+    health_after: Optional[float] = None
 
-    checks: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    checks: List[str] = field(default_factory=list)
 
-    failed_checks: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    failed_checks: List[str] = field(default_factory=list)
 
-    evidence: List[
-        RemediationEvidence
-    ] = field(
-        default_factory=list
-    )
+    evidence: List[RemediationEvidence] = field(default_factory=list)
 
-    started_at: Optional[
-        str
-    ] = None
+    started_at: Optional[str] = None
 
-    finished_at: Optional[
-        str
-    ] = None
+    finished_at: Optional[str] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
     ) -> "VerificationResult":
         if self.health_before is not None:
-            self.health_before = (
-                checked_score(
-                    self.health_before
-                )
-            )
+            self.health_before = checked_score(self.health_before)
 
         if self.health_after is not None:
-            self.health_after = (
-                checked_score(
-                    self.health_after
-                )
-            )
+            self.health_after = checked_score(self.health_after)
 
-        self.checks = list(
-            dict.fromkeys(
-                self.checks
-            )
-        )
+        self.checks = list(dict.fromkeys(self.checks))
 
-        self.failed_checks = list(
-            dict.fromkeys(
-                self.failed_checks
-            )
-        )
+        self.failed_checks = list(dict.fromkeys(self.failed_checks))
 
-        self.passed = (
-            self.status
-            == VerificationStatus.
-            PASSED.value
-        )
+        self.passed = self.status == VerificationStatus.PASSED.value
 
         return self
 
@@ -1047,14 +734,13 @@ class VerificationResult:
     ) -> Dict[str, Any]:
         self.finalize()
 
-        return json_safe(
-            asdict(self)
-        )
+        return json_safe(asdict(self))
 
 
 # ---------------------------------------------------------------
 # Rollback result
 # ---------------------------------------------------------------
+
 
 @dataclass
 class RollbackResult:
@@ -1066,54 +752,31 @@ class RollbackResult:
     for audit and memory.
     """
 
-    status: str = (
-        RollbackStatus.
-        NOT_REQUIRED.value
-    )
+    status: str = RollbackStatus.NOT_REQUIRED.value
 
     success: bool = False
 
-    action_type: Optional[
-        str
-    ] = None
+    action_type: Optional[str] = None
 
-    adapter_name: Optional[
-        str
-    ] = None
+    adapter_name: Optional[str] = None
 
-    started_at: Optional[
-        str
-    ] = None
+    started_at: Optional[str] = None
 
-    finished_at: Optional[
-        str
-    ] = None
+    finished_at: Optional[str] = None
 
-    reason: Optional[
-        str
-    ] = None
+    reason: Optional[str] = None
 
-    evidence: List[
-        RemediationEvidence
-    ] = field(
-        default_factory=list
-    )
+    evidence: List[RemediationEvidence] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
     ) -> "RollbackResult":
-        self.success = (
-            self.status
-            == RollbackStatus.
-            SUCCEEDED.value
-        )
+        self.success = self.status == RollbackStatus.SUCCEEDED.value
 
         return self
 
@@ -1122,14 +785,13 @@ class RollbackResult:
     ) -> Dict[str, Any]:
         self.finalize()
 
-        return json_safe(
-            asdict(self)
-        )
+        return json_safe(asdict(self))
 
 
 # ---------------------------------------------------------------
 # Audit event
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class AuditEvent:
@@ -1144,44 +806,31 @@ class AuditEvent:
 
     description: str
 
-    remediation_id: Optional[
-        str
-    ] = None
+    remediation_id: Optional[str] = None
 
-    request_id: Optional[
-        str
-    ] = None
+    request_id: Optional[str] = None
 
-    action_id: Optional[
-        str
-    ] = None
+    action_id: Optional[str] = None
 
-    actor_id: Optional[
-        str
-    ] = None
+    actor_id: Optional[str] = None
 
-    occurred_at: str = field(
-        default_factory=utc_now
-    )
+    occurred_at: str = field(default_factory=utc_now)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def to_dict(
         self,
     ) -> Dict[str, Any]:
-        return json_safe(
-            asdict(self)
-        )
+        return json_safe(asdict(self))
 
 
 # ---------------------------------------------------------------
 # Complete remediation result
 # ---------------------------------------------------------------
+
 
 @dataclass
 class RemediationResult:
@@ -1192,97 +841,46 @@ class RemediationResult:
 
     request: RemediationRequest
 
-    status: str = (
-        RemediationStatus.
-        CREATED.value
-    )
+    status: str = RemediationStatus.CREATED.value
 
-    validation: ValidationResult = field(
-        default_factory=(
-            ValidationResult
-        )
-    )
+    validation: ValidationResult = field(default_factory=(ValidationResult))
 
-    execution: ExecutionResult = field(
-        default_factory=(
-            ExecutionResult
-        )
-    )
+    execution: ExecutionResult = field(default_factory=(ExecutionResult))
 
-    verification: VerificationResult = field(
-        default_factory=(
-            VerificationResult
-        )
-    )
+    verification: VerificationResult = field(default_factory=(VerificationResult))
 
-    rollback: RollbackResult = field(
-        default_factory=(
-            RollbackResult
-        )
-    )
+    rollback: RollbackResult = field(default_factory=(RollbackResult))
 
-    audit_events: List[
-        AuditEvent
-    ] = field(
-        default_factory=list
-    )
+    audit_events: List[AuditEvent] = field(default_factory=list)
 
-    evidence: List[
-        RemediationEvidence
-    ] = field(
-        default_factory=list
-    )
+    evidence: List[RemediationEvidence] = field(default_factory=list)
 
-    started_at: Optional[
-        str
-    ] = None
+    started_at: Optional[str] = None
 
-    completed_at: Optional[
-        str
-    ] = None
+    completed_at: Optional[str] = None
 
-    error: Optional[
-        str
-    ] = None
+    error: Optional[str] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    remediation_id: Optional[
-        str
-    ] = None
+    remediation_id: Optional[str] = None
 
-    schema_version: str = (
-        REMEDIATION_SCHEMA_VERSION
-    )
+    schema_version: str = REMEDIATION_SCHEMA_VERSION
 
     def build_remediation_id(
         self,
     ) -> str:
         self.request.finalize()
 
-        return (
-            "remediation:"
-            + stable_hash(
-                {
-                    "request_id": (
-                        self.request.
-                        request_id
-                    ),
-                    "action_id": (
-                        self.request.
-                        action_id
-                    ),
-                    "environment_id": (
-                        self.request.
-                        environment_id
-                    ),
-                }
-            )
+        return "remediation:" + stable_hash(
+            {
+                "request_id": (self.request.request_id),
+                "action_id": (self.request.action_id),
+                "environment_id": (self.request.environment_id),
+            }
         )
 
     def finalize(
@@ -1299,9 +897,7 @@ class RemediationResult:
         self.rollback.finalize()
 
         if not self.remediation_id:
-            self.remediation_id = (
-                self.build_remediation_id()
-            )
+            self.remediation_id = self.build_remediation_id()
 
         return self
 
@@ -1311,49 +907,20 @@ class RemediationResult:
         self.finalize()
 
         return {
-            "schema_version": (
-                self.schema_version
-            ),
-            "remediation_id": (
-                self.remediation_id
-            ),
+            "schema_version": (self.schema_version),
+            "remediation_id": (self.remediation_id),
             "status": self.status,
-            "request": (
-                self.request.to_dict()
-            ),
-            "validation": (
-                self.validation.to_dict()
-            ),
-            "execution": (
-                self.execution.to_dict()
-            ),
-            "verification": (
-                self.verification.to_dict()
-            ),
-            "rollback": (
-                self.rollback.to_dict()
-            ),
-            "audit_events": [
-                event.to_dict()
-                for event
-                in self.audit_events
-            ],
-            "evidence": [
-                item.to_dict()
-                for item in self.evidence
-            ],
-            "started_at": (
-                self.started_at
-            ),
-            "completed_at": (
-                self.completed_at
-            ),
+            "request": (self.request.to_dict()),
+            "validation": (self.validation.to_dict()),
+            "execution": (self.execution.to_dict()),
+            "verification": (self.verification.to_dict()),
+            "rollback": (self.rollback.to_dict()),
+            "audit_events": [event.to_dict() for event in self.audit_events],
+            "evidence": [item.to_dict() for item in self.evidence],
+            "started_at": (self.started_at),
+            "completed_at": (self.completed_at),
             "error": self.error,
-            "attributes": (
-                json_safe(
-                    self.attributes
-                )
-            ),
+            "attributes": (json_safe(self.attributes)),
         }
 
     def to_json(
@@ -1374,37 +941,26 @@ class RemediationResult:
 # Batch result
 # ---------------------------------------------------------------
 
+
 @dataclass
 class RemediationBatchResult:
     """
     Output from processing multiple requests.
     """
 
-    results: List[
-        RemediationResult
-    ] = field(
-        default_factory=list
-    )
+    results: List[RemediationResult] = field(default_factory=list)
 
-    generated_at: str = field(
-        default_factory=utc_now
-    )
+    generated_at: str = field(default_factory=utc_now)
 
     metadata: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
     ) -> "RemediationBatchResult":
-        self.results = [
-            result.finalize()
-            for result
-            in self.results
-        ]
+        self.results = [result.finalize() for result in self.results]
 
         return self
 
@@ -1419,9 +975,7 @@ class RemediationBatchResult:
         ] = {}
 
         for result in self.results:
-            statuses[
-                result.status
-            ] = (
+            statuses[result.status] = (
                 statuses.get(
                     result.status,
                     0,
@@ -1430,26 +984,12 @@ class RemediationBatchResult:
             )
 
         return {
-            "schema_version": (
-                REMEDIATION_SCHEMA_VERSION
-            ),
-            "generated_at": (
-                self.generated_at
-            ),
-            "result_count": len(
-                self.results
-            ),
+            "schema_version": (REMEDIATION_SCHEMA_VERSION),
+            "generated_at": (self.generated_at),
+            "result_count": len(self.results),
             "statuses": statuses,
-            "results": [
-                result.to_dict()
-                for result
-                in self.results
-            ],
-            "metadata": (
-                json_safe(
-                    self.metadata
-                )
-            ),
+            "results": [result.to_dict() for result in self.results],
+            "metadata": (json_safe(self.metadata)),
         }
 
 
@@ -1457,41 +997,26 @@ class RemediationBatchResult:
 # Utility checks
 # ---------------------------------------------------------------
 
+
 def is_dry_run(
     request: RemediationRequest,
 ) -> bool:
-    return (
-        request.mode
-        == RemediationMode.
-        DRY_RUN.value
-    )
+    return request.mode == RemediationMode.DRY_RUN.value
 
 
 def execution_succeeded(
     result: RemediationResult,
 ) -> bool:
-    return (
-        result.execution.status
-        == ExecutionStatus.
-        SUCCEEDED.value
-    )
+    return result.execution.status == ExecutionStatus.SUCCEEDED.value
 
 
 def recovery_verified(
     result: RemediationResult,
 ) -> bool:
-    return (
-        result.verification.status
-        == VerificationStatus.
-        PASSED.value
-    )
+    return result.verification.status == VerificationStatus.PASSED.value
 
 
 def rollback_succeeded(
     result: RemediationResult,
 ) -> bool:
-    return (
-        result.rollback.status
-        == RollbackStatus.
-        SUCCEEDED.value
-    )
+    return result.rollback.status == RollbackStatus.SUCCEEDED.value

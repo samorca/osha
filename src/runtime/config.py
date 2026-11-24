@@ -40,9 +40,7 @@ def _text(
     if value is None:
         return default
 
-    return str(
-        value
-    ).strip()
+    return str(value).strip()
 
 
 def _bool(
@@ -59,9 +57,7 @@ def _bool(
     ):
         return value
 
-    normalized = str(
-        value
-    ).strip().lower()
+    normalized = str(value).strip().lower()
 
     if normalized in _TRUE_VALUES:
         return True
@@ -69,10 +65,7 @@ def _bool(
     if normalized in _FALSE_VALUES:
         return False
 
-    raise ValueError(
-        "Invalid boolean value: "
-        f"{value}"
-    )
+    raise ValueError(f"Invalid boolean value: {value}")
 
 
 def _int(
@@ -81,21 +74,13 @@ def _int(
     default: int,
     minimum: int = 0,
 ) -> int:
-    if (
-        value is None
-        or str(value).strip() == ""
-    ):
+    if value is None or str(value).strip() == "":
         return default
 
-    result = int(
-        value
-    )
+    result = int(value)
 
     if result < minimum:
-        raise ValueError(
-            "Integer value must be "
-            f">= {minimum}"
-        )
+        raise ValueError(f"Integer value must be >= {minimum}")
 
     return result
 
@@ -106,21 +91,13 @@ def _float(
     default: float,
     minimum: float = 0.0,
 ) -> float:
-    if (
-        value is None
-        or str(value).strip() == ""
-    ):
+    if value is None or str(value).strip() == "":
         return default
 
-    result = float(
-        value
-    )
+    result = float(value)
 
     if result < minimum:
-        raise ValueError(
-            "Float value must be "
-            f">= {minimum}"
-        )
+        raise ValueError(f"Float value must be >= {minimum}")
 
     return result
 
@@ -128,6 +105,7 @@ def _float(
 # ---------------------------------------------------------------
 # Service configuration
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class ServiceConfig:
@@ -152,41 +130,25 @@ class ServiceConfig:
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def validate(
         self,
     ) -> None:
-        if (
-            self.startup_timeout_seconds
-            <= 0
-        ):
-            raise ValueError(
-                "startup_timeout_seconds "
-                "must be > 0"
-            )
+        if self.startup_timeout_seconds <= 0:
+            raise ValueError("startup_timeout_seconds must be > 0")
 
-        if (
-            self.shutdown_timeout_seconds
-            <= 0
-        ):
-            raise ValueError(
-                "shutdown_timeout_seconds "
-                "must be > 0"
-            )
+        if self.shutdown_timeout_seconds <= 0:
+            raise ValueError("shutdown_timeout_seconds must be > 0")
 
         if self.restart_limit < 0:
-            raise ValueError(
-                "restart_limit "
-                "must be >= 0"
-            )
+            raise ValueError("restart_limit must be >= 0")
 
 
 # ---------------------------------------------------------------
 # Worker configuration
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class WorkerConfig:
@@ -208,33 +170,19 @@ class WorkerConfig:
         self,
     ) -> None:
         if self.concurrency < 1:
-            raise ValueError(
-                "worker concurrency "
-                "must be >= 1"
-            )
+            raise ValueError("worker concurrency must be >= 1")
 
-        if (
-            self.poll_interval_seconds
-            <= 0
-        ):
-            raise ValueError(
-                "poll_interval_seconds "
-                "must be > 0"
-            )
+        if self.poll_interval_seconds <= 0:
+            raise ValueError("poll_interval_seconds must be > 0")
 
-        if (
-            self.graceful_shutdown_seconds
-            <= 0
-        ):
-            raise ValueError(
-                "graceful_shutdown_seconds "
-                "must be > 0"
-            )
+        if self.graceful_shutdown_seconds <= 0:
+            raise ValueError("graceful_shutdown_seconds must be > 0")
 
 
 # ---------------------------------------------------------------
 # Main runtime configuration
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class RuntimeConfig:
@@ -263,80 +211,41 @@ class RuntimeConfig:
 
     fail_fast: bool = True
 
-    workers: WorkerConfig = field(
-        default_factory=WorkerConfig
-    )
+    workers: WorkerConfig = field(default_factory=WorkerConfig)
 
     services: Dict[
         str,
         ServiceConfig,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def validate(
         self,
     ) -> None:
-        if not (
-            self.environment_id.strip()
-        ):
-            raise ValueError(
-                "environment_id is required"
-            )
+        if not (self.environment_id.strip()):
+            raise ValueError("environment_id is required")
 
-        if not (
-            self.instance_name.strip()
-        ):
-            raise ValueError(
-                "instance_name is required"
-            )
+        if not (self.instance_name.strip()):
+            raise ValueError("instance_name is required")
 
-        if (
-            self.startup_timeout_seconds
-            <= 0
-        ):
-            raise ValueError(
-                "startup_timeout_seconds "
-                "must be > 0"
-            )
+        if self.startup_timeout_seconds <= 0:
+            raise ValueError("startup_timeout_seconds must be > 0")
 
-        if (
-            self.shutdown_timeout_seconds
-            <= 0
-        ):
-            raise ValueError(
-                "shutdown_timeout_seconds "
-                "must be > 0"
-            )
+        if self.shutdown_timeout_seconds <= 0:
+            raise ValueError("shutdown_timeout_seconds must be > 0")
 
-        if (
-            self.health_interval_seconds
-            <= 0
-        ):
-            raise ValueError(
-                "health_interval_seconds "
-                "must be > 0"
-            )
+        if self.health_interval_seconds <= 0:
+            raise ValueError("health_interval_seconds must be > 0")
 
         self.workers.validate()
 
-        for name, service in (
-            self.services.items()
-        ):
-            if not str(
-                name
-            ).strip():
-                raise ValueError(
-                    "service configuration "
-                    "name is required"
-                )
+        for name, service in self.services.items():
+            if not str(name).strip():
+                raise ValueError("service configuration name is required")
 
             service.validate()
 
@@ -362,79 +271,31 @@ class RuntimeConfig:
         self.validate()
 
         return {
-            "environment_id": (
-                self.environment_id
-            ),
-            "instance_name": (
-                self.instance_name
-            ),
-            "dry_run": (
-                self.dry_run
-            ),
-            "startup_timeout_seconds": (
-                self.
-                startup_timeout_seconds
-            ),
-            "shutdown_timeout_seconds": (
-                self.
-                shutdown_timeout_seconds
-            ),
-            "health_interval_seconds": (
-                self.
-                health_interval_seconds
-            ),
-            "fail_fast": (
-                self.fail_fast
-            ),
+            "environment_id": (self.environment_id),
+            "instance_name": (self.instance_name),
+            "dry_run": (self.dry_run),
+            "startup_timeout_seconds": (self.startup_timeout_seconds),
+            "shutdown_timeout_seconds": (self.shutdown_timeout_seconds),
+            "health_interval_seconds": (self.health_interval_seconds),
+            "fail_fast": (self.fail_fast),
             "workers": {
-                "enabled": (
-                    self.workers.enabled
-                ),
-                "concurrency": (
-                    self.workers.
-                    concurrency
-                ),
-                "poll_interval_seconds": (
-                    self.workers.
-                    poll_interval_seconds
-                ),
-                "graceful_shutdown_seconds": (
-                    self.workers.
-                    graceful_shutdown_seconds
-                ),
+                "enabled": (self.workers.enabled),
+                "concurrency": (self.workers.concurrency),
+                "poll_interval_seconds": (self.workers.poll_interval_seconds),
+                "graceful_shutdown_seconds": (self.workers.graceful_shutdown_seconds),
             },
             "services": {
                 name: {
-                    "enabled": (
-                        service.enabled
-                    ),
-                    "required": (
-                        service.required
-                    ),
-                    "startup_timeout_seconds": (
-                        service.
-                        startup_timeout_seconds
-                    ),
-                    "shutdown_timeout_seconds": (
-                        service.
-                        shutdown_timeout_seconds
-                    ),
-                    "restart_limit": (
-                        service.
-                        restart_limit
-                    ),
-                    "attributes": dict(
-                        service.attributes
-                    ),
+                    "enabled": (service.enabled),
+                    "required": (service.required),
+                    "startup_timeout_seconds": (service.startup_timeout_seconds),
+                    "shutdown_timeout_seconds": (service.shutdown_timeout_seconds),
+                    "restart_limit": (service.restart_limit),
+                    "attributes": dict(service.attributes),
                 }
-                for name, service
-                in sorted(
-                    self.services.items()
-                )
+                for name, service in sorted(self.services.items())
             },
-            "attributes": dict(
-                self.attributes
-            ),
+            "attributes": dict(self.attributes),
         }
 
 
@@ -472,29 +333,21 @@ def from_mapping(
 
     workers = WorkerConfig(
         enabled=_bool(
-            get(
-                "WORKERS_ENABLED"
-            ),
+            get("WORKERS_ENABLED"),
             default=True,
         ),
         concurrency=_int(
-            get(
-                "WORKER_CONCURRENCY"
-            ),
+            get("WORKER_CONCURRENCY"),
             default=1,
             minimum=1,
         ),
         poll_interval_seconds=_float(
-            get(
-                "WORKER_POLL_INTERVAL_SECONDS"
-            ),
+            get("WORKER_POLL_INTERVAL_SECONDS"),
             default=1.0,
             minimum=0.001,
         ),
         graceful_shutdown_seconds=_float(
-            get(
-                "WORKER_GRACEFUL_SHUTDOWN_SECONDS"
-            ),
+            get("WORKER_GRACEFUL_SHUTDOWN_SECONDS"),
             default=30.0,
             minimum=0.001,
         ),
@@ -502,58 +355,40 @@ def from_mapping(
 
     config = RuntimeConfig(
         environment_id=_text(
-            get(
-                "ENVIRONMENT_ID"
-            ),
+            get("ENVIRONMENT_ID"),
             default="local-dev",
         ),
         instance_name=_text(
-            get(
-                "INSTANCE_NAME"
-            ),
+            get("INSTANCE_NAME"),
             default="osha",
         ),
         dry_run=_bool(
-            get(
-                "DRY_RUN"
-            ),
+            get("DRY_RUN"),
             default=True,
         ),
         startup_timeout_seconds=_float(
-            get(
-                "STARTUP_TIMEOUT_SECONDS"
-            ),
+            get("STARTUP_TIMEOUT_SECONDS"),
             default=60.0,
             minimum=0.001,
         ),
         shutdown_timeout_seconds=_float(
-            get(
-                "SHUTDOWN_TIMEOUT_SECONDS"
-            ),
+            get("SHUTDOWN_TIMEOUT_SECONDS"),
             default=60.0,
             minimum=0.001,
         ),
         health_interval_seconds=_float(
-            get(
-                "HEALTH_INTERVAL_SECONDS"
-            ),
+            get("HEALTH_INTERVAL_SECONDS"),
             default=15.0,
             minimum=0.001,
         ),
         fail_fast=_bool(
-            get(
-                "FAIL_FAST"
-            ),
+            get("FAIL_FAST"),
             default=True,
         ),
         workers=workers,
         attributes={
-            "config_source": (
-                "mapping"
-            ),
-            "environment_prefix": (
-                prefix
-            ),
+            "config_source": ("mapping"),
+            "environment_prefix": (prefix),
         },
     )
 
@@ -580,11 +415,7 @@ def from_environment(
     copied into RuntimeConfig.
     """
 
-    source = (
-        os.environ
-        if environ is None
-        else environ
-    )
+    source = os.environ if environ is None else environ
 
     config = from_mapping(
         source,
@@ -595,37 +426,18 @@ def from_environment(
     # instance rather than mutating its regular
     # configuration fields.
     return RuntimeConfig(
-        environment_id=(
-            config.environment_id
-        ),
-        instance_name=(
-            config.instance_name
-        ),
+        environment_id=(config.environment_id),
+        instance_name=(config.instance_name),
         dry_run=config.dry_run,
-        startup_timeout_seconds=(
-            config.
-            startup_timeout_seconds
-        ),
-        shutdown_timeout_seconds=(
-            config.
-            shutdown_timeout_seconds
-        ),
-        health_interval_seconds=(
-            config.
-            health_interval_seconds
-        ),
-        fail_fast=(
-            config.fail_fast
-        ),
+        startup_timeout_seconds=(config.startup_timeout_seconds),
+        shutdown_timeout_seconds=(config.shutdown_timeout_seconds),
+        health_interval_seconds=(config.health_interval_seconds),
+        fail_fast=(config.fail_fast),
         workers=config.workers,
-        services=dict(
-            config.services
-        ),
+        services=dict(config.services),
         attributes={
             **config.attributes,
-            "config_source": (
-                "environment"
-            ),
+            "config_source": ("environment"),
         },
     )
 
@@ -633,6 +445,7 @@ def from_environment(
 # ---------------------------------------------------------------
 # Service configuration composition
 # ---------------------------------------------------------------
+
 
 def merge_service_configs(
     config: RuntimeConfig,
@@ -646,42 +459,21 @@ def merge_service_configs(
     supplied per-service settings.
     """
 
-    merged = dict(
-        config.services
-    )
+    merged = dict(config.services)
 
-    merged.update(
-        services
-    )
+    merged.update(services)
 
     result = RuntimeConfig(
-        environment_id=(
-            config.environment_id
-        ),
-        instance_name=(
-            config.instance_name
-        ),
+        environment_id=(config.environment_id),
+        instance_name=(config.instance_name),
         dry_run=config.dry_run,
-        startup_timeout_seconds=(
-            config.
-            startup_timeout_seconds
-        ),
-        shutdown_timeout_seconds=(
-            config.
-            shutdown_timeout_seconds
-        ),
-        health_interval_seconds=(
-            config.
-            health_interval_seconds
-        ),
-        fail_fast=(
-            config.fail_fast
-        ),
+        startup_timeout_seconds=(config.startup_timeout_seconds),
+        shutdown_timeout_seconds=(config.shutdown_timeout_seconds),
+        health_interval_seconds=(config.health_interval_seconds),
+        fail_fast=(config.fail_fast),
         workers=config.workers,
         services=merged,
-        attributes=dict(
-            config.attributes
-        ),
+        attributes=dict(config.attributes),
     )
 
     result.validate()
@@ -692,6 +484,7 @@ def merge_service_configs(
 # ---------------------------------------------------------------
 # Safe summary
 # ---------------------------------------------------------------
+
 
 def safe_config_summary(
     config: RuntimeConfig,
@@ -706,40 +499,14 @@ def safe_config_summary(
     config.validate()
 
     return {
-        "environment_id": (
-            config.environment_id
-        ),
-        "instance_name": (
-            config.instance_name
-        ),
-        "dry_run": (
-            config.dry_run
-        ),
-        "startup_timeout_seconds": (
-            config.
-            startup_timeout_seconds
-        ),
-        "shutdown_timeout_seconds": (
-            config.
-            shutdown_timeout_seconds
-        ),
-        "health_interval_seconds": (
-            config.
-            health_interval_seconds
-        ),
-        "fail_fast": (
-            config.fail_fast
-        ),
-        "workers_enabled": (
-            config.workers.enabled
-        ),
-        "worker_concurrency": (
-            config.workers.
-            concurrency
-        ),
-        "configured_services": (
-            sorted(
-                config.services
-            )
-        ),
+        "environment_id": (config.environment_id),
+        "instance_name": (config.instance_name),
+        "dry_run": (config.dry_run),
+        "startup_timeout_seconds": (config.startup_timeout_seconds),
+        "shutdown_timeout_seconds": (config.shutdown_timeout_seconds),
+        "health_interval_seconds": (config.health_interval_seconds),
+        "fail_fast": (config.fail_fast),
+        "workers_enabled": (config.workers.enabled),
+        "worker_concurrency": (config.workers.concurrency),
+        "configured_services": (sorted(config.services)),
     }

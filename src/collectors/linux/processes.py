@@ -35,9 +35,7 @@ def safe_read_text(
             encoding="utf-8",
             errors="replace",
         ) as handle:
-            return handle.read(
-                limit
-            )
+            return handle.read(limit)
     except (
         OSError,
         PermissionError,
@@ -71,9 +69,7 @@ def parse_status(
             1,
         )
 
-        output[key.strip()] = (
-            value.strip()
-        )
+        output[key.strip()] = value.strip()
 
     return output
 
@@ -146,9 +142,7 @@ def sanitize_command_line(
         ]
 
         if parts:
-            return [
-                Path(parts[0]).name
-            ]
+            return [Path(parts[0]).name]
 
     if name:
         return [name]
@@ -160,9 +154,7 @@ def read_cmdline(
     path: Path,
 ) -> Optional[bytes]:
     try:
-        return path.read_bytes()[
-            :65536
-        ]
+        return path.read_bytes()[:65536]
     except (
         OSError,
         PermissionError,
@@ -200,77 +192,48 @@ def collect_process(
 ) -> Optional[dict]:
     base = Path("/proc") / str(pid)
 
-    status_text = safe_read_text(
-        base / "status"
-    )
+    status_text = safe_read_text(base / "status")
 
-    stat_text = safe_read_text(
-        base / "stat"
-    )
+    stat_text = safe_read_text(base / "stat")
 
     if not status_text:
         return None
 
-    status = parse_status(
-        status_text
-    )
+    status = parse_status(status_text)
 
     name = status.get("Name")
 
     state_code = None
-    parent_pid = first_integer(
-        status.get("PPid")
-    )
+    parent_pid = first_integer(status.get("PPid"))
 
     if stat_text:
         closing = stat_text.rfind(")")
 
         if closing >= 0:
-            remainder = (
-                stat_text[
-                    closing + 2:
-                ].split()
-            )
+            remainder = stat_text[closing + 2 :].split()
 
             if remainder:
                 state_code = remainder[0]
 
-            if (
-                len(remainder) > 1
-                and parent_pid is None
-            ):
+            if len(remainder) > 1 and parent_pid is None:
                 try:
-                    parent_pid = int(
-                        remainder[1]
-                    )
+                    parent_pid = int(remainder[1])
                 except ValueError:
                     pass
 
-    uid = first_integer(
-        status.get("Uid")
-    )
+    uid = first_integer(status.get("Uid"))
 
-    gid = first_integer(
-        status.get("Gid")
-    )
+    gid = first_integer(status.get("Gid"))
 
-    executable = safe_read_link(
-        base / "exe"
-    )
+    executable = safe_read_link(base / "exe")
 
     cmdline = sanitize_command_line(
-        read_cmdline(
-            base / "cmdline"
-        ),
+        read_cmdline(base / "cmdline"),
         executable,
         name,
     )
 
-    cgroups = parse_cgroup(
-        safe_read_text(
-            base / "cgroup"
-        )
-    )
+    cgroups = parse_cgroup(safe_read_text(base / "cgroup"))
 
     container_hint = None
 
@@ -303,18 +266,10 @@ def collect_process(
         "user": user_name(uid),
         "executable": executable,
         "command_identity": cmdline,
-        "threads": first_integer(
-            status.get("Threads")
-        ),
-        "resident_memory_bytes": memory_bytes(
-            status.get("VmRSS")
-        ),
-        "virtual_memory_bytes": memory_bytes(
-            status.get("VmSize")
-        ),
-        "swap_bytes": memory_bytes(
-            status.get("VmSwap")
-        ),
+        "threads": first_integer(status.get("Threads")),
+        "resident_memory_bytes": memory_bytes(status.get("VmRSS")),
+        "virtual_memory_bytes": memory_bytes(status.get("VmSize")),
+        "swap_bytes": memory_bytes(status.get("VmSwap")),
         "cgroups": cgroups,
         "container_hint": container_hint,
     }
@@ -331,10 +286,7 @@ def collect_processes() -> List[dict]:
     proc = Path("/proc")
 
     for item in proc.iterdir():
-        if not (
-            item.is_dir()
-            and item.name.isdigit()
-        ):
+        if not (item.is_dir() and item.name.isdigit()):
             continue
 
         try:
@@ -348,11 +300,9 @@ def collect_processes() -> List[dict]:
             records.append(record)
 
     records.sort(
-        key=lambda record: (
-            record["payload"].get(
-                "pid",
-                0,
-            )
+        key=lambda record: record["payload"].get(
+            "pid",
+            0,
         )
     )
 

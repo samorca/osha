@@ -41,14 +41,13 @@ from src.security.schema import (
 # Environment prefix
 # ---------------------------------------------------------------
 
-DEFAULT_ENV_PREFIX = (
-    "OSHA_DATABASE_"
-)
+DEFAULT_ENV_PREFIX = "OSHA_DATABASE_"
 
 
 # ---------------------------------------------------------------
 # Pool configuration
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class PoolConfig:
@@ -82,28 +81,18 @@ class PoolConfig:
             minimum=1,
         )
 
-        if (
-            self.minimum_size
-            > self.maximum_size
-        ):
-            raise ValueError(
-                "minimum_size cannot "
-                "exceed maximum_size"
-            )
+        if self.minimum_size > self.maximum_size:
+            raise ValueError("minimum_size cannot exceed maximum_size")
 
         number(
             self.acquire_timeout_seconds,
-            name=(
-                "acquire_timeout_seconds"
-            ),
+            name=("acquire_timeout_seconds"),
             minimum=0.001,
         )
 
         number(
             self.idle_timeout_seconds,
-            name=(
-                "idle_timeout_seconds"
-            ),
+            name=("idle_timeout_seconds"),
             minimum=0.001,
         )
 
@@ -111,6 +100,7 @@ class PoolConfig:
 # ---------------------------------------------------------------
 # Migration configuration
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class MigrationConfig:
@@ -122,37 +112,26 @@ class MigrationConfig:
 
     validate_checksums: bool = True
 
-    target_version: Optional[
-        int
-    ] = None
+    target_version: Optional[int] = None
 
     def validate(
         self,
     ) -> None:
-        if (
-            self.target_version
-            is not None
-        ):
+        if self.target_version is not None:
             integer(
                 self.target_version,
                 name="target_version",
                 minimum=1,
             )
 
-        if (
-            self.apply_on_startup
-            and not self.enabled
-        ):
-            raise ValueError(
-                "apply_on_startup "
-                "requires migrations "
-                "to be enabled"
-            )
+        if self.apply_on_startup and not self.enabled:
+            raise ValueError("apply_on_startup requires migrations to be enabled")
 
 
 # ---------------------------------------------------------------
 # Main database configuration
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class DatabaseConfig:
@@ -164,70 +143,40 @@ class DatabaseConfig:
     never the actual database password/token.
     """
 
-    backend: str = (
-        DatabaseBackend.MEMORY.value
-    )
+    backend: str = DatabaseBackend.MEMORY.value
 
     database: str = "osha"
 
-    environment_id: str = (
-        "local-dev"
-    )
+    environment_id: str = "local-dev"
 
-    host: Optional[
-        str
-    ] = None
+    host: Optional[str] = None
 
-    port: Optional[
-        int
-    ] = None
+    port: Optional[int] = None
 
-    namespace: Optional[
-        str
-    ] = None
+    namespace: Optional[str] = None
 
-    username: Optional[
-        str
-    ] = None
+    username: Optional[str] = None
 
-    credential: Optional[
-        SecretReference
-    ] = None
+    credential: Optional[SecretReference] = None
 
     connect_timeout_seconds: float = 10.0
 
     statement_timeout_seconds: float = 30.0
 
-    pool: PoolConfig = field(
-        default_factory=PoolConfig
-    )
+    pool: PoolConfig = field(default_factory=PoolConfig)
 
-    migrations: MigrationConfig = field(
-        default_factory=MigrationConfig
-    )
+    migrations: MigrationConfig = field(default_factory=MigrationConfig)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def validate(
         self,
     ) -> None:
-        if (
-            self.backend
-            not in {
-                item.value
-                for item
-                in DatabaseBackend
-            }
-        ):
-            raise ValueError(
-                "Unknown database backend: "
-                f"{self.backend}"
-            )
+        if self.backend not in {item.value for item in DatabaseBackend}:
+            raise ValueError(f"Unknown database backend: {self.backend}")
 
         required_string(
             self.database,
@@ -235,9 +184,7 @@ class DatabaseConfig:
             maximum_length=256,
         )
 
-        environment_id(
-            self.environment_id
-        )
+        environment_id(self.environment_id)
 
         if self.host is not None:
             required_string(
@@ -266,17 +213,13 @@ class DatabaseConfig:
 
         number(
             self.connect_timeout_seconds,
-            name=(
-                "connect_timeout_seconds"
-            ),
+            name=("connect_timeout_seconds"),
             minimum=0.001,
         )
 
         number(
             self.statement_timeout_seconds,
-            name=(
-                "statement_timeout_seconds"
-            ),
+            name=("statement_timeout_seconds"),
             minimum=0.001,
         )
 
@@ -296,17 +239,12 @@ class DatabaseConfig:
         return DatabaseIdentity(
             backend=self.backend,
             database=self.database,
-            environment_id=(
-                self.environment_id
-            ),
+            environment_id=(self.environment_id),
             host=self.host,
             port=self.port,
             namespace=self.namespace,
             attributes={
-                "configured_username": (
-                    self.username
-                    is not None
-                ),
+                "configured_username": (self.username is not None),
             },
         ).finalize()
 
@@ -329,83 +267,34 @@ class DatabaseConfig:
         return {
             "backend": self.backend,
             "database": self.database,
-            "environment_id": (
-                self.environment_id
-            ),
+            "environment_id": (self.environment_id),
             "host": self.host,
             "port": self.port,
-            "namespace": (
-                self.namespace
-            ),
-
-            "username": (
-                self.username
-            ),
-
-            "credential": (
-                self.credential.
-                to_dict()
-                if self.credential
-                else None
-            ),
-
-            "connect_timeout_seconds": (
-                self.
-                connect_timeout_seconds
-            ),
-
-            "statement_timeout_seconds": (
-                self.
-                statement_timeout_seconds
-            ),
-
+            "namespace": (self.namespace),
+            "username": (self.username),
+            "credential": (self.credential.to_dict() if self.credential else None),
+            "connect_timeout_seconds": (self.connect_timeout_seconds),
+            "statement_timeout_seconds": (self.statement_timeout_seconds),
             "pool": {
-                "minimum_size": (
-                    self.pool.
-                    minimum_size
-                ),
-                "maximum_size": (
-                    self.pool.
-                    maximum_size
-                ),
-                "acquire_timeout_seconds": (
-                    self.pool.
-                    acquire_timeout_seconds
-                ),
-                "idle_timeout_seconds": (
-                    self.pool.
-                    idle_timeout_seconds
-                ),
+                "minimum_size": (self.pool.minimum_size),
+                "maximum_size": (self.pool.maximum_size),
+                "acquire_timeout_seconds": (self.pool.acquire_timeout_seconds),
+                "idle_timeout_seconds": (self.pool.idle_timeout_seconds),
             },
-
             "migrations": {
-                "enabled": (
-                    self.migrations.
-                    enabled
-                ),
-                "apply_on_startup": (
-                    self.migrations.
-                    apply_on_startup
-                ),
-                "validate_checksums": (
-                    self.migrations.
-                    validate_checksums
-                ),
-                "target_version": (
-                    self.migrations.
-                    target_version
-                ),
+                "enabled": (self.migrations.enabled),
+                "apply_on_startup": (self.migrations.apply_on_startup),
+                "validate_checksums": (self.migrations.validate_checksums),
+                "target_version": (self.migrations.target_version),
             },
-
-            "attributes": dict(
-                self.attributes
-            ),
+            "attributes": dict(self.attributes),
         }
 
 
 # ---------------------------------------------------------------
 # Parsing helpers
 # ---------------------------------------------------------------
+
 
 def _get(
     values: Mapping[
@@ -437,10 +326,7 @@ def _bool(
         name,
     )
 
-    if (
-        value is None
-        or str(value).strip() == ""
-    ):
+    if value is None or str(value).strip() == "":
         return default
 
     return boolean(
@@ -456,9 +342,7 @@ def _int(
     ],
     prefix: str,
     name: str,
-    default: Optional[
-        int
-    ],
+    default: Optional[int],
     *,
     minimum: int = 1,
 ) -> Optional[int]:
@@ -468,10 +352,7 @@ def _int(
         name,
     )
 
-    if (
-        value is None
-        or str(value).strip() == ""
-    ):
+    if value is None or str(value).strip() == "":
         return default
 
     return integer(
@@ -496,10 +377,7 @@ def _float(
         name,
     )
 
-    if (
-        value is None
-        or str(value).strip() == ""
-    ):
+    if value is None or str(value).strip() == "":
         return default
 
     return number(
@@ -526,19 +404,15 @@ def _optional_text(
     if value is None:
         return None
 
-    text = str(
-        value
-    ).strip()
+    text = str(value).strip()
 
-    return (
-        text
-        or None
-    )
+    return text or None
 
 
 # ---------------------------------------------------------------
 # Mapping loader
 # ---------------------------------------------------------------
+
 
 def from_mapping(
     values: Mapping[
@@ -557,12 +431,10 @@ def from_mapping(
     contain the credential itself.
     """
 
-    secret_name = (
-        _optional_text(
-            values,
-            prefix,
-            "SECRET_NAME",
-        )
+    secret_name = _optional_text(
+        values,
+        prefix,
+        "SECRET_NAME",
     )
 
     secret_provider = (
@@ -574,46 +446,27 @@ def from_mapping(
         or "environment"
     )
 
-    secret_key = (
-        _optional_text(
-            values,
-            prefix,
-            "SECRET_KEY",
-        )
+    secret_key = _optional_text(
+        values,
+        prefix,
+        "SECRET_KEY",
     )
 
-    secret_version = (
-        _optional_text(
-            values,
-            prefix,
-            "SECRET_VERSION",
-        )
+    secret_version = _optional_text(
+        values,
+        prefix,
+        "SECRET_VERSION",
     )
 
     credential = None
 
-    if (
-        secret_name is not None
-        or secret_key is not None
-    ):
-        credential = (
-            SecretReference(
-                name=(
-                    secret_name
-                    or (
-                        "database-"
-                        "credential"
-                    )
-                ),
-                provider=(
-                    secret_provider
-                ),
-                key=secret_key,
-                version=(
-                    secret_version
-                ),
-            ).finalize()
-        )
+    if secret_name is not None or secret_key is not None:
+        credential = SecretReference(
+            name=(secret_name or ("database-credential")),
+            provider=(secret_provider),
+            key=secret_key,
+            version=(secret_version),
+        ).finalize()
 
     config = DatabaseConfig(
         backend=str(
@@ -621,11 +474,11 @@ def from_mapping(
                 values,
                 prefix,
                 "BACKEND",
-                DatabaseBackend.
-                MEMORY.value,
+                DatabaseBackend.MEMORY.value,
             )
-        ).strip().lower(),
-
+        )
+        .strip()
+        .lower(),
         database=str(
             _get(
                 values,
@@ -634,7 +487,6 @@ def from_mapping(
                 "osha",
             )
         ).strip(),
-
         environment_id=str(
             _get(
                 values,
@@ -643,34 +495,28 @@ def from_mapping(
                 "local-dev",
             )
         ).strip(),
-
         host=_optional_text(
             values,
             prefix,
             "HOST",
         ),
-
         port=_int(
             values,
             prefix,
             "PORT",
             None,
         ),
-
         namespace=_optional_text(
             values,
             prefix,
             "NAMESPACE",
         ),
-
         username=_optional_text(
             values,
             prefix,
             "USERNAME",
         ),
-
         credential=credential,
-
         connect_timeout_seconds=(
             _float(
                 values,
@@ -679,7 +525,6 @@ def from_mapping(
                 10.0,
             )
         ),
-
         statement_timeout_seconds=(
             _float(
                 values,
@@ -688,7 +533,6 @@ def from_mapping(
                 30.0,
             )
         ),
-
         pool=PoolConfig(
             minimum_size=(
                 _int(
@@ -700,7 +544,6 @@ def from_mapping(
                 )
                 or 0
             ),
-
             maximum_size=(
                 _int(
                     values,
@@ -710,7 +553,6 @@ def from_mapping(
                 )
                 or 10
             ),
-
             acquire_timeout_seconds=(
                 _float(
                     values,
@@ -719,7 +561,6 @@ def from_mapping(
                     10.0,
                 )
             ),
-
             idle_timeout_seconds=(
                 _float(
                     values,
@@ -729,7 +570,6 @@ def from_mapping(
                 )
             ),
         ),
-
         migrations=MigrationConfig(
             enabled=_bool(
                 values,
@@ -737,21 +577,18 @@ def from_mapping(
                 "MIGRATIONS_ENABLED",
                 True,
             ),
-
             apply_on_startup=_bool(
                 values,
                 prefix,
                 "MIGRATIONS_APPLY_ON_STARTUP",
                 False,
             ),
-
             validate_checksums=_bool(
                 values,
                 prefix,
                 "MIGRATIONS_VALIDATE_CHECKSUMS",
                 True,
             ),
-
             target_version=_int(
                 values,
                 prefix,
@@ -759,14 +596,9 @@ def from_mapping(
                 None,
             ),
         ),
-
         attributes={
-            "config_source": (
-                "mapping"
-            ),
-            "environment_prefix": (
-                prefix
-            ),
+            "config_source": ("mapping"),
+            "environment_prefix": (prefix),
         },
     )
 
@@ -779,6 +611,7 @@ def from_mapping(
 # Environment loader
 # ---------------------------------------------------------------
 
+
 def from_environment(
     *,
     environ: Optional[
@@ -789,11 +622,7 @@ def from_environment(
     ] = None,
     prefix: str = DEFAULT_ENV_PREFIX,
 ) -> DatabaseConfig:
-    source = (
-        os.environ
-        if environ is None
-        else environ
-    )
+    source = os.environ if environ is None else environ
 
     config = from_mapping(
         source,
@@ -803,33 +632,19 @@ def from_environment(
     return DatabaseConfig(
         backend=config.backend,
         database=config.database,
-        environment_id=(
-            config.environment_id
-        ),
+        environment_id=(config.environment_id),
         host=config.host,
         port=config.port,
         namespace=config.namespace,
         username=config.username,
         credential=config.credential,
-
-        connect_timeout_seconds=(
-            config.
-            connect_timeout_seconds
-        ),
-
-        statement_timeout_seconds=(
-            config.
-            statement_timeout_seconds
-        ),
-
+        connect_timeout_seconds=(config.connect_timeout_seconds),
+        statement_timeout_seconds=(config.statement_timeout_seconds),
         pool=config.pool,
         migrations=config.migrations,
-
         attributes={
             **config.attributes,
-            "config_source": (
-                "environment"
-            ),
+            "config_source": ("environment"),
         },
     )
 
@@ -837,6 +652,7 @@ def from_environment(
 # ---------------------------------------------------------------
 # Safe summary
 # ---------------------------------------------------------------
+
 
 def safe_config_summary(
     config: DatabaseConfig,
@@ -851,57 +667,21 @@ def safe_config_summary(
     return {
         "backend": config.backend,
         "database": config.database,
-        "environment_id": (
-            config.environment_id
-        ),
+        "environment_id": (config.environment_id),
         "host": config.host,
         "port": config.port,
-        "namespace": (
-            config.namespace
-        ),
-
-        "username_configured": (
-            config.username
-            is not None
-        ),
-
-        "credential_reference_configured": (
-            config.credential
-            is not None
-        ),
-
+        "namespace": (config.namespace),
+        "username_configured": (config.username is not None),
+        "credential_reference_configured": (config.credential is not None),
         "credential_provider": (
-            config.credential.provider
-            if config.credential
-            else None
+            config.credential.provider if config.credential else None
         ),
-
-        "connect_timeout_seconds": (
-            config.
-            connect_timeout_seconds
-        ),
-
-        "statement_timeout_seconds": (
-            config.
-            statement_timeout_seconds
-        ),
-
-        "pool_minimum_size": (
-            config.pool.minimum_size
-        ),
-
-        "pool_maximum_size": (
-            config.pool.maximum_size
-        ),
-
-        "migrations_enabled": (
-            config.migrations.enabled
-        ),
-
-        "migrations_apply_on_startup": (
-            config.migrations.
-            apply_on_startup
-        ),
+        "connect_timeout_seconds": (config.connect_timeout_seconds),
+        "statement_timeout_seconds": (config.statement_timeout_seconds),
+        "pool_minimum_size": (config.pool.minimum_size),
+        "pool_maximum_size": (config.pool.maximum_size),
+        "migrations_enabled": (config.migrations.enabled),
+        "migrations_apply_on_startup": (config.migrations.apply_on_startup),
     }
 
 
@@ -911,13 +691,10 @@ def safe_config_summary(
 
 __all__ = [
     "DEFAULT_ENV_PREFIX",
-
     "PoolConfig",
     "MigrationConfig",
     "DatabaseConfig",
-
     "from_mapping",
     "from_environment",
-
     "safe_config_summary",
 ]

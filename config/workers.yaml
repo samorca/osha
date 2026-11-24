@@ -1,0 +1,44 @@
+schema_version: "1"
+
+workers:
+  enabled: true
+
+  defaults:
+    concurrency: 1
+    poll_interval_seconds: 2.0
+    graceful_shutdown_seconds: 30.0
+
+  definitions:
+    telemetry:
+      enabled: true
+      concurrency: 1
+      poll_interval_seconds: 2.0
+
+    collection:
+      enabled: true
+      concurrency: 1
+      poll_interval_seconds: 2.0
+
+    correlation:
+      enabled: true
+      concurrency: 1
+      poll_interval_seconds: 2.0
+
+    intelligence:
+      enabled: true
+      concurrency: 1
+      poll_interval_seconds: 2.0
+
+    decision:
+      enabled: true
+      concurrency: 1
+      poll_interval_seconds: 2.0
+
+    remediation:
+      enabled: true
+      concurrency: 1
+      poll_interval_seconds: 5.0
+
+      # Worker can evaluate work while runtime-level
+      # dry-run remains authoritative.
+      require_runtime_dry_run_override: true

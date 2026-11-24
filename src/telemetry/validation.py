@@ -72,11 +72,7 @@ class ValidationResult:
     data but do not make the object unusable.
     """
 
-    issues: List[
-        ValidationIssue
-    ] = field(
-        default_factory=list
-    )
+    issues: List[ValidationIssue] = field(default_factory=list)
 
     def add_error(
         self,
@@ -88,9 +84,7 @@ class ValidationResult:
     ) -> None:
         self.issues.append(
             ValidationIssue(
-                level=(
-                    ValidationLevel.ERROR.value
-                ),
+                level=(ValidationLevel.ERROR.value),
                 code=code,
                 message=message,
                 field=field_name,
@@ -108,9 +102,7 @@ class ValidationResult:
     ) -> None:
         self.issues.append(
             ValidationIssue(
-                level=(
-                    ValidationLevel.WARNING.value
-                ),
+                level=(ValidationLevel.WARNING.value),
                 code=code,
                 message=message,
                 field=field_name,
@@ -123,10 +115,7 @@ class ValidationResult:
         self,
     ) -> List[ValidationIssue]:
         return [
-            issue
-            for issue in self.issues
-            if issue.level
-            == ValidationLevel.ERROR.value
+            issue for issue in self.issues if issue.level == ValidationLevel.ERROR.value
         ]
 
     @property
@@ -136,8 +125,7 @@ class ValidationResult:
         return [
             issue
             for issue in self.issues
-            if issue.level
-            == ValidationLevel.WARNING.value
+            if issue.level == ValidationLevel.WARNING.value
         ]
 
     @property
@@ -150,70 +138,41 @@ class ValidationResult:
         self,
         other: "ValidationResult",
     ) -> None:
-        self.issues.extend(
-            other.issues
-        )
+        self.issues.extend(other.issues)
 
     def to_dict(self) -> dict:
         return {
             "valid": self.valid,
-            "error_count": len(
-                self.errors
-            ),
-            "warning_count": len(
-                self.warnings
-            ),
-            "issues": [
-                issue.to_dict()
-                for issue in self.issues
-            ],
+            "error_count": len(self.errors),
+            "warning_count": len(self.warnings),
+            "issues": [issue.to_dict() for issue in self.issues],
         }
 
 
 def enum_values(
     enum_class,
 ) -> set[str]:
-    return {
-        item.value
-        for item in enum_class
-    }
+    return {item.value for item in enum_class}
 
 
-PROVIDERS = enum_values(
-    Provider
-)
+PROVIDERS = enum_values(Provider)
 
-RESOURCE_TYPES = enum_values(
-    ResourceType
-)
+RESOURCE_TYPES = enum_values(ResourceType)
 
-SIGNAL_TYPES = enum_values(
-    SignalType
-)
+SIGNAL_TYPES = enum_values(SignalType)
 
-SEVERITIES = enum_values(
-    Severity
-)
+SEVERITIES = enum_values(Severity)
 
-RELATIONSHIP_TYPES = (
-    enum_values(
-        RelationshipType
-    )
-)
+RELATIONSHIP_TYPES = enum_values(RelationshipType)
 
 
 def non_empty_string(
     value: Any,
 ) -> bool:
-    return (
-        isinstance(
-            value,
-            str,
-        )
-        and bool(
-            value.strip()
-        )
-    )
+    return isinstance(
+        value,
+        str,
+    ) and bool(value.strip())
 
 
 def valid_number(
@@ -238,9 +197,7 @@ def valid_number(
         value,
         float,
     ):
-        return math.isfinite(
-            value
-        )
+        return math.isfinite(value)
 
     return True
 
@@ -256,27 +213,16 @@ def timestamp_valid(
     Python's datetime parser.
     """
 
-    if not non_empty_string(
-        value
-    ):
+    if not non_empty_string(value):
         return False
 
-    text = str(
-        value
-    ).strip()
+    text = str(value).strip()
 
-    if text.endswith(
-        "Z"
-    ):
-        text = (
-            text[:-1]
-            + "+00:00"
-        )
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
 
     try:
-        datetime.fromisoformat(
-            text
-        )
+        datetime.fromisoformat(text)
 
         return True
 
@@ -306,14 +252,9 @@ def validate_attributes(
     ):
         result.add_error(
             "invalid_attributes",
-            (
-                "Attributes must be "
-                "a mapping."
-            ),
+            ("Attributes must be a mapping."),
             field_name=path,
-            value=type(
-                attributes
-            ).__name__,
+            value=type(attributes).__name__,
         )
 
         return result
@@ -325,10 +266,7 @@ def validate_attributes(
         ):
             result.add_error(
                 "invalid_attribute_key",
-                (
-                    "Attribute keys must "
-                    "be strings."
-                ),
+                ("Attribute keys must be strings."),
                 field_name=path,
                 value=str(key),
             )
@@ -351,163 +289,93 @@ def validate_resource(
     ):
         result.add_error(
             "invalid_resource_object",
-            (
-                "Resource must be a "
-                "ResourceIdentity instance."
-            ),
+            ("Resource must be a ResourceIdentity instance."),
         )
 
         return result
 
-    if not non_empty_string(
-        resource.provider
-    ):
+    if not non_empty_string(resource.provider):
         result.add_error(
             "missing_provider",
             "Resource provider is required.",
             field_name="resource.provider",
         )
 
-    elif (
-        resource.provider
-        not in PROVIDERS
-    ):
+    elif resource.provider not in PROVIDERS:
         # Custom providers can still be supported
         # through Provider.OTHER.
         result.add_warning(
             "unknown_provider",
-            (
-                "Provider is not currently in "
-                "the common Provider enum."
-            ),
+            ("Provider is not currently in the common Provider enum."),
             field_name="resource.provider",
             value=resource.provider,
         )
 
-    if not non_empty_string(
-        resource.resource_type
-    ):
+    if not non_empty_string(resource.resource_type):
         result.add_error(
             "missing_resource_type",
-            (
-                "Resource type is required."
-            ),
-            field_name=(
-                "resource.resource_type"
-            ),
+            ("Resource type is required."),
+            field_name=("resource.resource_type"),
         )
 
-    elif (
-        resource.resource_type
-        not in RESOURCE_TYPES
-    ):
+    elif resource.resource_type not in RESOURCE_TYPES:
         result.add_warning(
             "unknown_resource_type",
-            (
-                "Resource type is not in the "
-                "common ResourceType enum."
-            ),
-            field_name=(
-                "resource.resource_type"
-            ),
-            value=(
-                resource.resource_type
-            ),
+            ("Resource type is not in the common ResourceType enum."),
+            field_name=("resource.resource_type"),
+            value=(resource.resource_type),
         )
 
-    if not non_empty_string(
-        resource.provider_id
-    ):
+    if not non_empty_string(resource.provider_id):
         result.add_error(
             "missing_provider_id",
-            (
-                "Provider resource ID "
-                "is required."
-            ),
-            field_name=(
-                "resource.provider_id"
-            ),
+            ("Provider resource ID is required."),
+            field_name=("resource.provider_id"),
         )
 
-    if not non_empty_string(
-        resource.environment_id
-    ):
+    if not non_empty_string(resource.environment_id):
         result.add_error(
             "missing_environment",
-            (
-                "Resource environment_id "
-                "is required."
-            ),
-            field_name=(
-                "resource.environment_id"
-            ),
+            ("Resource environment_id is required."),
+            field_name=("resource.environment_id"),
         )
 
-    if (
+    if resource.canonical_id is not None and not non_empty_string(
         resource.canonical_id
-        is not None
-        and not non_empty_string(
-            resource.canonical_id
-        )
     ):
         result.add_error(
             "invalid_canonical_id",
-            (
-                "canonical_id must be "
-                "non-empty when supplied."
-            ),
-            field_name=(
-                "resource.canonical_id"
-            ),
+            ("canonical_id must be non-empty when supplied."),
+            field_name=("resource.canonical_id"),
         )
 
-    if (
-        resource.resource_type
-        == ResourceType.UNKNOWN.value
-    ):
+    if resource.resource_type == ResourceType.UNKNOWN.value:
         result.add_warning(
             "unknown_resource",
-            (
-                "Resource could not be mapped "
-                "to a common resource type."
-            ),
-            field_name=(
-                "resource.resource_type"
-            ),
+            ("Resource could not be mapped to a common resource type."),
+            field_name=("resource.resource_type"),
         )
 
     result.extend(
         validate_attributes(
             resource.attributes,
-            path=(
-                "resource.attributes"
-            ),
+            path=("resource.attributes"),
         )
     )
 
     try:
-        effective_id = (
-            resource.effective_id()
-        )
+        effective_id = resource.effective_id()
 
-        if not non_empty_string(
-            effective_id
-        ):
+        if not non_empty_string(effective_id):
             result.add_error(
                 "invalid_effective_id",
-                (
-                    "Resource effective ID "
-                    "is empty."
-                ),
+                ("Resource effective ID is empty."),
             )
 
     except Exception as exc:
         result.add_error(
             "effective_id_failure",
-            (
-                "Unable to generate "
-                "resource effective ID."
-            ),
+            ("Unable to generate resource effective ID."),
             value=str(exc),
         )
 
@@ -529,206 +397,108 @@ def validate_signal(
     ):
         result.add_error(
             "invalid_signal_object",
-            (
-                "Signal must be a Signal "
-                "instance."
-            ),
+            ("Signal must be a Signal instance."),
         )
 
         return result
 
-    if not non_empty_string(
-        signal.signal_type
-    ):
+    if not non_empty_string(signal.signal_type):
         result.add_error(
             "missing_signal_type",
-            (
-                "Signal type is required."
-            ),
-            field_name=(
-                "signal.signal_type"
-            ),
+            ("Signal type is required."),
+            field_name=("signal.signal_type"),
         )
 
-    elif (
-        signal.signal_type
-        not in SIGNAL_TYPES
-    ):
+    elif signal.signal_type not in SIGNAL_TYPES:
         result.add_warning(
             "unknown_signal_type",
-            (
-                "Signal type is not in the "
-                "common SignalType enum."
-            ),
-            field_name=(
-                "signal.signal_type"
-            ),
+            ("Signal type is not in the common SignalType enum."),
+            field_name=("signal.signal_type"),
             value=signal.signal_type,
         )
 
-    if not non_empty_string(
-        signal.provider
-    ):
+    if not non_empty_string(signal.provider):
         result.add_error(
             "missing_signal_provider",
-            (
-                "Signal provider is required."
-            ),
-            field_name=(
-                "signal.provider"
-            ),
+            ("Signal provider is required."),
+            field_name=("signal.provider"),
         )
 
-    elif (
-        signal.provider
-        not in PROVIDERS
-    ):
+    elif signal.provider not in PROVIDERS:
         result.add_warning(
             "unknown_signal_provider",
-            (
-                "Signal provider is not "
-                "currently in Provider enum."
-            ),
-            field_name=(
-                "signal.provider"
-            ),
+            ("Signal provider is not currently in Provider enum."),
+            field_name=("signal.provider"),
             value=signal.provider,
         )
 
-    if not non_empty_string(
-        signal.resource_id
-    ):
+    if not non_empty_string(signal.resource_id):
         result.add_error(
             "missing_signal_resource",
-            (
-                "Signal resource_id "
-                "is required."
-            ),
-            field_name=(
-                "signal.resource_id"
-            ),
+            ("Signal resource_id is required."),
+            field_name=("signal.resource_id"),
         )
 
-    if not timestamp_valid(
-        signal.timestamp
-    ):
+    if not timestamp_valid(signal.timestamp):
         result.add_error(
             "invalid_signal_timestamp",
-            (
-                "Signal timestamp must be "
-                "valid ISO-8601."
-            ),
-            field_name=(
-                "signal.timestamp"
-            ),
+            ("Signal timestamp must be valid ISO-8601."),
+            field_name=("signal.timestamp"),
             value=signal.timestamp,
         )
 
-    if not non_empty_string(
-        signal.environment_id
-    ):
+    if not non_empty_string(signal.environment_id):
         result.add_error(
             "missing_signal_environment",
-            (
-                "Signal environment_id "
-                "is required."
-            ),
-            field_name=(
-                "signal.environment_id"
-            ),
+            ("Signal environment_id is required."),
+            field_name=("signal.environment_id"),
         )
 
-    if (
-        not non_empty_string(
-            signal.severity
-        )
-        or signal.severity
-        not in SEVERITIES
-    ):
+    if not non_empty_string(signal.severity) or signal.severity not in SEVERITIES:
         result.add_warning(
             "unknown_severity",
-            (
-                "Signal severity is not "
-                "a common Severity value."
-            ),
-            field_name=(
-                "signal.severity"
-            ),
+            ("Signal severity is not a common Severity value."),
+            field_name=("signal.severity"),
             value=signal.severity,
         )
 
-    if (
-        signal.signal_type
-        == SignalType.METRIC.value
-    ):
+    if signal.signal_type == SignalType.METRIC.value:
         if signal.value is None:
             result.add_warning(
                 "metric_without_value",
-                (
-                    "Metric signal has no "
-                    "measurement value."
-                ),
-                field_name=(
-                    "signal.value"
-                ),
+                ("Metric signal has no measurement value."),
+                field_name=("signal.value"),
             )
 
         elif isinstance(
             signal.value,
             float,
-        ) and not math.isfinite(
-            signal.value
-        ):
+        ) and not math.isfinite(signal.value):
             result.add_error(
                 "invalid_metric_value",
-                (
-                    "Metric value must not "
-                    "be NaN or infinity."
-                ),
-                field_name=(
-                    "signal.value"
-                ),
+                ("Metric value must not be NaN or infinity."),
+                field_name=("signal.value"),
                 value=signal.value,
             )
 
-    if (
-        signal.signal_type
-        == SignalType.LOG.value
-        and not signal.message
-    ):
+    if signal.signal_type == SignalType.LOG.value and not signal.message:
         result.add_warning(
             "log_without_message",
-            (
-                "Log signal does not have "
-                "a message body."
-            ),
-            field_name=(
-                "signal.message"
-            ),
+            ("Log signal does not have a message body."),
+            field_name=("signal.message"),
         )
 
-    if (
-        signal.signal_type
-        == SignalType.EVENT.value
-        and not signal.signal_name
-    ):
+    if signal.signal_type == SignalType.EVENT.value and not signal.signal_name:
         result.add_warning(
             "event_without_name",
-            (
-                "Event signal does not have "
-                "a stable event name."
-            ),
-            field_name=(
-                "signal.signal_name"
-            ),
+            ("Event signal does not have a stable event name."),
+            field_name=("signal.signal_name"),
         )
 
     result.extend(
         validate_attributes(
             signal.attributes,
-            path=(
-                "signal.attributes"
-            ),
+            path=("signal.attributes"),
         )
     )
 
@@ -750,174 +520,82 @@ def validate_relationship(
     ):
         result.add_error(
             "invalid_relationship_object",
-            (
-                "Relationship must be a "
-                "Relationship instance."
-            ),
+            ("Relationship must be a Relationship instance."),
         )
 
         return result
 
-    if not non_empty_string(
-        relationship.source_resource_id
-    ):
+    if not non_empty_string(relationship.source_resource_id):
         result.add_error(
             "missing_relationship_source",
-            (
-                "Relationship source "
-                "resource ID is required."
-            ),
-            field_name=(
-                "relationship."
-                "source_resource_id"
-            ),
+            ("Relationship source resource ID is required."),
+            field_name=("relationship.source_resource_id"),
         )
 
-    if not non_empty_string(
-        relationship.target_resource_id
-    ):
+    if not non_empty_string(relationship.target_resource_id):
         result.add_error(
             "missing_relationship_target",
-            (
-                "Relationship target "
-                "resource ID is required."
-            ),
-            field_name=(
-                "relationship."
-                "target_resource_id"
-            ),
+            ("Relationship target resource ID is required."),
+            field_name=("relationship.target_resource_id"),
         )
 
-    if (
-        relationship.source_resource_id
-        == relationship.target_resource_id
-    ):
+    if relationship.source_resource_id == relationship.target_resource_id:
         result.add_warning(
             "self_relationship",
-            (
-                "Relationship source and "
-                "target are identical."
-            ),
+            ("Relationship source and target are identical."),
         )
 
-    if not non_empty_string(
-        relationship.relationship_type
-    ):
+    if not non_empty_string(relationship.relationship_type):
         result.add_error(
             "missing_relationship_type",
-            (
-                "Relationship type "
-                "is required."
-            ),
-            field_name=(
-                "relationship."
-                "relationship_type"
-            ),
+            ("Relationship type is required."),
+            field_name=("relationship.relationship_type"),
         )
 
-    elif (
-        relationship.relationship_type
-        not in RELATIONSHIP_TYPES
-    ):
+    elif relationship.relationship_type not in RELATIONSHIP_TYPES:
         result.add_warning(
             "unknown_relationship_type",
-            (
-                "Relationship type is not "
-                "in RelationshipType enum."
-            ),
-            field_name=(
-                "relationship."
-                "relationship_type"
-            ),
-            value=(
-                relationship.
-                relationship_type
-            ),
+            ("Relationship type is not in RelationshipType enum."),
+            field_name=("relationship.relationship_type"),
+            value=(relationship.relationship_type),
         )
 
-    if not non_empty_string(
-        relationship.provider
-    ):
+    if not non_empty_string(relationship.provider):
         result.add_error(
             "missing_relationship_provider",
-            (
-                "Relationship provider "
-                "is required."
-            ),
-            field_name=(
-                "relationship.provider"
-            ),
+            ("Relationship provider is required."),
+            field_name=("relationship.provider"),
         )
 
-    if not timestamp_valid(
-        relationship.timestamp
-    ):
+    if not timestamp_valid(relationship.timestamp):
         result.add_error(
             "invalid_relationship_timestamp",
-            (
-                "Relationship timestamp "
-                "must be ISO-8601."
-            ),
-            field_name=(
-                "relationship.timestamp"
-            ),
-            value=(
-                relationship.timestamp
-            ),
+            ("Relationship timestamp must be ISO-8601."),
+            field_name=("relationship.timestamp"),
+            value=(relationship.timestamp),
         )
 
-    if (
-        relationship.confidence
-        is not None
-    ):
-        if not valid_number(
-            relationship.confidence
-        ):
+    if relationship.confidence is not None:
+        if not valid_number(relationship.confidence):
             result.add_error(
                 "invalid_relationship_confidence",
-                (
-                    "Relationship confidence "
-                    "must be numeric."
-                ),
-                field_name=(
-                    "relationship."
-                    "confidence"
-                ),
-                value=(
-                    relationship.
-                    confidence
-                ),
+                ("Relationship confidence must be numeric."),
+                field_name=("relationship.confidence"),
+                value=(relationship.confidence),
             )
 
-        elif not (
-            0.0
-            <= float(
-                relationship.confidence
-            )
-            <= 1.0
-        ):
+        elif not (0.0 <= float(relationship.confidence) <= 1.0):
             result.add_error(
                 "relationship_confidence_range",
-                (
-                    "Relationship confidence "
-                    "must be between 0 and 1."
-                ),
-                field_name=(
-                    "relationship."
-                    "confidence"
-                ),
-                value=(
-                    relationship.
-                    confidence
-                ),
+                ("Relationship confidence must be between 0 and 1."),
+                field_name=("relationship.confidence"),
+                value=(relationship.confidence),
             )
 
     result.extend(
         validate_attributes(
             relationship.evidence,
-            path=(
-                "relationship.evidence"
-            ),
+            path=("relationship.evidence"),
         )
     )
 
@@ -943,53 +621,25 @@ def validate_record(
     ):
         result.add_error(
             "invalid_telemetry_record",
-            (
-                "Object must be a "
-                "TelemetryRecord."
-            ),
+            ("Object must be a TelemetryRecord."),
         )
 
         return result
 
-    result.extend(
-        validate_resource(
-            telemetry.resource
-        )
-    )
+    result.extend(validate_resource(telemetry.resource))
 
-    result.extend(
-        validate_signal(
-            telemetry.signal
-        )
-    )
+    result.extend(validate_signal(telemetry.signal))
 
-    for index, relationship in enumerate(
-        telemetry.relationships
-    ):
-        relationship_result = (
-            validate_relationship(
-                relationship
-            )
-        )
+    for index, relationship in enumerate(telemetry.relationships):
+        relationship_result = validate_relationship(relationship)
 
-        for issue in (
-            relationship_result.issues
-        ):
-            field_name = (
-                issue.field
-            )
+        for issue in relationship_result.issues:
+            field_name = issue.field
 
             if field_name:
-                field_name = (
-                    "relationships"
-                    f"[{index}]."
-                    f"{field_name}"
-                )
+                field_name = f"relationships[{index}].{field_name}"
             else:
-                field_name = (
-                    "relationships"
-                    f"[{index}]"
-                )
+                field_name = f"relationships[{index}]"
 
             result.issues.append(
                 ValidationIssue(
@@ -1002,71 +652,35 @@ def validate_record(
             )
 
     # Cross-field checks
-    if (
-        telemetry.signal.provider
-        != telemetry.resource.provider
-    ):
+    if telemetry.signal.provider != telemetry.resource.provider:
         result.add_error(
             "provider_mismatch",
-            (
-                "Signal and resource provider "
-                "must match before correlation."
-            ),
+            ("Signal and resource provider must match before correlation."),
             value={
-                "resource_provider": (
-                    telemetry.resource.provider
-                ),
-                "signal_provider": (
-                    telemetry.signal.provider
-                ),
+                "resource_provider": (telemetry.resource.provider),
+                "signal_provider": (telemetry.signal.provider),
             },
         )
 
-    if (
-        telemetry.signal.environment_id
-        != telemetry.resource.environment_id
-    ):
+    if telemetry.signal.environment_id != telemetry.resource.environment_id:
         result.add_error(
             "environment_mismatch",
-            (
-                "Signal and resource "
-                "environment_id must match."
-            ),
+            ("Signal and resource environment_id must match."),
             value={
-                "resource_environment": (
-                    telemetry.resource.
-                    environment_id
-                ),
-                "signal_environment": (
-                    telemetry.signal.
-                    environment_id
-                ),
+                "resource_environment": (telemetry.resource.environment_id),
+                "signal_environment": (telemetry.signal.environment_id),
             },
         )
 
-    expected_resource_id = (
-        telemetry.resource.effective_id()
-    )
+    expected_resource_id = telemetry.resource.effective_id()
 
-    if (
-        telemetry.signal.resource_id
-        != expected_resource_id
-    ):
+    if telemetry.signal.resource_id != expected_resource_id:
         result.add_error(
             "resource_reference_mismatch",
-            (
-                "Signal resource_id does not "
-                "reference the normalized "
-                "resource identity."
-            ),
+            ("Signal resource_id does not reference the normalized resource identity."),
             value={
-                "expected": (
-                    expected_resource_id
-                ),
-                "actual": (
-                    telemetry.signal.
-                    resource_id
-                ),
+                "expected": (expected_resource_id),
+                "actual": (telemetry.signal.resource_id),
             },
         )
 
@@ -1076,41 +690,23 @@ def validate_record(
     ):
         result.add_error(
             "invalid_native_record",
-            (
-                "TelemetryRecord.native "
-                "must be a mapping."
-            ),
+            ("TelemetryRecord.native must be a mapping."),
             field_name="native",
         )
 
-    if not non_empty_string(
-        telemetry.schema_version
-    ):
+    if not non_empty_string(telemetry.schema_version):
         result.add_error(
             "missing_schema_version",
-            (
-                "schema_version is required."
-            ),
-            field_name=(
-                "schema_version"
-            ),
+            ("schema_version is required."),
+            field_name=("schema_version"),
         )
 
-    if not timestamp_valid(
-        telemetry.normalized_at
-    ):
+    if not timestamp_valid(telemetry.normalized_at):
         result.add_error(
             "invalid_normalized_timestamp",
-            (
-                "normalized_at must be "
-                "valid ISO-8601."
-            ),
-            field_name=(
-                "normalized_at"
-            ),
-            value=(
-                telemetry.normalized_at
-            ),
+            ("normalized_at must be valid ISO-8601."),
+            field_name=("normalized_at"),
+            value=(telemetry.normalized_at),
         )
 
     # record_id may not exist until finalize()
@@ -1120,24 +716,16 @@ def validate_record(
     except Exception as exc:
         result.add_error(
             "record_finalize_failure",
-            (
-                "Unable to finalize "
-                "telemetry record."
-            ),
+            ("Unable to finalize telemetry record."),
             value=str(exc),
         )
 
         return result
 
-    if not non_empty_string(
-        telemetry.record_id
-    ):
+    if not non_empty_string(telemetry.record_id):
         result.add_error(
             "missing_record_id",
-            (
-                "Finalized telemetry record "
-                "must have a record_id."
-            ),
+            ("Finalized telemetry record must have a record_id."),
             field_name="record_id",
         )
 
@@ -1145,9 +733,7 @@ def validate_record(
 
 
 def validate_records(
-    records: Iterable[
-        TelemetryRecord
-    ],
+    records: Iterable[TelemetryRecord],
 ) -> List[
     tuple[
         TelemetryRecord,
@@ -1164,9 +750,7 @@ def validate_records(
         output.append(
             (
                 telemetry,
-                validate_record(
-                    telemetry
-                ),
+                validate_record(telemetry),
             )
         )
 
@@ -1174,9 +758,7 @@ def validate_records(
 
 
 def valid_records(
-    records: Iterable[
-        TelemetryRecord
-    ],
+    records: Iterable[TelemetryRecord],
 ) -> List[TelemetryRecord]:
     """
     Return only records without validation errors.
@@ -1187,22 +769,16 @@ def valid_records(
     output = []
 
     for telemetry in records:
-        result = validate_record(
-            telemetry
-        )
+        result = validate_record(telemetry)
 
         if result.valid:
-            output.append(
-                telemetry
-            )
+            output.append(telemetry)
 
     return output
 
 
 def invalid_records(
-    records: Iterable[
-        TelemetryRecord
-    ],
+    records: Iterable[TelemetryRecord],
 ) -> List[
     tuple[
         TelemetryRecord,
@@ -1220,9 +796,7 @@ def invalid_records(
     output = []
 
     for telemetry in records:
-        result = validate_record(
-            telemetry
-        )
+        result = validate_record(telemetry)
 
         if not result.valid:
             output.append(
@@ -1236,9 +810,7 @@ def invalid_records(
 
 
 def validation_summary(
-    results: Iterable[
-        ValidationResult
-    ],
+    results: Iterable[ValidationResult],
 ) -> Dict[str, Any]:
     """
     Build a small aggregate suitable for runtime
@@ -1264,18 +836,12 @@ def validation_summary(
         else:
             invalid += 1
 
-        errors += len(
-            result.errors
-        )
+        errors += len(result.errors)
 
-        warnings += len(
-            result.warnings
-        )
+        warnings += len(result.warnings)
 
         for issue in result.issues:
-            codes[
-                issue.code
-            ] = (
+            codes[issue.code] = (
                 codes.get(
                     issue.code,
                     0,
@@ -1293,9 +859,7 @@ def validation_summary(
     }
 
 
-class TelemetryValidationError(
-    ValueError
-):
+class TelemetryValidationError(ValueError):
     """
     Raised by strict pipeline validation.
     """
@@ -1306,20 +870,9 @@ class TelemetryValidationError(
     ) -> None:
         self.result = result
 
-        messages = [
-            (
-                f"{issue.code}: "
-                f"{issue.message}"
-            )
-            for issue in (
-                result.errors
-            )
-        ]
+        messages = [(f"{issue.code}: {issue.message}") for issue in (result.errors)]
 
-        super().__init__(
-            "; ".join(messages)
-            or "Telemetry validation failed"
-        )
+        super().__init__("; ".join(messages) or "Telemetry validation failed")
 
 
 def require_valid(
@@ -1332,13 +885,9 @@ def require_valid(
     telemetry should be rejected immediately.
     """
 
-    result = validate_record(
-        telemetry
-    )
+    result = validate_record(telemetry)
 
     if not result.valid:
-        raise TelemetryValidationError(
-            result
-        )
+        raise TelemetryValidationError(result)
 
     return telemetry

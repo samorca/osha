@@ -9,9 +9,7 @@ from src.collectors.linux.schema import (
 
 
 def read_meminfo() -> dict[str, int]:
-    path = Path(
-        "/proc/meminfo"
-    )
+    path = Path("/proc/meminfo")
 
     result: dict[str, int] = {}
 
@@ -32,9 +30,7 @@ def read_meminfo() -> dict[str, int]:
                 1,
             )
 
-            parts = (
-                value.strip().split()
-            )
+            parts = value.strip().split()
 
             if not parts:
                 continue
@@ -46,11 +42,7 @@ def read_meminfo() -> dict[str, int]:
 
             # /proc/meminfo values are
             # normally reported in kB.
-            if (
-                len(parts) > 1
-                and parts[1].lower()
-                == "kb"
-            ):
+            if len(parts) > 1 and parts[1].lower() == "kb":
                 number *= 1024
 
             result[key] = number
@@ -60,9 +52,7 @@ def read_meminfo() -> dict[str, int]:
 
 def read_load_average() -> dict:
     try:
-        one, five, fifteen = (
-            os.getloadavg()
-        )
+        one, five, fifteen = os.getloadavg()
     except OSError:
         return {}
 
@@ -74,17 +64,10 @@ def read_load_average() -> dict:
 
 
 def read_uptime() -> float | None:
-    path = Path(
-        "/proc/uptime"
-    )
+    path = Path("/proc/uptime")
 
     try:
-        first = (
-            path.read_text(
-                encoding="utf-8"
-            )
-            .split()[0]
-        )
+        first = path.read_text(encoding="utf-8").split()[0]
 
         return float(first)
     except (
@@ -103,112 +86,53 @@ def filesystem_usage(
     except OSError:
         return None
 
-    block_size = (
-        stats.f_frsize
-        or stats.f_bsize
-    )
+    block_size = stats.f_frsize or stats.f_bsize
 
-    total = (
-        stats.f_blocks
-        * block_size
-    )
+    total = stats.f_blocks * block_size
 
-    available = (
-        stats.f_bavail
-        * block_size
-    )
+    available = stats.f_bavail * block_size
 
-    used = total - (
-        stats.f_bfree
-        * block_size
-    )
+    used = total - (stats.f_bfree * block_size)
 
-    usage_percent = (
-        (used / total) * 100.0
-        if total > 0
-        else 0.0
-    )
+    usage_percent = (used / total) * 100.0 if total > 0 else 0.0
 
     return {
         "mount": path,
         "total_bytes": total,
         "used_bytes": used,
-        "available_bytes": (
-            available
-        ),
-        "usage_percent": (
-            usage_percent
-        ),
+        "available_bytes": (available),
+        "usage_percent": (usage_percent),
     }
 
 
 def collect_metrics() -> dict:
     memory = read_meminfo()
 
-    total_memory = memory.get(
-        "MemTotal"
-    )
+    total_memory = memory.get("MemTotal")
 
-    available_memory = (
-        memory.get(
-            "MemAvailable"
-        )
-    )
+    available_memory = memory.get("MemAvailable")
 
     used_memory = None
     memory_usage_percent = None
 
-    if (
-        total_memory is not None
-        and available_memory
-        is not None
-    ):
-        used_memory = (
-            total_memory
-            - available_memory
-        )
+    if total_memory is not None and available_memory is not None:
+        used_memory = total_memory - available_memory
 
         if total_memory > 0:
-            memory_usage_percent = (
-                used_memory
-                / total_memory
-                * 100.0
-            )
+            memory_usage_percent = used_memory / total_memory * 100.0
 
-    root_filesystem = (
-        filesystem_usage("/")
-    )
+    root_filesystem = filesystem_usage("/")
 
     payload = {
         **read_load_average(),
-        "uptime_seconds": (
-            read_uptime()
-        ),
-        "memory_total_bytes": (
-            total_memory
-        ),
-        "memory_available_bytes": (
-            available_memory
-        ),
-        "memory_used_bytes": (
-            used_memory
-        ),
-        "memory_usage_percent": (
-            memory_usage_percent
-        ),
-        "swap_total_bytes": (
-            memory.get(
-                "SwapTotal"
-            )
-         ),
-        "swap_free_bytes": (
-            memory.get(
-                "SwapFree"
-            )
-        ),
-        "root_filesystem": (
-            root_filesystem
-        ),
+        "uptime_seconds": (read_uptime()),
+        "memory_total_bytes": (total_memory),
+        "memory_available_bytes": (available_memory),
+        "memory_used_bytes": (used_memory),
+        "memory_usage_percent": (memory_usage_percent),
+        "swap_total_bytes": (memory.get("SwapTotal")),
+        "swap_free_bytes": (memory.get("SwapFree")),
+        "root_filesystem": (root_filesystem),
     }
 
     return build_record(

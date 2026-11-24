@@ -25,57 +25,43 @@ from src.core.exceptions import (
 # Base integration error
 # ---------------------------------------------------------------
 
-class IntegrationError(
-    ExternalServiceError
-):
+
+class IntegrationError(ExternalServiceError):
     """
     Base class for expected failures at OSHA's
     infrastructure integration boundary.
     """
 
-    default_code = (
-        "integration_error"
-    )
+    default_code = "integration_error"
 
 
 # ---------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------
 
+
 class IntegrationConfigurationError(
     IntegrationError,
     ConfigurationError,
 ):
-    default_code = (
-        "integration_configuration_error"
-    )
+    default_code = "integration_configuration_error"
 
 
 # ---------------------------------------------------------------
 # Connection
 # ---------------------------------------------------------------
 
-class IntegrationConnectionError(
-    IntegrationError
-):
-    default_code = (
-        "integration_connection_error"
-    )
+
+class IntegrationConnectionError(IntegrationError):
+    default_code = "integration_connection_error"
 
 
-class IntegrationUnavailableError(
-    IntegrationConnectionError
-):
-    default_code = (
-        "integration_unavailable"
-    )
+class IntegrationUnavailableError(IntegrationConnectionError):
+    default_code = "integration_unavailable"
 
     def __init__(
         self,
-        message: str = (
-            "Integration target is "
-            "unavailable."
-        ),
+        message: str = ("Integration target is unavailable."),
         *,
         details: Optional[
             Mapping[
@@ -96,6 +82,7 @@ class IntegrationUnavailableError(
 # Provider authentication
 # ---------------------------------------------------------------
 
+
 class IntegrationAuthenticationError(
     IntegrationError,
     AuthenticationError,
@@ -108,14 +95,13 @@ class IntegrationAuthenticationError(
     user, which belongs in security/.
     """
 
-    default_code = (
-        "integration_authentication_error"
-    )
+    default_code = "integration_authentication_error"
 
 
 # ---------------------------------------------------------------
 # Provider permission
 # ---------------------------------------------------------------
+
 
 class IntegrationPermissionError(
     IntegrationError,
@@ -127,29 +113,23 @@ class IntegrationPermissionError(
     lacks permission.
     """
 
-    default_code = (
-        "integration_permission_denied"
-    )
+    default_code = "integration_permission_denied"
 
 
 # ---------------------------------------------------------------
 # Timeout
 # ---------------------------------------------------------------
 
+
 class IntegrationTimeoutError(
     IntegrationError,
     TimeoutErrorBase,
 ):
-    default_code = (
-        "integration_timeout"
-    )
+    default_code = "integration_timeout"
 
     def __init__(
         self,
-        message: str = (
-            "Integration operation "
-            "timed out."
-        ),
+        message: str = ("Integration operation timed out."),
         *,
         details: Optional[
             Mapping[
@@ -170,34 +150,26 @@ class IntegrationTimeoutError(
 # Capability
 # ---------------------------------------------------------------
 
-class IntegrationCapabilityError(
-    IntegrationError
-):
+
+class IntegrationCapabilityError(IntegrationError):
     """
     Requested action/capability is unsupported or
     wasn't explicitly advertised by the adapter.
     """
 
-    default_code = (
-        "integration_capability_error"
-    )
+    default_code = "integration_capability_error"
 
 
 # ---------------------------------------------------------------
 # Operations
 # ---------------------------------------------------------------
 
-class IntegrationOperationError(
-    IntegrationError
-):
-    default_code = (
-        "integration_operation_error"
-    )
+
+class IntegrationOperationError(IntegrationError):
+    default_code = "integration_operation_error"
 
 
-class IntegrationOperationBlockedError(
-    IntegrationOperationError
-):
+class IntegrationOperationBlockedError(IntegrationOperationError):
     """
     The integration layer deliberately refused to
     dispatch the operation.
@@ -207,65 +179,48 @@ class IntegrationOperationBlockedError(
     execution context.
     """
 
-    default_code = (
-        "integration_operation_blocked"
-    )
+    default_code = "integration_operation_blocked"
 
 
 class IntegrationResourceNotFoundError(
     IntegrationOperationError,
     NotFoundError,
 ):
-    default_code = (
-        "integration_resource_not_found"
-    )
+    default_code = "integration_resource_not_found"
 
 
 # ---------------------------------------------------------------
 # Health
 # ---------------------------------------------------------------
 
-class IntegrationHealthError(
-    IntegrationError
-):
-    default_code = (
-        "integration_health_error"
-    )
+
+class IntegrationHealthError(IntegrationError):
+    default_code = "integration_health_error"
 
 
 # ---------------------------------------------------------------
 # Registry
 # ---------------------------------------------------------------
 
-class IntegrationRegistryError(
-    IntegrationError
-):
-    default_code = (
-        "integration_registry_error"
-    )
+
+class IntegrationRegistryError(IntegrationError):
+    default_code = "integration_registry_error"
 
 
-class IntegrationConflictError(
-    IntegrationRegistryError
-):
-    default_code = (
-        "integration_conflict"
-    )
+class IntegrationConflictError(IntegrationRegistryError):
+    default_code = "integration_conflict"
 
 
 # ---------------------------------------------------------------
 # Safe provider error metadata
 # ---------------------------------------------------------------
 
+
 def safe_provider_details(
     error: BaseException,
     *,
-    provider: Optional[
-        str
-    ] = None,
-    target_id: Optional[
-        str
-    ] = None,
+    provider: Optional[str] = None,
+    target_id: Optional[str] = None,
 ) -> Mapping[str, Any]:
     """
     Build bounded metadata for a provider/client
@@ -284,24 +239,15 @@ def safe_provider_details(
         str,
         Any,
     ] = {
-        "error_type": (
-            type(error).__name__
-        ),
-
-        "error_module": (
-            type(error).__module__
-        ),
+        "error_type": (type(error).__name__),
+        "error_module": (type(error).__module__),
     }
 
     if provider is not None:
-        details[
-            "provider"
-        ] = provider
+        details["provider"] = provider
 
     if target_id is not None:
-        details[
-            "target_id"
-        ] = target_id
+        details["target_id"] = target_id
 
     return details
 
@@ -310,23 +256,15 @@ def safe_provider_details(
 # Provider error wrapper
 # ---------------------------------------------------------------
 
+
 def wrap_provider_error(
     error: BaseException,
     *,
-    provider: Optional[
-        str
-    ] = None,
-    target_id: Optional[
-        str
-    ] = None,
-    message: str = (
-        "Integration provider "
-        "operation failed."
-    ),
+    provider: Optional[str] = None,
+    target_id: Optional[str] = None,
+    message: str = ("Integration provider operation failed."),
     retryable: bool = False,
-    code: str = (
-        "integration_provider_error"
-    ),
+    code: str = ("integration_provider_error"),
 ) -> IntegrationError:
     """
     Convert a raw provider/client exception into
@@ -364,28 +302,19 @@ def wrap_provider_error(
 
 __all__ = [
     "IntegrationError",
-
     "IntegrationConfigurationError",
-
     "IntegrationConnectionError",
     "IntegrationUnavailableError",
-
     "IntegrationAuthenticationError",
     "IntegrationPermissionError",
-
     "IntegrationTimeoutError",
-
     "IntegrationCapabilityError",
-
     "IntegrationOperationError",
     "IntegrationOperationBlockedError",
     "IntegrationResourceNotFoundError",
-
     "IntegrationHealthError",
-
     "IntegrationRegistryError",
     "IntegrationConflictError",
-
     "safe_provider_details",
     "wrap_provider_error",
 ]

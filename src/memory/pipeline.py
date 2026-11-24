@@ -94,25 +94,12 @@ class MemoryPipelineOutput:
                 self.elapsed_seconds,
                 6,
             ),
-            "episodes_written": (
-                self.episode_count
-            ),
-            "patterns_written": (
-                self.pattern_count
-            ),
-            "baselines_touched": (
-                self.baseline_count
-            ),
-            "incidents_written": (
-                self.incident_count
-            ),
-            "store": (
-                self.store.
-                stats().to_dict()
-            ),
-            "retention": (
-                self.retention.to_dict()
-            ),
+            "episodes_written": (self.episode_count),
+            "patterns_written": (self.pattern_count),
+            "baselines_touched": (self.baseline_count),
+            "incidents_written": (self.incident_count),
+            "store": (self.store.stats().to_dict()),
+            "retention": (self.retention.to_dict()),
         }
 
     def to_dict(
@@ -120,15 +107,14 @@ class MemoryPipelineOutput:
     ) -> Dict[str, Any]:
         return {
             "summary": self.summary(),
-            "historical_context": (
-                self.historical_context
-            ),
+            "historical_context": (self.historical_context),
         }
 
 
 # ---------------------------------------------------------------
 # Intelligence-to-memory mappings
 # ---------------------------------------------------------------
+
 
 def incident_by_group(
     output: IntelligencePipelineOutput,
@@ -147,21 +133,14 @@ def incident_by_group(
         str,
     ] = {}
 
-    for incident in (
-        output.result.incidents
-    ):
+    for incident in output.result.incidents:
         incident.finalize()
 
         if not incident.incident_id:
             continue
 
-        for group_id in (
-            incident.
-            correlation_group_ids
-        ):
-            mapping[
-                group_id
-            ] = incident.incident_id
+        for group_id in incident.correlation_group_ids:
+            mapping[group_id] = incident.incident_id
 
     return mapping
 
@@ -187,23 +166,17 @@ def incident_ids_by_pattern(
         list[str],
     ] = {}
 
-    for incident in (
-        output.result.incidents
-    ):
+    for incident in output.result.incidents:
         incident.finalize()
 
         if not incident.incident_id:
             continue
 
-        for pattern_id in (
-            incident.pattern_ids
-        ):
+        for pattern_id in incident.pattern_ids:
             mapping.setdefault(
                 pattern_id,
                 [],
-            ).append(
-                incident.incident_id
-            )
+            ).append(incident.incident_id)
 
     return mapping
 
@@ -212,13 +185,12 @@ def incident_ids_by_pattern(
 # Historical context
 # ---------------------------------------------------------------
 
+
 def build_historical_context(
     store: MemoryStore,
     output: IntelligencePipelineOutput,
     *,
-    retrieval_config: Optional[
-        RetrievalConfig
-    ] = None,
+    retrieval_config: Optional[RetrievalConfig] = None,
 ) -> Dict[str, Any]:
     """
     Build bounded retrieval context after the
@@ -232,48 +204,28 @@ def build_historical_context(
 
     retriever = MemoryRetriever(
         store,
-        config=(
-            retrieval_config
-            or RetrievalConfig()
-        ),
+        config=(retrieval_config or RetrievalConfig()),
     )
 
     incident_contexts = []
 
-    for incident in (
-        output.result.incidents
-    ):
+    for incident in output.result.incidents:
         incident_contexts.append(
             {
-                "incident_id": (
-                    incident.incident_id
-                ),
+                "incident_id": (incident.incident_id),
                 "context": (
                     retriever.context(
                         incident=incident,
-                        patterns=(
-                            output.result.
-                            patterns
-                        ),
-                        resource_ids=(
-                            incident.
-                            resource_ids
-                        ),
+                        patterns=(output.result.patterns),
+                        resource_ids=(incident.resource_ids),
                     )
                 ),
             }
         )
 
     return {
-        "incidents": (
-            incident_contexts
-        ),
-        "patterns": (
-            retriever.
-            pattern_context(
-                output.result.patterns
-            )
-        ),
+        "incidents": (incident_contexts),
+        "patterns": (retriever.pattern_context(output.result.patterns)),
     }
 
 
@@ -281,19 +233,14 @@ def build_historical_context(
 # Main memory pipeline
 # ---------------------------------------------------------------
 
+
 def run_pipeline(
     intelligence: IntelligencePipelineOutput,
     store: MemoryStore,
     *,
-    baseline_config: Optional[
-        BaselineConfig
-    ] = None,
-    retrieval_config: Optional[
-        RetrievalConfig
-    ] = None,
-    retention_policy: Optional[
-        RetentionPolicy
-    ] = None,
+    baseline_config: Optional[BaselineConfig] = None,
+    retrieval_config: Optional[RetrievalConfig] = None,
+    retention_policy: Optional[RetentionPolicy] = None,
     retention_dry_run: bool = True,
 ) -> MemoryPipelineOutput:
     """
@@ -313,159 +260,83 @@ def run_pipeline(
 
     started = time.monotonic()
 
-    records = (
-        intelligence.correlation.
-        registry.records()
-    )
+    records = intelligence.correlation.registry.records()
 
-    groups = (
-        intelligence.correlation.
-        result.groups
-    )
+    groups = intelligence.correlation.result.groups
 
     # ---------------------------------------------------------
     # Episode memory
     # ---------------------------------------------------------
 
-    episode_manager = (
-        EpisodeMemoryManager(
-            store
-        )
-    )
+    episode_manager = EpisodeMemoryManager(store)
 
-    episodes = (
-        episode_manager.
-        remember_many(
-            groups,
-            incident_by_group=(
-                incident_by_group(
-                    intelligence
-                )
-            ),
-        )
+    episodes = episode_manager.remember_many(
+        groups,
+        incident_by_group=(incident_by_group(intelligence)),
     )
 
     # ---------------------------------------------------------
     # Pattern memory
     # ---------------------------------------------------------
 
-    pattern_manager = (
-        PatternMemoryManager(
-            store
-        )
-    )
+    pattern_manager = PatternMemoryManager(store)
 
-    pattern_memories = (
-        pattern_manager.
-        remember_many(
-            intelligence.result.
-            patterns,
-            incident_ids_by_pattern=(
-                incident_ids_by_pattern(
-                    intelligence
-                )
-            ),
-        )
+    pattern_memories = pattern_manager.remember_many(
+        intelligence.result.patterns,
+        incident_ids_by_pattern=(incident_ids_by_pattern(intelligence)),
     )
 
     # ---------------------------------------------------------
     # Baseline memory
     # ---------------------------------------------------------
 
-    baseline_manager = (
-        BaselineManager(
-            store,
-            config=(
-                baseline_config
-                or BaselineConfig()
-            ),
-        )
+    baseline_manager = BaselineManager(
+        store,
+        config=(baseline_config or BaselineConfig()),
     )
 
-    baselines = (
-        baseline_manager.
-        remember_many(
-            records
-        )
-    )
+    baselines = baseline_manager.remember_many(records)
 
     # ---------------------------------------------------------
     # Incident and root-cause memory
     # ---------------------------------------------------------
 
-    incident_manager = (
-        IncidentMemoryManager(
-            store
-        )
-    )
+    incident_manager = IncidentMemoryManager(store)
 
-    incident_memories = (
-        incident_manager.
-        remember_many(
-            intelligence.result.
-            incidents,
-            explanations=(
-                intelligence.result.
-                explanations
-            ),
-        )
+    incident_memories = incident_manager.remember_many(
+        intelligence.result.incidents,
+        explanations=(intelligence.result.explanations),
     )
 
     # ---------------------------------------------------------
     # Historical context
     # ---------------------------------------------------------
 
-    context = (
-        build_historical_context(
-            store,
-            intelligence,
-            retrieval_config=(
-                retrieval_config
-            ),
-        )
+    context = build_historical_context(
+        store,
+        intelligence,
+        retrieval_config=(retrieval_config),
     )
 
     # ---------------------------------------------------------
     # Retention
     # ---------------------------------------------------------
 
-    retention_manager = (
-        RetentionManager(
-            store,
-            policy=(
-                retention_policy
-                or RetentionPolicy()
-            ),
-        )
+    retention_manager = RetentionManager(
+        store,
+        policy=(retention_policy or RetentionPolicy()),
     )
 
-    retention = (
-        retention_manager.run(
-            dry_run=(
-                retention_dry_run
-            )
-        )
-    )
+    retention = retention_manager.run(dry_run=(retention_dry_run))
 
-    elapsed = (
-        time.monotonic()
-        - started
-    )
+    elapsed = time.monotonic() - started
 
     return MemoryPipelineOutput(
         store=store,
-        episode_count=len(
-            episodes
-        ),
-        pattern_count=len(
-            pattern_memories
-        ),
-        baseline_count=len(
-            baselines
-        ),
-        incident_count=len(
-            incident_memories
-        ),
+        episode_count=len(episodes),
+        pattern_count=len(pattern_memories),
+        baseline_count=len(baselines),
+        incident_count=len(incident_memories),
         retention=retention,
         historical_context=context,
         elapsed_seconds=elapsed,
@@ -475,6 +346,7 @@ def run_pipeline(
 # ---------------------------------------------------------------
 # Output writer
 # ---------------------------------------------------------------
+
 
 def write_json(
     path: Path,
@@ -507,6 +379,7 @@ def write_json(
 # CLI
 # ---------------------------------------------------------------
 
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
@@ -520,10 +393,7 @@ def parse_args() -> argparse.Namespace:
         "--input",
         action="append",
         required=True,
-        help=(
-            "Normalized telemetry JSONL file. "
-            "Repeat for additional inputs."
-        ),
+        help=("Normalized telemetry JSONL file. Repeat for additional inputs."),
     )
 
     parser.add_argument(
@@ -537,18 +407,12 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument(
         "--store",
-        default=(
-            "orchestration-ai-data/"
-            "memory/memory.json"
-        ),
+        default=("orchestration-ai-data/memory/memory.json"),
     )
 
     parser.add_argument(
         "--output",
-        default=(
-            "orchestration-ai-data/"
-            "memory/result.json"
-        ),
+        default=("orchestration-ai-data/memory/result.json"),
     )
 
     parser.add_argument(
@@ -612,48 +476,22 @@ def validate_args(
     args: argparse.Namespace,
 ) -> None:
     if args.window_seconds <= 0:
-        raise ValueError(
-            "--window-seconds must be > 0"
-        )
+        raise ValueError("--window-seconds must be > 0")
 
     if args.step_seconds <= 0:
-        raise ValueError(
-            "--step-seconds must be > 0"
-        )
+        raise ValueError("--step-seconds must be > 0")
 
-    if (
-        args.window_mode == "sliding"
-        and args.step_seconds
-        > args.window_seconds
-    ):
-        raise ValueError(
-            "--step-seconds must not exceed "
-            "--window-seconds"
-        )
+    if args.window_mode == "sliding" and args.step_seconds > args.window_seconds:
+        raise ValueError("--step-seconds must not exceed --window-seconds")
 
-    if (
-        args.maximum_pairs_per_window
-        < 1
-    ):
-        raise ValueError(
-            "--maximum-pairs-per-window "
-            "must be >= 1"
-        )
+    if args.maximum_pairs_per_window < 1:
+        raise ValueError("--maximum-pairs-per-window must be >= 1")
 
-    if (
-        args.minimum_baseline_samples
-        < 2
-    ):
-        raise ValueError(
-            "--minimum-baseline-samples "
-            "must be >= 2"
-        )
+    if args.minimum_baseline_samples < 2:
+        raise ValueError("--minimum-baseline-samples must be >= 2")
 
     if args.baseline_z_score <= 0:
-        raise ValueError(
-            "--baseline-z-score "
-            "must be > 0"
-        )
+        raise ValueError("--baseline-z-score must be > 0")
 
 
 def main() -> int:
@@ -670,72 +508,36 @@ def main() -> int:
 
         return 2
 
-    input_paths = [
-        Path(value)
-        for value in args.input
-    ]
+    input_paths = [Path(value) for value in args.input]
 
-    missing = [
-        path
-        for path in input_paths
-        if not path.is_file()
-    ]
+    missing = [path for path in input_paths if not path.is_file()]
 
     if missing:
         for path in missing:
             print(
-                (
-                    "Input file does not "
-                    f"exist: {path}"
-                ),
+                (f"Input file does not exist: {path}"),
                 file=sys.stderr,
             )
 
         return 2
 
     try:
-        records, load_issues = (
-            load_telemetry_files(
-                input_paths
-            )
+        records, load_issues = load_telemetry_files(input_paths)
+
+        correlation = run_correlation_pipeline(
+            records,
+            window_mode=(args.window_mode),
+            window_seconds=(args.window_seconds),
+            step_seconds=(args.step_seconds),
+            maximum_pairs_per_window=(args.maximum_pairs_per_window),
+            load_issues=(load_issues),
         )
 
-        correlation = (
-            run_correlation_pipeline(
-                records,
-                window_mode=(
-                    args.window_mode
-                ),
-                window_seconds=(
-                    args.window_seconds
-                ),
-                step_seconds=(
-                    args.step_seconds
-                ),
-                maximum_pairs_per_window=(
-                    args.
-                    maximum_pairs_per_window
-                ),
-                load_issues=(
-                    load_issues
-                ),
-            )
-        )
-
-        intelligence = (
-            run_intelligence_pipeline(
-                correlation
-            )
-        )
+        intelligence = run_intelligence_pipeline(correlation)
 
         store = create_memory_store(
             backend=args.backend,
-            path=(
-                args.store
-                if args.backend
-                == "json"
-                else None
-            ),
+            path=(args.store if args.backend == "json" else None),
         )
 
         output = run_pipeline(
@@ -743,20 +545,11 @@ def main() -> int:
             store,
             baseline_config=(
                 BaselineConfig(
-                    minimum_samples=(
-                        args.
-                        minimum_baseline_samples
-                    ),
-                    anomaly_z_score=(
-                        args.
-                        baseline_z_score
-                    ),
+                    minimum_samples=(args.minimum_baseline_samples),
+                    anomaly_z_score=(args.baseline_z_score),
                 )
             ),
-            retention_dry_run=(
-                not args.
-                apply_retention
-            ),
+            retention_dry_run=(not args.apply_retention),
         )
 
         write_json(
@@ -766,11 +559,7 @@ def main() -> int:
 
     except Exception as exc:
         print(
-            (
-                "Memory pipeline failed: "
-                f"{type(exc).__name__}: "
-                f"{exc}"
-            ),
+            (f"Memory pipeline failed: {type(exc).__name__}: {exc}"),
             file=sys.stderr,
         )
 
@@ -778,67 +567,31 @@ def main() -> int:
 
     summary = output.summary()
 
-    print(
-        "Memory pipeline complete."
-    )
+    print("Memory pipeline complete.")
 
-    print(
-        "Valid records: "
-        f"{correlation.valid_record_count}"
-    )
+    print(f"Valid records: {correlation.valid_record_count}")
 
-    print(
-        "Rejected records: "
-        f"{correlation.rejected_record_count}"
-    )
+    print(f"Rejected records: {correlation.rejected_record_count}")
 
-    print(
-        "Episodes written: "
-        f"{summary['episodes_written']}"
-    )
+    print(f"Episodes written: {summary['episodes_written']}")
 
-    print(
-        "Patterns written: "
-        f"{summary['patterns_written']}"
-    )
+    print(f"Patterns written: {summary['patterns_written']}")
 
-    print(
-        "Baselines touched: "
-        f"{summary['baselines_touched']}"
-    )
+    print(f"Baselines touched: {summary['baselines_touched']}")
 
-    print(
-        "Incidents written: "
-        f"{summary['incidents_written']}"
-    )
+    print(f"Incidents written: {summary['incidents_written']}")
 
-    print(
-        "Memory records: "
-        f"{summary['store']['memory_count']}"
-    )
+    print(f"Memory records: {summary['store']['memory_count']}")
 
-    print(
-        "Retention dry run: "
-        f"{not args.apply_retention}"
-    )
+    print(f"Retention dry run: {not args.apply_retention}")
 
-    print(
-        f"Result: {args.output}"
-    )
+    print(f"Result: {args.output}")
 
     if args.backend == "json":
-        print(
-            f"Memory store: {args.store}"
-        )
+        print(f"Memory store: {args.store}")
 
-    if (
-        args.fail_on_invalid
-        and (
-            correlation.
-            rejected_record_count
-            > 0
-            or correlation.load_issues
-        )
+    if args.fail_on_invalid and (
+        correlation.rejected_record_count > 0 or correlation.load_issues
     ):
         return 3
 
@@ -846,6 +599,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(
-        main()
-    )
+    raise SystemExit(main())

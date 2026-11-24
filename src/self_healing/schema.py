@@ -29,6 +29,7 @@ SELF_HEALING_SCHEMA_VERSION = "1"
 # Lifecycle enums
 # ---------------------------------------------------------------
 
+
 class HealingState(
     str,
     Enum,
@@ -47,9 +48,7 @@ class HealingState(
 
     DECIDING = "deciding"
 
-    AWAITING_APPROVAL = (
-        "awaiting_approval"
-    )
+    AWAITING_APPROVAL = "awaiting_approval"
 
     REMEDIATING = "remediating"
 
@@ -127,13 +126,9 @@ class EscalationLevel(
 
     OPERATOR = "operator"
 
-    SENIOR_OPERATOR = (
-        "senior_operator"
-    )
+    SENIOR_OPERATOR = "senior_operator"
 
-    INCIDENT_COMMAND = (
-        "incident_command"
-    )
+    INCIDENT_COMMAND = "incident_command"
 
 
 class OutcomeStatus(
@@ -148,13 +143,9 @@ class OutcomeStatus(
 
     RECOVERED = "recovered"
 
-    PARTIALLY_RECOVERED = (
-        "partially_recovered"
-    )
+    PARTIALLY_RECOVERED = "partially_recovered"
 
-    NOT_RECOVERED = (
-        "not_recovered"
-    )
+    NOT_RECOVERED = "not_recovered"
 
     ROLLED_BACK = "rolled_back"
 
@@ -165,19 +156,16 @@ class OutcomeStatus(
 # Common helpers
 # ---------------------------------------------------------------
 
+
 def utc_now() -> str:
-    return datetime.now(
-        timezone.utc
-    ).isoformat()
+    return datetime.now(timezone.utc).isoformat()
 
 
 def checked_score(
     value: Any,
 ) -> float:
     try:
-        number = float(
-            value
-        )
+        number = float(value)
 
     except (
         TypeError,
@@ -185,9 +173,7 @@ def checked_score(
     ):
         return 0.0
 
-    if not math.isfinite(
-        number
-    ):
+    if not math.isfinite(number):
         return 0.0
 
     return min(
@@ -206,20 +192,15 @@ def json_safe(
     maximum_depth: int = 20,
 ) -> Any:
     if depth > maximum_depth:
-        return (
-            "[MAX_DEPTH_REACHED]"
-        )
+        return "[MAX_DEPTH_REACHED]"
 
-    if (
-        value is None
-        or isinstance(
-            value,
-            (
-                bool,
-                int,
-                str,
-            ),
-        )
+    if value is None or isinstance(
+        value,
+        (
+            bool,
+            int,
+            str,
+        ),
     ):
         return value
 
@@ -227,22 +208,14 @@ def json_safe(
         value,
         float,
     ):
-        return (
-            value
-            if math.isfinite(
-                value
-            )
-            else None
-        )
+        return value if math.isfinite(value) else None
 
     if isinstance(
         value,
         datetime,
     ):
         if value.tzinfo is None:
-            value = value.replace(
-                tzinfo=timezone.utc
-            )
+            value = value.replace(tzinfo=timezone.utc)
 
         return value.isoformat()
 
@@ -254,12 +227,9 @@ def json_safe(
             str(key): json_safe(
                 item,
                 depth=depth + 1,
-                maximum_depth=(
-                    maximum_depth
-                ),
+                maximum_depth=(maximum_depth),
             )
-            for key, item
-            in value.items()
+            for key, item in value.items()
         }
 
     if isinstance(
@@ -275,9 +245,7 @@ def json_safe(
             json_safe(
                 item,
                 depth=depth + 1,
-                maximum_depth=(
-                    maximum_depth
-                ),
+                maximum_depth=(maximum_depth),
             )
             for item in value
         ]
@@ -289,9 +257,7 @@ def json_safe(
         return json_safe(
             asdict(value),
             depth=depth + 1,
-            maximum_depth=(
-                maximum_depth
-            ),
+            maximum_depth=(maximum_depth),
         )
 
     return str(value)
@@ -312,18 +278,15 @@ def stable_hash(
             ":",
         ),
         default=str,
-    ).encode(
-        "utf-8"
-    )
+    ).encode("utf-8")
 
-    return hashlib.sha256(
-        encoded
-    ).hexdigest()
+    return hashlib.sha256(encoded).hexdigest()
 
 
 # ---------------------------------------------------------------
 # Evidence
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class HealingEvidence:
@@ -342,66 +305,35 @@ class HealingEvidence:
 
     score: float = 0.0
 
-    source_id: Optional[
-        str
-    ] = None
+    source_id: Optional[str] = None
 
-    resource_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    resource_ids: List[str] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    observed_at: str = field(
-        default_factory=utc_now
-    )
+    observed_at: str = field(default_factory=utc_now)
 
     def to_dict(
         self,
     ) -> Dict[str, Any]:
         return {
-            "evidence_type": (
-                self.evidence_type
-            ),
-            "description": (
-                self.description
-            ),
-            "score": (
-                checked_score(
-                    self.score
-                )
-            ),
-            "source_id": (
-                self.source_id
-            ),
-            "resource_ids": (
-                sorted(
-                    set(
-                        self.resource_ids
-                    )
-                )
-            ),
-            "attributes": (
-                json_safe(
-                    self.attributes
-                )
-            ),
-            "observed_at": (
-                self.observed_at
-            ),
+            "evidence_type": (self.evidence_type),
+            "description": (self.description),
+            "score": (checked_score(self.score)),
+            "source_id": (self.source_id),
+            "resource_ids": (sorted(set(self.resource_ids))),
+            "attributes": (json_safe(self.attributes)),
+            "observed_at": (self.observed_at),
         }
 
 
 # ---------------------------------------------------------------
 # Recovery
 # ---------------------------------------------------------------
+
 
 @dataclass
 class RecoveryAssessment:
@@ -414,117 +346,49 @@ class RecoveryAssessment:
     from successful command execution.
     """
 
-    status: str = (
-        RecoveryStatus.UNKNOWN.value
-    )
+    status: str = RecoveryStatus.UNKNOWN.value
 
     score: float = 0.0
 
-    health_before: Optional[
-        float
-    ] = None
+    health_before: Optional[float] = None
 
-    health_current: Optional[
-        float
-    ] = None
+    health_current: Optional[float] = None
 
-    recovered_resource_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    recovered_resource_ids: List[str] = field(default_factory=list)
 
-    unhealthy_resource_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    unhealthy_resource_ids: List[str] = field(default_factory=list)
 
-    checks: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    checks: List[str] = field(default_factory=list)
 
-    failed_checks: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    failed_checks: List[str] = field(default_factory=list)
 
-    evidence: List[
-        HealingEvidence
-    ] = field(
-        default_factory=list
-    )
+    evidence: List[HealingEvidence] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    assessed_at: str = field(
-        default_factory=utc_now
-    )
+    assessed_at: str = field(default_factory=utc_now)
 
     def finalize(
         self,
     ) -> "RecoveryAssessment":
-        self.score = checked_score(
-            self.score
-        )
+        self.score = checked_score(self.score)
 
-        if (
-            self.health_before
-            is not None
-        ):
-            self.health_before = (
-                checked_score(
-                    self.health_before
-                )
-            )
+        if self.health_before is not None:
+            self.health_before = checked_score(self.health_before)
 
-        if (
-            self.health_current
-            is not None
-        ):
-            self.health_current = (
-                checked_score(
-                    self.health_current
-                )
-            )
+        if self.health_current is not None:
+            self.health_current = checked_score(self.health_current)
 
-        self.recovered_resource_ids = (
-            sorted(
-                set(
-                    self.
-                    recovered_resource_ids
-                )
-            )
-        )
+        self.recovered_resource_ids = sorted(set(self.recovered_resource_ids))
 
-        self.unhealthy_resource_ids = (
-            sorted(
-                set(
-                    self.
-                    unhealthy_resource_ids
-                )
-            )
-        )
+        self.unhealthy_resource_ids = sorted(set(self.unhealthy_resource_ids))
 
-        self.checks = list(
-            dict.fromkeys(
-                self.checks
-            )
-        )
+        self.checks = list(dict.fromkeys(self.checks))
 
-        self.failed_checks = list(
-            dict.fromkeys(
-                self.failed_checks
-            )
-        )
+        self.failed_checks = list(dict.fromkeys(self.failed_checks))
 
         return self
 
@@ -533,14 +397,13 @@ class RecoveryAssessment:
     ) -> Dict[str, Any]:
         self.finalize()
 
-        return json_safe(
-            asdict(self)
-        )
+        return json_safe(asdict(self))
 
 
 # ---------------------------------------------------------------
 # Stability
 # ---------------------------------------------------------------
+
 
 @dataclass
 class StabilityAssessment:
@@ -549,78 +412,44 @@ class StabilityAssessment:
     stable over later observations.
     """
 
-    status: str = (
-        StabilityStatus.
-        UNKNOWN.value
-    )
+    status: str = StabilityStatus.UNKNOWN.value
 
     score: float = 0.0
 
     sample_count: int = 0
 
-    observation_window_seconds: Optional[
-        float
-    ] = None
+    observation_window_seconds: Optional[float] = None
 
     regression_detected: bool = False
 
-    reasons: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    reasons: List[str] = field(default_factory=list)
 
-    evidence: List[
-        HealingEvidence
-    ] = field(
-        default_factory=list
-    )
+    evidence: List[HealingEvidence] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    assessed_at: str = field(
-        default_factory=utc_now
-    )
+    assessed_at: str = field(default_factory=utc_now)
 
     def finalize(
         self,
     ) -> "StabilityAssessment":
-        self.score = checked_score(
-            self.score
-        )
+        self.score = checked_score(self.score)
 
         self.sample_count = max(
             0,
-            int(
-                self.sample_count
-            ),
+            int(self.sample_count),
         )
 
-        if (
-            self.
-            observation_window_seconds
-            is not None
-        ):
-            self.observation_window_seconds = (
-                max(
-                    0.0,
-                    float(
-                        self.
-                        observation_window_seconds
-                    ),
-                )
+        if self.observation_window_seconds is not None:
+            self.observation_window_seconds = max(
+                0.0,
+                float(self.observation_window_seconds),
             )
 
-        self.reasons = list(
-            dict.fromkeys(
-                self.reasons
-            )
-        )
+        self.reasons = list(dict.fromkeys(self.reasons))
 
         return self
 
@@ -629,14 +458,13 @@ class StabilityAssessment:
     ) -> Dict[str, Any]:
         self.finalize()
 
-        return json_safe(
-            asdict(self)
-        )
+        return json_safe(asdict(self))
 
 
 # ---------------------------------------------------------------
 # Escalation
 # ---------------------------------------------------------------
+
 
 @dataclass
 class EscalationRequest:
@@ -648,89 +476,50 @@ class EscalationRequest:
     This object does not contact anyone.
     """
 
-    level: str = (
-        EscalationLevel.NONE.value
-    )
+    level: str = EscalationLevel.NONE.value
 
     required: bool = False
 
-    reason: Optional[
-        str
-    ] = None
+    reason: Optional[str] = None
 
-    required_roles: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    required_roles: List[str] = field(default_factory=list)
 
-    incident_id: Optional[
-        str
-    ] = None
+    incident_id: Optional[str] = None
 
-    action_id: Optional[
-        str
-    ] = None
+    action_id: Optional[str] = None
 
-    remediation_id: Optional[
-        str
-    ] = None
+    remediation_id: Optional[str] = None
 
-    evidence: List[
-        HealingEvidence
-    ] = field(
-        default_factory=list
-    )
+    evidence: List[HealingEvidence] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    created_at: str = field(
-        default_factory=utc_now
-    )
+    created_at: str = field(default_factory=utc_now)
 
-    escalation_id: Optional[
-        str
-    ] = None
+    escalation_id: Optional[str] = None
 
     def build_escalation_id(
         self,
     ) -> str:
-        return (
-            "self-healing:escalation:"
-            + stable_hash(
-                {
-                    "level": self.level,
-                    "incident_id": (
-                        self.incident_id
-                    ),
-                    "action_id": (
-                        self.action_id
-                    ),
-                    "remediation_id": (
-                        self.remediation_id
-                    ),
-                }
-            )
+        return "self-healing:escalation:" + stable_hash(
+            {
+                "level": self.level,
+                "incident_id": (self.incident_id),
+                "action_id": (self.action_id),
+                "remediation_id": (self.remediation_id),
+            }
         )
 
     def finalize(
         self,
     ) -> "EscalationRequest":
-        self.required_roles = sorted(
-            set(
-                self.required_roles
-            )
-        )
+        self.required_roles = sorted(set(self.required_roles))
 
         if not self.escalation_id:
-            self.escalation_id = (
-                self.build_escalation_id()
-            )
+            self.escalation_id = self.build_escalation_id()
 
         return self
 
@@ -739,14 +528,13 @@ class EscalationRequest:
     ) -> Dict[str, Any]:
         self.finalize()
 
-        return json_safe(
-            asdict(self)
-        )
+        return json_safe(asdict(self))
 
 
 # ---------------------------------------------------------------
 # Outcome
 # ---------------------------------------------------------------
+
 
 @dataclass
 class HealingOutcome:
@@ -757,25 +545,15 @@ class HealingOutcome:
     translated into memory/outcome records.
     """
 
-    status: str = (
-        OutcomeStatus.UNKNOWN.value
-    )
+    status: str = OutcomeStatus.UNKNOWN.value
 
-    incident_id: Optional[
-        str
-    ] = None
+    incident_id: Optional[str] = None
 
-    decision_id: Optional[
-        str
-    ] = None
+    decision_id: Optional[str] = None
 
-    action_id: Optional[
-        str
-    ] = None
+    action_id: Optional[str] = None
 
-    remediation_id: Optional[
-        str
-    ] = None
+    remediation_id: Optional[str] = None
 
     recovery_score: float = 0.0
 
@@ -789,76 +567,41 @@ class HealingOutcome:
 
     escalated: bool = False
 
-    summary: Optional[
-        str
-    ] = None
+    summary: Optional[str] = None
 
-    evidence: List[
-        HealingEvidence
-    ] = field(
-        default_factory=list
-    )
+    evidence: List[HealingEvidence] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    completed_at: str = field(
-        default_factory=utc_now
-    )
+    completed_at: str = field(default_factory=utc_now)
 
-    outcome_id: Optional[
-        str
-    ] = None
+    outcome_id: Optional[str] = None
 
     def build_outcome_id(
         self,
     ) -> str:
-        return (
-            "self-healing:outcome:"
-            + stable_hash(
-                {
-                    "incident_id": (
-                        self.incident_id
-                    ),
-                    "decision_id": (
-                        self.decision_id
-                    ),
-                    "action_id": (
-                        self.action_id
-                    ),
-                    "remediation_id": (
-                        self.remediation_id
-                    ),
-                    "status": (
-                        self.status
-                    ),
-                }
-            )
+        return "self-healing:outcome:" + stable_hash(
+            {
+                "incident_id": (self.incident_id),
+                "decision_id": (self.decision_id),
+                "action_id": (self.action_id),
+                "remediation_id": (self.remediation_id),
+                "status": (self.status),
+            }
         )
 
     def finalize(
         self,
     ) -> "HealingOutcome":
-        self.recovery_score = (
-            checked_score(
-                self.recovery_score
-            )
-        )
+        self.recovery_score = checked_score(self.recovery_score)
 
-        self.stability_score = (
-            checked_score(
-                self.stability_score
-            )
-        )
+        self.stability_score = checked_score(self.stability_score)
 
         if not self.outcome_id:
-            self.outcome_id = (
-                self.build_outcome_id()
-            )
+            self.outcome_id = self.build_outcome_id()
 
         return self
 
@@ -867,14 +610,13 @@ class HealingOutcome:
     ) -> Dict[str, Any]:
         self.finalize()
 
-        return json_safe(
-            asdict(self)
-        )
+        return json_safe(asdict(self))
 
 
 # ---------------------------------------------------------------
 # Healing session
 # ---------------------------------------------------------------
+
 
 @dataclass
 class HealingSession:
@@ -890,128 +632,63 @@ class HealingSession:
 
     incident_id: str
 
-    state: str = (
-        HealingState.CREATED.value
-    )
+    state: str = HealingState.CREATED.value
 
-    decision_id: Optional[
-        str
-    ] = None
+    decision_id: Optional[str] = None
 
-    plan_id: Optional[
-        str
-    ] = None
+    plan_id: Optional[str] = None
 
-    action_id: Optional[
-        str
-    ] = None
+    action_id: Optional[str] = None
 
-    remediation_id: Optional[
-        str
-    ] = None
+    remediation_id: Optional[str] = None
 
-    resource_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    resource_ids: List[str] = field(default_factory=list)
 
-    service_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    service_ids: List[str] = field(default_factory=list)
 
-    recovery: RecoveryAssessment = field(
-        default_factory=RecoveryAssessment
-    )
+    recovery: RecoveryAssessment = field(default_factory=RecoveryAssessment)
 
-    stability: StabilityAssessment = field(
-        default_factory=StabilityAssessment
-    )
+    stability: StabilityAssessment = field(default_factory=StabilityAssessment)
 
-    escalation: EscalationRequest = field(
-        default_factory=EscalationRequest
-    )
+    escalation: EscalationRequest = field(default_factory=EscalationRequest)
 
-    outcome: Optional[
-        HealingOutcome
-    ] = None
+    outcome: Optional[HealingOutcome] = None
 
-    evidence: List[
-        HealingEvidence
-    ] = field(
-        default_factory=list
-    )
+    evidence: List[HealingEvidence] = field(default_factory=list)
 
-    limitations: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    limitations: List[str] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    created_at: str = field(
-        default_factory=utc_now
-    )
+    created_at: str = field(default_factory=utc_now)
 
-    updated_at: str = field(
-        default_factory=utc_now
-    )
+    updated_at: str = field(default_factory=utc_now)
 
-    session_id: Optional[
-        str
-    ] = None
+    session_id: Optional[str] = None
 
     def build_session_id(
         self,
     ) -> str:
-        return (
-            "self-healing:session:"
-            + stable_hash(
-                {
-                    "environment_id": (
-                        self.environment_id
-                    ),
-                    "incident_id": (
-                        self.incident_id
-                    ),
-                    "decision_id": (
-                        self.decision_id
-                    ),
-                    "action_id": (
-                        self.action_id
-                    ),
-                }
-            )
+        return "self-healing:session:" + stable_hash(
+            {
+                "environment_id": (self.environment_id),
+                "incident_id": (self.incident_id),
+                "decision_id": (self.decision_id),
+                "action_id": (self.action_id),
+            }
         )
 
     def finalize(
         self,
     ) -> "HealingSession":
-        self.resource_ids = sorted(
-            set(
-                self.resource_ids
-            )
-        )
+        self.resource_ids = sorted(set(self.resource_ids))
 
-        self.service_ids = sorted(
-            set(
-                self.service_ids
-            )
-        )
+        self.service_ids = sorted(set(self.service_ids))
 
-        self.limitations = list(
-            dict.fromkeys(
-                self.limitations
-            )
-        )
+        self.limitations = list(dict.fromkeys(self.limitations))
 
         self.recovery.finalize()
 
@@ -1023,13 +700,9 @@ class HealingSession:
             self.outcome.finalize()
 
         if not self.session_id:
-            self.session_id = (
-                self.build_session_id()
-            )
+            self.session_id = self.build_session_id()
 
-        self.updated_at = (
-            utc_now()
-        )
+        self.updated_at = utc_now()
 
         return self
 
@@ -1039,76 +712,33 @@ class HealingSession:
         self.finalize()
 
         return {
-            "schema_version": (
-                SELF_HEALING_SCHEMA_VERSION
-            ),
-            "session_id": (
-                self.session_id
-            ),
-            "environment_id": (
-                self.environment_id
-            ),
-            "incident_id": (
-                self.incident_id
-            ),
+            "schema_version": (SELF_HEALING_SCHEMA_VERSION),
+            "session_id": (self.session_id),
+            "environment_id": (self.environment_id),
+            "incident_id": (self.incident_id),
             "state": self.state,
-            "decision_id": (
-                self.decision_id
-            ),
-            "plan_id": (
-                self.plan_id
-            ),
-            "action_id": (
-                self.action_id
-            ),
-            "remediation_id": (
-                self.remediation_id
-            ),
-            "resource_ids": (
-                self.resource_ids
-            ),
-            "service_ids": (
-                self.service_ids
-            ),
-            "recovery": (
-                self.recovery.to_dict()
-            ),
-            "stability": (
-                self.stability.to_dict()
-            ),
-            "escalation": (
-                self.escalation.to_dict()
-            ),
-            "outcome": (
-                self.outcome.to_dict()
-                if self.outcome
-                else None
-            ),
-            "evidence": [
-                item.to_dict()
-                for item
-                in self.evidence
-            ],
-            "limitations": (
-                self.limitations
-            ),
-            "attributes": (
-                json_safe(
-                    self.attributes
-                )
-            ),
-            "created_at": (
-                self.created_at
-            ),
-            "updated_at": (
-                self.updated_at
-            ),
+            "decision_id": (self.decision_id),
+            "plan_id": (self.plan_id),
+            "action_id": (self.action_id),
+            "remediation_id": (self.remediation_id),
+            "resource_ids": (self.resource_ids),
+            "service_ids": (self.service_ids),
+            "recovery": (self.recovery.to_dict()),
+            "stability": (self.stability.to_dict()),
+            "escalation": (self.escalation.to_dict()),
+            "outcome": (self.outcome.to_dict() if self.outcome else None),
+            "evidence": [item.to_dict() for item in self.evidence],
+            "limitations": (self.limitations),
+            "attributes": (json_safe(self.attributes)),
+            "created_at": (self.created_at),
+            "updated_at": (self.updated_at),
         }
 
 
 # ---------------------------------------------------------------
 # Top-level result
 # ---------------------------------------------------------------
+
 
 @dataclass
 class SelfHealingResult:
@@ -1117,35 +747,21 @@ class SelfHealingResult:
     orchestration cycle.
     """
 
-    sessions: List[
-        HealingSession
-    ] = field(
-        default_factory=list
-    )
+    sessions: List[HealingSession] = field(default_factory=list)
 
-    generated_at: str = field(
-        default_factory=utc_now
-    )
+    generated_at: str = field(default_factory=utc_now)
 
     metadata: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    schema_version: str = (
-        SELF_HEALING_SCHEMA_VERSION
-    )
+    schema_version: str = SELF_HEALING_SCHEMA_VERSION
 
     def finalize(
         self,
     ) -> "SelfHealingResult":
-        self.sessions = [
-            session.finalize()
-            for session
-            in self.sessions
-        ]
+        self.sessions = [session.finalize() for session in self.sessions]
 
         return self
 
@@ -1160,9 +776,7 @@ class SelfHealingResult:
         ] = {}
 
         for session in self.sessions:
-            states[
-                session.state
-            ] = (
+            states[session.state] = (
                 states.get(
                     session.state,
                     0,
@@ -1171,24 +785,10 @@ class SelfHealingResult:
             )
 
         return {
-            "schema_version": (
-                self.schema_version
-            ),
-            "generated_at": (
-                self.generated_at
-            ),
-            "session_count": len(
-                self.sessions
-            ),
+            "schema_version": (self.schema_version),
+            "generated_at": (self.generated_at),
+            "session_count": len(self.sessions),
             "states": states,
-            "sessions": [
-                session.to_dict()
-                for session
-                in self.sessions
-            ],
-            "metadata": (
-                json_safe(
-                    self.metadata
-                )
-            ),
+            "sessions": [session.to_dict() for session in self.sessions],
+            "metadata": (json_safe(self.metadata)),
         }

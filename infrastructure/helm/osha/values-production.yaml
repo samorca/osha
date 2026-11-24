@@ -1,0 +1,95 @@
+---
+global:
+  environment: production
+
+  #
+  # Production release automation should replace
+  # this tag with an immutable version or digest.
+  #
+  image:
+    repository: osha
+    tag: stable
+    pullPolicy: IfNotPresent
+
+  #
+  # Production does not automatically enable active
+  # remediation.
+  #
+  dryRun: true
+
+
+config:
+  environmentId: production
+
+  failFast: true
+
+  runtimeLogLevel: info
+
+
+remediation:
+  enabled: true
+
+  dryRun: true
+
+  automaticExecution: false
+
+  requireApproval: true
+
+  allowDestructiveActions: false
+
+
+api:
+  replicaCount: 2
+
+  workers: 2
+
+  logLevel: info
+
+  gracefulTimeoutSeconds: 60
+
+  limitConcurrency: 1000
+
+  limitMaxRequests: 10000
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
+    limits:
+      cpu: "2"
+      memory: 2Gi
+
+
+runtime:
+  #
+  # Deliberately one orchestration authority.
+  #
+  replicaCount: 1
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
+    limits:
+      cpu: "2"
+      memory: 2Gi
+
+
+worker:
+  #
+  # Keep one base worker until the selected worker
+  # implementation is verified for multiple
+  # concurrent consumers.
+  #
+  replicaCount: 1
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
+    limits:
+      cpu: "2"
+      memory: 2Gi

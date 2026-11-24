@@ -49,18 +49,12 @@ from src.collectors.linux.system import (
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description=(
-            "Collect comprehensive Linux "
-            "telemetry for OSHA."
-        )
+        description=("Collect comprehensive Linux telemetry for OSHA.")
     )
 
     parser.add_argument(
         "--output",
-        default=(
-            "orchestration-ai-data/"
-            "live/linux/telemetry.jsonl"
-        ),
+        default=("orchestration-ai-data/live/linux/telemetry.jsonl"),
     )
 
     parser.add_argument(
@@ -97,10 +91,7 @@ def parse_args():
     parser.add_argument(
         "--truncate-output",
         action="store_true",
-        help=(
-            "Replace the output file instead "
-            "of appending to it."
-        ),
+        help=("Replace the output file instead of appending to it."),
     )
 
     return parser.parse_args()
@@ -114,9 +105,7 @@ def error_record(
         signal_type="collector_error",
         payload={
             "collector": collector,
-            "error": (
-                type(exc).__name__
-            ),
+            "error": (type(exc).__name__),
             "message": str(exc),
         },
     )
@@ -129,16 +118,12 @@ def run_collector(
         List[dict] | dict,
     ],
 ) -> List[dict]:
-    print(
-        f"Collecting {name}..."
-    )
+    print(f"Collecting {name}...")
 
     try:
         result = function()
     except Exception as exc:
-        print(
-            f"  {name}: failed: {exc}"
-        )
+        print(f"  {name}: failed: {exc}")
 
         return [
             error_record(
@@ -152,10 +137,7 @@ def run_collector(
     else:
         records = list(result)
 
-    print(
-        f"  {name}: "
-        f"{len(records)} records"
-    )
+    print(f"  {name}: {len(records)} records")
 
     return records
 
@@ -171,11 +153,7 @@ def write_records(
         exist_ok=True,
     )
 
-    mode = (
-        "w"
-        if truncate
-        else "a"
-    )
+    mode = "w" if truncate else "a"
 
     written = 0
 
@@ -201,32 +179,23 @@ def main():
     args = parse_args()
 
     if args.journal_lines < 1:
-        raise ValueError(
-            "--journal-lines must be positive"
-        )
+        raise ValueError("--journal-lines must be positive")
 
-    print(
-        "Starting comprehensive Linux "
-        "discovery..."
-    )
+    print("Starting comprehensive Linux discovery...")
 
     records: List[dict] = []
 
     records.extend(
         run_collector(
             "system",
-            lambda: [
-                collect_system_identity()
-            ],
+            lambda: [collect_system_identity()],
         )
     )
 
     records.extend(
         run_collector(
             "metrics",
-            lambda: [
-                collect_metrics()
-            ],
+            lambda: [collect_metrics()],
         )
     )
 
@@ -301,24 +270,18 @@ def main():
             run_collector(
                 "journal",
                 lambda: collect_journal(
-                    lines=(
-                        args.journal_lines
-                    ),
+                    lines=(args.journal_lines),
                     since=args.since,
                 ),
             )
         )
 
-    output_path = Path(
-        args.output
-    )
+    output_path = Path(args.output)
 
     written = write_records(
         output_path,
         records,
-        truncate=(
-            args.truncate_output
-        ),
+        truncate=(args.truncate_output),
     )
 
     counts = Counter(
@@ -331,26 +294,16 @@ def main():
         for record in records
     )
 
-    print(
-        "\nLinux discovery complete."
-    )
+    print("\nLinux discovery complete.")
 
-    print(
-        f"Records written: {written}"
-    )
+    print(f"Records written: {written}")
 
-    print(
-        f"Output: {output_path}"
-    )
+    print(f"Output: {output_path}")
 
     print("\nSignal counts:")
 
-    for signal, count in (
-        counts.most_common()
-    ):
-        print(
-            f"  {signal}: {count}"
-        )
+    for signal, count in counts.most_common():
+        print(f"  {signal}: {count}")
 
 
 if __name__ == "__main__":

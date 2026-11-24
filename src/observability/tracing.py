@@ -52,9 +52,8 @@ from src.observability.schema import (
 # Errors
 # ---------------------------------------------------------------
 
-class TracingError(
-    RuntimeError
-):
+
+class TracingError(RuntimeError):
     pass
 
 
@@ -62,16 +61,15 @@ class TracingError(
 # Trace identity
 # ---------------------------------------------------------------
 
-def new_trace_id(
-) -> str:
-    return random_id(
-        "observability:trace"
-    )
+
+def new_trace_id() -> str:
+    return random_id("observability:trace")
 
 
 # ---------------------------------------------------------------
 # Trace buffer
 # ---------------------------------------------------------------
+
 
 class TraceBuffer:
     """
@@ -85,29 +83,17 @@ class TraceBuffer:
     def __init__(
         self,
         *,
-        config: Optional[
-            TracingConfig
-        ] = None,
+        config: Optional[TracingConfig] = None,
         redact_sensitive: bool = True,
     ) -> None:
-        self.config = (
-            config
-            or TracingConfig()
-        )
+        self.config = config or TracingConfig()
 
         self.config.validate()
 
-        self.redact_sensitive = bool(
-            redact_sensitive
-        )
+        self.redact_sensitive = bool(redact_sensitive)
 
-        self._spans: Deque[
-            TraceSpan
-        ] = deque(
-            maxlen=(
-                self.config.
-                maximum_buffered_spans
-            )
+        self._spans: Deque[TraceSpan] = deque(
+            maxlen=(self.config.maximum_buffered_spans)
         )
 
         self._active: Dict[
@@ -131,22 +117,13 @@ class TraceBuffer:
         if not self.config.enabled:
             return False
 
-        if (
-            self.config.sample_rate
-            <= 0.0
-        ):
+        if self.config.sample_rate <= 0.0:
             return False
 
-        if (
-            self.config.sample_rate
-            >= 1.0
-        ):
+        if self.config.sample_rate >= 1.0:
             return True
 
-        return (
-            random.random()
-            < self.config.sample_rate
-        )
+        return random.random() < self.config.sample_rate
 
     # ---------------------------------------------------------
     # Start span
@@ -157,24 +134,16 @@ class TraceBuffer:
         *,
         name: str,
         context: ObservabilityContext,
-        trace_id: Optional[
-            str
-        ] = None,
-        parent_span_id: Optional[
-            str
-        ] = None,
+        trace_id: Optional[str] = None,
+        parent_span_id: Optional[str] = None,
         attributes: Optional[
             Mapping[
                 str,
                 Any,
             ]
         ] = None,
-        sampled: Optional[
-            bool
-        ] = None,
-    ) -> Optional[
-        TraceSpan
-    ]:
+        sampled: Optional[bool] = None,
+    ) -> Optional[TraceSpan]:
         """
         Start a trace span.
 
@@ -182,66 +151,33 @@ class TraceBuffer:
         the trace is not sampled.
         """
 
-        selected = (
-            self.should_sample()
-            if sampled is None
-            else bool(
-                sampled
-            )
-        )
+        selected = self.should_sample() if sampled is None else bool(sampled)
 
-        if (
-            not self.config.enabled
-            or not selected
-        ):
+        if not self.config.enabled or not selected:
             with self._lock:
                 self._sampled_out += 1
 
             return None
 
-        span = (
-            TraceSpan(
-                name=name,
-                context=context,
-                trace_id=(
-                    trace_id
-                    or new_trace_id()
-                ),
-                parent_span_id=(
-                    parent_span_id
-                ),
-                attributes=(
-                    to_json_safe(
-                        dict(
-                            attributes
-                            or {}
-                        ),
-                        redact_sensitive=(
-                            self.
-                            redact_sensitive
-                        ),
-                        sensitive_keys=(
-                            DEFAULT_SENSITIVE_KEYS
-                        ),
-                    )
-                ),
-            ).finalize()
-        )
+        span = TraceSpan(
+            name=name,
+            context=context,
+            trace_id=(trace_id or new_trace_id()),
+            parent_span_id=(parent_span_id),
+            attributes=(
+                to_json_safe(
+                    dict(attributes or {}),
+                    redact_sensitive=(self.redact_sensitive),
+                    sensitive_keys=(DEFAULT_SENSITIVE_KEYS),
+                )
+            ),
+        ).finalize()
 
         with self._lock:
-            if (
-                span.span_id
-                in self._active
-            ):
-                raise TracingError(
-                    "Duplicate active "
-                    "span_id: "
-                    f"{span.span_id}"
-                )
+            if span.span_id in self._active:
+                raise TracingError(f"Duplicate active span_id: {span.span_id}")
 
-            self._active[
-                span.span_id
-            ] = span
+            self._active[span.span_id] = span
 
         return span
 
@@ -254,18 +190,14 @@ class TraceBuffer:
         parent: TraceSpan,
         *,
         name: str,
-        context: Optional[
-            ObservabilityContext
-        ] = None,
+        context: Optional[ObservabilityContext] = None,
         attributes: Optional[
             Mapping[
                 str,
                 Any,
             ]
         ] = None,
-    ) -> Optional[
-        TraceSpan
-    ]:
+    ) -> Optional[TraceSpan]:
         """
         Start a child of an already sampled
         parent.
@@ -278,16 +210,9 @@ class TraceBuffer:
 
         return self.start_span(
             name=name,
-            context=(
-                context
-                or parent.context
-            ),
-            trace_id=(
-                parent.trace_id
-            ),
-            parent_span_id=(
-                parent.span_id
-            ),
+            context=(context or parent.context),
+            trace_id=(parent.trace_id),
+            parent_span_id=(parent.span_id),
             attributes=attributes,
             sampled=True,
         )
@@ -300,18 +225,14 @@ class TraceBuffer:
         self,
         span: TraceSpan,
         *,
-        status: str = (
-            SpanStatus.OK.value
-        ),
+        status: str = (SpanStatus.OK.value),
         attributes: Optional[
             Mapping[
                 str,
                 Any,
             ]
         ] = None,
-        error: Optional[
-            BaseException
-        ] = None,
+        error: Optional[BaseException] = None,
     ) -> TraceSpan:
         """
         Complete an active span.
@@ -323,81 +244,42 @@ class TraceBuffer:
 
         span.finalize()
 
-        if (
-            status
-            not in {
-                item.value
-                for item
-                in SpanStatus
-            }
-        ):
-            raise TracingError(
-                "Unknown span status: "
-                f"{status}"
-            )
+        if status not in {item.value for item in SpanStatus}:
+            raise TracingError(f"Unknown span status: {status}")
 
         if error is not None:
-            status = (
-                SpanStatus.ERROR.value
-            )
+            status = SpanStatus.ERROR.value
 
         with self._lock:
-            if (
-                span.span_id
-                not in self._active
-            ):
-                raise TracingError(
-                    "Span is not active: "
-                    f"{span.span_id}"
-                )
+            if span.span_id not in self._active:
+                raise TracingError(f"Span is not active: {span.span_id}")
 
-            merged = dict(
-                span.attributes
-            )
+            merged = dict(span.attributes)
 
             if attributes:
                 merged.update(
                     to_json_safe(
-                        dict(
-                            attributes
-                        ),
-                        redact_sensitive=(
-                            self.
-                            redact_sensitive
-                        ),
-                        sensitive_keys=(
-                            DEFAULT_SENSITIVE_KEYS
-                        ),
+                        dict(attributes),
+                        redact_sensitive=(self.redact_sensitive),
+                        sensitive_keys=(DEFAULT_SENSITIVE_KEYS),
                     )
                 )
 
             if error is not None:
                 merged.update(
                     {
-                        "error_type": (
-                            type(error).
-                            __name__
-                        ),
-                        "error_module": (
-                            type(error).
-                            __module__
-                        ),
+                        "error_type": (type(error).__name__),
+                        "error_module": (type(error).__module__),
                     }
                 )
 
-            span.attributes = (
-                merged
-            )
+            span.attributes = merged
 
             span.status = status
 
-            span.ended_at = (
-                utc_now()
-            )
+            span.ended_at = utc_now()
 
-            span.attributes[
-                "duration_seconds"
-            ] = max(
+            span.attributes["duration_seconds"] = max(
                 0.0,
                 duration_seconds(
                     span.started_at,
@@ -405,20 +287,11 @@ class TraceBuffer:
                 ),
             )
 
-            del self._active[
-                span.span_id
-            ]
+            del self._active[span.span_id]
 
-            was_full = (
-                len(
-                    self._spans
-                )
-                == self._spans.maxlen
-            )
+            was_full = len(self._spans) == self._spans.maxlen
 
-            self._spans.append(
-                span
-            )
+            self._spans.append(span)
 
             self._accepted += 1
 
@@ -435,15 +308,11 @@ class TraceBuffer:
         self,
         span: TraceSpan,
         *,
-        reason: str = (
-            "Span abandoned."
-        ),
+        reason: str = ("Span abandoned."),
     ) -> TraceSpan:
         return self.finish_span(
             span,
-            status=(
-                SpanStatus.ERROR.value
-            ),
+            status=(SpanStatus.ERROR.value),
             attributes={
                 "abandoned": True,
                 "reason": reason,
@@ -457,22 +326,12 @@ class TraceBuffer:
     def spans(
         self,
         *,
-        trace_id: Optional[
-            str
-        ] = None,
-        service: Optional[
-            str
-        ] = None,
-        status: Optional[
-            str
-        ] = None,
-        limit: Optional[
-            int
-        ] = None,
+        trace_id: Optional[str] = None,
+        service: Optional[str] = None,
+        status: Optional[str] = None,
+        limit: Optional[int] = None,
         newest_first: bool = False,
-    ) -> List[
-        TraceSpan
-    ]:
+    ) -> List[TraceSpan]:
         if limit is not None:
             limit = integer(
                 limit,
@@ -480,63 +339,30 @@ class TraceBuffer:
                 minimum=1,
             )
 
-        if (
-            status is not None
-            and status
-            not in {
-                item.value
-                for item
-                in SpanStatus
-            }
-        ):
-            raise TracingError(
-                "Unknown span status: "
-                f"{status}"
-            )
+        if status is not None and status not in {item.value for item in SpanStatus}:
+            raise TracingError(f"Unknown span status: {status}")
 
         with self._lock:
-            values = list(
-                self._spans
-            )
+            values = list(self._spans)
 
         if newest_first:
             values.reverse()
 
-        output: List[
-            TraceSpan
-        ] = []
+        output: List[TraceSpan] = []
 
         for span in values:
-            if (
-                trace_id is not None
-                and span.trace_id
-                != trace_id
-            ):
+            if trace_id is not None and span.trace_id != trace_id:
                 continue
 
-            if (
-                service is not None
-                and span.context.service
-                != service
-            ):
+            if service is not None and span.context.service != service:
                 continue
 
-            if (
-                status is not None
-                and span.status
-                != status
-            ):
+            if status is not None and span.status != status:
                 continue
 
-            output.append(
-                span
-            )
+            output.append(span)
 
-            if (
-                limit is not None
-                and len(output)
-                >= limit
-            ):
+            if limit is not None and len(output) >= limit:
                 break
 
         return output
@@ -547,13 +373,9 @@ class TraceBuffer:
 
     def active_spans(
         self,
-    ) -> List[
-        TraceSpan
-    ]:
+    ) -> List[TraceSpan]:
         with self._lock:
-            return list(
-                self._active.values()
-            )
+            return list(self._active.values())
 
     # ---------------------------------------------------------
     # Drain completed spans
@@ -562,12 +384,8 @@ class TraceBuffer:
     def drain(
         self,
         *,
-        limit: Optional[
-            int
-        ] = None,
-    ) -> List[
-        TraceSpan
-    ]:
+        limit: Optional[int] = None,
+    ) -> List[TraceSpan]:
         if limit is not None:
             limit = integer(
                 limit,
@@ -577,25 +395,15 @@ class TraceBuffer:
 
         with self._lock:
             count = (
-                len(
-                    self._spans
-                )
+                len(self._spans)
                 if limit is None
                 else min(
                     limit,
-                    len(
-                        self._spans
-                    ),
+                    len(self._spans),
                 )
             )
 
-            return [
-                self._spans.popleft()
-                for _
-                in range(
-                    count
-                )
-            ]
+            return [self._spans.popleft() for _ in range(count)]
 
     # ---------------------------------------------------------
     # Clear completed spans
@@ -605,9 +413,7 @@ class TraceBuffer:
         self,
     ) -> int:
         with self._lock:
-            count = len(
-                self._spans
-            )
+            count = len(self._spans)
 
             self._spans.clear()
 
@@ -627,9 +433,7 @@ class TraceBuffer:
             ] = {}
 
             for span in self._spans:
-                statuses[
-                    span.status
-                ] = (
+                statuses[span.status] = (
                     statuses.get(
                         span.status,
                         0,
@@ -638,52 +442,22 @@ class TraceBuffer:
                 )
 
             return {
-                "enabled": (
-                    self.config.enabled
-                ),
-
-                "sample_rate": (
-                    self.config.sample_rate
-                ),
-
-                "active_spans": (
-                    len(
-                        self._active
-                    )
-                ),
-
-                "buffered_spans": (
-                    len(
-                        self._spans
-                    )
-                ),
-
-                "maximum_buffered_spans": (
-                    self.config.
-                    maximum_buffered_spans
-                ),
-
-                "accepted_total": (
-                    self._accepted
-                ),
-
-                "sampled_out_total": (
-                    self._sampled_out
-                ),
-
-                "evicted_total": (
-                    self._evicted
-                ),
-
-                "buffered_by_status": (
-                    statuses
-                ),
+                "enabled": (self.config.enabled),
+                "sample_rate": (self.config.sample_rate),
+                "active_spans": (len(self._active)),
+                "buffered_spans": (len(self._spans)),
+                "maximum_buffered_spans": (self.config.maximum_buffered_spans),
+                "accepted_total": (self._accepted),
+                "sampled_out_total": (self._sampled_out),
+                "evicted_total": (self._evicted),
+                "buffered_by_status": (statuses),
             }
 
 
 # ---------------------------------------------------------------
 # Span context manager
 # ---------------------------------------------------------------
+
 
 class SpanScope:
     """
@@ -698,18 +472,14 @@ class SpanScope:
     def __init__(
         self,
         buffer: TraceBuffer,
-        span: Optional[
-            TraceSpan
-        ],
+        span: Optional[TraceSpan],
     ) -> None:
         self.buffer = buffer
         self.span = span
 
     def __enter__(
         self,
-    ) -> Optional[
-        TraceSpan
-    ]:
+    ) -> Optional[TraceSpan]:
         return self.span
 
     def __exit__(
@@ -724,9 +494,7 @@ class SpanScope:
         if exc is None:
             self.buffer.finish_span(
                 self.span,
-                status=(
-                    SpanStatus.OK.value
-                ),
+                status=(SpanStatus.OK.value),
             )
 
         else:
@@ -742,17 +510,14 @@ class SpanScope:
 # Convenience tracing helper
 # ---------------------------------------------------------------
 
+
 def traced(
     buffer: TraceBuffer,
     *,
     name: str,
     context: ObservabilityContext,
-    trace_id: Optional[
-        str
-    ] = None,
-    parent_span_id: Optional[
-        str
-    ] = None,
+    trace_id: Optional[str] = None,
+    parent_span_id: Optional[str] = None,
     attributes: Optional[
         Mapping[
             str,
@@ -780,9 +545,7 @@ def traced(
             name=name,
             context=context,
             trace_id=trace_id,
-            parent_span_id=(
-                parent_span_id
-            ),
+            parent_span_id=(parent_span_id),
             attributes=attributes,
         ),
     )
@@ -794,11 +557,8 @@ def traced(
 
 __all__ = [
     "TracingError",
-
     "new_trace_id",
-
     "TraceBuffer",
-
     "SpanScope",
     "traced",
 ]

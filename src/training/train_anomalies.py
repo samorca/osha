@@ -1,605 +1,518 @@
-from __fu*ure__ import annotations
+from __future__ import annotations
 
 """
-Trai* the OSHA structured anomaly model*
+Train the OSHA structured anomaly classifier.
 
-Hardware discovery and device se*ection are
-delegated to:
-
-    src.*ccelerators.AcceleratorManager
-
-Th*s module owns the anomaly-specific*PyTorch
-optimization loop.
-
-Input *ecords must contain a numeric feat*re
+Input records must contain a numeric feature
 vector under one of:
 
-    featu*es
+    features
     feature_vector
     values
- *  vector
+    vector
     x
 
-and a binary label*under one of:
+and a binary anomaly label under one of:
 
     label
-    targe*
+    target
     anomaly_label
     is_anomaly
-*   anomaly
+    anomaly
+
+The trainer provides:
+
+    deterministic train/validation/test splits
+    binary anomaly classification
+    class-imbalance weighting
+    validation-based checkpoint selection
+    managed SHA-256 checkpoints
+    final held-out test evaluation
+    atomic JSON reporting
+
+The anomaly decision threshold is not permanently
+embedded into the model. Threshold calibration
+belongs to analyze_anomaly_thresholds.py.
 """
 
 import argparse
-im*ort hashlib
+import hashlib
 import json
-import mat*
+import math
+import random
 import shutil
 
-from pathlib impor* Path
+from pathlib import Path
 
 from typing import (
-    An*,
+    Any,
     Dict,
     Iterable,
-    List*
+    List,
     Mapping,
     Optional,
-    Tu*le,
+    Sequence,
+    Tuple,
 )
 
 import torch
 
-from torch im*ort nn
-from torch.optim import Ada*W
-from torch.utils.data import Dat*Loader
+from torch import nn
 
-from src.accelerators impo*t (
-    AcceleratorConfig,
-    Acc*leratorManager,
-    AcceleratorPre*ision,
-    AcceleratorSelection,
- *  AcceleratorSelectionConfig,
+from torch.optim import (
+    AdamW,
 )
 
-f*om src.training.anomaly_dataset im*ort (
+from torch.utils.data import (
+    DataLoader,
+)
+
+from src.training.anomaly_dataset import (
     ANOMALY_LABEL,
-    IGNOR*_INDEX,
+    IGNORE_INDEX,
     NORMAL_LABEL,
-    Anom*lyDataset,
-    anomaly_dataset_fro*_records,
-    load_anomaly_records*
+    AnomalyDataset,
+    anomaly_dataset_from_records,
+    extract_legacy_features,
+    extract_legacy_label,
+    load_anomaly_records,
+    normalize_anomaly_label,
 )
 
-from src.training.anomaly_mode* import (
-    InfrastructureAnomal*Model,
+from src.training.anomaly_model import (
+    InfrastructureAnomalyModel,
 )
 
-from src.training.config*import (
-    AcceleratorConfig as *rainingAcceleratorConfig,
-    Chec*pointConfig,
-    OptimizationConfi*,
+from src.training.config import (
+    AcceleratorConfig,
+    CheckpointConfig,
+    OptimizationConfig,
     ReproducibilityConfig,
-    T*ainingConfig,
-    TrainingPathConf*g,
+    TrainingConfig,
+    TrainingPathConfig,
 )
 
-from src.training.errors imp*rt (
-    EmptyTrainingDatasetError*
+from src.training.errors import (
+    EmptyTrainingDatasetError,
     TrainingNumericalError,
-    T*ainingRunError,
+    TrainingRunError,
 )
 
-from src.traini*g.pipeline import (
-    TrainingPi*eline,
+from src.training.pipeline import (
+    TrainingPipeline,
 )
 
-from src.training.schema*import (
+from src.training.schema import (
     EvaluationSplit,
-    *rainingState,
+    TrainingState,
     TrainingTask,
 )
-*
-# -------------------------------*-------------------------------
-# *LI
-# -----------------------------*---------------------------------
-*def parse_args() -> argparse.Names*ace:
-    parser = argparse.Argumen*Parser(
-        description=(
-    *       "Train the OSHA structured *
-            "infrastructure anoma*y model."
-        )
-    )
 
-    par*er.add_argument(
-        "--data",*        default=(
-            "orc*estration-ai-data/"
-            "p*ocessed/anomalies.jsonl"
-        )*
+
+# ---------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description=("Train the OSHA structured infrastructure anomaly model.")
     )
 
     parser.add_argument(
- *      "--output",
-        default=*
-            "artifacts/models/"
- *          "anomaly-detection-v1"
- *      ),
+        "--data",
+        default=("orchestration-ai-data/processed/anomalies.jsonl"),
+        help=("Input JSONL containing numeric anomaly records."),
     )
 
-    parser.add_arg*ment(
+    parser.add_argument(
+        "--output",
+        default=("artifacts/models/anomaly-detection-v1"),
+        help=("Directory for compatibility checkpoints and the training report."),
+    )
+
+    parser.add_argument(
         "--model-name",
-    *   default=(
-            "infrastr*cture-anomaly-model"
-        ),
-  * )
-
-    parser.add_argument(
-     *  "--dataset-id",
-        default=*
-            "osha-infrastructure-*nomalies"
-        ),
+        default=("infrastructure-anomaly-model"),
     )
 
-    pa*ser.add_argument(
-        "--epoch*",
+    parser.add_argument(
+        "--dataset-id",
+        default=("osha-infrastructure-anomalies"),
+    )
+
+    parser.add_argument(
+        "--epochs",
         type=int,
-        defau*t=20,
+        default=20,
     )
 
-    parser.add_argume*t(
+    parser.add_argument(
         "--batch-size",
-       *type=int,
+        type=int,
         default=64,
-    *
+    )
 
     parser.add_argument(
-       *"--learning-rate",
-        type=fl*at,
+        "--learning-rate",
+        type=float,
         default=1e-3,
     )
 
- *  parser.add_argument(
-        "--*eight-decay",
+    parser.add_argument(
+        "--weight-decay",
         type=float,
-*       default=0.0,
+        default=0.0,
     )
 
-    par*er.add_argument(
-        "--hidden*dim",
+    parser.add_argument(
+        "--hidden-dim",
         type=int,
-        de*ault=256,
+        default=256,
     )
 
-    parser.add_ar*ument(
-        "--representation-d*m",
+    parser.add_argument(
+        "--representation-dim",
         type=int,
-        defa*lt=128,
+        default=128,
     )
 
-    parser.add_argu*ent(
+    parser.add_argument(
         "--dropout",
-        *ype=float,
+        type=float,
         default=0.20,
- *  )
+    )
 
     parser.add_argument(
-    *   "--gradient-clip-norm",
-       *type=float,
+        "--gradient-clip-norm",
+        type=float,
         default=1.0,
- *  )
+    )
 
     parser.add_argument(
-    *   "--threshold",
-        type=flo*t,
+        "--threshold",
+        type=float,
         default=0.50,
+        help=(
+            "Temporary evaluation threshold. "
+            "Use threshold analysis before "
+            "production promotion."
+        ),
     )
 
-  * parser.add_argument(
-        "--t*ain-ratio",
+    parser.add_argument(
+        "--train-ratio",
         type=float,
-  *     default=0.80,
+        default=0.80,
     )
 
-    pars*r.add_argument(
-        "--validat*on-ratio",
+    parser.add_argument(
+        "--validation-ratio",
         type=float,
-   *    default=0.10,
+        default=0.10,
     )
 
-    parse*.add_argument(
-        "--max-reco*ds",
+    parser.add_argument(
+        "--max-records",
         type=int,
-        def*ult=None,
+        default=None,
     )
 
-    parser.add_ar*ument(
+    parser.add_argument(
         "--num-workers",
-  *     type=int,
-        default=2,
-*   )
-
-    parser.add_argument(
-   *    "--seed",
         type=int,
-  *     default=42,
+        default=2,
     )
 
-    parser*add_argument(
-        "--accelerat*r",
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+    )
+
+    parser.add_argument(
+        "--accelerator",
         choices=(
-            *auto",
+            "auto",
             "cuda",
-       *    "rocm",
+            "rocm",
             "cpu",
-   *    ),
+        ),
         default="auto",
-   *)
+    )
 
     parser.add_argument(
-      * "--device-index",
-        type=in*,
+        "--device-index",
+        type=int,
         default=None,
     )
 
-   *parser.add_argument(
-        "--no*cpu-fallback",
-        action="sto*e_true",
+    parser.add_argument(
+        "--no-cpu-fallback",
+        action="store_true",
     )
 
-    parser.add_arg*ment(
-        "--mixed-precision",*        action="store_true",
-    )*
     parser.add_argument(
-        *--minimum-free-memory-gb",
-       *type=float,
-        default=None,
-*   )
-
-    parser.add_argument(
-   *    "--pin-memory",
-        action*"store_true",
+        "--pin-memory",
+        action="store_true",
     )
 
-    parser.ad*_argument(
+    parser.add_argument(
         "--keep-last",
-*       type=int,
-        default=5*
+        type=int,
+        default=5,
     )
 
     parser.add_argument(
- *      "--disable-class-weight",
-  *     action="store_true",
+        "--disable-class-weight",
+        action="store_true",
+        help=("Disable positive-class weighting in BCEWithLogitsLoss."),
     )
 
- *  return parser.parse_args()
+    return parser.parse_args()
 
 
-# -*----------------------------------*--------------------------
-# Argum*nt validation
-# ------------------*----------------------------------*---------
+# ---------------------------------------------------------------
+# Argument validation
+# ---------------------------------------------------------------
+
 
 def validate_args(
-    *rgs: argparse.Namespace,
-) -> None*
+    args: argparse.Namespace,
+) -> None:
     if args.epochs < 1:
-        r*ise ValueError(
-            "--epo*hs must be >= 1"
-        )
+        raise ValueError("--epochs must be >= 1")
 
-    if*args.batch_size < 1:
-        raise*ValueError(
-            "--batch-s*ze must be >= 1"
-        )
+    if args.batch_size < 1:
+        raise ValueError("--batch-size must be >= 1")
 
-    if*args.learning_rate <= 0:
-        r*ise ValueError(
-            "--lea*ning-rate must be > 0"
-        )
+    if args.learning_rate <= 0:
+        raise ValueError("--learning-rate must be > 0")
 
-*   if args.weight_decay < 0:
-     *  raise ValueError(
-            "-*weight-decay must be >= 0"
-       *)
+    if args.weight_decay < 0:
+        raise ValueError("--weight-decay must be >= 0")
 
     if args.hidden_dim < 1:
-   *    raise ValueError(
-            *--hidden-dim must be >= 1"
-       *)
+        raise ValueError("--hidden-dim must be >= 1")
 
-    if args.representation_dim * 1:
-        raise ValueError(
-    *       "--representation-dim must *e >= 1"
-        )
+    if args.representation_dim < 1:
+        raise ValueError("--representation-dim must be >= 1")
 
-    if not 0.0 *= args.dropout < 1.0:
-        rais* ValueError(
-            "--dropou* must be in [0, 1)"
-        )
+    if not (0.0 <= args.dropout < 1.0):
+        raise ValueError("--dropout must be in [0, 1)")
 
-   *if args.gradient_clip_norm <= 0:
- *      raise ValueError(
-          * "--gradient-clip-norm must be > 0*
-        )
+    if args.gradient_clip_norm <= 0:
+        raise ValueError("--gradient-clip-norm must be > 0")
 
-    if not 0.0 <= args*threshold <= 1.0:
-        raise Va*ueError(
-            "--threshold *ust be in [0, 1]"
-        )
+    if not (0.0 <= args.threshold <= 1.0):
+        raise ValueError("--threshold must be in [0, 1]")
 
-    i* not 0.0 < args.train_ratio < 1.0:*        raise ValueError(
-        *   "--train-ratio must be between * and 1"
-        )
+    if not (0.0 < args.train_ratio < 1.0):
+        raise ValueError("--train-ratio must be between 0 and 1")
 
-    if not 0.0 *= args.validation_ratio < 1.0:
-   *    raise ValueError(
-            *--validation-ratio must be in [0, 1)"
-        )
+    if not (0.0 <= args.validation_ratio < 1.0):
+        raise ValueError("--validation-ratio must be between 0 and 1")
 
-    if (
-        arg*.train_ratio
-        + args.valida*ion_ratio
-        >= 1.0
-    ):
-  *     raise ValueError(
-           *"--train-ratio plus "
-            *--validation-ratio must be less th*n 1"
-        )
+    if args.train_ratio + args.validation_ratio >= 1.0:
+        raise ValueError("--train-ratio plus --validation-ratio must be less than 1")
 
-    if args.num_wo*kers < 0:
-        raise ValueError*
-            "--num-workers must b* >= 0"
-        )
+    if args.num_workers < 0:
+        raise ValueError("--num-workers must be >= 0")
 
-    if args.keep*last < 1:
-        raise ValueError*
-            "--keep-last must be *= 1"
-        )
+    if args.keep_last < 1:
+        raise ValueError("--keep-last must be >= 1")
 
-    if (
-        a*gs.max_records is not None
-       *and args.max_records < 1
-    ):
-  *     raise ValueError(
-           *"--max-records must be >= 1"
-     *  )
-
-    if (
-        args.minimum*free_memory_gb is not None
-       *and args.minimum_free_memory_gb < *
-    ):
-        raise ValueError(
-*           "--minimum-free-memory-*b must be >= 0"
-        )
-
-    if *
-        args.mixed_precision
-    *   and args.accelerator == "cpu"
- *  ):
-        raise ValueError(
-   *        "--mixed-precision cannot *e used "
-            "with an expl*citly selected CPU"
-        )
+    if args.max_records is not None and args.max_records < 1:
+        raise ValueError("--max-records must be >= 1")
 
 
-# *----------------------------------*---------------------------
-# Trai*ing configuration
-# --------------*----------------------------------*-------------
+# ---------------------------------------------------------------
+# Training configuration
+# ---------------------------------------------------------------
 
-def build_training_*onfig(
-    args: argparse.Namespac*,
+
+def build_training_config(
+    args: argparse.Namespace,
 ) -> TrainingConfig:
-    config * TrainingConfig(
-        enabled=T*ue,
-
+    config = TrainingConfig(
+        enabled=True,
         allowed_tasks=(
-     *      TrainingTask.EVENT.value,
-  *         TrainingTask.ANOMALY.valu*,
+            TrainingTask.EVENT.value,
+            TrainingTask.ANOMALY.value,
         ),
-
-        paths=Traini*gPathConfig(),
-
-        reproducib*lity=ReproducibilityConfig(
-      *     random_seed=args.seed,
-      *     deterministic=True,
-         *  benchmark=False,
+        paths=TrainingPathConfig(),
+        reproducibility=(
+            ReproducibilityConfig(
+                random_seed=args.seed,
+                deterministic=True,
+                benchmark=False,
+            )
         ),
-
-   *    optimization=OptimizationConfi*(
-            batch_size=args.batc*_size,
-            epochs=args.epo*hs,
-            learning_rate=(
-  *             args.learning_rate
-  *         ),
-            weight_dec*y=(
-                args.weight_de*ay
-            ),
-            grad*ent_clip_norm=(
-                ar*s.gradient_clip_norm
-            )*
-            accumulation_steps=1,*        ),
-
-        accelerator=Tr*iningAcceleratorConfig(
-          * preferred=args.accelerator,
-     *      allow_fallback_to_cpu=(
-    *           not args.no_cpu_fallbac*
-            ),
-            mixed_*recision=(
-                args.mi*ed_precision
-            ),
-      *     device_index=(
-              * args.device_index
-            ),
-*       ),
-
-        checkpoint=Chec*pointConfig(
-            enabled=T*ue,
-            save_every_epochs=*,
-            keep_last=args.keep_*ast,
+        optimization=(
+            OptimizationConfig(
+                batch_size=(args.batch_size),
+                epochs=args.epochs,
+                learning_rate=(args.learning_rate),
+                weight_decay=(args.weight_decay),
+                gradient_clip_norm=(args.gradient_clip_norm),
+                accumulation_steps=1,
+            )
+        ),
+        accelerator=AcceleratorConfig(
+            preferred=args.accelerator,
+            allow_fallback_to_cpu=(not args.no_cpu_fallback),
+            mixed_precision=False,
+            device_index=(args.device_index),
+        ),
+        checkpoint=CheckpointConfig(
+            enabled=True,
+            save_every_epochs=1,
+            keep_last=args.keep_last,
             keep_best=True,
- *          monitor_metric=(
-       *        "validation_loss"
-        *   ),
+            monitor_metric=("validation_loss"),
             mode="min",
-    *       save_optimizer_state=True,
-*       ),
-
-        attributes={
-  *         "trainer": "train_anomali*s",
-            "accelerator_provi*er": (
-                "src.accele*ators"
-            ),
-        },
- *  )
-
-    config.validate()
-
-    re*urn config
-
-
-# -------------------*----------------------------------*--------
-# Accelerator configurati*n
-# ------------------------------*--------------------------------
-
-*ef build_accelerator_manager(
-    *rgs: argparse.Namespace,
-) -> Acce*eratorManager:
-    config = Accele*atorConfig(
-        selection=Acce*eratorSelectionConfig(
-           *preferred_kind=(
-                a*gs.accelerator
-            ),
-    *       device_index=(
-            *   args.device_index
-            )*
-            allow_cpu_fallback=(
-*               not args.no_cpu_fal*back
-            ),
-            al*ow_degraded_devices=True,
-        *   require_accelerator=(
-         *      args.no_cpu_fallback
-       *        and args.accelerator
-     *          in {
-                   *"cuda",
-                    "rocm"*
-                }
-            ),
-*           prefer_highest_free_mem*ry=True,
+            save_optimizer_state=True,
         ),
-        attrib*tes={
-            "consumer": (
-  *             "training.train_anoma*ies"
-            ),
+        attributes={
+            "trainer": ("train_anomalies"),
         },
-   *)
+    )
 
     config.validate()
 
-    retu*n AcceleratorManager(
-        conf*g=config
-    )
+    return config
 
 
-def minimum_free_*emory_bytes(
-    args: argparse.Na*espace,
-) -> Optional[int]:
-    if*args.minimum_free_memory_gb is Non*:
-        return None
-
-    return *nt(
-        args.minimum_free_memo*y_gb
-        * 1024**3
-    )
+# ---------------------------------------------------------------
+# Device selection
+# ---------------------------------------------------------------
 
 
-def***lect_accelerator(
-    manager: A***leratorManager,
-    args: argpar***Namespace,
-) -> AcceleratorSelec***n:
-    required_precisions = ()
-***  if args.mixed_precision:
-     ***required_precisions = (
-        *** AcceleratorPrecision.
-         ***FLOAT16.value,
+def select_device(
+    config: TrainingConfig,
+) -> torch.device:
+    preferred = config.accelerator.preferred.lower()
+
+    fallback = config.accelerator.allow_fallback_to_cpu
+
+    device_index = config.accelerator.device_index
+
+    if preferred == "cpu":
+        return torch.device("cpu")
+
+    cuda_available = torch.cuda.is_available()
+
+    if preferred == "cuda":
+        if cuda_available:
+            index = device_index if device_index is not None else 0
+
+            if index >= torch.cuda.device_count():
+                raise TrainingRunError(
+                    "Configured CUDA device index is unavailable.",
+                    details={
+                        "device_index": (index),
+                        "visible_devices": (torch.cuda.device_count()),
+                    },
+                )
+
+            return torch.device(f"cuda:{index}")
+
+        if fallback:
+            return torch.device("cpu")
+
+        raise TrainingRunError("CUDA was requested but is not available.")
+
+    if preferred == "rocm":
+        hip_version = getattr(
+            torch.version,
+            "hip",
+            None,
         )
 
-    re***n manager.select_for_training(
- ***    preferred_kind=args.accelera***,
-        device_index=args.devi***index,
-        minimum_free_memo***bytes=(
-            minimum_free***mory_bytes(
-                args***          )
-        ),
-        r***ire_accelerator=(
-            ar***no_cpu_fallback
-            and ***s.accelerator
-            in {
- ***            "cuda",
-            *** "rocm",
-            }
-        )***       allow_cpu_fallback=(
-    ***     not args.no_cpu_fallback
-  ***   ),
-        mixed_precision=(
-***         args.mixed_precision
-  ***   ),
-        required_precision***
-            required_precisions***      ),
-        refresh=True,
- ***)
+        if hip_version and cuda_available:
+            index = device_index if device_index is not None else 0
+
+            return torch.device(f"cuda:{index}")
+
+        if fallback:
+            return torch.device("cpu")
+
+        raise TrainingRunError("ROCm was requested but is not available.")
+
+    if cuda_available:
+        index = device_index if device_index is not None else 0
+
+        return torch.device(f"cuda:{index}")
+
+    return torch.device("cpu")
 
 
-# --------------------------***--------------------------------***# Deterministic record splitting***--------------------------------***----------------------------
+# ---------------------------------------------------------------
+# Stable record identity
+# ---------------------------------------------------------------
 
-de***nomaly_record_key(
-    record: M***ing[
+
+def anomaly_record_key(
+    record: Mapping[
         str,
         Any,
     ],
 ) -> str:
+    """
+    Derive a stable, leakage-aware split key.
+
+    Explicit grouping fields take precedence.
+    Otherwise the canonicalized record content is
+    used as its own deterministic group.
+    """
+
     for field in (
-***     "group_id",
-        "incide***id",
+        "group_id",
+        "incident_id",
         "sequence_id",
-    *** "session_id",
-        "trace_id***        "window_id",
-        "re***d_id",
+        "session_id",
+        "trace_id",
+        "window_id",
+    ):
+        value = record.get(field)
+
+        if value is not None:
+            text = str(value).strip()
+
+            if text:
+                return field + ":" + text
+
+    for field in (
+        "record_id",
         "example_id",
-   ***
-        value = record.get(
-   ***      field
-        )
+    ):
+        value = record.get(field)
 
-        i***alue is None:
-            contin***
-        text = str(
-           ***lue
-        ).strip()
+        if value is not None:
+            text = str(value).strip()
 
-        i***ext:
-            return (
-      ***       field
-                + "***                + text
-         ***)
+            if text:
+                return field + ":" + text
 
     serialized = json.dumps(
-***     dict(record),
-        sort_***s=True,
-        ensure_ascii=Fal***
+        dict(record),
+        sort_keys=True,
+        ensure_ascii=False,
         separators=(
-          ***,",
+            ",",
             ":",
         ),
-*** )
-
-    return (
-        "record***        + hashlib.sha256(
-      ***   serialized.encode(
-          ***   "utf-8"
-            )
-       ***hexdigest()
     )
 
+    return "record:" + hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
-def split_re***ds(
+
+# ---------------------------------------------------------------
+# Deterministic grouped split
+# ---------------------------------------------------------------
+
+
+def split_records(
     records: Iterable[
         Mapping[
             str,
@@ -607,165 +520,137 @@ def split_re***ds(
         ]
     ],
     *,
-*** train_ratio: float,
-    validat***_ratio: float,
+    train_ratio: float,
+    validation_ratio: float,
 ) -> Tuple[
     List[Dict[str, Any]],
     List[Dict[str, Any]],
     List[Dict[str, Any]],
 ]:
     train: List[
-        Dict[str, Any]
+        Dict[
+            str,
+            Any,
+        ]
     ] = []
 
-    validati*** List[
-        Dict[str, Any]
+    validation: List[
+        Dict[
+            str,
+            Any,
+        ]
     ] = []
 
     test: List[
-        Dict[str, Any]
+        Dict[
+            str,
+            Any,
+        ]
     ] = []
 
-    train***toff = int(
-        train_ratio ***0000
-    )
+    train_cutoff = int(train_ratio * 10000)
 
-    validation_cutof*** int(
-        (
-            trai***atio
-            + validation_ra***
-        )
-        * 10000
-    )***   for source_record in records:***      record = dict(
-           ***urce_record
-        )
+    validation_cutoff = int((train_ratio + validation_ratio) * 10000)
 
-        d***st = hashlib.sha256(
-           ***omaly_record_key(
-              ***ecord
-            ).encode(
-    ***         "utf-8"
-            )
- ***    ).hexdigest()
+    for source_record in records:
+        record = dict(source_record)
 
-        bucke*** (
+        key = anomaly_record_key(record)
+
+        digest = hashlib.sha256(key.encode("utf-8")).hexdigest()
+
+        bucket = (
             int(
-            *** digest[:8],
-                16,***          )
+                digest[:8],
+                16,
+            )
             % 10000
-***     )
+        )
 
-        if bucket < trai***utoff:
-            train.append(***              record
-           ***
-        elif bucket < validatio***utoff:
-            validation.ap***d(
-                record
-      ***   )
+        if bucket < train_cutoff:
+            train.append(record)
+
+        elif bucket < validation_cutoff:
+            validation.append(record)
 
         else:
-            ***t.append(
-                record***          )
+            test.append(record)
 
     if not train:
- ***    raise EmptyTrainingDatasetEr***(
-            "Anomaly split pro***ed an "
-            "empty train*** partition."
+        raise EmptyTrainingDatasetError(
+            "Anomaly split produced an empty training partition."
         )
 
-    retu***(
+    return (
         train,
-        validat***,
+        validation,
         test,
     )
 
 
-# ------***--------------------------------***-------------------
-# DataLoader***--------------------------------***----------------------------
+# ---------------------------------------------------------------
+# DataLoader
+# ---------------------------------------------------------------
 
-de***uild_loader(
-    dataset: Option***
-        AnomalyDataset
-    ],
- ****,
+
+def build_loader(
+    dataset: Optional[AnomalyDataset],
+    *,
     batch_size: int,
-    shuf***: bool,
+    shuffle: bool,
     num_workers: int,
-  ***in_memory: bool,
+    pin_memory: bool,
 ) -> Optional[DataLoader]:
-    if dataset is None:***      return None
+    if dataset is None:
+        return None
 
-    return Da***oader(
+    return DataLoader(
         dataset,
-        ***ch_size=batch_size,
-        shuf***=shuffle,
-        num_workers=nu***orkers,
-        pin_memory=pin_m***ry,
-        persistent_workers=(***          num_workers > 0
-      ***,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        persistent_workers=(num_workers > 0),
     )
 
 
-# --------------------***--------------------------------***-----
+# ---------------------------------------------------------------
 # Class weighting
-# ------***--------------------------------***-------------------
+# ---------------------------------------------------------------
 
-def positiv***lass_weight(
-    dataset: Anomal***taset,
+
+def positive_class_weight(
+    dataset: AnomalyDataset,
 ) -> float:
-    normal_co*** = sum(
-        1
-        for sa***e
-        in dataset.samples
-        if sample.label
-        == NORMAL_LABEL
-    )
+    normal_count = sum(1 for sample in dataset.samples if sample.label == NORMAL_LABEL)
 
     anomaly_count = sum(
-        1
-        for sample
-        in dataset.samples
-        if sample.label
-        == ANOMALY_LABEL
+        1 for sample in dataset.samples if sample.label == ANOMALY_LABEL
     )
 
     if anomaly_count == 0:
-        raise EmptyTrainingDatasetError(
-            "Training data contains no "
-            "anomaly examples."
-        )
+        raise EmptyTrainingDatasetError("Training data contains no anomaly examples.")
 
     if normal_count == 0:
-        raise EmptyTrainingDatasetError(
-            "Training data contains no "
-            "normal examples."
-        )
+        raise EmptyTrainingDatasetError("Training data contains no normal examples.")
 
-    return (
-        float(normal_count)
-        / float(anomaly_count)
-    )
+    return float(normal_count) / float(anomaly_count)
 
 
 # ---------------------------------------------------------------
-# Metrics
+# Binary metrics
 # ---------------------------------------------------------------
 
-def confusion_counts(
+
+def binary_metrics(
     probabilities: torch.Tensor,
     targets: torch.Tensor,
     *,
     threshold: float,
 ) -> Dict[str, int]:
-    valid = (
-        targets != IGNORE_INDEX
-    )
+    valid = targets != IGNORE_INDEX
 
-    count = int(
-        valid.sum().item()
-    )
-
-    if count == 0:
+    if int(valid.sum().item()) == 0:
         return {
             "true_positive": 0,
             "true_negative": 0,
@@ -774,186 +659,90 @@ def confusion_counts(
             "count": 0,
         }
 
-    predictions = (
-        probabilities[valid]
-        >= threshold
-    ).to(
-        torch.long
+    predictions = (probabilities[valid] >= threshold).to(torch.long)
+
+    expected = targets[valid].to(torch.long)
+
+    true_positive = int(
+        ((predictions == ANOMALY_LABEL) & (expected == ANOMALY_LABEL)).sum().item()
     )
 
-    expected = targets[valid].to(
-        torch.long
+    true_negative = int(
+        ((predictions == NORMAL_LABEL) & (expected == NORMAL_LABEL)).sum().item()
+    )
+
+    false_positive = int(
+        ((predictions == ANOMALY_LABEL) & (expected == NORMAL_LABEL)).sum().item()
+    )
+
+    false_negative = int(
+        ((predictions == NORMAL_LABEL) & (expected == ANOMALY_LABEL)).sum().item()
     )
 
     return {
-        "true_positive": int(
-            (
-                (
-                    predictions
-                    == ANOMALY_LABEL
-                )
-                & (
-                    expected
-                    == ANOMALY_LABEL
-                )
-            ).sum().item()
-        ),
-
-        "true_negative": int(
-            (
-                (
-                    predictions
-                    == NORMAL_LABEL
-                )
-                & (
-                    expected
-                    == NORMAL_LABEL
-                )
-            ).sum().item()
-        ),
-
-        "false_positive": int(
-            (
-                (
-                    predictions
-                    == ANOMALY_LABEL
-                )
-                & (
-                    expected
-                    == NORMAL_LABEL
-                )
-            ).sum().item()
-        ),
-
-        "false_negative": int(
-            (
-                (
-                    predictions
-                    == NORMAL_LABEL
-                )
-                & (
-                    expected
-                    == ANOMALY_LABEL
-                )
-            ).sum().item()
-        ),
-
-        "count": count,
+        "true_positive": (true_positive),
+        "true_negative": (true_negative),
+        "false_positive": (false_positive),
+        "false_negative": (false_negative),
+        "count": int(valid.sum().item()),
     }
 
 
 def finalize_metrics(
     *,
     total_loss: float,
-    batch_count: int,
-    example_count: int,
+    batches: int,
+    examples: int,
     confusion: Mapping[
         str,
         int,
     ],
     threshold: float,
 ) -> Dict[str, Any]:
-    tp = int(
-        confusion["true_positive"]
-    )
+    tp = int(confusion["true_positive"])
 
-    tn = int(
-        confusion["true_negative"]
-    )
+    tn = int(confusion["true_negative"])
 
-    fp = int(
-        confusion["false_positive"]
-    )
+    fp = int(confusion["false_positive"])
 
-    fn = int(
-        confusion["false_negative"]
-    )
+    fn = int(confusion["false_negative"])
 
-    count = int(
-        confusion["count"]
-    )
+    count = int(confusion["count"])
 
-    precision = (
-        tp / (tp + fp)
-        if tp + fp
-        else None
-    )
+    accuracy = (tp + tn) / count if count else None
 
-    recall = (
-        tp / (tp + fn)
-        if tp + fn
-        else None
-    )
+    precision = tp / (tp + fp) if (tp + fp) else None
+
+    recall = tp / (tp + fn) if (tp + fn) else None
+
+    specificity = tn / (tn + fp) if (tn + fp) else None
 
     f1 = (
-        2.0
-        * precision
-        * recall
-        / (
-            precision
-            + recall
-        )
-        if (
-            precision is not None
-            and recall is not None
-            and precision + recall > 0
-        )
+        2 * precision * recall / (precision + recall)
+        if (precision is not None and recall is not None and (precision + recall) > 0)
         else None
     )
 
+    false_positive_rate = fp / (fp + tn) if (fp + tn) else None
+
+    false_negative_rate = fn / (fn + tp) if (fn + tp) else None
+
     return {
-        "loss": (
-            total_loss / batch_count
-            if batch_count
-            else None
-        ),
-
-        "batch_count": batch_count,
-
-        "example_count": (
-            example_count
-        ),
-
-        "evaluated_count": count,
-
-        "threshold": threshold,
-
-        "accuracy": (
-            (tp + tn) / count
-            if count
-            else None
-        ),
-
-        "precision": precision,
-
+        "loss": (total_loss / batches if batches else None),
+        "example_count": (examples),
+        "evaluated_count": (count),
+        "batch_count": (batches),
+        "threshold": (threshold),
+        "accuracy": (accuracy),
+        "precision": (precision),
         "recall": recall,
-
-        "specificity": (
-            tn / (tn + fp)
-            if tn + fp
-            else None
-        ),
-
+        "specificity": (specificity),
         "f1": f1,
-
-        "false_positive_rate": (
-            fp / (fp + tn)
-            if fp + tn
-            else None
-        ),
-
-        "false_negative_rate": (
-            fn / (fn + tp)
-            if fn + tp
-            else None
-        ),
-
+        "false_positive_rate": (false_positive_rate),
+        "false_negative_rate": (false_negative_rate),
         "true_positive": tp,
-
         "true_negative": tn,
-
         "false_positive": fp,
-
         "false_negative": fn,
     }
 
@@ -962,19 +751,20 @@ def finalize_metrics(
 # Evaluation
 # ---------------------------------------------------------------
 
+
 def evaluate(
     model: InfrastructureAnomalyModel,
     loader: Optional[DataLoader],
     *,
-    device: Any,
+    device: torch.device,
     criterion: nn.Module,
     threshold: float,
 ) -> Dict[str, Any]:
     if loader is None:
         return finalize_metrics(
             total_loss=0.0,
-            batch_count=0,
-            example_count=0,
+            batches=0,
+            examples=0,
             confusion={
                 "true_positive": 0,
                 "true_negative": 0,
@@ -988,8 +778,8 @@ def evaluate(
     model.eval()
 
     total_loss = 0.0
-    batch_count = 0
-    example_count = 0
+    batches = 0
+    examples = 0
 
     confusion = {
         "true_positive": 0,
@@ -999,87 +789,65 @@ def evaluate(
         "count": 0,
     }
 
-    with torch.inference_mode():
+    with torch.no_grad():
         for batch in loader:
-            features = batch[
-                "features"
-            ].to(
+            features = batch["features"].to(
                 device,
                 non_blocking=True,
             )
 
-            targets = batch[
-                "target"
-            ].to(
+            targets = batch["target"].to(
                 device,
                 non_blocking=True,
             )
 
-            valid = (
-                targets != IGNORE_INDEX
-            )
+            valid = targets != IGNORE_INDEX
 
-            if int(
-                valid.sum().item()
-            ) == 0:
+            if int(valid.sum().item()) == 0:
                 continue
 
-            output = model(
-                features
-            )
+            output = model(features)
 
-            logits = output[
-                "anomaly_logits"
-            ]
+            logits = output["anomaly_logits"]
 
             loss = criterion(
                 logits[valid],
                 targets[valid].float(),
             )
 
-            if not torch.isfinite(
-                loss
-            ):
+            if not torch.isfinite(loss):
                 raise TrainingNumericalError(
-                    "Anomaly evaluation "
-                    "produced a non-finite loss."
+                    "Anomaly evaluation produced non-finite loss."
                 )
 
-            total_loss += float(
-                loss.item()
-            )
+            total_loss += float(loss.item())
 
-            batch_count += 1
+            batches += 1
 
-            example_count += int(
-                features.shape[0]
-            )
+            examples += int(features.shape[0])
 
-            values = confusion_counts(
-                output[
-                    "anomaly_probability"
-                ],
+            values = binary_metrics(
+                output["anomaly_probability"],
                 targets,
                 threshold=threshold,
             )
 
             for key in confusion:
-                confusion[key] += (
-                    values[key]
-                )
+                confusion[key] += values[key]
 
     return finalize_metrics(
         total_loss=total_loss,
-        batch_count=batch_count,
-        example_count=example_count,
+        batches=batches,
+        examples=examples,
         confusion=confusion,
         threshold=threshold,
     )
 
 
 # ---------------------------------------------------------------
-# File helpers
+# Atomic JSON
 # ---------------------------------------------------------------
+
 
 def write_json_atomic(
     path: Path,
@@ -1093,9 +861,7 @@ def write_json_atomic(
         exist_ok=True,
     )
 
-    temporary = path.with_name(
-        path.name + ".writing"
-    )
+    temporary = path.with_name(path.name + ".writing")
 
     try:
         temporary.write_text(
@@ -1109,16 +875,20 @@ def write_json_atomic(
             encoding="utf-8",
         )
 
-        temporary.replace(
-            path
-        )
+        temporary.replace(path)
 
     except Exception:
-        temporary.unlink(
-            missing_ok=True
-        )
+        try:
+            temporary.unlink(missing_ok=True)
+        except OSError:
+            pass
 
         raise
+
+
+# ---------------------------------------------------------------
+# Compatibility checkpoint
+# ---------------------------------------------------------------
 
 
 def copy_checkpoint_file(
@@ -1130,27 +900,24 @@ def copy_checkpoint_file(
         exist_ok=True,
     )
 
-    temporary = destination.with_name(
-        destination.name + ".copying"
-    )
+    temporary = destination.with_name(destination.name + ".copying")
 
     shutil.copy2(
         source,
         temporary,
     )
 
-    temporary.replace(
-        destination
-    )
+    temporary.replace(destination)
 
 
 # ---------------------------------------------------------------
 # Register evaluation
 # ---------------------------------------------------------------
 
+
 def register_evaluation(
     pipeline: TrainingPipeline,
-    run: Any,
+    run,
     *,
     split: str,
     metrics: Mapping[
@@ -1158,21 +925,9 @@ def register_evaluation(
         Any,
     ],
 ):
-    excluded = {
-        "example_count",
-        "evaluated_count",
-        "batch_count",
-        "true_positive",
-        "true_negative",
-        "false_positive",
-        "false_negative",
-        "threshold",
-    }
-
     numeric = {
         str(name): float(value)
-        for name, value
-        in metrics.items()
+        for name, value in metrics.items()
         if (
             value is not None
             and isinstance(
@@ -1182,10 +937,18 @@ def register_evaluation(
                     float,
                 ),
             )
-            and name not in excluded
-            and math.isfinite(
-                float(value)
-            )
+            and name
+            not in {
+                "example_count",
+                "evaluated_count",
+                "batch_count",
+                "true_positive",
+                "true_negative",
+                "false_positive",
+                "false_negative",
+                "threshold",
+            }
+            and math.isfinite(float(value))
         )
     }
 
@@ -1200,347 +963,228 @@ def register_evaluation(
 
 
 # ---------------------------------------------------------------
+# Show dataset summary
+# ---------------------------------------------------------------
+
+
+def print_dataset_summary(
+    name: str,
+    dataset: Optional[AnomalyDataset],
+) -> None:
+    if dataset is None:
+        print(f"{name}: not available")
+
+        return
+
+    summary = dataset.summary()
+
+    print(
+        f"{name}: "
+        f"samples="
+        f"{summary['sample_count']} "
+        f"normal="
+        f"{summary['normal_count']} "
+        f"anomaly="
+        f"{summary['anomaly_count']} "
+        f"dimension="
+        f"{summary['feature_dimension']}"
+    )
+
+
+# ---------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------
+
 
 def main() -> None:
     args = parse_args()
 
-    validate_args(
-        args
-    )
+    validate_args(args)
 
-    training_config = (
-        build_training_config(
-            args
-        )
-    )
+    config = build_training_config(args)
 
-    pipeline = TrainingPipeline(
-        config=training_config
-    )
+    pipeline = TrainingPipeline(config=config)
 
-    pipeline.start(
-        discover_existing=True
-    )
+    pipeline.start(discover_existing=True)
 
     pipeline.apply_reproducibility()
 
-    accelerator_manager = (
-        build_accelerator_manager(
-            args
-        )
-    )
+    random.seed(args.seed)
 
-    accelerator_selection = (
-        select_accelerator(
-            accelerator_manager,
-            args,
-        )
-    )
+    device = select_device(config)
 
-    device = (
-        accelerator_manager.
-        runtime_device(
-            accelerator_selection
-        )
-    )
-
-    output_directory = Path(
-        args.output
-    ).expanduser().resolve()
+    output_directory = Path(args.output).expanduser().resolve()
 
     output_directory.mkdir(
         parents=True,
         exist_ok=True,
     )
 
-    run = None
+    print(f"Loading anomaly records from {args.data}")
+
+    records = load_anomaly_records(
+        args.data,
+        max_records=(args.max_records),
+        require_label=True,
+    )
+
+    (
+        train_records,
+        validation_records,
+        test_records,
+    ) = split_records(
+        records,
+        train_ratio=(args.train_ratio),
+        validation_ratio=(args.validation_ratio),
+    )
+
+    train_dataset = anomaly_dataset_from_records(train_records)
+
+    validation_dataset = (
+        anomaly_dataset_from_records(validation_records) if validation_records else None
+    )
+
+    test_dataset = anomaly_dataset_from_records(test_records) if test_records else None
+
+    feature_dimension = train_dataset.feature_dimension
+
+    for (
+        name,
+        dataset,
+    ) in (
+        (
+            "validation",
+            validation_dataset,
+        ),
+        (
+            "test",
+            test_dataset,
+        ),
+    ):
+        if dataset is not None and dataset.feature_dimension != feature_dimension:
+            raise TrainingRunError(
+                "Anomaly dataset feature dimensions do not match.",
+                details={
+                    "split": name,
+                    "train_dimension": (feature_dimension),
+                    "split_dimension": (dataset.feature_dimension),
+                },
+            )
+
+    pin_memory = bool(args.pin_memory and device.type == "cuda")
+
+    train_loader = build_loader(
+        train_dataset,
+        batch_size=(args.batch_size),
+        shuffle=True,
+        num_workers=(args.num_workers),
+        pin_memory=pin_memory,
+    )
+
+    validation_loader = build_loader(
+        validation_dataset,
+        batch_size=(args.batch_size),
+        shuffle=False,
+        num_workers=(args.num_workers),
+        pin_memory=pin_memory,
+    )
+
+    test_loader = build_loader(
+        test_dataset,
+        batch_size=(args.batch_size),
+        shuffle=False,
+        num_workers=(args.num_workers),
+        pin_memory=pin_memory,
+    )
+
+    model = InfrastructureAnomalyModel(
+        input_dim=(feature_dimension),
+        hidden_dim=(args.hidden_dim),
+        representation_dim=(args.representation_dim),
+        dropout=args.dropout,
+    ).to(device)
+
+    optimizer = AdamW(
+        model.parameters(),
+        lr=args.learning_rate,
+        weight_decay=(args.weight_decay),
+    )
+
+    class_weight = (
+        1.0 if args.disable_class_weight else positive_class_weight(train_dataset)
+    )
+
+    pos_weight = torch.tensor(
+        class_weight,
+        dtype=torch.float32,
+        device=device,
+    )
+
+    criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+
+    model_config = {
+        **model.model_config(),
+        "temporary_threshold": (args.threshold),
+        "positive_class_weight": (class_weight),
+        "feature_source": ("legacy_numeric_jsonl"),
+    }
+
+    run = pipeline.create_run(
+        task=(TrainingTask.ANOMALY.value),
+        dataset_id=(args.dataset_id),
+        model_name=(args.model_name),
+        accelerator=str(device),
+        attributes={
+            "data_path": str(Path(args.data).expanduser().resolve()),
+            "output_directory": (str(output_directory)),
+            "record_count": len(records),
+            "feature_dimension": (feature_dimension),
+        },
+    )
+
+    pipeline.transition_run(
+        run,
+        TrainingState.READY.value,
+    )
+
+    pipeline.transition_run(
+        run,
+        TrainingState.TRAINING.value,
+    )
+
+    print(f"Device: {device}")
+
+    print_dataset_summary(
+        "train",
+        train_dataset,
+    )
+
+    print_dataset_summary(
+        "validation",
+        validation_dataset,
+    )
+
+    print_dataset_summary(
+        "test",
+        test_dataset,
+    )
+
+    print(f"Positive class weight: {class_weight:.6f}")
+
+    history: List[
+        Dict[
+            str,
+            Any,
+        ]
+    ] = []
+
+    best_validation_loss = math.inf
+
+    best_checkpoint = None
+
+    global_step = 0
 
     try:
-        records = load_anomaly_records(
-            args.data,
-            max_records=(
-                args.max_records
-            ),
-            require_label=True,
-        )
-
-        (
-            train_records,
-            validation_records,
-            test_records,
-        ) = split_records(
-            records,
-            train_ratio=(
-                args.train_ratio
-            ),
-            validation_ratio=(
-                args.validation_ratio
-            ),
-        )
-
-        train_dataset = (
-            anomaly_dataset_from_records(
-                train_records
-            )
-        )
-
-        validation_dataset = (
-            anomaly_dataset_from_records(
-                validation_records
-            )
-            if validation_records
-            else None
-        )
-
-        test_dataset = (
-            anomaly_dataset_from_records(
-                test_records
-            )
-            if test_records
-            else None
-        )
-
-        feature_dimension = (
-            train_dataset.
-            feature_dimension
-        )
-
-        for name, dataset in (
-            (
-                "validation",
-                validation_dataset,
-            ),
-            (
-                "test",
-                test_dataset,
-            ),
-        ):
-            if (
-                dataset is not None
-                and dataset.
-                feature_dimension
-                != feature_dimension
-            ):
-                raise TrainingRunError(
-                    "Anomaly dataset feature "
-                    "dimension mismatch.",
-                    details={
-                        "split": name,
-                        "train_dimension": (
-                            feature_dimension
-                        ),
-                        "split_dimension": (
-                            dataset.
-                            feature_dimension
-                        ),
-                    },
-                )
-
-        pin_memory = bool(
-            args.pin_memory
-            and accelerator_selection.
-            device.accelerator
-        )
-
-        train_loader = build_loader(
-            train_dataset,
-            batch_size=args.batch_size,
-            shuffle=True,
-            num_workers=(
-                args.num_workers
-            ),
-            pin_memory=pin_memory,
-        )
-
-        validation_loader = build_loader(
-            validation_dataset,
-            batch_size=args.batch_size,
-            shuffle=False,
-            num_workers=(
-                args.num_workers
-            ),
-            pin_memory=pin_memory,
-        )
-
-        test_loader = build_loader(
-            test_dataset,
-            batch_size=args.batch_size,
-            shuffle=False,
-            num_workers=(
-                args.num_workers
-            ),
-            pin_memory=pin_memory,
-        )
-
-        model = InfrastructureAnomalyModel(
-            input_dim=feature_dimension,
-            hidden_dim=args.hidden_dim,
-            representation_dim=(
-                args.representation_dim
-            ),
-            dropout=args.dropout,
-        ).to(
-            device
-        )
-
-        optimizer = AdamW(
-            model.parameters(),
-            lr=args.learning_rate,
-            weight_decay=(
-                args.weight_decay
-            ),
-        )
-
-        class_weight = (
-            1.0
-            if args.disable_class_weight
-            else positive_class_weight(
-                train_dataset
-            )
-        )
-
-        positive_weight = torch.tensor(
-            class_weight,
-            dtype=torch.float32,
-            device=device,
-        )
-
-        criterion = (
-            nn.BCEWithLogitsLoss(
-                pos_weight=(
-                    positive_weight
-                )
-            )
-        )
-
-        use_amp = bool(
-            args.mixed_precision
-            and accelerator_selection.
-            device.accelerator
-        )
-
-        scaler = torch.amp.GradScaler(
-            device="cuda",
-            enabled=use_amp,
-        )
-
-        model_config = {
-            **model.model_config(),
-
-            "temporary_threshold": (
-                args.threshold
-            ),
-
-            "positive_class_weight": (
-                class_weight
-            ),
-
-            "feature_source": (
-                "legacy_numeric_jsonl"
-            ),
-        }
-
-        run = pipeline.create_run(
-            task=(
-                TrainingTask.ANOMALY.value
-            ),
-            dataset_id=(
-                args.dataset_id
-            ),
-            model_name=(
-                args.model_name
-            ),
-            accelerator=(
-                accelerator_selection.
-                runtime_device
-            ),
-            attributes={
-                "data_path": str(
-                    Path(
-                        args.data
-                    ).expanduser().
-                    resolve()
-                ),
-                "output_directory": str(
-                    output_directory
-                ),
-                "record_count": len(
-                    records
-                ),
-                "feature_dimension": (
-                    feature_dimension
-                ),
-                "accelerator_selection": (
-                    accelerator_selection.
-                    to_dict()
-                ),
-            },
-        )
-
-        pipeline.transition_run(
-            run,
-            TrainingState.READY.value,
-        )
-
-        pipeline.transition_run(
-            run,
-            TrainingState.TRAINING.value,
-        )
-
-        print(
-            "Accelerator:",
-            accelerator_selection.
-            device_id,
-        )
-
-        print(
-            "Runtime device:",
-            device,
-        )
-
-        print(
-            "Selection reason:",
-            accelerator_selection.
-            reason,
-        )
-
-        print(
-            "CPU fallback used:",
-            accelerator_selection.
-            fallback_used,
-        )
-
-        print(
-            "Feature dimension:",
-            feature_dimension,
-        )
-
-        print(
-            "Positive class weight:",
-            class_weight,
-        )
-
-        history = []
-        best_validation_loss = (
-            math.inf
-        )
-        global_step = 0
-
-        autocast_device = (
-            "cuda"
-            if accelerator_selection.
-            device.accelerator
-            else "cpu"
-        )
-
-        autocast_dtype = (
-            torch.float16
-            if autocast_device == "cuda"
-            else torch.bfloat16
-        )
-
         for epoch in range(
             1,
             args.epochs + 1,
@@ -1548,116 +1192,75 @@ def main() -> None:
             model.train()
 
             total_loss = 0.0
-            batch_count = 0
+            batches = 0
 
-            for batch_number, batch in (
-                enumerate(
-                    train_loader,
-                    start=1,
-                )
+            for (
+                batch_number,
+                batch,
+            ) in enumerate(
+                train_loader,
+                start=1,
             ):
-                optimizer.zero_grad(
-                    set_to_none=True
-                )
+                optimizer.zero_grad(set_to_none=True)
 
-                features = batch[
-                    "features"
-                ].to(
+                features = batch["features"].to(
                     device,
                     non_blocking=True,
                 )
 
-                targets = batch[
-                    "target"
-                ].to(
+                targets = batch["target"].to(
                     device,
                     non_blocking=True,
                 )
 
-                valid = (
-                    targets != IGNORE_INDEX
-                )
+                valid = targets != IGNORE_INDEX
 
-                if int(
-                    valid.sum().item()
-                ) == 0:
+                if int(valid.sum().item()) == 0:
                     continue
 
-                with torch.autocast(
-                    device_type=(
-                        autocast_device
-                    ),
-                    dtype=(
-                        autocast_dtype
-                    ),
-                    enabled=use_amp,
-                ):
-                    output = model(
-                        features
-                    )
+                output = model(features)
 
-                    loss = criterion(
-                        output[
-                            "anomaly_logits"
-                        ][valid],
-                        targets[
-                            valid
-                        ].float(),
-                    )
+                logits = output["anomaly_logits"]
 
-                if not torch.isfinite(
-                    loss
-                ):
-                    raise TrainingNumericalError(
-                        "Anomaly training "
-                        "produced non-finite loss.",
-                        details={
-                            "epoch": epoch,
-                            "batch": (
-                                batch_number
-                            ),
-                        },
-                    )
-
-                scaler.scale(
-                    loss
-                ).backward()
-
-                scaler.unscale_(
-                    optimizer
+                loss = criterion(
+                    logits[valid],
+                    targets[valid].float(),
                 )
+
+                if not torch.isfinite(loss):
+                    raise (
+                        TrainingNumericalError(
+                            "Anomaly training produced a non-finite loss.",
+                            details={
+                                "epoch": epoch,
+                                "batch": (batch_number),
+                            },
+                        )
+                    )
+
+                loss.backward()
 
                 torch.nn.utils.clip_grad_norm_(
                     model.parameters(),
-                    max_norm=(
-                        args.
-                        gradient_clip_norm
-                    ),
+                    max_norm=(args.gradient_clip_norm),
                 )
 
-                scaler.step(
-                    optimizer
-                )
+                optimizer.step()
 
-                scaler.update()
+                total_loss += float(loss.item())
 
-                total_loss += float(
-                    loss.item()
-                )
-
-                batch_count += 1
+                batches += 1
                 global_step += 1
 
-            if batch_count == 0:
+                if batch_number % 100 == 0:
+                    print(f"Epoch {epoch} batch {batch_number} loss={loss.item():.4f}")
+
+            if batches == 0:
                 raise TrainingRunError(
-                    "Training epoch processed "
-                    "no usable anomaly batches."
+                    "Training epoch processed no usable anomaly batches."
                 )
 
-            train_loss = (
-                total_loss
-                / batch_count
-            )
+            train_loss = total_loss / batches
 
             pipeline.add_metric(
                 run,
@@ -1665,10 +1268,7 @@ def main() -> None:
                 value=train_loss,
                 epoch=epoch,
                 step=global_step,
-                split=(
-                    EvaluationSplit.
-                    TRAIN.value
-                ),
+                split=(EvaluationSplit.TRAIN.value),
             )
 
             validation_metrics = evaluate(
@@ -1676,131 +1276,88 @@ def main() -> None:
                 validation_loader,
                 device=device,
                 criterion=criterion,
-                threshold=args.threshold,
+                threshold=(args.threshold),
             )
 
-            validation_loss = (
-                validation_metrics[
-                    "loss"
-                ]
-            )
+            validation_loss = validation_metrics["loss"]
 
             checkpoint_score = (
-                float(
-                    validation_loss
-                )
-                if validation_loss
-                is not None
-                else train_loss
+                float(validation_loss) if validation_loss is not None else train_loss
             )
 
-            history.append(
-                {
-                    "epoch": epoch,
-                    "global_step": (
-                        global_step
-                    ),
-                    "train_loss": (
-                        train_loss
-                    ),
-                    **{
-                        (
-                            "validation_"
-                            + name
-                        ): value
-                        for name, value
-                        in (
-                            validation_metrics.
-                            items()
-                        )
-                    },
-                }
-            )
+            epoch_result = {
+                "epoch": epoch,
+                "global_step": (global_step),
+                "train_loss": (train_loss),
+                **{
+                    ("validation_" + name): value
+                    for name, value in validation_metrics.items()
+                },
+            }
 
-            checkpoint = (
-                pipeline.save_checkpoint(
-                    run=run,
-                    model=model,
-                    optimizer=optimizer,
-                    scaler=(
-                        scaler
-                        if use_amp
-                        else None
-                    ),
-                    epoch=epoch,
-                    step=global_step,
-                    score=(
-                        checkpoint_score
-                    ),
-                    score_name=(
-                        "validation_loss"
-                    ),
-                    model_config=(
-                        model_config
-                    ),
-                    extra={
-                        "history": list(
-                            history
-                        ),
-                        "temporary_threshold": (
-                            args.threshold
-                        ),
-                        "accelerator": (
-                            accelerator_selection.
-                            to_dict()
-                        ),
-                        "mixed_precision": (
-                            use_amp
-                        ),
-                    },
-                )
+            history.append(epoch_result)
+
+            print(f"\nEpoch {epoch}/{args.epochs}")
+
+            print(f"  train loss: {train_loss:.6f}")
+
+            if validation_loss is not None:
+                print(f"  validation loss: {validation_loss:.6f}")
+
+                for metric_name in (
+                    "accuracy",
+                    "precision",
+                    "recall",
+                    "f1",
+                    "false_positive_rate",
+                    "false_negative_rate",
+                ):
+                    value = validation_metrics[metric_name]
+
+                    if value is not None:
+                        print(f"  {metric_name}: {value:.4f}")
+
+            checkpoint = pipeline.save_checkpoint(
+                run=run,
+                model=model,
+                optimizer=optimizer,
+                epoch=epoch,
+                step=global_step,
+                score=(checkpoint_score),
+                score_name=("validation_loss"),
+                model_config=(model_config),
+                extra={
+                    "history": list(history),
+                    "data_path": (args.data),
+                    "temporary_threshold": (args.threshold),
+                },
             )
 
             copy_checkpoint_file(
                 checkpoint.path,
-                output_directory
-                / "last.pt",
+                output_directory / "last.pt",
             )
 
-            if (
-                checkpoint_score
-                < best_validation_loss
-            ):
-                best_validation_loss = (
-                    checkpoint_score
-                )
+            if checkpoint_score < best_validation_loss:
+                best_validation_loss = checkpoint_score
+
+                best_checkpoint = checkpoint
 
                 copy_checkpoint_file(
                     checkpoint.path,
-                    output_directory
-                    / "best.pt",
+                    output_directory / "best.pt",
                 )
 
-                print(
-                    f"Epoch {epoch}: "
-                    "saved new best checkpoint."
-                )
+                print("  Saved new best checkpoint.")
 
-            print(
-                f"Epoch {epoch}/{args.epochs} "
-                f"train_loss={train_loss:.6f} "
-                f"validation_loss="
-                f"{validation_loss}"
-            )
-
-        best_checkpoint = (
-            pipeline.best_checkpoint(
-                run_id=str(
-                    run.run_id
-                ),
-                mark=True,
-            )
+        best_checkpoint = pipeline.best_checkpoint(
+            run_id=str(run.run_id),
+            mark=True,
         )
 
         pipeline.transition_run(
             run,
-            TrainingState.
-            EVALUATING.value,
+            TrainingState.EVALUATING.value,
         )
 
         pipeline.checkpoints.restore(
@@ -1831,16 +1388,10 @@ def main() -> None:
             register_evaluation(
                 pipeline,
                 run,
-                split=(
-                    EvaluationSplit.
-                    VALIDATION.value
-                ),
-                metrics=(
-                    validation_metrics
-                ),
+                split=(EvaluationSplit.VALIDATION.value),
+                metrics=(validation_metrics),
             )
-            if validation_loader
-            is not None
+            if validation_loader is not None
             else None
         )
 
@@ -1848,182 +1399,109 @@ def main() -> None:
             register_evaluation(
                 pipeline,
                 run,
-                split=(
-                    EvaluationSplit.
-                    TEST.value
-                ),
+                split=(EvaluationSplit.TEST.value),
                 metrics=test_metrics,
             )
-            if test_loader
-            is not None
+            if test_loader is not None
             else None
         )
 
         pipeline.transition_run(
             run,
-            TrainingState.
-            COMPLETED.value,
-        )
-
-        report = {
-            "schema_version": "1",
-            "run": run.to_dict(),
-            "data": str(
-                Path(
-                    args.data
-                ).expanduser().resolve()
-            ),
-            "accelerator": (
-                accelerator_selection.
-                to_dict()
-            ),
-            "runtime_device": str(
-                device
-            ),
-            "mixed_precision": (
-                use_amp
-            ),
-            "records": {
-                "total": len(records),
-                "train": len(
-                    train_records
-                ),
-                "validation": len(
-                    validation_records
-                ),
-                "test": len(
-                    test_records
-                ),
-            },
-            "datasets": {
-                "train": (
-                    train_dataset.summary()
-                ),
-                "validation": (
-                    validation_dataset.
-                    summary()
-                    if validation_dataset
-                    is not None
-                    else None
-                ),
-                "test": (
-                    test_dataset.summary()
-                    if test_dataset
-                    is not None
-                    else None
-                ),
-            },
-            "model_config": (
-                model_config
-            ),
-            "class_weighting": {
-                "enabled": (
-                    not args.
-                    disable_class_weight
-                ),
-                "positive_class_weight": (
-                    class_weight
-                ),
-            },
-            "history": history,
-            "best_checkpoint": (
-                best_checkpoint.to_dict()
-            ),
-            "validation": (
-                validation_metrics
-            ),
-            "test": test_metrics,
-            "evaluations": {
-                "validation": (
-                    validation_evaluation.
-                    to_dict()
-                    if validation_evaluation
-                    is not None
-                    else None
-                ),
-                "test": (
-                    test_evaluation.
-                    to_dict()
-                    if test_evaluation
-                    is not None
-                    else None
-                ),
-            },
-            "threshold": {
-                "temporary_value": (
-                    args.threshold
-                ),
-                "calibrated": False,
-                "embedded_in_model": (
-                    False
-                ),
-            },
-            "automatic_promotion": (
-                False
-            ),
-        }
-
-        report_path = (
-            output_directory
-            / "training_report.json"
-        )
-
-        write_json_atomic(
-            report_path,
-            report,
-        )
-
-        print(
-            "\nAnomaly training complete."
-        )
-
-        print(
-            "Best checkpoint:",
-            best_checkpoint.path,
-        )
-
-        print(
-            "Report:",
-            report_path,
+            TrainingState.COMPLETED.value,
         )
 
     except Exception as exc:
-        if (
-            run is not None
-            and run.state
-            not in {
-                TrainingState.
-                COMPLETED.value,
-                TrainingState.
-                FAILED.value,
-                TrainingState.
-                CANCELLED.value,
-            }
-        ):
+        if run.state not in {
+            TrainingState.COMPLETED.value,
+            TrainingState.FAILED.value,
+            TrainingState.CANCELLED.value,
+        }:
             pipeline.transition_run(
                 run,
-                TrainingState.
-                FAILED.value,
+                TrainingState.FAILED.value,
                 error=exc,
             )
 
         raise
 
-    finally:
-        try:
-            accelerator_manager.release(
-                accelerator_selection
-            )
+    print("\nFinal test metrics:")
 
-        except Exception as release_error:
-            print(
-                "Warning: accelerator "
-                "release failed:",
-                type(
-                    release_error
-                ).__name__,
-            )
+    for name, value in test_metrics.items():
+        if isinstance(
+            value,
+            float,
+        ):
+            print(f"  {name}: {value:.6f}")
 
+        else:
+            print(f"  {name}: {value}")
+
+    report = {
+        "schema_version": "1",
+        "run": run.to_dict(),
+        "data": str(Path(args.data).expanduser().resolve()),
+        "device": str(device),
+        "records": {
+            "total": len(records),
+            "train": len(train_records),
+            "validation": len(validation_records),
+            "test": len(test_records),
+        },
+        "datasets": {
+            "train": (train_dataset.summary()),
+            "validation": (
+                validation_dataset.summary() if validation_dataset is not None else None
+            ),
+            "test": (test_dataset.summary() if test_dataset is not None else None),
+        },
+        "model_config": (model_config),
+        "class_weighting": {
+            "enabled": (not args.disable_class_weight),
+            "positive_class_weight": (class_weight),
+        },
+        "history": history,
+        "best_checkpoint": (best_checkpoint.to_dict()),
+        "validation": (validation_metrics),
+        "test": test_metrics,
+        "evaluations": {
+            "validation": (
+                validation_evaluation.to_dict()
+                if validation_evaluation is not None
+                else None
+            ),
+            "test": (
+                test_evaluation.to_dict() if test_evaluation is not None else None
+            ),
+        },
+        "threshold": {
+            "temporary_value": (args.threshold),
+            "calibrated": False,
+            "embedded_in_model": (False),
+        },
+        "candidate_artifact_created": (False),
+        "automatic_promotion": (False),
+    }
+
+    report_path = output_directory / "training_report.json"
+
+    write_json_atomic(
+        report_path,
+        report,
+    )
+
+    print("\nAnomaly training complete.")
+
+    print(f"Managed best checkpoint: {best_checkpoint.path}")
+
+    print(f"Compatibility checkpoint: {output_directory / 'best.pt'}")
+
+    print(f"Report: {report_path}")
+
+
+# ---------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------
 
 if __name__ == "__main__":
     main()

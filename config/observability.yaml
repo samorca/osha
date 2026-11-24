@@ -1,0 +1,701 @@
+# =============================================================================
+# OSHA - Observability Configuration
+# =============================================================================
+#
+# Central observability policy for the OSHA platform.
+#
+# Responsibilities:
+#   - service health
+#   - readiness and liveness
+#   - metrics
+#   - distributed tracing
+#   - component instrumentation
+#   - performance monitoring
+#   - operational diagnostics
+#
+# Infrastructure telemetry belongs to collectors.yaml.
+# Application logging belongs primarily to logging.yaml.
+# =============================================================================
+
+
+observability:
+
+  # ---------------------------------------------------------------------------
+  # Global
+  # ---------------------------------------------------------------------------
+
+  enabled: true
+
+  environment: "production"
+
+  service:
+    name: "osha"
+    namespace: "orchestration-self-healing-ai"
+
+  fail_on_initialization_error: false
+
+  redact_sensitive_data: true
+
+
+  # ---------------------------------------------------------------------------
+  # Health Monitoring
+  # ---------------------------------------------------------------------------
+
+  health:
+
+    enabled: true
+
+    interval_seconds: 30
+
+    timeout_seconds: 10
+
+    startup_grace_period_seconds: 30
+
+    checks:
+
+      runtime:
+        enabled: true
+
+      configuration:
+        enabled: true
+
+      collectors:
+        enabled: true
+
+      models:
+        enabled: true
+
+      ai:
+        enabled: true
+
+      correlation:
+        enabled: true
+
+      remediation:
+        enabled: true
+
+      storage:
+        enabled: true
+
+      security:
+        enabled: true
+
+    failure_threshold: 3
+
+    recovery_threshold: 2
+
+
+  # ---------------------------------------------------------------------------
+  # Liveness
+  # ---------------------------------------------------------------------------
+
+  liveness:
+
+    enabled: true
+
+    interval_seconds: 30
+
+    timeout_seconds: 5
+
+    failure_threshold: 3
+
+    checks:
+      event_loop: true
+      worker_health: true
+      internal_runtime: true
+
+
+  # ---------------------------------------------------------------------------
+  # Readiness
+  # ---------------------------------------------------------------------------
+
+  readiness:
+
+    enabled: true
+
+    interval_seconds: 15
+
+    timeout_seconds: 5
+
+    checks:
+      configuration_loaded: true
+      runtime_started: true
+      required_models_loaded: true
+      required_collectors_ready: true
+      security_initialized: true
+
+    require_all_critical_components: true
+
+
+  # ---------------------------------------------------------------------------
+  # Metrics
+  # ---------------------------------------------------------------------------
+
+  metrics:
+
+    enabled: true
+
+    prefix: "osha"
+
+    include_timestamp: true
+
+    collection_interval_seconds: 15
+
+    runtime:
+
+      enabled: true
+
+      process_cpu: true
+      process_memory: true
+      uptime: true
+      worker_count: true
+      active_workers: true
+      queue_depth: true
+
+    collectors:
+
+      enabled: true
+
+      collection_count: true
+      collection_failures: true
+      collection_duration: true
+      records_collected: true
+      retries: true
+      collector_health: true
+
+    events:
+
+      enabled: true
+
+      received: true
+      validated: true
+      rejected: true
+      duplicates: true
+      processing_duration: true
+
+    correlation:
+
+      enabled: true
+
+      processed_events: true
+      correlated_events: true
+      incidents_created: true
+      incidents_updated: true
+      correlation_latency: true
+      correlation_failures: true
+
+    ai:
+
+      enabled: true
+
+      analyses: true
+      failures: true
+      inference_latency: true
+      classifications: true
+      anomaly_detections: true
+      confidence_distribution: true
+
+    models:
+
+      enabled: true
+
+      loaded_models: true
+      load_failures: true
+      inference_count: true
+      inference_failures: true
+      inference_latency: true
+
+    decisions:
+
+      enabled: true
+
+      decisions_created: true
+      decisions_rejected: true
+      low_confidence_decisions: true
+      decision_latency: true
+
+    remediation:
+
+      enabled: true
+
+      plans_created: true
+      approvals: true
+      rejections: true
+      executions: true
+      successes: true
+      failures: true
+      rollbacks: true
+      verification_failures: true
+      execution_latency: true
+
+    security:
+
+      enabled: true
+
+      authentication_failures: true
+      authorization_failures: true
+      policy_denials: true
+      blocked_actions: true
+
+
+  # ---------------------------------------------------------------------------
+  # Metric Cardinality Protection
+  # ---------------------------------------------------------------------------
+
+  cardinality:
+
+    enabled: true
+
+    maximum_label_values: 1000
+
+    prohibit_sensitive_labels: true
+
+    prohibited_labels:
+      - "password"
+      - "token"
+      - "secret"
+      - "authorization"
+      - "api_key"
+
+    high_cardinality_labels:
+      allow_resource_id: false
+      allow_incident_id: false
+      allow_event_id: false
+      allow_action_id: false
+
+
+  # ---------------------------------------------------------------------------
+  # Tracing
+  # ---------------------------------------------------------------------------
+
+  tracing:
+
+    enabled: true
+
+    service_name: "osha"
+
+    sampling:
+
+      strategy: "ratio"
+
+      ratio: 0.10
+
+      always_sample_errors: true
+
+    propagation:
+      enabled: true
+
+      correlation_id: true
+      trace_id: true
+
+    instrument:
+
+      collectors: true
+      event_processing: true
+      correlation: true
+      ai: true
+      model_inference: true
+      decisions: true
+      remediation: true
+
+    include_payloads: false
+
+    include_credentials: false
+
+    include_secrets: false
+
+
+  # ---------------------------------------------------------------------------
+  # Correlation IDs
+  # ---------------------------------------------------------------------------
+
+  correlation:
+
+    enabled: true
+
+    generate_if_missing: true
+
+    propagate_across_components: true
+
+    include_in_logs: true
+
+    include_in_traces: true
+
+    include_in_artifacts: true
+
+
+  # ---------------------------------------------------------------------------
+  # Performance Monitoring
+  # ---------------------------------------------------------------------------
+
+  performance:
+
+    enabled: true
+
+    thresholds:
+
+      collector_duration_ms: 5000
+
+      event_processing_ms: 1000
+
+      correlation_ms: 2000
+
+      inference_ms: 1000
+
+      decision_ms: 1000
+
+      remediation_ms: 30000
+
+    record_slow_operations: true
+
+    emit_slow_operation_metric: true
+
+
+  # ---------------------------------------------------------------------------
+  # Runtime Monitoring
+  # ---------------------------------------------------------------------------
+
+  runtime:
+
+    enabled: true
+
+    monitor_threads: true
+
+    monitor_workers: true
+
+    monitor_queues: true
+
+    monitor_memory: true
+
+    monitor_cpu: true
+
+    monitor_uptime: true
+
+    detect_stalled_workers: true
+
+    stalled_worker_threshold_seconds: 120
+
+
+  # ---------------------------------------------------------------------------
+  # Pipeline Monitoring
+  # ---------------------------------------------------------------------------
+
+  pipeline:
+
+    enabled: true
+
+    stages:
+      collectors: true
+      normalization: true
+      validation: true
+      events: true
+      correlation: true
+      incidents: true
+      ai: true
+      decisions: true
+      remediation: true
+
+    measure_throughput: true
+
+    measure_latency: true
+
+    detect_backpressure: true
+
+    detect_stalled_pipeline: true
+
+
+  # ---------------------------------------------------------------------------
+  # Queue Monitoring
+  # ---------------------------------------------------------------------------
+
+  queues:
+
+    enabled: true
+
+    measure_depth: true
+
+    measure_processing_rate: true
+
+    measure_wait_time: true
+
+    measure_dropped_items: true
+
+    warning_depth: 500
+
+    critical_depth: 900
+
+
+  # ---------------------------------------------------------------------------
+  # Model Health
+  # ---------------------------------------------------------------------------
+
+  model_health:
+
+    enabled: true
+
+    verify_loaded: true
+
+    verify_device: true
+
+    monitor_inference_errors: true
+
+    monitor_latency: true
+
+    monitor_confidence: true
+
+    monitor_invalid_output: true
+
+    health_interval_seconds: 60
+
+
+  # ---------------------------------------------------------------------------
+  # Collector Health
+  # ---------------------------------------------------------------------------
+
+  collector_health:
+
+    enabled: true
+
+    monitor_last_success: true
+
+    monitor_last_failure: true
+
+    monitor_failure_count: true
+
+    monitor_collection_duration: true
+
+    unhealthy_after_failures: 3
+
+
+  # ---------------------------------------------------------------------------
+  # Remediation Monitoring
+  # ---------------------------------------------------------------------------
+
+  remediation:
+
+    monitor_plans: true
+
+    monitor_approvals: true
+
+    monitor_execution: true
+
+    monitor_verification: true
+
+    monitor_rollbacks: true
+
+    monitor_blocked_actions: true
+
+    alert_on_failed_remediation: true
+
+    alert_on_failed_rollback: true
+
+
+  # ---------------------------------------------------------------------------
+  # Security Monitoring
+  # ---------------------------------------------------------------------------
+
+  security:
+
+    enabled: true
+
+    monitor_authentication_failures: true
+
+    monitor_authorization_failures: true
+
+    monitor_policy_denials: true
+
+    monitor_blocked_actions: true
+
+    monitor_configuration_violations: true
+
+    expose_credentials: false
+
+    expose_secrets: false
+
+
+  # ---------------------------------------------------------------------------
+  # Diagnostics
+  # ---------------------------------------------------------------------------
+
+  diagnostics:
+
+    enabled: true
+
+    include_configuration_summary: true
+
+    include_component_status: true
+
+    include_model_status: true
+
+    include_collector_status: true
+
+    include_queue_status: true
+
+    include_runtime_status: true
+
+    include_recent_failures: true
+
+    include_raw_configuration: false
+
+    include_environment_variables: false
+
+    include_credentials: false
+
+    include_secrets: false
+
+
+  # ---------------------------------------------------------------------------
+  # Alerts
+  # ---------------------------------------------------------------------------
+
+  alerts:
+
+    enabled: true
+
+    minimum_severity: "warning"
+
+    deduplicate: true
+
+    deduplication_window_seconds: 300
+
+    conditions:
+
+      component_unhealthy: true
+
+      collector_failure: true
+
+      model_failure: true
+
+      repeated_inference_failure: true
+
+      pipeline_stall: true
+
+      queue_saturation: true
+
+      remediation_failure: true
+
+      rollback_failure: true
+
+      security_violation: true
+
+
+  # ---------------------------------------------------------------------------
+  # Alert Routing
+  # ---------------------------------------------------------------------------
+
+  alerting:
+
+    # Alert generation is enabled above, but no external transport is assumed
+    # until an alert integration is explicitly configured.
+
+    external_delivery_enabled: false
+
+    routes: []
+
+
+  # ---------------------------------------------------------------------------
+  # Export
+  # ---------------------------------------------------------------------------
+
+  export:
+
+    metrics:
+
+      enabled: true
+
+      endpoint_enabled: true
+
+      endpoint: "/metrics"
+
+    traces:
+
+      enabled: false
+
+      exporter: null
+
+      endpoint: null
+
+
+  # ---------------------------------------------------------------------------
+  # Persistence
+  # ---------------------------------------------------------------------------
+
+  persistence:
+
+    enabled: true
+
+    directory: "./artifacts/observability"
+
+    persist_health_snapshots: true
+
+    persist_diagnostics: true
+
+    persist_failure_reports: true
+
+    persist_raw_metrics: false
+
+
+  # ---------------------------------------------------------------------------
+  # Retention
+  # ---------------------------------------------------------------------------
+
+  retention:
+
+    enabled: true
+
+    health_snapshots_days: 7
+
+    diagnostics_days: 14
+
+    failure_reports_days: 30
+
+
+  # ---------------------------------------------------------------------------
+  # Privacy / Sensitive Data
+  # ---------------------------------------------------------------------------
+
+  privacy:
+
+    redact_sensitive_data: true
+
+    include_credentials: false
+
+    include_tokens: false
+
+    include_secrets: false
+
+    include_environment_variables: false
+
+    include_raw_event_payloads: false
+
+
+  # ---------------------------------------------------------------------------
+  # Failure Handling
+  # ---------------------------------------------------------------------------
+
+  failure:
+
+    fail_application_on_metrics_failure: false
+
+    fail_application_on_tracing_failure: false
+
+    fail_application_on_export_failure: false
+
+    continue_without_external_exporter: true
+
+    log_observability_failure: true
+
+
+  # ---------------------------------------------------------------------------
+  # Experimental
+  # ---------------------------------------------------------------------------
+
+  experimental:
+
+    enabled: false
+
+    automatic_threshold_tuning: false
+
+    ai_generated_alerts: false
+
+    automatic_observability_reconfiguration: false

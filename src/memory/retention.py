@@ -108,14 +108,10 @@ class RetentionRule:
         self,
     ) -> None:
         if self.active_days < 1:
-            raise ValueError(
-                "active_days must be >= 1"
-            )
+            raise ValueError("active_days must be >= 1")
 
         if self.archive_days < 0:
-            raise ValueError(
-                "archive_days must be >= 0"
-            )
+            raise ValueError("archive_days must be >= 0")
 
 
 @dataclass
@@ -127,9 +123,7 @@ class RetentionPolicy:
     rules: Dict[
         str,
         RetentionRule,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     keep_verified_incidents: bool = True
 
@@ -143,33 +137,24 @@ class RetentionPolicy:
         self,
     ) -> None:
         if not self.rules:
-            self.rules.update(
-                default_rules()
-            )
+            self.rules.update(default_rules())
 
         self.validate()
 
     def validate(
         self,
     ) -> None:
-        for rule in (
-            self.rules.values()
-        ):
+        for rule in self.rules.values():
             rule.validate()
 
     def rule_for(
         self,
         memory_type: str,
     ) -> RetentionRule:
-        rule = self.rules.get(
-            memory_type
-        )
+        rule = self.rules.get(memory_type)
 
         if rule is None:
-            raise KeyError(
-                "No retention rule for "
-                f"memory type: {memory_type}"
-            )
+            raise KeyError(f"No retention rule for memory type: {memory_type}")
 
         return rule
 
@@ -205,30 +190,18 @@ class RetentionDecision:
         self,
     ) -> Dict[str, Any]:
         return {
-            "memory_id": (
-                self.memory_id
-            ),
-            "memory_type": (
-                self.memory_type
-            ),
-            "current_status": (
-                self.current_status
-            ),
+            "memory_id": (self.memory_id),
+            "memory_type": (self.memory_type),
+            "current_status": (self.current_status),
             "action": self.action,
             "reason": self.reason,
             "age_days": round(
                 self.age_days,
                 6,
             ),
-            "verified": (
-                self.verified
-            ),
-            "created_at": (
-                self.created_at
-            ),
-            "reference_timestamp": (
-                self.reference_timestamp
-            ),
+            "verified": (self.verified),
+            "created_at": (self.created_at),
+            "reference_timestamp": (self.reference_timestamp),
         }
 
 
@@ -246,40 +219,23 @@ class RetentionRunResult:
 
     errors: int = 0
 
-    decisions: List[
-        RetentionDecision
-    ] = field(
-        default_factory=list
-    )
+    decisions: List[RetentionDecision] = field(default_factory=list)
 
     def to_dict(
         self,
     ) -> Dict[str, Any]:
         return {
-            "examined": (
-                self.examined
-            ),
+            "examined": (self.examined),
             "kept": self.kept,
-            "archived": (
-                self.archived
-            ),
-            "expired": (
-                self.expired
-            ),
-            "deleted": (
-                self.deleted
-            ),
+            "archived": (self.archived),
+            "expired": (self.expired),
+            "deleted": (self.deleted),
             "errors": self.errors,
-            "decisions": [
-                decision.to_dict()
-                for decision
-                in self.decisions
-            ],
+            "decisions": [decision.to_dict() for decision in self.decisions],
         }
 
 
-def default_rules(
-) -> Dict[
+def default_rules() -> Dict[
     str,
     RetentionRule,
 ]:
@@ -293,32 +249,20 @@ def default_rules(
     return {
         memory_type: RetentionRule(
             memory_type=memory_type,
-            active_days=(
-                DEFAULT_RETENTION_DAYS[
-                    memory_type
-                ]
-            ),
-            archive_days=(
-                DEFAULT_ARCHIVE_DAYS[
-                    memory_type
-                ]
-            ),
+            active_days=(DEFAULT_RETENTION_DAYS[memory_type]),
+            archive_days=(DEFAULT_ARCHIVE_DAYS[memory_type]),
             archive_verified=True,
             archive_unverified=(
                 memory_type
                 in {
-                    MemoryType.
-                    INCIDENT.value,
-                    MemoryType.
-                    ROOT_CAUSE.value,
-                    MemoryType.
-                    OUTCOME.value,
+                    MemoryType.INCIDENT.value,
+                    MemoryType.ROOT_CAUSE.value,
+                    MemoryType.OUTCOME.value,
                 }
             ),
             delete_expired=False,
         )
-        for memory_type
-        in DEFAULT_RETENTION_DAYS
+        for memory_type in DEFAULT_RETENTION_DAYS
     }
 
 
@@ -326,91 +270,62 @@ def default_rules(
 # Timestamp helpers
 # ---------------------------------------------------------------
 
+
 def parse_timestamp(
     value: Optional[str],
 ) -> Optional[datetime]:
     if value is None:
         return None
 
-    text = str(
-        value
-    ).strip()
+    text = str(value).strip()
 
     if not text:
         return None
 
     if text.endswith("Z"):
-        text = (
-            text[:-1]
-            + "+00:00"
-        )
+        text = text[:-1] + "+00:00"
 
     try:
-        result = (
-            datetime.fromisoformat(
-                text
-            )
-        )
+        result = datetime.fromisoformat(text)
 
     except ValueError:
         return None
 
     if result.tzinfo is None:
-        result = result.replace(
-            tzinfo=timezone.utc
-        )
+        result = result.replace(tzinfo=timezone.utc)
 
-    return result.astimezone(
-        timezone.utc
-    )
+    return result.astimezone(timezone.utc)
 
 
 def normalized_now(
-    value: Optional[
-        datetime
-    ] = None,
+    value: Optional[datetime] = None,
 ) -> datetime:
     if value is None:
-        return datetime.now(
-            timezone.utc
-        )
+        return datetime.now(timezone.utc)
 
     if value.tzinfo is None:
-        value = value.replace(
-            tzinfo=timezone.utc
-        )
+        value = value.replace(tzinfo=timezone.utc)
 
-    return value.astimezone(
-        timezone.utc
-    )
+    return value.astimezone(timezone.utc)
 
 
 def age_days(
     timestamp: Optional[str],
     *,
-    now: Optional[
-        datetime
-    ] = None,
+    now: Optional[datetime] = None,
 ) -> float:
-    reference = parse_timestamp(
-        timestamp
-    )
+    reference = parse_timestamp(timestamp)
 
     if reference is None:
         return 0.0
 
-    current = normalized_now(
-        now
-    )
+    current = normalized_now(now)
 
-    difference = (
-        current - reference
-    )
+    difference = current - reference
 
     return max(
         0.0,
-        difference.total_seconds()
-        / 86400.0,
+        difference.total_seconds() / 86400.0,
     )
 
 
@@ -427,9 +342,7 @@ def lifecycle_timestamp(
     Fall back to created_at when necessary.
     """
 
-    if parse_timestamp(
-        memory.updated_at
-    ) is not None:
+    if parse_timestamp(memory.updated_at) is not None:
         return memory.updated_at
 
     return memory.created_at
@@ -438,16 +351,13 @@ def lifecycle_timestamp(
 def is_verified(
     memory: MemoryObject,
 ) -> bool:
-    return (
-        memory.verification_status
-        == VerificationStatus.
-        VERIFIED.value
-    )
+    return memory.verification_status == VerificationStatus.VERIFIED.value
 
 
 # ---------------------------------------------------------------
 # Retention protections
 # ---------------------------------------------------------------
+
 
 def protected_verified_memory(
     memory: MemoryObject,
@@ -462,38 +372,17 @@ def protected_verified_memory(
     them automatically.
     """
 
-    if not is_verified(
-        memory
-    ):
+    if not is_verified(memory):
         return False
 
-    if (
-        memory.memory_type
-        == MemoryType.INCIDENT.value
-    ):
-        return (
-            policy.
-            keep_verified_incidents
-        )
+    if memory.memory_type == MemoryType.INCIDENT.value:
+        return policy.keep_verified_incidents
 
-    if (
-        memory.memory_type
-        == MemoryType.
-        ROOT_CAUSE.value
-    ):
-        return (
-            policy.
-            keep_verified_root_causes
-        )
+    if memory.memory_type == MemoryType.ROOT_CAUSE.value:
+        return policy.keep_verified_root_causes
 
-    if (
-        memory.memory_type
-        == MemoryType.OUTCOME.value
-    ):
-        return (
-            policy.
-            keep_verified_outcomes
-        )
+    if memory.memory_type == MemoryType.OUTCOME.value:
+        return policy.keep_verified_outcomes
 
     return False
 
@@ -502,15 +391,12 @@ def protected_verified_memory(
 # Decision engine
 # ---------------------------------------------------------------
 
+
 def evaluate_retention(
     memory: MemoryObject,
     *,
-    policy: Optional[
-        RetentionPolicy
-    ] = None,
-    now: Optional[
-        datetime
-    ] = None,
+    policy: Optional[RetentionPolicy] = None,
+    now: Optional[datetime] = None,
 ) -> RetentionDecision:
     """
     Evaluate one memory object without modifying
@@ -524,303 +410,154 @@ def evaluate_retention(
         delete
     """
 
-    active_policy = (
-        policy
-        or RetentionPolicy()
-    )
+    active_policy = policy or RetentionPolicy()
 
     memory.finalize()
 
     if not memory.memory_id:
-        raise ValueError(
-            "Memory has no memory_id"
-        )
+        raise ValueError("Memory has no memory_id")
 
-    rule = active_policy.rule_for(
-        memory.memory_type
-    )
+    rule = active_policy.rule_for(memory.memory_type)
 
-    reference_timestamp = (
-        lifecycle_timestamp(
-            memory
-        )
-    )
+    reference_timestamp = lifecycle_timestamp(memory)
 
     current_age = age_days(
         reference_timestamp,
         now=now,
     )
 
-    verified = is_verified(
-        memory
-    )
+    verified = is_verified(memory)
 
-    protected = (
-        protected_verified_memory(
-            memory,
-            active_policy,
-        )
+    protected = protected_verified_memory(
+        memory,
+        active_policy,
     )
 
     # Previously expired records.
-    if (
-        memory.status
-        == MemoryStatus.EXPIRED.value
-    ):
+    if memory.status == MemoryStatus.EXPIRED.value:
         may_delete = (
-            active_policy.
-            purge_expired
-            and rule.delete_expired
-            and not protected
+            active_policy.purge_expired and rule.delete_expired and not protected
         )
 
         if may_delete:
             return RetentionDecision(
-                memory_id=(
-                    memory.memory_id
-                ),
-                memory_type=(
-                    memory.memory_type
-                ),
-                current_status=(
-                    memory.status
-                ),
+                memory_id=(memory.memory_id),
+                memory_type=(memory.memory_type),
+                current_status=(memory.status),
                 action="delete",
-                reason=(
-                    "Memory is expired and "
-                    "policy permits purge."
-                ),
-                age_days=(
-                    current_age
-                ),
+                reason=("Memory is expired and policy permits purge."),
+                age_days=(current_age),
                 verified=verified,
-                created_at=(
-                    memory.created_at
-                ),
-                reference_timestamp=(
-                    reference_timestamp
-                ),
+                created_at=(memory.created_at),
+                reference_timestamp=(reference_timestamp),
             )
 
         return RetentionDecision(
-            memory_id=(
-                memory.memory_id
-            ),
-            memory_type=(
-                memory.memory_type
-            ),
-            current_status=(
-                memory.status
-            ),
+            memory_id=(memory.memory_id),
+            memory_type=(memory.memory_type),
+            current_status=(memory.status),
             action="keep",
-            reason=(
-                "Memory is expired but "
-                "automatic deletion is not "
-                "permitted."
-            ),
+            reason=("Memory is expired but automatic deletion is not permitted."),
             age_days=current_age,
             verified=verified,
-            created_at=(
-                memory.created_at
-            ),
-            reference_timestamp=(
-                reference_timestamp
-            ),
+            created_at=(memory.created_at),
+            reference_timestamp=(reference_timestamp),
         )
 
     # Archived records.
-    if (
-        memory.status
-        == MemoryStatus.ARCHIVED.value
-    ):
+    if memory.status == MemoryStatus.ARCHIVED.value:
         if protected:
             return RetentionDecision(
-                memory_id=(
-                    memory.memory_id
-                ),
-                memory_type=(
-                    memory.memory_type
-                ),
-                current_status=(
-                    memory.status
-                ),
+                memory_id=(memory.memory_id),
+                memory_type=(memory.memory_type),
+                current_status=(memory.status),
                 action="keep",
-                reason=(
-                    "Verified historical memory "
-                    "is protected by policy."
-                ),
-                age_days=(
-                    current_age
-                ),
+                reason=("Verified historical memory is protected by policy."),
+                age_days=(current_age),
                 verified=True,
-                created_at=(
-                    memory.created_at
-                ),
-                reference_timestamp=(
-                    reference_timestamp
-                ),
+                created_at=(memory.created_at),
+                reference_timestamp=(reference_timestamp),
             )
 
-        archive_limit = (
-            rule.active_days
-            + rule.archive_days
-        )
+        archive_limit = rule.active_days + rule.archive_days
 
-        if (
-            current_age
-            >= archive_limit
-        ):
+        if current_age >= archive_limit:
             return RetentionDecision(
-                memory_id=(
-                    memory.memory_id
-                ),
-                memory_type=(
-                    memory.memory_type
-                ),
-                current_status=(
-                    memory.status
-                ),
+                memory_id=(memory.memory_id),
+                memory_type=(memory.memory_type),
+                current_status=(memory.status),
                 action="expire",
-                reason=(
-                    "Archived memory exceeded "
-                    "its configured lifecycle."
-                ),
-                age_days=(
-                    current_age
-                ),
+                reason=("Archived memory exceeded its configured lifecycle."),
+                age_days=(current_age),
                 verified=verified,
-                created_at=(
-                    memory.created_at
-                ),
-                reference_timestamp=(
-                    reference_timestamp
-                ),
+                created_at=(memory.created_at),
+                reference_timestamp=(reference_timestamp),
             )
 
         return RetentionDecision(
-            memory_id=(
-                memory.memory_id
-            ),
-            memory_type=(
-                memory.memory_type
-            ),
-            current_status=(
-                memory.status
-            ),
+            memory_id=(memory.memory_id),
+            memory_type=(memory.memory_type),
+            current_status=(memory.status),
             action="keep",
-            reason=(
-                "Archived memory remains "
-                "inside its configured "
-                "lifecycle."
-            ),
+            reason=("Archived memory remains inside its configured lifecycle."),
             age_days=current_age,
             verified=verified,
-            created_at=(
-                memory.created_at
-            ),
-            reference_timestamp=(
-                reference_timestamp
-            ),
+            created_at=(memory.created_at),
+            reference_timestamp=(reference_timestamp),
         )
 
     # Active memory inside the retention window.
     if current_age < rule.active_days:
         return RetentionDecision(
-            memory_id=(
-                memory.memory_id
-            ),
-            memory_type=(
-                memory.memory_type
-            ),
-            current_status=(
-                memory.status
-            ),
+            memory_id=(memory.memory_id),
+            memory_type=(memory.memory_type),
+            current_status=(memory.status),
             action="keep",
-            reason=(
-                "Memory remains inside its "
-                "active retention period."
-            ),
+            reason=("Memory remains inside its active retention period."),
             age_days=current_age,
             verified=verified,
-            created_at=(
-                memory.created_at
-            ),
-            reference_timestamp=(
-                reference_timestamp
-            ),
+            created_at=(memory.created_at),
+            reference_timestamp=(reference_timestamp),
         )
 
     # Active memory reached its lifecycle
     # transition threshold.
     should_archive = (
-        (
-            verified
-            and rule.archive_verified
-        )
-        or (
-            not verified
-            and rule.archive_unverified
-        )
+        (verified and rule.archive_verified)
+        or (not verified and rule.archive_unverified)
         or protected
     )
 
     if should_archive:
         return RetentionDecision(
-            memory_id=(
-                memory.memory_id
-            ),
-            memory_type=(
-                memory.memory_type
-            ),
-            current_status=(
-                memory.status
-            ),
+            memory_id=(memory.memory_id),
+            memory_type=(memory.memory_type),
+            current_status=(memory.status),
             action="archive",
-            reason=(
-                "Memory exceeded its active "
-                "period and policy requires "
-                "archival."
-            ),
+            reason=("Memory exceeded its active period and policy requires archival."),
             age_days=current_age,
             verified=verified,
-            created_at=(
-                memory.created_at
-            ),
-            reference_timestamp=(
-                reference_timestamp
-            ),
+            created_at=(memory.created_at),
+            reference_timestamp=(reference_timestamp),
         )
 
     return RetentionDecision(
-        memory_id=(
-            memory.memory_id
-        ),
-        memory_type=(
-            memory.memory_type
-        ),
-        current_status=(
-            memory.status
-        ),
+        memory_id=(memory.memory_id),
+        memory_type=(memory.memory_type),
+        current_status=(memory.status),
         action="expire",
-        reason=(
-            "Memory exceeded its active "
-            "period and has no archival "
-            "requirement."
-        ),
+        reason=("Memory exceeded its active period and has no archival requirement."),
         age_days=current_age,
         verified=verified,
-        created_at=(
-            memory.created_at
-        ),
-        reference_timestamp=(
-            reference_timestamp
-        ),
+        created_at=(memory.created_at),
+        reference_timestamp=(reference_timestamp),
     )
 
 
 # ---------------------------------------------------------------
 # Applying decisions
 # ---------------------------------------------------------------
+
 
 def apply_retention_decision(
     store: MemoryStore,
@@ -837,39 +574,26 @@ def apply_retention_decision(
         return False
 
     if decision.action == "archive":
-        store.archive(
-            decision.memory_id
-        )
+        store.archive(decision.memory_id)
 
         return True
 
     if decision.action == "expire":
-        store.expire(
-            decision.memory_id
-        )
+        store.expire(decision.memory_id)
 
         return True
 
     if decision.action == "delete":
-        return store.delete(
-            decision.memory_id
-        )
+        return store.delete(decision.memory_id)
 
-    raise ValueError(
-        "Unknown retention action: "
-        f"{decision.action}"
-    )
+    raise ValueError(f"Unknown retention action: {decision.action}")
 
 
 def run_retention(
     store: MemoryStore,
     *,
-    policy: Optional[
-        RetentionPolicy
-    ] = None,
-    now: Optional[
-        datetime
-    ] = None,
+    policy: Optional[RetentionPolicy] = None,
+    now: Optional[datetime] = None,
     dry_run: bool = True,
     include_decisions: bool = True,
 ) -> RetentionRunResult:
@@ -884,16 +608,9 @@ def run_retention(
     memory before its decisions can be reviewed.
     """
 
-    active_policy = (
-        policy
-        or RetentionPolicy()
-    )
+    active_policy = policy or RetentionPolicy()
 
-    memories = store.query(
-        MemoryQuery(
-            newest_first=False
-        )
-    )
+    memories = store.query(MemoryQuery(newest_first=False))
 
     result = RetentionRunResult()
 
@@ -901,40 +618,25 @@ def run_retention(
         result.examined += 1
 
         try:
-            decision = (
-                evaluate_retention(
-                    memory,
-                    policy=(
-                        active_policy
-                    ),
-                    now=now,
-                )
+            decision = evaluate_retention(
+                memory,
+                policy=(active_policy),
+                now=now,
             )
 
             if include_decisions:
-                result.decisions.append(
-                    decision
-                )
+                result.decisions.append(decision)
 
             if decision.action == "keep":
                 result.kept += 1
 
-            elif (
-                decision.action
-                == "archive"
-            ):
+            elif decision.action == "archive":
                 result.archived += 1
 
-            elif (
-                decision.action
-                == "expire"
-            ):
+            elif decision.action == "expire":
                 result.expired += 1
 
-            elif (
-                decision.action
-                == "delete"
-            ):
+            elif decision.action == "delete":
                 result.deleted += 1
 
             if not dry_run:
@@ -952,6 +654,7 @@ def run_retention(
 # ---------------------------------------------------------------
 # Custom policy construction
 # ---------------------------------------------------------------
+
 
 def policy_from_mapping(
     value: Mapping[
@@ -995,54 +698,43 @@ def policy_from_mapping(
             {},
         )
 
-        rules[
-            memory_type
-        ] = RetentionRule(
-            memory_type=(
-                memory_type
-            ),
+        rules[memory_type] = RetentionRule(
+            memory_type=(memory_type),
             active_days=int(
                 override.get(
                     "active_days",
-                    default_rule.
-                    active_days,
+                    default_rule.active_days,
                 )
             ),
             archive_days=int(
                 override.get(
                     "archive_days",
-                    default_rule.
-                    archive_days,
+                    default_rule.archive_days,
                 )
             ),
             archive_verified=bool(
                 override.get(
                     "archive_verified",
-                    default_rule.
-                    archive_verified,
+                    default_rule.archive_verified,
                 )
             ),
             archive_unverified=bool(
                 override.get(
                     "archive_unverified",
-                    default_rule.
-                    archive_unverified,
+                    default_rule.archive_unverified,
                 )
             ),
             delete_expired=bool(
                 override.get(
                     "delete_expired",
-                    default_rule.
-                    delete_expired,
+                    default_rule.delete_expired,
                 )
             ),
         )
 
     return RetentionPolicy(
         rules=rules,
-        purge_expired=(
-            purge_expired
-        ),
+        purge_expired=(purge_expired),
     )
 
 
@@ -1050,14 +742,11 @@ def policy_from_mapping(
 # Reporting helpers
 # ---------------------------------------------------------------
 
+
 def retention_summary(
-    decisions: Iterable[
-        RetentionDecision
-    ],
+    decisions: Iterable[RetentionDecision],
 ) -> Dict[str, Any]:
-    decision_list = list(
-        decisions
-    )
+    decision_list = list(decisions)
 
     action_counts: Dict[
         str,
@@ -1070,9 +759,7 @@ def retention_summary(
     ] = {}
 
     for decision in decision_list:
-        action_counts[
-            decision.action
-        ] = (
+        action_counts[decision.action] = (
             action_counts.get(
                 decision.action,
                 0,
@@ -1085,13 +772,9 @@ def retention_summary(
             {},
         )
 
-        per_type = type_counts[
-            decision.memory_type
-        ]
+        per_type = type_counts[decision.memory_type]
 
-        per_type[
-            decision.action
-        ] = (
+        per_type[decision.action] = (
             per_type.get(
                 decision.action,
                 0,
@@ -1100,15 +783,9 @@ def retention_summary(
         )
 
     return {
-        "decision_count": (
-            len(decision_list)
-        ),
-        "actions": (
-            action_counts
-        ),
-        "memory_types": (
-            type_counts
-        ),
+        "decision_count": (len(decision_list)),
+        "actions": (action_counts),
+        "memory_types": (type_counts),
     }
 
 
@@ -1122,16 +799,11 @@ class RetentionManager:
         self,
         store: MemoryStore,
         *,
-        policy: Optional[
-            RetentionPolicy
-        ] = None,
+        policy: Optional[RetentionPolicy] = None,
     ) -> None:
         self.store = store
 
-        self.policy = (
-            policy
-            or RetentionPolicy()
-        )
+        self.policy = policy or RetentionPolicy()
 
         self.policy.validate()
 
@@ -1139,9 +811,7 @@ class RetentionManager:
         self,
         memory: MemoryObject,
         *,
-        now: Optional[
-            datetime
-        ] = None,
+        now: Optional[datetime] = None,
     ) -> RetentionDecision:
         return evaluate_retention(
             memory,
@@ -1152,9 +822,7 @@ class RetentionManager:
     def run(
         self,
         *,
-        now: Optional[
-            datetime
-        ] = None,
+        now: Optional[datetime] = None,
         dry_run: bool = True,
     ) -> RetentionRunResult:
         return run_retention(

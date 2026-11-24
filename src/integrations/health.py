@@ -39,6 +39,7 @@ from src.integrations.schema import (
 # Integration health checker
 # ---------------------------------------------------------------
 
+
 class IntegrationHealthChecker:
     """
     Probe adapter connectivity without claiming
@@ -66,16 +67,11 @@ class IntegrationHealthChecker:
         self,
         *,
         registry: IntegrationRegistry,
-        config: Optional[
-            HealthConfig
-        ] = None,
+        config: Optional[HealthConfig] = None,
     ) -> None:
         self.registry = registry
 
-        self.config = (
-            config
-            or HealthConfig()
-        )
+        self.config = config or HealthConfig()
 
         self.config.validate()
 
@@ -94,14 +90,9 @@ class IntegrationHealthChecker:
     ) -> str:
         return "/".join(
             (
-                adapter.target.
-                environment_id,
-
-                adapter.target.
-                provider,
-
-                adapter.target.
-                target_id,
+                adapter.target.environment_id,
+                adapter.target.provider,
+                adapter.target.target_id,
             )
         )
 
@@ -123,40 +114,17 @@ class IntegrationHealthChecker:
         # -----------------------------------------------------
 
         if not self.config.enabled:
-            result = (
-                IntegrationHealth(
-                    target=adapter.target,
+            result = IntegrationHealth(
+                target=adapter.target,
+                status=(IntegrationHealthStatus.UNKNOWN.value),
+                integration_id=(adapter.status.integration_id),
+                message=("Integration health checks are disabled."),
+                attributes={
+                    "adapter_state": (adapter.status.state),
+                },
+            ).finalize()
 
-                    status=(
-                        IntegrationHealthStatus.
-                        UNKNOWN.value
-                    ),
-
-                    integration_id=(
-                        adapter.status.
-                        integration_id
-                    ),
-
-                    message=(
-                        "Integration health "
-                        "checks are "
-                        "disabled."
-                    ),
-
-                    attributes={
-                        "adapter_state": (
-                            adapter.status.
-                            state
-                        ),
-                    },
-                ).finalize()
-            )
-
-            self._last[
-                self._key(
-                    adapter
-                )
-            ] = result
+            self._last[self._key(adapter)] = result
 
             return result
 
@@ -165,61 +133,30 @@ class IntegrationHealthChecker:
         # -----------------------------------------------------
 
         if not adapter.ready:
-            state = (
-                adapter.status.state
-            )
+            state = adapter.status.state
 
             status = (
-                IntegrationHealthStatus.
-                UNHEALTHY.value
+                IntegrationHealthStatus.UNHEALTHY.value
                 if state
                 in {
-                    IntegrationState.
-                    FAILED.value,
-
-                    IntegrationState.
-                    CLOSED.value,
+                    IntegrationState.FAILED.value,
+                    IntegrationState.CLOSED.value,
                 }
-                else (
-                    IntegrationHealthStatus.
-                    UNKNOWN.value
-                )
+                else (IntegrationHealthStatus.UNKNOWN.value)
             )
 
-            result = (
-                IntegrationHealth(
-                    target=adapter.target,
+            result = IntegrationHealth(
+                target=adapter.target,
+                status=status,
+                integration_id=(adapter.status.integration_id),
+                message=("Integration adapter is not ready."),
+                error_type=(adapter.status.last_error_type),
+                attributes={
+                    "adapter_state": (state),
+                },
+            ).finalize()
 
-                    status=status,
-
-                    integration_id=(
-                        adapter.status.
-                        integration_id
-                    ),
-
-                    message=(
-                        "Integration adapter "
-                        "is not ready."
-                    ),
-
-                    error_type=(
-                        adapter.status.
-                        last_error_type
-                    ),
-
-                    attributes={
-                        "adapter_state": (
-                            state
-                        ),
-                    },
-                ).finalize()
-            )
-
-            self._last[
-                self._key(
-                    adapter
-                )
-            ] = result
+            self._last[self._key(adapter)] = result
 
             return result
 
@@ -230,69 +167,34 @@ class IntegrationHealthChecker:
         started = perf_counter()
 
         try:
-            healthy = (
-                adapter.ping()
-            )
+            healthy = adapter.ping()
 
         except Exception as exc:
             latency = max(
                 0.0,
-                perf_counter()
-                - started,
+                perf_counter() - started,
             )
 
-            result = (
-                IntegrationHealth(
-                    target=adapter.target,
+            result = IntegrationHealth(
+                target=adapter.target,
+                status=(IntegrationHealthStatus.UNHEALTHY.value),
+                integration_id=(adapter.status.integration_id),
+                latency_seconds=(latency),
+                message=("Integration health probe failed."),
+                error_type=(type(exc).__name__),
+                attributes={
+                    "error_module": (type(exc).__module__),
+                    "adapter_state": (adapter.status.state),
+                },
+            ).finalize()
 
-                    status=(
-                        IntegrationHealthStatus.
-                        UNHEALTHY.value
-                    ),
-
-                    integration_id=(
-                        adapter.status.
-                        integration_id
-                    ),
-
-                    latency_seconds=(
-                        latency
-                    ),
-
-                    message=(
-                        "Integration health "
-                        "probe failed."
-                    ),
-
-                    error_type=(
-                        type(exc).__name__
-                    ),
-
-                    attributes={
-                        "error_module": (
-                            type(exc).__module__
-                        ),
-
-                        "adapter_state": (
-                            adapter.status.
-                            state
-                        ),
-                    },
-                ).finalize()
-            )
-
-            self._last[
-                self._key(
-                    adapter
-                )
-            ] = result
+            self._last[self._key(adapter)] = result
 
             return result
 
         latency = max(
             0.0,
-            perf_counter()
-            - started,
+            perf_counter() - started,
         )
 
         # -----------------------------------------------------
@@ -300,93 +202,36 @@ class IntegrationHealthChecker:
         # -----------------------------------------------------
 
         if not healthy:
-            status = (
-                IntegrationHealthStatus.
-                UNHEALTHY.value
-            )
+            status = IntegrationHealthStatus.UNHEALTHY.value
 
-            message = (
-                "Integration readiness "
-                "probe failed."
-            )
+            message = "Integration readiness probe failed."
 
-        elif (
-            latency
-            >= self.config.
-            degraded_latency_seconds
-        ):
-            status = (
-                IntegrationHealthStatus.
-                DEGRADED.value
-            )
+        elif latency >= self.config.degraded_latency_seconds:
+            status = IntegrationHealthStatus.DEGRADED.value
 
-            message = (
-                "Integration readiness "
-                "latency exceeded the "
-                "configured threshold."
-            )
+            message = "Integration readiness latency exceeded the configured threshold."
 
         else:
-            status = (
-                IntegrationHealthStatus.
-                HEALTHY.value
-            )
+            status = IntegrationHealthStatus.HEALTHY.value
 
-            message = (
-                "Integration adapter can "
-                "reach its configured "
-                "target."
-            )
+            message = "Integration adapter can reach its configured target."
 
-        result = (
-            IntegrationHealth(
-                target=adapter.target,
+        result = IntegrationHealth(
+            target=adapter.target,
+            status=status,
+            integration_id=(adapter.status.integration_id),
+            latency_seconds=(latency),
+            message=message,
+            error_type=(adapter.status.last_error_type),
+            attributes={
+                "adapter_state": (adapter.status.state),
+                "degraded_latency_seconds": (self.config.degraded_latency_seconds),
+                "scope": ("integration_connectivity"),
+                "infrastructure_health_claimed": (False),
+            },
+        ).finalize()
 
-                status=status,
-
-                integration_id=(
-                    adapter.status.
-                    integration_id
-                ),
-
-                latency_seconds=(
-                    latency
-                ),
-
-                message=message,
-
-                error_type=(
-                    adapter.status.
-                    last_error_type
-                ),
-
-                attributes={
-                    "adapter_state": (
-                        adapter.status.
-                        state
-                    ),
-
-                    "degraded_latency_seconds": (
-                        self.config.
-                        degraded_latency_seconds
-                    ),
-
-                    "scope": (
-                        "integration_connectivity"
-                    ),
-
-                    "infrastructure_health_claimed": (
-                        False
-                    ),
-                },
-            ).finalize()
-        )
-
-        self._last[
-            self._key(
-                adapter
-            )
-        ] = result
+        self._last[self._key(adapter)] = result
 
         return result
 
@@ -397,26 +242,17 @@ class IntegrationHealthChecker:
     def check_all(
         self,
         *,
-        environment: Optional[
-            str
-        ] = None,
-        provider: Optional[
-            str
-        ] = None,
-    ) -> List[
-        IntegrationHealth
-    ]:
+        environment: Optional[str] = None,
+        provider: Optional[str] = None,
+    ) -> List[IntegrationHealth]:
         """
         Probe registered integrations matching
         the optional filters.
         """
 
         return [
-            self.check_adapter(
-                adapter
-            )
-            for adapter
-            in self.registry.list(
+            self.check_adapter(adapter)
+            for adapter in self.registry.list(
                 environment=environment,
                 provider=provider,
             )
@@ -432,9 +268,7 @@ class IntegrationHealthChecker:
         environment: str,
         provider: str,
         target_id: str,
-    ) -> Optional[
-        IntegrationHealth
-    ]:
+    ) -> Optional[IntegrationHealth]:
         key = "/".join(
             (
                 environment,
@@ -443,9 +277,7 @@ class IntegrationHealthChecker:
             )
         )
 
-        return self._last.get(
-            key
-        )
+        return self._last.get(key)
 
     # ---------------------------------------------------------
     # Summary
@@ -467,12 +299,8 @@ class IntegrationHealthChecker:
             ],
         ] = {}
 
-        for health in (
-            self._last.values()
-        ):
-            counts[
-                health.status
-            ] = (
+        for health in self._last.values():
+            counts[health.status] = (
                 counts.get(
                     health.status,
                     0,
@@ -480,16 +308,12 @@ class IntegrationHealthChecker:
                 + 1
             )
 
-            provider_counts = (
-                by_provider.setdefault(
-                    health.target.provider,
-                    {},
-                )
+            provider_counts = by_provider.setdefault(
+                health.target.provider,
+                {},
             )
 
-            provider_counts[
-                health.status
-            ] = (
+            provider_counts[health.status] = (
                 provider_counts.get(
                     health.status,
                     0,
@@ -498,40 +322,14 @@ class IntegrationHealthChecker:
             )
 
         return {
-            "enabled": (
-                self.config.enabled
-            ),
-
-            "observed_targets": (
-                len(
-                    self._last
-                )
-            ),
-
-            "by_status": (
-                counts
-            ),
-
-            "by_provider": (
-                by_provider
-            ),
-
-            "degraded_latency_seconds": (
-                self.config.
-                degraded_latency_seconds
-            ),
-
-            "scope": (
-                "integration_connectivity"
-            ),
-
-            "infrastructure_health_claimed": (
-                False
-            ),
-
-            "credential_values_exposed": (
-                False
-            ),
+            "enabled": (self.config.enabled),
+            "observed_targets": (len(self._last)),
+            "by_status": (counts),
+            "by_provider": (by_provider),
+            "degraded_latency_seconds": (self.config.degraded_latency_seconds),
+            "scope": ("integration_connectivity"),
+            "infrastructure_health_claimed": (False),
+            "credential_values_exposed": (False),
         }
 
 

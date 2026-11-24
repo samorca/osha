@@ -1,0 +1,196 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+
+# -------------------------------------------------------------------
+# Base
+# -------------------------------------------------------------------
+
+resources:
+  - ../../base
+
+
+# -------------------------------------------------------------------
+# Environment identity
+# -------------------------------------------------------------------
+
+labels:
+  - pairs:
+      osha.atonixcorp.io/environment: development
+
+    includeSelectors: false
+    includeTemplates: true
+
+
+# -------------------------------------------------------------------
+# Image
+# -------------------------------------------------------------------
+#
+# The base intentionally uses:
+#
+#     osha:latest
+#
+# Development replaces it with the local/dev image.
+#
+# If your development cluster uses a registry later,
+# only newName/newTag need to change here.
+# -------------------------------------------------------------------
+
+images:
+  - name: osha
+    newName: osha
+    newTag: dev
+
+
+# -------------------------------------------------------------------
+# Development patches
+# -------------------------------------------------------------------
+
+patches:
+
+  # -----------------------------------------------------------------
+  # Shared ConfigMap
+  # -----------------------------------------------------------------
+
+  - target:
+      version: v1
+      kind: ConfigMap
+      name: osha-config
+
+    patch: |-
+      - op: replace
+        path: /data/OSHA_ENVIRONMENT_ID
+        value: development
+
+      - op: replace
+        path: /data/OSHA_DRY_RUN
+        value: "true"
+
+      - op: replace
+        path: /data/OSHA_FAIL_FAST
+        value: "false"
+
+      - op: replace
+        path: /data/OSHA_RUNTIME_LOG_LEVEL
+        value: debug
+
+      - op: replace
+        path: /data/OSHA_API_LOG_LEVEL
+        value: debug
+
+      - op: replace
+        path: /data/OSHA_API_WORKERS
+        value: "1"
+
+      - op: replace
+        path: /data/OSHA_REMEDIATION_DRY_RUN
+        value: "true"
+
+      - op: replace
+        path: /data/OSHA_REMEDIATION_AUTOMATIC_EXECUTION
+        value: "false"
+
+      - op: replace
+        path: /data/OSHA_REMEDIATION_REQUIRE_APPROVAL
+        value: "true"
+
+      - op: replace
+        path: /data/OSHA_REMEDIATION_ALLOW_DESTRUCTIVE_ACTIONS
+        value: "false"
+
+
+  # -----------------------------------------------------------------
+  # API
+  # -----------------------------------------------------------------
+
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: osha-api
+
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "100m"
+
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "128Mi"
+
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "1"
+
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "1Gi"
+
+
+  # -----------------------------------------------------------------
+  # Runtime
+  # -----------------------------------------------------------------
+
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: osha-runtime
+
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "100m"
+
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "128Mi"
+
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "1"
+
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "1Gi"
+
+
+  # -----------------------------------------------------------------
+  # Worker
+  # -----------------------------------------------------------------
+
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: osha-worker
+
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "100m"
+
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "128Mi"
+
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "1"
+
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "1Gi"

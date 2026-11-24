@@ -43,9 +43,7 @@ class IncidentConfig:
     not calibrated probabilities.
     """
 
-    incident_threshold: float = (
-        DEFAULT_INCIDENT_THRESHOLD
-    )
+    incident_threshold: float = DEFAULT_INCIDENT_THRESHOLD
 
     minimum_anomalies: int = 1
 
@@ -58,75 +56,46 @@ class IncidentConfig:
     def validate(
         self,
     ) -> None:
-        if not (
-            0.0
-            <= self.incident_threshold
-            <= 1.0
-        ):
-            raise ValueError(
-                "incident_threshold must "
-                "be between 0 and 1"
-            )
+        if not (0.0 <= self.incident_threshold <= 1.0):
+            raise ValueError("incident_threshold must be between 0 and 1")
 
         if self.minimum_anomalies < 1:
-            raise ValueError(
-                "minimum_anomalies must "
-                "be >= 1"
-            )
+            raise ValueError("minimum_anomalies must be >= 1")
 
         if self.minimum_records < 1:
-            raise ValueError(
-                "minimum_records must "
-                "be >= 1"
-            )
+            raise ValueError("minimum_records must be >= 1")
 
 
 def anomalies_for_group(
     group: CorrelationGroup,
-    anomalies: Iterable[
-        Anomaly
-    ],
+    anomalies: Iterable[Anomaly],
 ) -> List[Anomaly]:
     """
     Find anomalies connected to a correlation
     group through records or resources.
     """
 
-    record_ids = set(
-        group.record_ids
-    )
+    record_ids = set(group.record_ids)
 
-    resource_ids = set(
-        group.resource_ids
-    )
+    resource_ids = set(group.resource_ids)
 
     output = []
 
     for anomaly in anomalies:
-        if record_ids.intersection(
-            anomaly.record_ids
-        ):
-            output.append(
-                anomaly
-            )
+        if record_ids.intersection(anomaly.record_ids):
+            output.append(anomaly)
 
             continue
 
-        if resource_ids.intersection(
-            anomaly.resource_ids
-        ):
-            output.append(
-                anomaly
-            )
+        if resource_ids.intersection(anomaly.resource_ids):
+            output.append(anomaly)
 
     return output
 
 
 def patterns_for_group(
     group: CorrelationGroup,
-    patterns: Iterable[
-        Pattern
-    ],
+    patterns: Iterable[Pattern],
 ) -> List[Pattern]:
     """
     Find patterns associated with a correlation
@@ -134,32 +103,20 @@ def patterns_for_group(
     correlation-group references.
     """
 
-    record_ids = set(
-        group.record_ids
-    )
+    record_ids = set(group.record_ids)
 
-    resource_ids = set(
-        group.resource_ids
-    )
+    resource_ids = set(group.resource_ids)
 
     output = []
 
     for pattern in patterns:
-        if record_ids.intersection(
-            pattern.record_ids
-        ):
-            output.append(
-                pattern
-            )
+        if record_ids.intersection(pattern.record_ids):
+            output.append(pattern)
 
             continue
 
-        if resource_ids.intersection(
-            pattern.resource_ids
-        ):
-            output.append(
-                pattern
-            )
+        if resource_ids.intersection(pattern.resource_ids):
+            output.append(pattern)
 
             continue
 
@@ -174,21 +131,16 @@ def patterns_for_group(
                 group_ids,
                 list,
             )
-            and group.group_id
-            in group_ids
+            and group.group_id in group_ids
         ):
-            output.append(
-                pattern
-            )
+            output.append(pattern)
 
     return output
 
 
 def incident_score(
     group: CorrelationGroup,
-    anomalies: Iterable[
-        Anomaly
-    ],
+    anomalies: Iterable[Anomaly],
 ) -> float:
     """
     Calculate incident-candidate evidence from:
@@ -200,16 +152,10 @@ def incident_score(
     This is not a probability.
     """
 
-    anomaly_list = list(
-        anomalies
-    )
+    anomaly_list = list(anomalies)
 
     anomaly_strength = max(
-        (
-            anomaly.score
-            for anomaly
-            in anomaly_list
-        ),
+        (anomaly.score for anomaly in anomaly_list),
         default=0.0,
     )
 
@@ -228,25 +174,14 @@ def incident_score(
     )
 
     return checked_score(
-        (
-            correlation_strength
-            * 0.45
-        )
-        + (
-            anomaly_strength
-            * 0.40
-        )
-        + (
-            anomaly_density
-            * 0.15
-        )
+        (correlation_strength * 0.45)
+        + (anomaly_strength * 0.40)
+        + (anomaly_density * 0.15)
     )
 
 
 def incident_severity(
-    anomalies: Iterable[
-        Anomaly
-    ],
+    anomalies: Iterable[Anomaly],
     score: float,
 ) -> str:
     """
@@ -254,43 +189,24 @@ def incident_severity(
     severity and total incident evidence.
     """
 
-    anomaly_severities = [
-        anomaly.severity
-        for anomaly
-        in anomalies
-    ]
+    anomaly_severities = [anomaly.severity for anomaly in anomalies]
 
-    anomaly_severity = (
-        highest_severity(
-            anomaly_severities
-        )
-    )
+    anomaly_severity = highest_severity(anomaly_severities)
 
     if score >= 0.90:
-        score_severity = (
-            IncidentSeverity.
-            CRITICAL.value
-        )
+        score_severity = IncidentSeverity.CRITICAL.value
 
     elif score >= 0.75:
-        score_severity = (
-            IncidentSeverity.HIGH.value
-        )
+        score_severity = IncidentSeverity.HIGH.value
 
     elif score >= 0.55:
-        score_severity = (
-            IncidentSeverity.MEDIUM.value
-        )
+        score_severity = IncidentSeverity.MEDIUM.value
 
     elif score >= 0.30:
-        score_severity = (
-            IncidentSeverity.LOW.value
-        )
+        score_severity = IncidentSeverity.LOW.value
 
     else:
-        score_severity = (
-            IncidentSeverity.INFO.value
-        )
+        score_severity = IncidentSeverity.INFO.value
 
     return max(
         (
@@ -303,43 +219,26 @@ def incident_severity(
 
 def incident_title(
     group: CorrelationGroup,
-    anomalies: Iterable[
-        Anomaly
-    ],
+    anomalies: Iterable[Anomaly],
 ) -> str:
-    anomaly_list = list(
-        anomalies
-    )
+    anomaly_list = list(anomalies)
 
     if anomaly_list:
         strongest = max(
             anomaly_list,
-            key=lambda anomaly: (
-                anomaly.score
-            ),
+            key=lambda anomaly: anomaly.score,
         )
 
         return strongest.title
 
-    providers = (
-        ", ".join(
-            group.providers
-        )
-        if group.providers
-        else "infrastructure"
-    )
+    providers = ", ".join(group.providers) if group.providers else "infrastructure"
 
-    return (
-        "Correlated abnormal activity "
-        f"in {providers}"
-    )
+    return f"Correlated abnormal activity in {providers}"
 
 
 def group_is_incident(
     group: CorrelationGroup,
-    anomalies: Iterable[
-        Anomaly
-    ],
+    anomalies: Iterable[Anomaly],
     *,
     config: IncidentConfig,
 ) -> bool:
@@ -349,20 +248,12 @@ def group_is_incident(
     incident candidate.
     """
 
-    anomaly_list = list(
-        anomalies
-    )
+    anomaly_list = list(anomalies)
 
-    if (
-        len(group.record_ids)
-        < config.minimum_records
-    ):
+    if len(group.record_ids) < config.minimum_records:
         return False
 
-    if (
-        len(anomaly_list)
-        < config.minimum_anomalies
-    ):
+    if len(anomaly_list) < config.minimum_anomalies:
         return False
 
     score = incident_score(
@@ -370,46 +261,28 @@ def group_is_incident(
         anomaly_list,
     )
 
-    return (
-        score
-        >= config.incident_threshold
-    )
+    return score >= config.incident_threshold
 
 
 def incident_from_group(
     group: CorrelationGroup,
-    anomalies: Iterable[
-        Anomaly
-    ],
-    patterns: Iterable[
-        Pattern
-    ] = (),
+    anomalies: Iterable[Anomaly],
+    patterns: Iterable[Pattern] = (),
     *,
-    config: Optional[
-        IncidentConfig
-    ] = None,
-) -> Optional[
-    IncidentCandidate
-]:
+    config: Optional[IncidentConfig] = None,
+) -> Optional[IncidentCandidate]:
     """
     Convert a sufficiently supported correlation
     group into an IncidentCandidate.
     """
 
-    configuration = (
-        config
-        or IncidentConfig()
-    )
+    configuration = config or IncidentConfig()
 
     configuration.validate()
 
-    anomaly_list = list(
-        anomalies
-    )
+    anomaly_list = list(anomalies)
 
-    pattern_list = list(
-        patterns
-    )
+    pattern_list = list(patterns)
 
     if not group_is_incident(
         group,
@@ -428,33 +301,18 @@ def incident_from_group(
         score,
     )
 
-    anomaly_ids = [
-        anomaly.anomaly_id
-        for anomaly
-        in anomaly_list
-        if anomaly.anomaly_id
-    ]
+    anomaly_ids = [anomaly.anomaly_id for anomaly in anomaly_list if anomaly.anomaly_id]
 
-    pattern_ids = [
-        pattern.pattern_id
-        for pattern
-        in pattern_list
-        if pattern.pattern_id
-    ]
+    pattern_ids = [pattern.pattern_id for pattern in pattern_list if pattern.pattern_id]
 
     incident = IncidentCandidate(
         title=incident_title(
             group,
             anomaly_list,
         ),
-        environment_id=(
-            group.environment_id
-        ),
+        environment_id=(group.environment_id),
         severity=severity,
-        status=(
-            IncidentStatus.
-            CANDIDATE.value
-        ),
+        status=(IncidentStatus.CANDIDATE.value),
         summary=(
             f"{len(anomaly_list)} anomaly "
             "finding(s) across "
@@ -462,45 +320,21 @@ def incident_from_group(
             "resource(s) in one correlated "
             "group."
         ),
-        correlation_group_ids=(
-            [group.group_id]
-            if group.group_id
-            else []
-        ),
-        record_ids=list(
-            group.record_ids
-        ),
-        resource_ids=list(
-            group.resource_ids
-        ),
+        correlation_group_ids=([group.group_id] if group.group_id else []),
+        record_ids=list(group.record_ids),
+        resource_ids=list(group.resource_ids),
         anomaly_ids=anomaly_ids,
         pattern_ids=pattern_ids,
-        started_at=(
-            group.start_timestamp
-        ),
-        last_observed_at=(
-            group.end_timestamp
-        ),
+        started_at=(group.start_timestamp),
+        last_observed_at=(group.end_timestamp),
         attributes={
             "incident_score": score,
-            "correlation_strongest_score": (
-                group.strongest_score
-            ),
-            "correlation_average_score": (
-                group.average_score
-            ),
-            "anomaly_count": (
-                len(anomaly_list)
-            ),
-            "pattern_count": (
-                len(pattern_list)
-            ),
-            "providers": list(
-                group.providers
-            ),
-            "signal_types": list(
-                group.signal_types
-            ),
+            "correlation_strongest_score": (group.strongest_score),
+            "correlation_average_score": (group.average_score),
+            "anomaly_count": (len(anomaly_list)),
+            "pattern_count": (len(pattern_list)),
+            "providers": list(group.providers),
+            "signal_types": list(group.signal_types),
         },
     )
 
@@ -508,15 +342,11 @@ def incident_from_group(
 
 
 def standalone_critical_incidents(
-    anomalies: Iterable[
-        Anomaly
-    ],
+    anomalies: Iterable[Anomaly],
     *,
     grouped_anomaly_ids: Set[str],
     config: IncidentConfig,
-) -> List[
-    IncidentCandidate
-]:
+) -> List[IncidentCandidate]:
     """
     Optionally promote exceptionally strong,
     critical standalone anomalies.
@@ -525,10 +355,7 @@ def standalone_critical_incidents(
     anomalies with score >= 0.90.
     """
 
-    if not (
-        config.
-        allow_critical_single_record
-    ):
+    if not (config.allow_critical_single_record):
         return []
 
     output = []
@@ -539,17 +366,10 @@ def standalone_critical_incidents(
         if not anomaly.anomaly_id:
             continue
 
-        if (
-            anomaly.anomaly_id
-            in grouped_anomaly_ids
-        ):
+        if anomaly.anomaly_id in grouped_anomaly_ids:
             continue
 
-        if (
-            anomaly.severity
-            != IncidentSeverity.
-            CRITICAL.value
-        ):
+        if anomaly.severity != IncidentSeverity.CRITICAL.value:
             continue
 
         if anomaly.score < 0.90:
@@ -557,61 +377,29 @@ def standalone_critical_incidents(
 
         incident = IncidentCandidate(
             title=anomaly.title,
-            environment_id=(
-                anomaly.environment_id
-            ),
-            severity=(
-                IncidentSeverity.
-                CRITICAL.value
-            ),
-            status=(
-                IncidentStatus.
-                CANDIDATE.value
-            ),
-            summary=(
-                "A critical anomaly exceeded "
-                "the standalone incident "
-                "threshold."
-            ),
-            record_ids=list(
-                anomaly.record_ids
-            ),
-            resource_ids=list(
-                anomaly.resource_ids
-            ),
-            anomaly_ids=[
-                anomaly.anomaly_id
-            ],
-            started_at=(
-                anomaly.detected_at
-            ),
-            last_observed_at=(
-                anomaly.detected_at
-            ),
+            environment_id=(anomaly.environment_id),
+            severity=(IncidentSeverity.CRITICAL.value),
+            status=(IncidentStatus.CANDIDATE.value),
+            summary=("A critical anomaly exceeded the standalone incident threshold."),
+            record_ids=list(anomaly.record_ids),
+            resource_ids=list(anomaly.resource_ids),
+            anomaly_ids=[anomaly.anomaly_id],
+            started_at=(anomaly.detected_at),
+            last_observed_at=(anomaly.detected_at),
             attributes={
-                "incident_score": (
-                    anomaly.score
-                ),
-                "standalone_critical_anomaly": (
-                    True
-                ),
+                "incident_score": (anomaly.score),
+                "standalone_critical_anomaly": (True),
             },
         )
 
-        output.append(
-            incident.finalize()
-        )
+        output.append(incident.finalize())
 
     return output
 
 
 def deduplicate_incidents(
-    incidents: Iterable[
-        IncidentCandidate
-    ],
-) -> List[
-    IncidentCandidate
-]:
+    incidents: Iterable[IncidentCandidate],
+) -> List[IncidentCandidate]:
     """
     Deduplicate using deterministic incident IDs.
 
@@ -630,9 +418,7 @@ def deduplicate_incidents(
         if not incident.incident_id:
             continue
 
-        existing = output.get(
-            incident.incident_id
-        )
+        existing = output.get(incident.incident_id)
 
         current_score = float(
             incident.attributes.get(
@@ -652,95 +438,59 @@ def deduplicate_incidents(
             else -1.0
         )
 
-        if (
-            existing is None
-            or current_score
-            > existing_score
-        ):
-            output[
-                incident.incident_id
-            ] = incident
+        if existing is None or current_score > existing_score:
+            output[incident.incident_id] = incident
 
     return sorted(
         output.values(),
         key=lambda incident: (
-            -severity_rank(
-                incident.severity
-            ),
+            -severity_rank(incident.severity),
             -float(
                 incident.attributes.get(
                     "incident_score",
                     0.0,
                 )
             ),
-            incident.incident_id
-            or "",
+            incident.incident_id or "",
         ),
     )
 
 
 def detect_incidents(
-    groups: Iterable[
-        CorrelationGroup
-    ],
-    anomalies: Iterable[
-        Anomaly
-    ],
+    groups: Iterable[CorrelationGroup],
+    anomalies: Iterable[Anomaly],
     *,
-    patterns: Iterable[
-        Pattern
-    ] = (),
-    config: Optional[
-        IncidentConfig
-    ] = None,
-) -> List[
-    IncidentCandidate
-]:
+    patterns: Iterable[Pattern] = (),
+    config: Optional[IncidentConfig] = None,
+) -> List[IncidentCandidate]:
     """
     Detect incident candidates from correlation
     groups and anomaly findings.
     """
 
-    configuration = (
-        config
-        or IncidentConfig()
-    )
+    configuration = config or IncidentConfig()
 
     configuration.validate()
 
-    group_list = list(
-        groups
-    )
+    group_list = list(groups)
 
-    anomaly_list = list(
-        anomalies
-    )
+    anomaly_list = list(anomalies)
 
-    pattern_list = list(
-        patterns
-    )
+    pattern_list = list(patterns)
 
-    incidents: List[
-        IncidentCandidate
-    ] = []
+    incidents: List[IncidentCandidate] = []
 
-    grouped_anomaly_ids: Set[
-        str
-    ] = set()
+    grouped_anomaly_ids: Set[str] = set()
 
     for group in group_list:
-        group_anomalies = (
-            anomalies_for_group(
-                group,
-                anomaly_list,
-            )
+        group_anomalies = anomalies_for_group(
+            group,
+            anomaly_list,
         )
 
-        group_patterns = (
-            patterns_for_group(
-                group,
-                pattern_list,
-            )
+        group_patterns = patterns_for_group(
+            group,
+            pattern_list,
         )
 
         incident = incident_from_group(
@@ -753,36 +503,25 @@ def detect_incidents(
         if incident is None:
             continue
 
-        incidents.append(
-            incident
-        )
+        incidents.append(incident)
 
         grouped_anomaly_ids.update(
-            anomaly.anomaly_id
-            for anomaly
-            in group_anomalies
-            if anomaly.anomaly_id
+            anomaly.anomaly_id for anomaly in group_anomalies if anomaly.anomaly_id
         )
 
     incidents.extend(
         standalone_critical_incidents(
             anomaly_list,
-            grouped_anomaly_ids=(
-                grouped_anomaly_ids
-            ),
+            grouped_anomaly_ids=(grouped_anomaly_ids),
             config=configuration,
         )
     )
 
-    return deduplicate_incidents(
-        incidents
-    )
+    return deduplicate_incidents(incidents)
 
 
 def incidents_by_resource(
-    incidents: Iterable[
-        IncidentCandidate
-    ],
+    incidents: Iterable[IncidentCandidate],
 ) -> Dict[
     str,
     List[IncidentCandidate],
@@ -793,60 +532,30 @@ def incidents_by_resource(
     ] = defaultdict(list)
 
     for incident in incidents:
-        for resource_id in (
-            incident.resource_ids
-        ):
-            output[
-                resource_id
-            ].append(
-                incident
-            )
+        for resource_id in incident.resource_ids:
+            output[resource_id].append(incident)
 
     return dict(output)
 
 
 def incident_summary(
-    incidents: Iterable[
-        IncidentCandidate
-    ],
+    incidents: Iterable[IncidentCandidate],
 ) -> Dict[str, Any]:
-    incident_list = list(
-        incidents
-    )
+    incident_list = list(incidents)
 
     return {
-        "incident_count": (
-            len(incident_list)
-        ),
-        "severities": dict(
-            Counter(
-                incident.severity
-                for incident
-                in incident_list
-            )
-        ),
-        "statuses": dict(
-            Counter(
-                incident.status
-                for incident
-                in incident_list
-            )
-        ),
+        "incident_count": (len(incident_list)),
+        "severities": dict(Counter(incident.severity for incident in incident_list)),
+        "statuses": dict(Counter(incident.status for incident in incident_list)),
         "affected_resource_count": len(
             {
                 resource_id
-                for incident
-                in incident_list
-                for resource_id
-                in incident.resource_ids
+                for incident in incident_list
+                for resource_id in incident.resource_ids
             }
         ),
         "environment_count": len(
-            {
-                incident.environment_id
-                for incident
-                in incident_list
-            }
+            {incident.environment_id for incident in incident_list}
         ),
     }
 
@@ -860,14 +569,9 @@ class IncidentEngine:
     def __init__(
         self,
         *,
-        config: Optional[
-            IncidentConfig
-        ] = None,
+        config: Optional[IncidentConfig] = None,
     ) -> None:
-        self.config = (
-            config
-            or IncidentConfig()
-        )
+        self.config = config or IncidentConfig()
 
         self.config.validate()
 
@@ -878,19 +582,11 @@ class IncidentEngine:
 
     def analyze(
         self,
-        groups: Iterable[
-            CorrelationGroup
-        ],
-        anomalies: Iterable[
-            Anomaly
-        ],
+        groups: Iterable[CorrelationGroup],
+        anomalies: Iterable[Anomaly],
         *,
-        patterns: Iterable[
-            Pattern
-        ] = (),
-    ) -> List[
-        IncidentCandidate
-    ]:
+        patterns: Iterable[Pattern] = (),
+    ) -> List[IncidentCandidate]:
         discovered = detect_incidents(
             groups,
             anomalies,
@@ -902,30 +598,20 @@ class IncidentEngine:
             incident.finalize()
 
             if incident.incident_id:
-                self._incidents[
-                    incident.incident_id
-                ] = incident
+                self._incidents[incident.incident_id] = incident
 
         return discovered
 
     def incidents(
         self,
-    ) -> List[
-        IncidentCandidate
-    ]:
-        return deduplicate_incidents(
-            self._incidents.values()
-        )
+    ) -> List[IncidentCandidate]:
+        return deduplicate_incidents(self._incidents.values())
 
     def get(
         self,
         incident_id: str,
-    ) -> Optional[
-        IncidentCandidate
-    ]:
-        return self._incidents.get(
-            incident_id
-        )
+    ) -> Optional[IncidentCandidate]:
+        return self._incidents.get(incident_id)
 
     def clear(
         self,

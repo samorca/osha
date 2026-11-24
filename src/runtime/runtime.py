@@ -47,6 +47,7 @@ from src.runtime.state import (
 # Runtime snapshot
 # ---------------------------------------------------------------
 
+
 @dataclass
 class RuntimeSnapshot:
     """
@@ -69,12 +70,8 @@ class RuntimeSnapshot:
         self,
     ) -> Dict[str, Any]:
         return {
-            "status": (
-                self.status.to_dict()
-            ),
-            "config": dict(
-                self.config
-            ),
+            "status": (self.status.to_dict()),
+            "config": dict(self.config),
         }
 
 
@@ -82,15 +79,15 @@ class RuntimeSnapshot:
 # Runtime lifecycle error
 # ---------------------------------------------------------------
 
-class RuntimeLifecycleError(
-    RuntimeError
-):
+
+class RuntimeLifecycleError(RuntimeError):
     pass
 
 
 # ---------------------------------------------------------------
 # OSHA runtime facade
 # ---------------------------------------------------------------
+
 
 class OshaRuntime:
     """
@@ -113,67 +110,40 @@ class OshaRuntime:
     def __init__(
         self,
         *,
-        config: Optional[
-            RuntimeConfig
-        ] = None,
-        registry: Optional[
-            RuntimeServiceRegistry
-        ] = None,
-        state: Optional[
-            RuntimeStateManager
-        ] = None,
+        config: Optional[RuntimeConfig] = None,
+        registry: Optional[RuntimeServiceRegistry] = None,
+        state: Optional[RuntimeStateManager] = None,
     ) -> None:
-        self.config = (
-            config
-            or RuntimeConfig()
-        )
+        self.config = config or RuntimeConfig()
 
         self.config.validate()
 
-        self.registry = (
-            registry
-            or RuntimeServiceRegistry()
+        self.registry = registry or RuntimeServiceRegistry()
+
+        self.state = state or RuntimeStateManager()
+
+        self.services = RuntimeServiceManager(
+            self.registry,
+            state=self.state,
         )
 
-        self.state = (
-            state
-            or RuntimeStateManager()
+        self.bootstrapper = RuntimeBootstrap(
+            config=self.config,
+            registry=self.registry,
+            state=self.state,
+            services=self.services,
         )
 
-        self.services = (
-            RuntimeServiceManager(
-                self.registry,
-                state=self.state,
-            )
+        self.shutdown_manager = RuntimeShutdown(
+            services=self.services,
+            state=self.state,
         )
 
-        self.bootstrapper = (
-            RuntimeBootstrap(
-                config=self.config,
-                registry=self.registry,
-                state=self.state,
-                services=self.services,
-            )
-        )
+        self._status: Optional[RuntimeStatus] = None
 
-        self.shutdown_manager = (
-            RuntimeShutdown(
-                services=self.services,
-                state=self.state,
-            )
-        )
+        self._last_bootstrap: Optional[BootstrapResult] = None
 
-        self._status: Optional[
-            RuntimeStatus
-        ] = None
-
-        self._last_bootstrap: Optional[
-            BootstrapResult
-        ] = None
-
-        self._last_shutdown: Optional[
-            ShutdownResult
-        ] = None
+        self._last_shutdown: Optional[ShutdownResult] = None
 
     # ---------------------------------------------------------
     # Current status
@@ -182,9 +152,7 @@ class OshaRuntime:
     @property
     def status(
         self,
-    ) -> Optional[
-        RuntimeStatus
-    ]:
+    ) -> Optional[RuntimeStatus]:
         return self._status
 
     # ---------------------------------------------------------
@@ -199,14 +167,9 @@ class OshaRuntime:
             self._status is not None
             and self._status.state
             in {
-                RuntimeState.
-                STARTING.value,
-
-                RuntimeState.
-                RUNNING.value,
-
-                RuntimeState.
-                DEGRADED.value,
+                RuntimeState.STARTING.value,
+                RuntimeState.RUNNING.value,
+                RuntimeState.DEGRADED.value,
             }
         )
 
@@ -221,15 +184,9 @@ class OshaRuntime:
         if self._status is None:
             return False
 
-        recompute_readiness(
-            self._status
-        )
+        recompute_readiness(self._status)
 
-        return (
-            self._status.readiness
-            == ReadinessStatus.
-            READY.value
-        )
+        return self._status.readiness == ReadinessStatus.READY.value
 
     # ---------------------------------------------------------
     # Service registration
@@ -246,10 +203,7 @@ class OshaRuntime:
         runtime instance has been created.
         """
 
-        if (
-            self._status
-            is not None
-        ):
+        if self._status is not None:
             raise RuntimeLifecycleError(
                 "Runtime services cannot "
                 "be registered after a "
@@ -257,36 +211,26 @@ class OshaRuntime:
                 "created."
             )
 
-        registered = (
-            self.registry.register(
-                service
-            )
-        )
+        registered = self.registry.register(service)
 
         # Registry contents changed before
         # startup, so recreate the managers that
         # depend on that registry.
-        self.services = (
-            RuntimeServiceManager(
-                self.registry,
-                state=self.state,
-            )
+        self.services = RuntimeServiceManager(
+            self.registry,
+            state=self.state,
         )
 
-        self.bootstrapper = (
-            RuntimeBootstrap(
-                config=self.config,
-                registry=self.registry,
-                state=self.state,
-                services=self.services,
-            )
+        self.bootstrapper = RuntimeBootstrap(
+            config=self.config,
+            registry=self.registry,
+            state=self.state,
+            services=self.services,
         )
 
-        self.shutdown_manager = (
-            RuntimeShutdown(
-                services=self.services,
-                state=self.state,
-            )
+        self.shutdown_manager = RuntimeShutdown(
+            services=self.services,
+            state=self.state,
         )
 
         return registered
@@ -298,12 +242,8 @@ class OshaRuntime:
     def start(
         self,
         *,
-        host_id: Optional[
-            str
-        ] = None,
-        started_by: Optional[
-            str
-        ] = None,
+        host_id: Optional[str] = None,
+        started_by: Optional[str] = None,
     ) -> BootstrapResult:
         """
         Bootstrap this runtime exactly once.
@@ -313,30 +253,19 @@ class OshaRuntime:
         history remains unambiguous.
         """
 
-        if (
-            self._status
-            is not None
-        ):
+        if self._status is not None:
             raise RuntimeLifecycleError(
-                "Runtime instance already "
-                "exists in state "
-                f"{self._status.state}."
+                f"Runtime instance already exists in state {self._status.state}."
             )
 
-        result = (
-            self.bootstrapper.bootstrap(
-                host_id=host_id,
-                started_by=started_by,
-            )
+        result = self.bootstrapper.bootstrap(
+            host_id=host_id,
+            started_by=started_by,
         )
 
-        self._status = (
-            result.runtime
-        )
+        self._status = result.runtime
 
-        self._last_bootstrap = (
-            result
-        )
+        self._last_bootstrap = result
 
         return result
 
@@ -347,13 +276,8 @@ class OshaRuntime:
     def shutdown(
         self,
         *,
-        reason: str = (
-            "Runtime shutdown requested."
-        ),
-        shutdown_reason: str = (
-            ShutdownReason.
-            REQUESTED.value
-        ),
+        reason: str = ("Runtime shutdown requested."),
+        shutdown_reason: str = (ShutdownReason.REQUESTED.value),
     ) -> ShutdownResult:
         """
         Gracefully stop the current OSHA runtime
@@ -361,29 +285,17 @@ class OshaRuntime:
         """
 
         if self._status is None:
-            raise RuntimeLifecycleError(
-                "Runtime has not been "
-                "created or started."
-            )
+            raise RuntimeLifecycleError("Runtime has not been created or started.")
 
-        result = (
-            self.shutdown_manager.
-            shutdown(
-                self._status,
-                reason=reason,
-                shutdown_reason=(
-                    shutdown_reason
-                ),
-            )
+        result = self.shutdown_manager.shutdown(
+            self._status,
+            reason=reason,
+            shutdown_reason=(shutdown_reason),
         )
 
-        self._status = (
-            result.runtime
-        )
+        self._status = result.runtime
 
-        self._last_shutdown = (
-            result
-        )
+        self._last_shutdown = result
 
         return result
 
@@ -400,20 +312,11 @@ class OshaRuntime:
         """
 
         if self._status is None:
-            raise RuntimeLifecycleError(
-                "Runtime has not been "
-                "created or started."
-            )
+            raise RuntimeLifecycleError("Runtime has not been created or started.")
 
         return RuntimeSnapshot(
-            status=(
-                self._status.finalize()
-            ),
-            config=(
-                safe_config_summary(
-                    self.config
-                )
-            ),
+            status=(self._status.finalize()),
+            config=(safe_config_summary(self.config)),
         )
 
     # ---------------------------------------------------------
@@ -431,55 +334,25 @@ class OshaRuntime:
         health.
         """
 
-        status = (
-            self._status
-        )
+        status = self._status
 
         return {
-            "instance_name": (
-                self.config.
-                instance_name
-            ),
-            "environment_id": (
-                self.config.
-                environment_id
-            ),
-            "dry_run": (
-                self.config.dry_run
-            ),
-            "runtime_created": (
-                status is not None
-            ),
+            "instance_name": (self.config.instance_name),
+            "environment_id": (self.config.environment_id),
+            "dry_run": (self.config.dry_run),
+            "runtime_created": (status is not None),
             "state": (
-                status.state
-                if status is not None
-                else (
-                    RuntimeState.
-                    CREATED.value
-                )
+                status.state if status is not None else (RuntimeState.CREATED.value)
             ),
             "readiness": (
                 status.readiness
                 if status is not None
-                else (
-                    ReadinessStatus.
-                    UNKNOWN.value
-                )
+                else (ReadinessStatus.UNKNOWN.value)
             ),
-            "runtime_id": (
-                status.runtime_id
-                if status is not None
-                else None
-            ),
-            "registered_services": (
-                self.registry.names()
-            ),
+            "runtime_id": (status.runtime_id if status is not None else None),
+            "registered_services": (self.registry.names()),
             "started": self.started,
-            "ready": (
-                self.ready
-                if status is not None
-                else False
-            ),
+            "ready": (self.ready if status is not None else False),
         }
 
     # ---------------------------------------------------------
@@ -510,40 +383,23 @@ class OshaRuntime:
         traceback,
     ) -> bool:
         if (
-            self._status
-            is not None
-            and self._status.state
-            != RuntimeState.
-            STOPPED.value
+            self._status is not None
+            and self._status.state != RuntimeState.STOPPED.value
         ):
             shutdown_reason = (
-                ShutdownReason.
-                FAILURE.value
+                ShutdownReason.FAILURE.value
                 if exc_type is not None
-                else (
-                    ShutdownReason.
-                    REQUESTED.value
-                )
+                else (ShutdownReason.REQUESTED.value)
             )
 
             try:
                 self.shutdown(
                     reason=(
-                        "Runtime context "
-                        "exited after an "
-                        "exception."
-                        if (
-                            exc_type
-                            is not None
-                        )
-                        else (
-                            "Runtime context "
-                            "exited normally."
-                        )
+                        "Runtime context exited after an exception."
+                        if (exc_type is not None)
+                        else ("Runtime context exited normally.")
                     ),
-                    shutdown_reason=(
-                        shutdown_reason
-                    ),
+                    shutdown_reason=(shutdown_reason),
                 )
 
             except Exception:
@@ -562,6 +418,7 @@ class OshaRuntime:
 # Environment-backed runtime
 # ---------------------------------------------------------------
 
+
 def runtime_from_environment(
     *,
     environ: Optional[
@@ -570,9 +427,7 @@ def runtime_from_environment(
             str,
         ]
     ] = None,
-    registry: Optional[
-        RuntimeServiceRegistry
-    ] = None,
+    registry: Optional[RuntimeServiceRegistry] = None,
 ) -> OshaRuntime:
     """
     Construct an OSHA runtime from supported
@@ -582,9 +437,7 @@ def runtime_from_environment(
     Call start() explicitly when appropriate.
     """
 
-    config = from_environment(
-        environ=environ
-    )
+    config = from_environment(environ=environ)
 
     return OshaRuntime(
         config=config,

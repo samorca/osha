@@ -1,0 +1,56 @@
+schema_version: "1"
+
+telemetry:
+  enabled: true
+
+  normalization:
+    enabled: true
+    reject_invalid_records: true
+
+  collection:
+    interval_seconds: 15.0
+
+  buffering:
+    enabled: true
+    max_records: 10000
+
+  signals:
+    system:
+      enabled: true
+
+    cpu:
+      enabled: true
+
+    memory:
+      enabled: true
+
+    filesystem:
+      enabled: true
+
+    network:
+      enabled: true
+
+    processes:
+      enabled: true
+
+    kubernetes:
+      enabled: false
+
+    openstack:
+      enabled: false
+
+  events:
+    enabled: true
+
+  anomaly_detection:
+    enabled: true
+
+  correlation:
+    enabled: true
+
+  persistence:
+    enabled: true
+
+  observability:
+    metrics: true
+    logging: true

@@ -52,12 +52,8 @@ class TopologyPath:
 
     def to_dict(self) -> dict:
         return {
-            "resource_ids": list(
-                self.resource_ids
-            ),
-            "relationships": list(
-                self.relationships
-            ),
+            "resource_ids": list(self.resource_ids),
+            "relationships": list(self.relationships),
             "distance": self.distance,
         }
 
@@ -77,9 +73,7 @@ class TopologyGraph:
 
     def __init__(
         self,
-        registry: Optional[
-            ResourceRegistry
-        ] = None,
+        registry: Optional[ResourceRegistry] = None,
     ) -> None:
         self.registry = registry
 
@@ -90,16 +84,12 @@ class TopologyGraph:
 
         self._outgoing: Dict[
             str,
-            Set[
-                Tuple[str, str, str]
-            ],
+            Set[Tuple[str, str, str]],
         ] = defaultdict(set)
 
         self._incoming: Dict[
             str,
-            Set[
-                Tuple[str, str, str]
-            ],
+            Set[Tuple[str, str, str]],
         ] = defaultdict(set)
 
         self._nodes: Set[str] = set()
@@ -120,69 +110,38 @@ class TopologyGraph:
         confidence value.
         """
 
-        key = edge_key(
-            relationship
-        )
+        key = edge_key(relationship)
 
-        existing = self._edges.get(
-            key
-        )
+        existing = self._edges.get(key)
 
         if existing is not None:
-            old_confidence = (
-                existing.confidence
-                or 0.0
-            )
+            old_confidence = existing.confidence or 0.0
 
-            new_confidence = (
-                relationship.confidence
-                or 0.0
-            )
+            new_confidence = relationship.confidence or 0.0
 
-            if (
-                new_confidence
-                <= old_confidence
-            ):
+            if new_confidence <= old_confidence:
                 return False
 
-        self._edges[
-            key
-        ] = relationship
+        self._edges[key] = relationship
 
-        self._outgoing[
-            relationship.
-            source_resource_id
-        ].add(key)
+        self._outgoing[relationship.source_resource_id].add(key)
 
-        self._incoming[
-            relationship.
-            target_resource_id
-        ].add(key)
+        self._incoming[relationship.target_resource_id].add(key)
 
-        self._nodes.add(
-            relationship.
-            source_resource_id
-        )
+        self._nodes.add(relationship.source_resource_id)
 
-        self._nodes.add(
-            relationship.
-            target_resource_id
-        )
+        self._nodes.add(relationship.target_resource_id)
 
         return True
 
     def add_many(
         self,
-        relationships: Iterable[
-            Relationship
-        ],
+        relationships: Iterable[Relationship],
     ) -> int:
         added = 0
 
         for relationship in relationships:
-            if self.add_relationship(
-                relationship
-            ):
+            if self.add_relationship(relationship):
                 added += 1
 
         return added
@@ -194,38 +153,26 @@ class TopologyGraph:
     def nodes(
         self,
     ) -> List[str]:
-        nodes = set(
-            self._nodes
-        )
+        nodes = set(self._nodes)
 
         if self.registry is not None:
-            nodes.update(
-                self.registry.resource_ids()
-            )
+            nodes.update(self.registry.resource_ids())
 
         return sorted(nodes)
 
     def relationships(
         self,
     ) -> List[Relationship]:
-        return list(
-            self._edges.values()
-        )
+        return list(self._edges.values())
 
     def get_resource(
         self,
         resource_id: str,
-    ) -> Optional[
-        ResourceIdentity
-    ]:
+    ) -> Optional[ResourceIdentity]:
         if self.registry is None:
             return None
 
-        return (
-            self.registry.get_resource(
-                resource_id
-            )
-        )
+        return self.registry.get_resource(resource_id)
 
     # ---------------------------------------------------------
     # Edge navigation
@@ -234,9 +181,7 @@ class TopologyGraph:
     def outgoing(
         self,
         resource_id: str,
-        relationship_type: Optional[
-            str
-        ] = None,
+        relationship_type: Optional[str] = None,
     ) -> List[Relationship]:
         edges = [
             self._edges[key]
@@ -249,17 +194,9 @@ class TopologyGraph:
             if key in self._edges
         ]
 
-        if (
-            relationship_type
-            is not None
-        ):
+        if relationship_type is not None:
             edges = [
-                edge
-                for edge in edges
-                if (
-                    edge.relationship_type
-                    == relationship_type
-                )
+                edge for edge in edges if (edge.relationship_type == relationship_type)
             ]
 
         return edges
@@ -267,9 +204,7 @@ class TopologyGraph:
     def incoming(
         self,
         resource_id: str,
-        relationship_type: Optional[
-            str
-        ] = None,
+        relationship_type: Optional[str] = None,
     ) -> List[Relationship]:
         edges = [
             self._edges[key]
@@ -282,17 +217,9 @@ class TopologyGraph:
             if key in self._edges
         ]
 
-        if (
-            relationship_type
-            is not None
-        ):
+        if relationship_type is not None:
             edges = [
-                edge
-                for edge in edges
-                if (
-                    edge.relationship_type
-                    == relationship_type
-                )
+                edge for edge in edges if (edge.relationship_type == relationship_type)
             ]
 
         return edges
@@ -302,9 +229,7 @@ class TopologyGraph:
         resource_id: str,
         *,
         direction: str = "both",
-        relationship_types: Optional[
-            Set[str]
-        ] = None,
+        relationship_types: Optional[Set[str]] = None,
     ) -> List[str]:
         """
         Return directly connected resources.
@@ -321,47 +246,34 @@ class TopologyGraph:
             "out",
             "both",
         }:
-            for edge in self.outgoing(
-                resource_id
-            ):
+            for edge in self.outgoing(resource_id):
                 if (
                     relationship_types
-                    and edge.relationship_type
-                    not in relationship_types
+                    and edge.relationship_type not in relationship_types
                 ):
                     continue
 
-                output.add(
-                    edge.target_resource_id
-                )
+                output.add(edge.target_resource_id)
 
         if direction in {
             "in",
             "both",
         }:
-            for edge in self.incoming(
-                resource_id
-            ):
+            for edge in self.incoming(resource_id):
                 if (
                     relationship_types
-                    and edge.relationship_type
-                    not in relationship_types
+                    and edge.relationship_type not in relationship_types
                 ):
                     continue
 
-                output.add(
-                    edge.source_resource_id
-                )
+                output.add(edge.source_resource_id)
 
         if direction not in {
             "in",
             "out",
             "both",
         }:
-            raise ValueError(
-                "direction must be "
-                "'in', 'out', or 'both'"
-            )
+            raise ValueError("direction must be 'in', 'out', or 'both'")
 
         return sorted(output)
 
@@ -386,10 +298,7 @@ class TopologyGraph:
         return {
             "incoming": incoming,
             "outgoing": outgoing,
-            "total": (
-                incoming
-                + outgoing
-            ),
+            "total": (incoming + outgoing),
         }
 
     # ---------------------------------------------------------
@@ -403,9 +312,7 @@ class TopologyGraph:
         *,
         max_depth: int = 8,
         direction: str = "both",
-        relationship_types: Optional[
-            Set[str]
-        ] = None,
+        relationship_types: Optional[Set[str]] = None,
     ) -> Optional[TopologyPath]:
         """
         Breadth-first path search.
@@ -418,14 +325,9 @@ class TopologyGraph:
         itself is semantically bidirectional.
         """
 
-        if (
-            source_resource_id
-            == target_resource_id
-        ):
+        if source_resource_id == target_resource_id:
             return TopologyPath(
-                resource_ids=[
-                    source_resource_id
-                ],
+                resource_ids=[source_resource_id],
                 relationships=[],
                 distance=0,
             )
@@ -438,26 +340,19 @@ class TopologyGraph:
             "out",
             "both",
         }:
-            raise ValueError(
-                "direction must be "
-                "'in', 'out', or 'both'"
-            )
+            raise ValueError("direction must be 'in', 'out', or 'both'")
 
         queue = deque(
             [
                 (
                     source_resource_id,
-                    [
-                        source_resource_id
-                    ],
+                    [source_resource_id],
                     [],
                 )
             ]
         )
 
-        visited = {
-            source_resource_id
-        }
+        visited = {source_resource_id}
 
         while queue:
             (
@@ -466,10 +361,7 @@ class TopologyGraph:
                 path_edges,
             ) = queue.popleft()
 
-            if (
-                len(path_edges)
-                >= max_depth
-            ):
+            if len(path_edges) >= max_depth:
                 continue
 
             candidates: List[
@@ -488,10 +380,7 @@ class TopologyGraph:
                         edge.target_resource_id,
                         edge,
                     )
-                    for edge
-                    in self.outgoing(
-                        current
-                    )
+                    for edge in self.outgoing(current)
                 )
 
             if direction in {
@@ -503,10 +392,7 @@ class TopologyGraph:
                         edge.source_resource_id,
                         edge,
                     )
-                    for edge
-                    in self.incoming(
-                        current
-                    )
+                    for edge in self.incoming(current)
                 )
 
             for (
@@ -514,47 +400,26 @@ class TopologyGraph:
                 edge,
             ) in candidates:
                 if (
-                             relationship_types
-                    and edge.relationship_type
-                    not in relationship_types
+                    relationship_types
+                    and edge.relationship_type not in relationship_types
                 ):
                     continue
 
                 if neighbor in visited:
                     continue
 
-                new_nodes = (
-                    path_nodes
-                    + [neighbor]
-                )
+                new_nodes = path_nodes + [neighbor]
 
-                new_edges = (
-                    path_edges
-                    + [
-                        edge.
-                        relationship_type
-                    ]
-                )
+                new_edges = path_edges + [edge.relationship_type]
 
-                if (
-                    neighbor
-                    == target_resource_id
-                ):
+                if neighbor == target_resource_id:
                     return TopologyPath(
-                        resource_ids=(
-                            new_nodes
-                        ),
-                        relationships=(
-                            new_edges
-                        ),
-                        distance=len(
-                            new_edges
-                        ),
+                        resource_ids=(new_nodes),
+                        relationships=(new_edges),
+                        distance=len(new_edges),
                     )
 
-                visited.add(
-                    neighbor
-                )
+                visited.add(neighbor)
 
                 queue.append(
                     (
@@ -614,27 +479,13 @@ class TopologyGraph:
     ) -> List[Relationship]:
         output = []
 
-        for edge in self.outgoing(
-            left_resource_id
-        ):
-            if (
-                edge.target_resource_id
-                == right_resource_id
-            ):
-                output.append(
-                    edge
-                )
+        for edge in self.outgoing(left_resource_id):
+            if edge.target_resource_id == right_resource_id:
+                output.append(edge)
 
-        for edge in self.outgoing(
-            right_resource_id
-        ):
-            if (
-                edge.target_resource_id
-                == left_resource_id
-            ):
-                output.append(
-                    edge
-                )
+        for edge in self.outgoing(right_resource_id):
+            if edge.target_resource_id == left_resource_id:
+                output.append(edge)
 
         return output
 
@@ -658,27 +509,18 @@ class TopologyGraph:
         """
 
         if depth < 0:
-            raise ValueError(
-                "depth must be >= 0"
-            )
+            raise ValueError("depth must be >= 0")
 
         if direction not in {
             "in",
             "out",
             "both",
         }:
-            raise ValueError(
-                "direction must be "
-                "'in', 'out', or 'both'"
-            )
+            raise ValueError("direction must be 'in', 'out', or 'both'")
 
-        result = TopologyGraph(
-            registry=self.registry
-        )
+        result = TopologyGraph(registry=self.registry)
 
-        visited = {
-            resource_id
-        }
+        visited = {resource_id}
 
         queue = deque(
             [
@@ -689,9 +531,7 @@ class TopologyGraph:
             ]
         )
 
-        selected_edges: Set[
-            Tuple[str, str, str]
-        ] = set()
+        selected_edges: Set[Tuple[str, str, str]] = set()
 
         while queue:
             (
@@ -699,78 +539,45 @@ class TopologyGraph:
                 current_depth,
             ) = queue.popleft()
 
-            if (
-                current_depth
-                >= depth
-            ):
+            if current_depth >= depth:
                 continue
 
-            edges: List[
-                Relationship
-            ] = []
+            edges: List[Relationship] = []
 
             if direction in {
                 "out",
                 "both",
             }:
-                edges.extend(
-                    self.outgoing(
-                        current
-                    )
-                )
+                edges.extend(self.outgoing(current))
 
             if direction in {
                 "in",
                 "both",
             }:
-                edges.extend(
-                    self.incoming(
-                        current
-                    )
-                )
+                edges.extend(self.incoming(current))
 
             for edge in edges:
-                selected_edges.add(
-                    edge_key(edge)
-                )
+                selected_edges.add(edge_key(edge))
 
-                if (
-                    edge.source_resource_id
-                    == current
-                ):
-                    neighbor = (
-                        edge.
-                        target_resource_id
-                    )
+                if edge.source_resource_id == current:
+                    neighbor = edge.target_resource_id
                 else:
-                    neighbor = (
-                        edge.
-                        source_resource_id
-                    )
+                    neighbor = edge.source_resource_id
 
                 if neighbor not in visited:
-                    visited.add(
-                        neighbor
-                    )
+                    visited.add(neighbor)
 
                     queue.append(
                         (
                             neighbor,
-                            current_depth
-                            + 1,
+                            current_depth + 1,
                         )
                     )
 
         for key in selected_edges:
-            result.add_relationship(
-                self._edges[
-                    key
-                ]
-            )
+            result.add_relationship(self._edges[key])
 
-        result._nodes.update(
-            visited
-        )
+        result._nodes.update(visited)
 
         return result
 
@@ -795,11 +602,7 @@ class TopologyGraph:
             direction="both",
         )
 
-        return [
-            node
-            for node in graph.nodes()
-            if node != resource_id
-        ]
+        return [node for node in graph.nodes() if node != resource_id]
 
     # ---------------------------------------------------------
     # Context for correlation/intelligence
@@ -809,73 +612,31 @@ class TopologyGraph:
         self,
         resource_id: str,
     ) -> Dict[str, Any]:
-        resource = (
-            self.get_resource(
-                resource_id
-            )
-        )
+        resource = self.get_resource(resource_id)
 
         return {
             "resource_id": resource_id,
-            "resource": (
-                resource.to_dict()
-                if resource is not None
-                else None
-            ),
-            "degree": (
-                self.degree(
-                    resource_id
-                )
-            ),
+            "resource": (resource.to_dict() if resource is not None else None),
+            "degree": (self.degree(resource_id)),
             "incoming_relationships": [
                 {
-                    "source": (
-                        edge.
-                        source_resource_id
-                    ),
-                    "type": (
-                        edge.
-                        relationship_type
-                    ),
-                    "confidence": (
-                        edge.confidence
-                    ),
-                    "evidence": (
-                        edge.evidence
-                    ),
+                    "source": (edge.source_resource_id),
+                    "type": (edge.relationship_type),
+                    "confidence": (edge.confidence),
+                    "evidence": (edge.evidence),
                 }
-                for edge
-                in self.incoming(
-                    resource_id
-                )
+                for edge in self.incoming(resource_id)
             ],
             "outgoing_relationships": [
                 {
-                    "target": (
-                        edge.
-                        target_resource_id
-                    ),
-                    "type": (
-                        edge.
-                        relationship_type
-                    ),
-                    "confidence": (
-                        edge.confidence
-                    ),
-                    "evidence": (
-                        edge.evidence
-                    ),
+                    "target": (edge.target_resource_id),
+                    "type": (edge.relationship_type),
+                    "confidence": (edge.confidence),
+                    "evidence": (edge.evidence),
                 }
-                for edge
-                in self.outgoing(
-                    resource_id
-                )
+                for edge in self.outgoing(resource_id)
             ],
-            "neighbors": (
-                self.neighbors(
-                    resource_id
-                )
-            ),
+            "neighbors": (self.neighbors(resource_id)),
         }
 
     # ---------------------------------------------------------
@@ -885,58 +646,26 @@ class TopologyGraph:
     def summary(
         self,
     ) -> Dict[str, Any]:
-        relationship_types = (
-            Counter(
-                edge.relationship_type
-                for edge
-                in self._edges.values()
-            )
+        relationship_types = Counter(
+            edge.relationship_type for edge in self._edges.values()
         )
 
-        providers = Counter(
-            edge.provider
-            for edge
-            in self._edges.values()
-        )
+        providers = Counter(edge.provider for edge in self._edges.values())
 
         isolated = []
 
         if self.registry is not None:
-            for resource_id in (
-                self.registry.
-                resource_ids()
-            ):
-                if (
-                    self.degree(
-                        resource_id
-                    )["total"]
-                    == 0
-                ):
-                    isolated.append(
-                        resource_id
-                    )
+            for resource_id in self.registry.resource_ids():
+                if self.degree(resource_id)["total"] == 0:
+                    isolated.append(resource_id)
 
         return {
-            "node_count": len(
-                self.nodes()
-            ),
-            "edge_count": len(
-                self._edges
-            ),
-            "relationship_types": (
-                dict(
-                    relationship_types
-                )
-            ),
-            "providers": (
-                dict(providers)
-            ),
-            "isolated_resource_count": (
-                len(isolated)
-            ),
-            "isolated_resource_ids": (
-                sorted(isolated)
-            ),
+            "node_count": len(self.nodes()),
+            "edge_count": len(self._edges),
+            "relationship_types": (dict(relationship_types)),
+            "providers": (dict(providers)),
+            "isolated_resource_count": (len(isolated)),
+            "isolated_resource_ids": (sorted(isolated)),
         }
 
     # ---------------------------------------------------------
@@ -957,37 +686,25 @@ class TopologyGraph:
     def __len__(
         self,
     ) -> int:
-        return len(
-            self._edges
-        )
+        return len(self._edges)
 
     def __iter__(
         self,
-    ) -> Iterator[
-        Relationship
-    ]:
-        return iter(
-            self._edges.values()
-        )
+    ) -> Iterator[Relationship]:
+        return iter(self._edges.values())
 
 
 def build_topology(
     registry: ResourceRegistry,
-    relationships: Iterable[
-        Relationship
-    ],
+    relationships: Iterable[Relationship],
 ) -> TopologyGraph:
     """
     Build a topology graph from an existing
     resource registry and extracted relationships.
     """
 
-    graph = TopologyGraph(
-        registry=registry
-    )
+    graph = TopologyGraph(registry=registry)
 
-    graph.add_many(
-        relationships
-    )
+    graph.add_many(relationships)
 
     return graph

@@ -94,6 +94,7 @@ SUPPORTED_ARTIFACT_SCHEMA_VERSIONS = {
 # Discovery result
 # ---------------------------------------------------------------
 
+
 class AIModelDiscoveryResult:
     """
     Result of discovering promoted models.
@@ -105,9 +106,7 @@ class AIModelDiscoveryResult:
     def __init__(
         self,
         *,
-        descriptors: Iterable[
-            AIModelDescriptor
-        ] = (),
+        descriptors: Iterable[AIModelDescriptor] = (),
         failures: Iterable[
             Mapping[
                 str,
@@ -115,71 +114,37 @@ class AIModelDiscoveryResult:
             ]
         ] = (),
     ) -> None:
-        self.descriptors = tuple(
-            descriptors
-        )
+        self.descriptors = tuple(descriptors)
 
-        self.failures = tuple(
-            dict(
-                failure
-            )
-            for failure
-            in failures
-        )
+        self.failures = tuple(dict(failure) for failure in failures)
 
     @property
     def model_count(
         self,
     ) -> int:
-        return len(
-            self.descriptors
-        )
+        return len(self.descriptors)
 
     @property
     def failure_count(
         self,
     ) -> int:
-        return len(
-            self.failures
-        )
+        return len(self.failures)
 
     @property
     def successful(
         self,
     ) -> bool:
-        return (
-            self.failure_count == 0
-        )
+        return self.failure_count == 0
 
     def to_dict(
         self,
     ) -> Dict[str, Any]:
         return {
-            "model_count": (
-                self.model_count
-            ),
-
-            "failure_count": (
-                self.failure_count
-            ),
-
-            "successful": (
-                self.successful
-            ),
-
-            "models": [
-                descriptor.to_dict()
-                for descriptor
-                in self.descriptors
-            ],
-
-            "failures": [
-                dict(
-                    failure
-                )
-                for failure
-                in self.failures
-            ],
+            "model_count": (self.model_count),
+            "failure_count": (self.failure_count),
+            "successful": (self.successful),
+            "models": [descriptor.to_dict() for descriptor in self.descriptors],
+            "failures": [dict(failure) for failure in self.failures],
         }
 
 
@@ -187,12 +152,11 @@ class AIModelDiscoveryResult:
 # Path protection
 # ---------------------------------------------------------------
 
+
 def _resolved_root(
     value: str | Path,
 ) -> Path:
-    return Path(
-        value
-    ).expanduser().resolve()
+    return Path(value).expanduser().resolve()
 
 
 def _inside(
@@ -200,9 +164,7 @@ def _inside(
     path: Path,
 ) -> bool:
     try:
-        path.resolve().relative_to(
-            root.resolve()
-        )
+        path.resolve().relative_to(root.resolve())
 
         return True
 
@@ -221,12 +183,9 @@ def _require_inside(
         resolved,
     ):
         raise AIModelArtifactInvalidError(
-            "Promoted model path escapes "
-            "the configured models root.",
+            "Promoted model path escapes the configured models root.",
             details={
-                "models_root": str(
-                    root
-                ),
+                "models_root": str(root),
             },
         )
 
@@ -236,6 +195,7 @@ def _require_inside(
 # ---------------------------------------------------------------
 # Metadata reader
 # ---------------------------------------------------------------
+
 
 def read_artifact_metadata(
     path: str | Path,
@@ -247,22 +207,15 @@ def read_artifact_metadata(
     promoted-model root.
     """
 
-    root = _resolved_root(
-        models_root
-    )
+    root = _resolved_root(models_root)
 
     source = _require_inside(
         root,
-        Path(
-            path
-        ),
+        Path(path),
     )
 
     if source.is_dir():
-        source = (
-            source
-            / ARTIFACT_METADATA_FILE_NAME
-        )
+        source = source / ARTIFACT_METADATA_FILE_NAME
 
         source = _require_inside(
             root,
@@ -271,27 +224,19 @@ def read_artifact_metadata(
 
     if not source.exists():
         raise AIModelArtifactNotFoundError(
-            "Promoted model metadata "
-            "was not found.",
+            "Promoted model metadata was not found.",
             details={
-                "path": str(
-                    source
-                ),
+                "path": str(source),
             },
         )
 
     if not source.is_file():
         raise AIModelArtifactInvalidError(
-            "Promoted model metadata "
-            "path is not a regular file."
+            "Promoted model metadata path is not a regular file."
         )
 
     try:
-        value = json.loads(
-            source.read_text(
-                encoding="utf-8"
-            )
-        )
+        value = json.loads(source.read_text(encoding="utf-8"))
 
     except (
         OSError,
@@ -299,13 +244,10 @@ def read_artifact_metadata(
         json.JSONDecodeError,
     ) as exc:
         raise AIModelArtifactInvalidError(
-            "Promoted model metadata "
-            "could not be read.",
+            "Promoted model metadata could not be read.",
             details=safe_ai_error_details(
                 exc,
-                operation=(
-                    "read_artifact_metadata"
-                ),
+                operation=("read_artifact_metadata"),
             ),
         ) from exc
 
@@ -314,18 +256,16 @@ def read_artifact_metadata(
         Mapping,
     ):
         raise AIModelArtifactInvalidError(
-            "Promoted model metadata "
-            "root must be an object."
+            "Promoted model metadata root must be an object."
         )
 
-    return dict(
-        value
-    )
+    return dict(value)
 
 
 # ---------------------------------------------------------------
 # Metadata validation
 # ---------------------------------------------------------------
+
 
 def validate_artifact_metadata(
     value: Mapping[
@@ -344,26 +284,13 @@ def validate_artifact_metadata(
 
     missing = [
         field
-        for field
-        in required
-        if (
-            field not in value
-            or value[
-                field
-            ]
-            is None
-            or not str(
-                value[
-                    field
-                ]
-            ).strip()
-        )
+        for field in required
+        if (field not in value or value[field] is None or not str(value[field]).strip())
     ]
 
     if missing:
         raise AIModelArtifactInvalidError(
-            "Promoted model metadata "
-            "is incomplete.",
+            "Promoted model metadata is incomplete.",
             details={
                 "missing": missing,
             },
@@ -376,69 +303,33 @@ def validate_artifact_metadata(
         )
     ).strip()
 
-    if (
-        schema_version
-        not in SUPPORTED_ARTIFACT_SCHEMA_VERSIONS
-    ):
+    if schema_version not in SUPPORTED_ARTIFACT_SCHEMA_VERSIONS:
         raise AIModelArtifactInvalidError(
-            "Promoted model artifact "
-            "schema version is "
-            "unsupported.",
+            "Promoted model artifact schema version is unsupported.",
             details={
-                "schema_version": (
-                    schema_version
-                ),
+                "schema_version": (schema_version),
             },
         )
 
-    family = str(
-        value[
-            "task"
-        ]
-    ).strip().lower()
+    family = str(value["task"]).strip().lower()
 
-    if (
-        family
-        not in {
-            item.value
-            for item
-            in AIModelFamily
-        }
-    ):
+    if family not in {item.value for item in AIModelFamily}:
         raise AIModelArtifactInvalidError(
-            "Promoted model family is "
-            "unsupported.",
+            "Promoted model family is unsupported.",
             details={
                 "family": family,
             },
         )
 
-    state = str(
-        value[
-            "state"
-        ]
-    ).strip().lower()
+    state = str(value["state"]).strip().lower()
 
-    if (
-        require_promoted
-        and state
-        != ArtifactState.PROMOTED.value
-    ):
+    if require_promoted and state != ArtifactState.PROMOTED.value:
         raise AIModelNotPromotedError(
-            "AI serving accepts promoted "
-            "model artifacts only.",
+            "AI serving accepts promoted model artifacts only.",
             details={
                 "state": state,
-                "model_name": str(
-                    value[
-                        "model_name"
-                    ]
-                ),
-                "version": str(
-                    value[
-                        "version"
-                    ]
-                ),
+                "model_name": str(value["model_name"]),
+                "version": str(value["version"]),
             },
         )
 
@@ -447,20 +338,17 @@ def validate_artifact_metadata(
 # Canonical model path
 # ---------------------------------------------------------------
 
+
 def promoted_model_path(
     metadata_path: str | Path,
     *,
     models_root: str | Path,
 ) -> Path:
-    root = _resolved_root(
-        models_root
-    )
+    root = _resolved_root(models_root)
 
     metadata = _require_inside(
         root,
-        Path(
-            metadata_path
-        ),
+        Path(metadata_path),
     )
 
     if metadata.is_dir():
@@ -471,25 +359,20 @@ def promoted_model_path(
 
     model_path = _require_inside(
         root,
-        directory
-        / MODEL_FILE_NAME,
+        directory / MODEL_FILE_NAME,
     )
 
     if not model_path.exists():
         raise AIModelArtifactNotFoundError(
-            "Promoted model state file "
-            "was not found.",
+            "Promoted model state file was not found.",
             details={
-                "path": str(
-                    model_path
-                ),
+                "path": str(model_path),
             },
         )
 
     if not model_path.is_file():
         raise AIModelArtifactInvalidError(
-            "Promoted model state path "
-            "is not a regular file."
+            "Promoted model state path is not a regular file."
         )
 
     return model_path
@@ -499,12 +382,11 @@ def promoted_model_path(
 # Integrity verification
 # ---------------------------------------------------------------
 
+
 def verify_promoted_model(
     model_path: str | Path,
     *,
-    expected_checksum: Optional[
-        str
-    ],
+    expected_checksum: Optional[str],
     require_checksum: bool = True,
 ) -> str:
     """
@@ -513,64 +395,39 @@ def verify_promoted_model(
     Returns the calculated checksum.
     """
 
-    source = Path(
-        model_path
-    ).expanduser().resolve()
+    source = Path(model_path).expanduser().resolve()
 
     if not source.exists():
         raise AIModelArtifactNotFoundError(
-            "Promoted model file was "
-            "not found.",
+            "Promoted model file was not found.",
             details={
-                "path": str(
-                    source
-                ),
+                "path": str(source),
             },
         )
 
-    if (
-        require_checksum
-        and not expected_checksum
-    ):
+    if require_checksum and not expected_checksum:
         raise AIModelChecksumMissingError(
-            "Promoted model metadata "
-            "contains no checksum."
+            "Promoted model metadata contains no checksum."
         )
 
     try:
-        actual = sha256_file(
-            source
-        )
+        actual = sha256_file(source)
 
     except Exception as exc:
         raise AIModelDiscoveryError(
-            "Promoted model checksum "
-            "could not be calculated.",
+            "Promoted model checksum could not be calculated.",
             details=safe_ai_error_details(
                 exc,
-                operation=(
-                    "verify_promoted_model"
-                ),
+                operation=("verify_promoted_model"),
             ),
         ) from exc
 
-    if (
-        expected_checksum
-        and actual.lower()
-        != str(
-            expected_checksum
-        ).strip().lower()
-    ):
+    if expected_checksum and actual.lower() != str(expected_checksum).strip().lower():
         raise AIModelChecksumMismatchError(
-            "Promoted model checksum "
-            "verification failed.",
+            "Promoted model checksum verification failed.",
             details={
-                "expected_checksum": str(
-                    expected_checksum
-                ),
-                "actual_checksum": (
-                    actual
-                ),
+                "expected_checksum": str(expected_checksum),
+                "actual_checksum": (actual),
             },
         )
 
@@ -581,23 +438,19 @@ def verify_promoted_model(
 # Descriptor construction
 # ---------------------------------------------------------------
 
+
 def descriptor_from_artifact(
     metadata_path: str | Path,
     *,
     models_root: str | Path,
-    config: Optional[
-        AIConfig
-    ] = None,
+    config: Optional[AIConfig] = None,
 ) -> AIModelDescriptor:
     """
     Construct one runtime descriptor from a
     promoted artifact directory.
     """
 
-    serving_config = (
-        config
-        or AIConfig()
-    )
+    serving_config = config or AIConfig()
 
     serving_config.validate()
 
@@ -608,11 +461,7 @@ def descriptor_from_artifact(
 
     validate_artifact_metadata(
         value,
-        require_promoted=(
-            serving_config.
-            loading.
-            require_promoted_state
-        ),
+        require_promoted=(serving_config.loading.require_promoted_state),
     )
 
     model_path = promoted_model_path(
@@ -620,84 +469,38 @@ def descriptor_from_artifact(
         models_root=models_root,
     )
 
-    expected_checksum = value.get(
-        "checksum"
-    )
+    expected_checksum = value.get("checksum")
 
-    if (
-        serving_config.
-        loading.
-        verify_checksum
-    ):
-        actual_checksum = (
-            verify_promoted_model(
-                model_path,
-                expected_checksum=(
-                    str(
-                        expected_checksum
-                    )
-                    if expected_checksum
-                    is not None
-                    else None
-                ),
-                require_checksum=True,
-            )
+    if serving_config.loading.verify_checksum:
+        actual_checksum = verify_promoted_model(
+            model_path,
+            expected_checksum=(
+                str(expected_checksum) if expected_checksum is not None else None
+            ),
+            require_checksum=True,
         )
 
     else:
         actual_checksum = (
-            str(
-                expected_checksum
-            )
-            if expected_checksum
-            is not None
-            else None
+            str(expected_checksum) if expected_checksum is not None else None
         )
 
-    family = str(
-        value[
-            "task"
-        ]
-    ).strip().lower()
+    family = str(value["task"]).strip().lower()
 
-    model_name = str(
-        value[
-            "model_name"
-        ]
-    ).strip()
+    model_name = str(value["model_name"]).strip()
 
-    version = str(
-        value[
-            "version"
-        ]
-    ).strip()
+    version = str(value["version"]).strip()
 
     identity = AIModelIdentity(
         model_name=model_name,
         family=family,
         version=version,
         artifact_id=(
-            str(
-                value[
-                    "artifact_id"
-                ]
-            )
-            if value.get(
-                "artifact_id"
-            )
-            is not None
-            else None
+            str(value["artifact_id"]) if value.get("artifact_id") is not None else None
         ),
         checkpoint_id=(
-            str(
-                value[
-                    "checkpoint_id"
-                ]
-            )
-            if value.get(
-                "checkpoint_id"
-            )
-            is not None
+            str(value["checkpoint_id"])
+            if value.get("checkpoint_id") is not None
             else None
         ),
     )
@@ -716,11 +519,7 @@ def descriptor_from_artifact(
             )
         )
 
-    elif (
-        family
-        == AIModelFamily.
-        ANOMALY.value
-    ):
+    elif family == AIModelFamily.ANOMALY.value:
         capabilities.extend(
             (
                 "anomaly_scoring",
@@ -742,65 +541,21 @@ def descriptor_from_artifact(
 
     descriptor = AIModelDescriptor(
         identity=identity,
-
-        path=str(
-            model_path
-        ),
-
-        state=(
-            AIModelState.
-            REGISTERED.value
-        ),
-
-        device=(
-            serving_config.
-            device.preferred
-        ),
-
-        checksum=(
-            actual_checksum
-        ),
-
-        capabilities=(
-            capabilities
-        ),
-
+        path=str(model_path),
+        state=(AIModelState.REGISTERED.value),
+        device=(serving_config.device.preferred),
+        checksum=(actual_checksum),
+        capabilities=(capabilities),
         model_config={},
-
         attributes={
-            **dict(
-                artifact_attributes
-            ),
-
+            **dict(artifact_attributes),
             "artifact_metadata_path": str(
-                Path(
-                    metadata_path
-                ).resolve()
-                if Path(
-                    metadata_path
-                ).is_file()
-                else (
-                    Path(
-                        metadata_path
-                    ).resolve()
-                    / ARTIFACT_METADATA_FILE_NAME
-                )
+                Path(metadata_path).resolve()
+                if Path(metadata_path).is_file()
+                else (Path(metadata_path).resolve() / ARTIFACT_METADATA_FILE_NAME)
             ),
-
-            "artifact_state": (
-                str(
-                    value[
-                        "state"
-                    ]
-                )
-            ),
-
-            "source_run_id": (
-                value.get(
-                    "source_run_id"
-                )
-            ),
-
+            "artifact_state": (str(value["state"])),
+            "source_run_id": (value.get("source_run_id")),
             "metrics": (
                 dict(
                     value.get(
@@ -827,34 +582,26 @@ def descriptor_from_artifact(
 # Metadata discovery
 # ---------------------------------------------------------------
 
+
 def discover_metadata_files(
     models_root: str | Path,
 ) -> List[Path]:
-    root = _resolved_root(
-        models_root
-    )
+    root = _resolved_root(models_root)
 
     if not root.exists():
         return []
 
     if not root.is_dir():
         raise AIModelDiscoveryError(
-            "Configured promoted-model "
-            "root is not a directory.",
+            "Configured promoted-model root is not a directory.",
             details={
-                "path": str(
-                    root
-                ),
+                "path": str(root),
             },
         )
 
-    output: List[
-        Path
-    ] = []
+    output: List[Path] = []
 
-    for path in root.rglob(
-        ARTIFACT_METADATA_FILE_NAME
-    ):
+    for path in root.rglob(ARTIFACT_METADATA_FILE_NAME):
         if not path.is_file():
             continue
 
@@ -867,21 +614,18 @@ def discover_metadata_files(
         except AIModelArtifactInvalidError:
             continue
 
-        output.append(
-            resolved
-        )
+        output.append(resolved)
 
     return sorted(
         output,
-        key=lambda item: str(
-            item
-        ),
+        key=lambda item: str(item),
     )
 
 
 # ---------------------------------------------------------------
 # Model loader
 # ---------------------------------------------------------------
+
 
 class AIModelLoader:
     """
@@ -896,26 +640,14 @@ class AIModelLoader:
     def __init__(
         self,
         *,
-        config: Optional[
-            AIConfig
-        ] = None,
-        registry: Optional[
-            AIModelRegistry
-        ] = None,
+        config: Optional[AIConfig] = None,
+        registry: Optional[AIModelRegistry] = None,
     ) -> None:
-        self.config = (
-            config
-            or AIConfig()
-        )
+        self.config = config or AIConfig()
 
         self.config.validate()
 
-        self.registry = (
-            registry
-            or AIModelRegistry(
-                config=self.config
-            )
-        )
+        self.registry = registry or AIModelRegistry(config=self.config)
 
     # ---------------------------------------------------------
     # Root
@@ -925,12 +657,7 @@ class AIModelLoader:
     def models_root(
         self,
     ) -> Path:
-        return Path(
-            self.config.
-            paths.resolved()[
-                "models"
-            ]
-        )
+        return Path(self.config.paths.resolved()["models"])
 
     # ---------------------------------------------------------
     # Discover descriptors
@@ -951,15 +678,9 @@ class AIModelLoader:
         metadata and continues.
         """
 
-        metadata_files = (
-            discover_metadata_files(
-                self.models_root
-            )
-        )
+        metadata_files = discover_metadata_files(self.models_root)
 
-        descriptors: List[
-            AIModelDescriptor
-        ] = []
+        descriptors: List[AIModelDescriptor] = []
 
         failures: List[
             Dict[
@@ -972,42 +693,27 @@ class AIModelLoader:
 
         for metadata_path in metadata_files:
             try:
-                descriptor = (
-                    descriptor_from_artifact(
-                        metadata_path,
-                        models_root=(
-                            self.models_root
-                        ),
-                        config=self.config,
-                    )
+                descriptor = descriptor_from_artifact(
+                    metadata_path,
+                    models_root=(self.models_root),
+                    config=self.config,
                 )
 
-                model_id = (
-                    descriptor.
-                    identity.model_id
-                )
+                model_id = descriptor.identity.model_id
 
                 if model_id in model_ids:
                     raise (
                         AIModelArtifactInvalidError(
-                            "Multiple promoted "
-                            "artifacts have the "
-                            "same model identity.",
+                            "Multiple promoted artifacts have the same model identity.",
                             details={
-                                "model_id": (
-                                    model_id
-                                ),
+                                "model_id": (model_id),
                             },
                         )
                     )
 
-                model_ids.add(
-                    model_id
-                )
+                model_ids.add(model_id)
 
-                descriptors.append(
-                    descriptor
-                )
+                descriptors.append(descriptor)
 
             except Exception as exc:
                 if fail_fast:
@@ -1015,14 +721,8 @@ class AIModelLoader:
 
                 failures.append(
                     {
-                        "metadata_path": str(
-                            metadata_path
-                        ),
-
-                        "error_type": (
-                            type(exc).__name__
-                        ),
-
+                        "metadata_path": str(metadata_path),
+                        "error_type": (type(exc).__name__),
                         "error_code": (
                             getattr(
                                 exc,
@@ -1047,42 +747,27 @@ class AIModelLoader:
         *,
         fail_fast: bool = False,
         replace: bool = False,
-        eager_load: Optional[
-            bool
-        ] = None,
+        eager_load: Optional[bool] = None,
     ) -> Tuple[
         AIModelDiscoveryResult,
-        List[
-            AIModelRegistryEntry
-        ],
+        List[AIModelRegistryEntry],
     ]:
-        result = self.discover(
-            fail_fast=fail_fast
-        )
+        result = self.discover(fail_fast=fail_fast)
 
         load_models = (
-            not self.config.
-            loading.lazy_loading
+            not self.config.loading.lazy_loading
             if eager_load is None
-            else bool(
-                eager_load
-            )
+            else bool(eager_load)
         )
 
-        entries: List[
-            AIModelRegistryEntry
-        ] = []
+        entries: List[AIModelRegistryEntry] = []
 
-        for descriptor in (
-            result.descriptors
-        ):
+        for descriptor in result.descriptors:
             entries.append(
                 self.registry.register(
                     descriptor,
                     replace=replace,
-                    create_adapter=(
-                        load_models
-                    ),
+                    create_adapter=(load_models),
                     load=load_models,
                 )
             )
@@ -1108,14 +793,10 @@ class AIModelLoader:
         directory or artifact.json file.
         """
 
-        descriptor = (
-            descriptor_from_artifact(
-                path,
-                models_root=(
-                    self.models_root
-                ),
-                config=self.config,
-            )
+        descriptor = descriptor_from_artifact(
+            path,
+            models_root=(self.models_root),
+            config=self.config,
         )
 
         return self.registry.register(
@@ -1135,23 +816,14 @@ class AIModelLoader:
         fail_fast: bool = False,
         replace: bool = False,
     ) -> AIModelDiscoveryResult:
-        result = self.discover(
-            fail_fast=fail_fast
-        )
+        result = self.discover(fail_fast=fail_fast)
 
         existing_ids = {
-            descriptor.identity.model_id
-            for descriptor
-            in self.registry.descriptors()
+            descriptor.identity.model_id for descriptor in self.registry.descriptors()
         }
 
-        for descriptor in (
-            result.descriptors
-        ):
-            model_id = (
-                descriptor.
-                identity.model_id
-            )
+        for descriptor in result.descriptors:
+            model_id = descriptor.identity.model_id
 
             if model_id in existing_ids:
                 if not replace:
@@ -1161,10 +833,7 @@ class AIModelLoader:
                 descriptor,
                 replace=replace,
                 create_adapter=False,
-                load=(
-                    not self.config.
-                    loading.lazy_loading
-                ),
+                load=(not self.config.loading.lazy_loading),
             )
 
         return result
@@ -1176,49 +845,17 @@ class AIModelLoader:
     def summary(
         self,
     ) -> Dict[str, Any]:
-        metadata_files = (
-            discover_metadata_files(
-                self.models_root
-            )
-        )
+        metadata_files = discover_metadata_files(self.models_root)
 
         return {
-            "models_root": str(
-                self.models_root
-            ),
-
-            "artifact_metadata_files": len(
-                metadata_files
-            ),
-
-            "verify_checksum": (
-                self.config.
-                loading.
-                verify_checksum
-            ),
-
-            "require_promoted_state": (
-                self.config.
-                loading.
-                require_promoted_state
-            ),
-
-            "lazy_loading": (
-                self.config.
-                loading.lazy_loading
-            ),
-
-            "registry": (
-                self.registry.summary()
-            ),
-
-            "training_checkpoints_loaded": (
-                False
-            ),
-
-            "candidate_artifacts_loaded": (
-                False
-            ),
+            "models_root": str(self.models_root),
+            "artifact_metadata_files": len(metadata_files),
+            "verify_checksum": (self.config.loading.verify_checksum),
+            "require_promoted_state": (self.config.loading.require_promoted_state),
+            "lazy_loading": (self.config.loading.lazy_loading),
+            "registry": (self.registry.summary()),
+            "training_checkpoints_loaded": (False),
+            "candidate_artifacts_loaded": (False),
         }
 
 
@@ -1228,17 +865,12 @@ class AIModelLoader:
 
 __all__ = [
     "SUPPORTED_ARTIFACT_SCHEMA_VERSIONS",
-
     "AIModelDiscoveryResult",
-
     "read_artifact_metadata",
     "validate_artifact_metadata",
-
     "promoted_model_path",
     "verify_promoted_model",
-
     "descriptor_from_artifact",
     "discover_metadata_files",
-
     "AIModelLoader",
 ]

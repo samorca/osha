@@ -33,9 +33,8 @@ from src.security.schema import (
 # Errors
 # ---------------------------------------------------------------
 
-class AuthorizationErrorBase(
-    RuntimeError
-):
+
+class AuthorizationErrorBase(RuntimeError):
     pass
 
 
@@ -52,18 +51,15 @@ class AuthorizationErrorBase(
 # ---------------------------------------------------------------
 
 PolicyEvaluator = Callable[
-    [
-        AuthorizationRequest
-    ],
-    Optional[
-        AuthorizationResult
-    ],
+    [AuthorizationRequest],
+    Optional[AuthorizationResult],
 ]
 
 
 # ---------------------------------------------------------------
 # Authorization service
 # ---------------------------------------------------------------
+
 
 class AuthorizationService:
     """
@@ -85,37 +81,18 @@ class AuthorizationService:
     def __init__(
         self,
         *,
-        permissions: Optional[
-            PermissionCatalog
-        ] = None,
-        config: Optional[
-            AuthorizationConfig
-        ] = None,
-        approval: Optional[
-            ApprovalConfig
-        ] = None,
-        policy_evaluator: Optional[
-            PolicyEvaluator
-        ] = None,
+        permissions: Optional[PermissionCatalog] = None,
+        config: Optional[AuthorizationConfig] = None,
+        approval: Optional[ApprovalConfig] = None,
+        policy_evaluator: Optional[PolicyEvaluator] = None,
     ) -> None:
-        self.permissions = (
-            permissions
-            or PermissionCatalog()
-        )
+        self.permissions = permissions or PermissionCatalog()
 
-        self.config = (
-            config
-            or AuthorizationConfig()
-        )
+        self.config = config or AuthorizationConfig()
 
-        self.approval = (
-            approval
-            or ApprovalConfig()
-        )
+        self.approval = approval or ApprovalConfig()
 
-        self.policy_evaluator = (
-            policy_evaluator
-        )
+        self.policy_evaluator = policy_evaluator
 
         self.config.validate()
         self.approval.validate()
@@ -154,89 +131,49 @@ class AuthorizationService:
         # -----------------------------------------------------
 
         if not self.config.enabled:
-            return (
-                AuthorizationResult(
-                    decision=(
-                        AuthorizationDecision.
-                        DENY.value
-                    ),
-                    request_id=(
-                        request.request_id
-                    ),
-                    reason=(
-                        "Authorization "
-                        "services are "
-                        "disabled."
-                    ),
-                ).finalize()
-            )
+            return AuthorizationResult(
+                decision=(AuthorizationDecision.DENY.value),
+                request_id=(request.request_id),
+                reason=("Authorization services are disabled."),
+            ).finalize()
 
-        principal = (
-            request.principal
-        )
+        principal = request.principal
 
         # -----------------------------------------------------
         # System principal policy
         # -----------------------------------------------------
 
         if (
-            principal.principal_type
-            == PrincipalType.SYSTEM.value
-            and not self.config.
-            allow_system_principal
+            principal.principal_type == PrincipalType.SYSTEM.value
+            and not self.config.allow_system_principal
         ):
-            return (
-                AuthorizationResult(
-                    decision=(
-                        AuthorizationDecision.
-                        DENY.value
-                    ),
-                    request_id=(
-                        request.request_id
-                    ),
-                    reason=(
-                        "System principals "
-                        "are not allowed by "
-                        "authorization "
-                        "configuration."
-                    ),
-                ).finalize()
-            )
+            return AuthorizationResult(
+                decision=(AuthorizationDecision.DENY.value),
+                request_id=(request.request_id),
+                reason=(
+                    "System principals are not allowed by authorization configuration."
+                ),
+            ).finalize()
 
         # -----------------------------------------------------
         # Direct permission grants
         # -----------------------------------------------------
 
-        direct_grants = (
-            self.permissions.
-            matching_grants(
-                principal.principal_id,
-                request.permission,
-            )
+        direct_grants = self.permissions.matching_grants(
+            principal.principal_id,
+            request.permission,
         )
 
         # -----------------------------------------------------
         # Policy evaluation
         # -----------------------------------------------------
 
-        policy_result: Optional[
-            AuthorizationResult
-        ] = None
+        policy_result: Optional[AuthorizationResult] = None
 
-        if (
-            self.policy_evaluator
-            is not None
-        ):
-            policy_result = (
-                self.policy_evaluator(
-                    request
-                )
-            )
+        if self.policy_evaluator is not None:
+            policy_result = self.policy_evaluator(request)
 
-            if (
-                policy_result
-                is not None
-            ):
+            if policy_result is not None:
                 policy_result.finalize()
 
         # -----------------------------------------------------
@@ -244,11 +181,8 @@ class AuthorizationService:
         # -----------------------------------------------------
 
         if (
-            policy_result
-            is not None
-            and policy_result.decision
-            == AuthorizationDecision.
-            DENY.value
+            policy_result is not None
+            and policy_result.decision == AuthorizationDecision.DENY.value
         ):
             return policy_result
 
@@ -257,11 +191,8 @@ class AuthorizationService:
         # -----------------------------------------------------
 
         if (
-            policy_result
-            is not None
-            and policy_result.decision
-            == AuthorizationDecision.
-            REQUIRE_APPROVAL.value
+            policy_result is not None
+            and policy_result.decision == AuthorizationDecision.REQUIRE_APPROVAL.value
         ):
             return policy_result
 
@@ -272,8 +203,7 @@ class AuthorizationService:
         if (
             mutating
             and self.approval.enabled
-            and self.approval.
-            required_for_mutating_actions
+            and self.approval.required_for_mutating_actions
         ):
             # Important:
             #
@@ -283,77 +213,38 @@ class AuthorizationService:
             #
             # Merely having one of these roles
             # does not count as approval.
-            return (
-                AuthorizationResult(
-                    decision=(
-                        AuthorizationDecision.
-                        REQUIRE_APPROVAL.value
-                    ),
-                    request_id=(
-                        request.request_id
-                    ),
-                    reason=(
-                        "Mutating operation "
-                        "requires approval."
-                    ),
-                    policy_ids=(
-                        list(
-                            policy_result.
-                            policy_ids
-                        )
-                        if (
-                            policy_result
-                            is not None
-                        )
-                        else []
-                    ),
-                    required_approval_roles=(
-                        list(
-                            self.approval.
-                            default_roles
-                        )
-                    ),
-                    attributes={
-                        "direct_grant_count": (
-                            len(
-                                direct_grants
-                            )
-                        ),
-                    },
-                ).finalize()
-            )
+            return AuthorizationResult(
+                decision=(AuthorizationDecision.REQUIRE_APPROVAL.value),
+                request_id=(request.request_id),
+                reason=("Mutating operation requires approval."),
+                policy_ids=(
+                    list(policy_result.policy_ids)
+                    if (policy_result is not None)
+                    else []
+                ),
+                required_approval_roles=(list(self.approval.default_roles)),
+                attributes={
+                    "direct_grant_count": (len(direct_grants)),
+                },
+            ).finalize()
 
         # -----------------------------------------------------
         # Determine explicit allow
         # -----------------------------------------------------
 
         explicit_policy_allow = bool(
-            policy_result
-            is not None
-            and policy_result.decision
-            == AuthorizationDecision.
-            ALLOW.value
+            policy_result is not None
+            and policy_result.decision == AuthorizationDecision.ALLOW.value
         )
 
-        direct_allow = bool(
-            direct_grants
-        )
+        direct_allow = bool(direct_grants)
 
-        if (
-            self.config.
-            require_explicit_allow
-        ):
-            allowed = (
-                explicit_policy_allow
-                or direct_allow
-            )
+        if self.config.require_explicit_allow:
+            allowed = explicit_policy_allow or direct_allow
 
         else:
             allowed = (
-                explicit_policy_allow
-                or direct_allow
-                or not self.config.
-                deny_by_default
+                explicit_policy_allow or direct_allow or not self.config.deny_by_default
             )
 
         # -----------------------------------------------------
@@ -361,102 +252,46 @@ class AuthorizationService:
         # -----------------------------------------------------
 
         if allowed:
-            return (
-                AuthorizationResult(
-                    decision=(
-                        AuthorizationDecision.
-                        ALLOW.value
-                    ),
-                    request_id=(
-                        request.request_id
-                    ),
-                    reason=(
-                        "Authorization policy "
-                        "allowed the request."
-                        if (
-                            explicit_policy_allow
-                        )
-                        else (
-                            "A matching "
-                            "permission grant "
-                            "allowed the "
-                            "request."
-                        )
-                    ),
-                    policy_ids=(
-                        list(
-                            policy_result.
-                            policy_ids
-                        )
-                        if (
-                            policy_result
-                            is not None
-                        )
-                        else []
-                    ),
-                    attributes={
-                        "direct_grant_count": (
-                            len(
-                                direct_grants
-                            )
-                        ),
-                        "explicit_policy_allow": (
-                            explicit_policy_allow
-                        ),
-                    },
-                ).finalize()
-            )
+            return AuthorizationResult(
+                decision=(AuthorizationDecision.ALLOW.value),
+                request_id=(request.request_id),
+                reason=(
+                    "Authorization policy allowed the request."
+                    if (explicit_policy_allow)
+                    else ("A matching permission grant allowed the request.")
+                ),
+                policy_ids=(
+                    list(policy_result.policy_ids)
+                    if (policy_result is not None)
+                    else []
+                ),
+                attributes={
+                    "direct_grant_count": (len(direct_grants)),
+                    "explicit_policy_allow": (explicit_policy_allow),
+                },
+            ).finalize()
 
         # -----------------------------------------------------
         # Default denial
         # -----------------------------------------------------
 
-        if (
-            self.config.
-            deny_by_default
-        ):
-            reason = (
-                "No explicit "
-                "authorization allowed "
-                "the request."
-            )
+        if self.config.deny_by_default:
+            reason = "No explicit authorization allowed the request."
 
         else:
-            reason = (
-                "Authorization request "
-                "was not allowed."
-            )
+            reason = "Authorization request was not allowed."
 
-        return (
-            AuthorizationResult(
-                decision=(
-                    AuthorizationDecision.
-                    DENY.value
-                ),
-                request_id=(
-                    request.request_id
-                ),
-                reason=reason,
-                policy_ids=(
-                    list(
-                        policy_result.
-                        policy_ids
-                    )
-                    if (
-                        policy_result
-                        is not None
-                    )
-                    else []
-                ),
-                attributes={
-                    "direct_grant_count": (
-                        len(
-                            direct_grants
-                        )
-                    ),
-                },
-            ).finalize()
-        )
+        return AuthorizationResult(
+            decision=(AuthorizationDecision.DENY.value),
+            request_id=(request.request_id),
+            reason=reason,
+            policy_ids=(
+                list(policy_result.policy_ids) if (policy_result is not None) else []
+            ),
+            attributes={
+                "direct_grant_count": (len(direct_grants)),
+            },
+        ).finalize()
 
     # ---------------------------------------------------------
     # Summary
@@ -466,42 +301,16 @@ class AuthorizationService:
         self,
     ) -> Dict[str, Any]:
         return {
-            "enabled": (
-                self.config.enabled
-            ),
-
-            "deny_by_default": (
-                self.config.
-                deny_by_default
-            ),
-
-            "require_explicit_allow": (
-                self.config.
-                require_explicit_allow
-            ),
-
-            "allow_system_principal": (
-                self.config.
-                allow_system_principal
-            ),
-
-            "approval_enabled": (
-                self.approval.enabled
-            ),
-
+            "enabled": (self.config.enabled),
+            "deny_by_default": (self.config.deny_by_default),
+            "require_explicit_allow": (self.config.require_explicit_allow),
+            "allow_system_principal": (self.config.allow_system_principal),
+            "approval_enabled": (self.approval.enabled),
             "approval_required_for_mutating_actions": (
-                self.approval.
-                required_for_mutating_actions
+                self.approval.required_for_mutating_actions
             ),
-
-            "permission_catalog": (
-                self.permissions.summary()
-            ),
-
-            "policy_evaluator_registered": (
-                self.policy_evaluator
-                is not None
-            ),
+            "permission_catalog": (self.permissions.summary()),
+            "policy_evaluator_registered": (self.policy_evaluator is not None),
         }
 
 
@@ -511,8 +320,6 @@ class AuthorizationService:
 
 __all__ = [
     "AuthorizationErrorBase",
-
     "PolicyEvaluator",
-
     "AuthorizationService",
 ]

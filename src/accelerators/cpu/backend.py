@@ -88,6 +88,7 @@ CPU_RUNTIME_DEVICE = "cpu"
 # Safe host information
 # ---------------------------------------------------------------
 
+
 def logical_processor_count() -> Optional[int]:
     """
     Return the number of logical processors
@@ -102,15 +103,9 @@ def logical_processor_count() -> Optional[int]:
     if value is None:
         return None
 
-    count = int(
-        value
-    )
+    count = int(value)
 
-    return (
-        count
-        if count > 0
-        else None
-    )
+    return count if count > 0 else None
 
 
 def physical_processor_count() -> Optional[int]:
@@ -125,9 +120,7 @@ def physical_processor_count() -> Optional[int]:
         return None
 
     try:
-        value = psutil.cpu_count(
-            logical=False
-        )
+        value = psutil.cpu_count(logical=False)
 
     except Exception:
         return None
@@ -135,15 +128,9 @@ def physical_processor_count() -> Optional[int]:
     if value is None:
         return None
 
-    count = int(
-        value
-    )
+    count = int(value)
 
-    return (
-        count
-        if count > 0
-        else None
-    )
+    return count if count > 0 else None
 
 
 def cpu_name() -> str:
@@ -154,25 +141,15 @@ def cpu_name() -> str:
     subprocesses are executed.
     """
 
-    processor = str(
-        platform.processor()
-        or ""
-    ).strip()
+    processor = str(platform.processor() or "").strip()
 
-    machine = str(
-        platform.machine()
-        or ""
-    ).strip()
+    machine = str(platform.machine() or "").strip()
 
     if processor:
         return processor
 
     if machine:
-        return (
-            "System CPU ("
-            + machine
-            + ")"
-        )
+        return "System CPU (" + machine + ")"
 
     return "System CPU"
 
@@ -194,13 +171,9 @@ def system_memory() -> AcceleratorMemory:
     try:
         memory = psutil.virtual_memory()
 
-        total = int(
-            memory.total
-        )
+        total = int(memory.total)
 
-        available = int(
-            memory.available
-        )
+        available = int(memory.available)
 
         used = max(
             0,
@@ -221,24 +194,14 @@ def system_memory() -> AcceleratorMemory:
 
     except Exception as exc:
         raise AcceleratorMemoryQueryError(
-            "CPU system-memory query "
-            "failed.",
+            "CPU system-memory query failed.",
             details=(
                 safe_accelerator_error_details(
                     exc,
-                    operation=(
-                        "cpu_system_memory"
-                    ),
-                    backend=(
-                        AcceleratorKind.
-                        CPU.value
-                    ),
-                    device_id=(
-                        CPU_DEVICE_ID
-                    ),
-                    runtime_device=(
-                        CPU_RUNTIME_DEVICE
-                    ),
+                    operation=("cpu_system_memory"),
+                    backend=(AcceleratorKind.CPU.value),
+                    device_id=(CPU_DEVICE_ID),
+                    runtime_device=(CPU_RUNTIME_DEVICE),
                 )
             ),
         ) from exc
@@ -247,6 +210,7 @@ def system_memory() -> AcceleratorMemory:
 # ---------------------------------------------------------------
 # Precision discovery
 # ---------------------------------------------------------------
+
 
 def cpu_supported_precisions() -> Tuple[str, ...]:
     """
@@ -262,33 +226,23 @@ def cpu_supported_precisions() -> Tuple[str, ...]:
     """
 
     values = [
-        AcceleratorPrecision.
-        FLOAT64.value,
-
-        AcceleratorPrecision.
-        FLOAT32.value,
+        AcceleratorPrecision.FLOAT64.value,
+        AcceleratorPrecision.FLOAT32.value,
     ]
 
-    if (
-        torch is not None
-        and hasattr(
-            torch,
-            "bfloat16",
-        )
+    if torch is not None and hasattr(
+        torch,
+        "bfloat16",
     ):
-        values.append(
-            AcceleratorPrecision.
-            BFLOAT16.value
-        )
+        values.append(AcceleratorPrecision.BFLOAT16.value)
 
-    return tuple(
-        values
-    )
+    return tuple(values)
 
 
 # ---------------------------------------------------------------
 # Capability discovery
 # ---------------------------------------------------------------
+
 
 def cpu_capabilities() -> Tuple[str, ...]:
     """
@@ -297,34 +251,23 @@ def cpu_capabilities() -> Tuple[str, ...]:
     """
 
     values = [
-        AcceleratorCapability.
-        COMPUTE.value,
-
-        AcceleratorCapability.
-        TRAINING.value,
-
-        AcceleratorCapability.
-        INFERENCE.value,
+        AcceleratorCapability.COMPUTE.value,
+        AcceleratorCapability.TRAINING.value,
+        AcceleratorCapability.INFERENCE.value,
     ]
 
     if psutil is not None:
-        values.append(
-            AcceleratorCapability.
-            MEMORY_STATS.value
-        )
+        values.append(AcceleratorCapability.MEMORY_STATS.value)
 
-    return tuple(
-        values
-    )
+    return tuple(values)
 
 
 # ---------------------------------------------------------------
 # CPU backend
 # ---------------------------------------------------------------
 
-class CPUBackend(
-    CPUAcceleratorBackend
-):
+
+class CPUBackend(CPUAcceleratorBackend):
     """
     Concrete CPU implementation of the common
     AcceleratorBackend contract.
@@ -339,13 +282,9 @@ class CPUBackend(
     def __init__(
         self,
         *,
-        config: Optional[
-            AcceleratorConfig
-        ] = None,
+        config: Optional[AcceleratorConfig] = None,
     ) -> None:
-        super().__init__(
-            config=config
-        )
+        super().__init__(config=config)
 
     # ---------------------------------------------------------
     # Availability
@@ -367,10 +306,7 @@ class CPUBackend(
 
         count = logical_processor_count()
 
-        return bool(
-            count is None
-            or count > 0
-        )
+        return bool(count is None or count > 0)
 
     # ---------------------------------------------------------
     # Device attributes
@@ -380,34 +316,13 @@ class CPUBackend(
         self,
     ) -> Dict[str, Any]:
         return {
-            "platform": (
-                platform.system()
-            ),
-
-            "platform_release": (
-                platform.release()
-            ),
-
-            "machine": (
-                platform.machine()
-            ),
-
-            "python_implementation": (
-                platform.
-                python_implementation()
-            ),
-
-            "physical_processor_count": (
-                physical_processor_count()
-            ),
-
-            "psutil_available": (
-                psutil is not None
-            ),
-
-            "torch_available": (
-                torch is not None
-            ),
+            "platform": (platform.system()),
+            "platform_release": (platform.release()),
+            "machine": (platform.machine()),
+            "python_implementation": (platform.python_implementation()),
+            "physical_processor_count": (physical_processor_count()),
+            "psutil_available": (psutil is not None),
+            "torch_available": (torch is not None),
         }
 
     # ---------------------------------------------------------
@@ -421,125 +336,53 @@ class CPUBackend(
         ...,
     ]:
         if not self.available():
-            if (
-                not self.config.
-                discovery.
-                include_unavailable_devices
-            ):
+            if not self.config.discovery.include_unavailable_devices:
                 return ()
 
             return (
                 AcceleratorDevice(
-                    device_id=(
-                        CPU_DEVICE_ID
-                    ),
-
-                    kind=(
-                        AcceleratorKind.
-                        CPU.value
-                    ),
-
-                    runtime_device=(
-                        CPU_RUNTIME_DEVICE
-                    ),
-
+                    device_id=(CPU_DEVICE_ID),
+                    kind=(AcceleratorKind.CPU.value),
+                    runtime_device=(CPU_RUNTIME_DEVICE),
                     index=None,
-
                     name=cpu_name(),
-
-                    state=(
-                        AcceleratorState.
-                        UNAVAILABLE.value
-                    ),
-
-                    memory=(
-                        AcceleratorMemory()
-                      capabilities=(),
-
-                    supported_precisions=(
-                        AcceleratorPrecision.
-                        FLOAT32.value,
-                    ),
-
+                    state=(AcceleratorState.UNAVAILABLE.value),
+                    memory=(AcceleratorMemory()),
+                    capabilities=(),
+                    supported_precisions=(AcceleratorPrecision.FLOAT32.value,),
                     vendor=None,
-
-                    architecture=(
-                        platform.machine()
-                        or None
-                    ),
-
-                    logical_processor_count=(
-                        logical_processor_count()
-                    ),
-
-                    attributes=(
-                        self.
-                        _device_attributes()
-                    ),
+                    architecture=(platform.machine() or None),
+                    logical_processor_count=(logical_processor_count()),
+                    attributes=(self._device_attributes()),
                 ),
             )
 
         memory = AcceleratorMemory()
 
-        if (
-            self.config.
-            discovery.
-            refresh_memory_on_detection
-        ):
+        if self.config.discovery.refresh_memory_on_detection:
             try:
                 memory = system_memory()
 
-            except (
-                AcceleratorMemoryQueryError
-            ):
+            except AcceleratorMemoryQueryError:
                 # CPU execution is still usable
                 # when optional host-memory
                 # telemetry is unavailable.
                 memory = AcceleratorMemory()
 
         device = AcceleratorDevice(
-            device_id=(
-                CPU_DEVICE_ID
-            ),
-
-            kind=(
-                AcceleratorKind.CPU.value
-            ),
-
-            runtime_device=(
-                CPU_RUNTIME_DEVICE
-            ),
-
+            device_id=(CPU_DEVICE_ID),
+            kind=(AcceleratorKind.CPU.value),
+            runtime_device=(CPU_RUNTIME_DEVICE),
             index=None,
-
             name=cpu_name(),
-
-            state=(
-                AcceleratorState.
-                AVAILABLE.value
-            ),
-
+            state=(AcceleratorState.AVAILABLE.value),
             memory=memory,
-
-            capabilities=(
-                cpu_capabilities()
-            ),
-
-            supported_precisions=(
-                cpu_supported_precisions()
-            ),
-
+            capabilities=(cpu_capabilities()),
+            supported_precisions=(cpu_supported_precisions()),
             compute_capability=None,
-
             vendor=None,
-
-            architecture=(
-                platform.machine()
-                or None
-            ),
-
+            architecture=(platform.machine() or None),
             driver_version=None,
-
             runtime_version=(
                 str(
                     getattr(
@@ -551,24 +394,14 @@ class CPUBackend(
                 if torch is not None
                 else None
             ),
-
-            logical_processor_count=(
-                logical_processor_count()
-            ),
-
+            logical_processor_count=(logical_processor_count()),
             multiprocessor_count=None,
-
-            attributes=(
-                self.
-                _device_attributes()
-            ),
+            attributes=(self._device_attributes()),
         )
 
         device.validate()
 
-        return (
-            device,
-        )
+        return (device,)
 
     # ---------------------------------------------------------
     # Memory
@@ -602,31 +435,18 @@ class CPUBackend(
             return device.runtime_device
 
         try:
-            return torch.device(
-                device.runtime_device
-            )
+            return torch.device(device.runtime_device)
 
         except Exception as exc:
             raise AcceleratorRuntimeDeviceError(
-                "CPU runtime device could "
-                "not be constructed.",
+                "CPU runtime device could not be constructed.",
                 details=(
                     safe_accelerator_error_details(
                         exc,
-                        operation=(
-                            "cpu_runtime_device"
-                        ),
-                        backend=(
-                            AcceleratorKind.
-                            CPU.value
-                        ),
-                        device_id=(
-                            device.device_id
-                        ),
-                        runtime_device=(
-                            device.
-                            runtime_device
-                        ),
+                        operation=("cpu_runtime_device"),
+                        backend=(AcceleratorKind.CPU.value),
+                        device_id=(device.device_id),
+                        runtime_device=(device.runtime_device),
                     )
                 ),
             ) from exc
@@ -681,31 +501,12 @@ class CPUBackend(
     ) -> AcceleratorHealth:
         if not self.available():
             return AcceleratorHealth(
-                component=(
-                    "accelerator_backend:cpu"
-                ),
-
-                status=(
-                    AcceleratorHealthStatus.
-                    UNAVAILABLE.value
-                ),
-
-                message=(
-                    "CPU execution backend "
-                    "is unavailable."
-                ),
-
-                kind=(
-                    AcceleratorKind.
-                    CPU.value
-                ),
-
-                device_id=(
-                    CPU_DEVICE_ID
-                ),
-
+                component=("accelerator_backend:cpu"),
+                status=(AcceleratorHealthStatus.UNAVAILABLE.value),
+                message=("CPU execution backend is unavailable."),
+                kind=(AcceleratorKind.CPU.value),
+                device_id=(CPU_DEVICE_ID),
                 retryable=False,
-
                 attributes={
                     "deep_check": deep,
                 },
@@ -714,39 +515,22 @@ class CPUBackend(
         memory = AcceleratorMemory()
         memory_error_type = None
 
-        if (
-            self.config.
-            health.check_memory
-        ):
+        if self.config.health.check_memory:
             try:
                 memory = system_memory()
 
             except Exception as exc:
-                memory_error_type = (
-                    type(exc).__name__
-                )
+                memory_error_type = type(exc).__name__
 
-        minimum_free = (
-            self.config.
-            health.
-            minimum_free_memory_bytes
-        )
+        minimum_free = self.config.health.minimum_free_memory_bytes
 
         insufficient_memory = bool(
             minimum_free is not None
-            and (
-                memory.free_bytes
-                is None
-                or memory.free_bytes
-                < minimum_free
-            )
+            and (memory.free_bytes is None or memory.free_bytes < minimum_free)
         )
 
         if insufficient_memory:
-            status = (
-                AcceleratorHealthStatus.
-                DEGRADED.value
-            )
+            status = AcceleratorHealthStatus.DEGRADED.value
 
             message = (
                 "CPU backend is available "
@@ -756,68 +540,34 @@ class CPUBackend(
             )
 
         elif memory_error_type is not None:
-            status = (
-                AcceleratorHealthStatus.
-                DEGRADED.value
-            )
+            status = AcceleratorHealthStatus.DEGRADED.value
 
             message = (
-                "CPU backend is available "
-                "but memory telemetry "
-                "could not be collected."
+                "CPU backend is available but memory telemetry could not be collected."
             )
 
         else:
-            status = (
-                AcceleratorHealthStatus.
-                HEALTHY.value
-            )
+            status = AcceleratorHealthStatus.HEALTHY.value
 
-            message = (
-                "CPU accelerator backend "
-                "is healthy."
-            )
+            message = "CPU accelerator backend is healthy."
 
         attributes: Dict[
             str,
             Any,
         ] = {
             "deep_check": deep,
-
-            "logical_processor_count": (
-                logical_processor_count()
-            ),
-
-            "physical_processor_count": (
-                physical_processor_count()
-            ),
-
-            "memory": (
-                memory.to_dict()
-            ),
-
-            "memory_error_type": (
-                memory_error_type
-            ),
-
-            "minimum_free_memory_bytes": (
-                minimum_free
-            ),
-
-            "torch_available": (
-                torch is not None
-            ),
-
-            "psutil_available": (
-                psutil is not None
-            ),
+            "logical_processor_count": (logical_processor_count()),
+            "physical_processor_count": (physical_processor_count()),
+            "memory": (memory.to_dict()),
+            "memory_error_type": (memory_error_type),
+            "minimum_free_memory_bytes": (minimum_free),
+            "torch_available": (torch is not None),
+            "psutil_available": (psutil is not None),
         }
 
         if deep and torch is not None:
             try:
-                runtime_device = torch.device(
-                    CPU_RUNTIME_DEVICE
-                )
+                runtime_device = torch.device(CPU_RUNTIME_DEVICE)
 
                 tensor = torch.tensor(
                     [
@@ -828,83 +578,56 @@ class CPUBackend(
                     device=runtime_device,
                 )
 
-                result = float(
-                    tensor.sum().item()
-                )
+                result = float(tensor.sum().item())
 
-                attributes[
-                    "deep_tensor_check"
-                ] = bool(
-                    result == 3.0
-                )
+                attributes["deep_tensor_check"] = bool(result == 3.0)
 
                 if result != 3.0:
-                    status = (
-                        AcceleratorHealthStatus.
-                        UNHEALTHY.value
-                    )
+                    status = AcceleratorHealthStatus.UNHEALTHY.value
 
-                    message = (
-                        "CPU backend failed "
-                        "its deep runtime "
-                        "calculation."
-                    )
+                    message = "CPU backend failed its deep runtime calculation."
 
             except Exception as exc:
-                status = (
-                    AcceleratorHealthStatus.
-                    UNHEALTHY.value
-                )
+                status = AcceleratorHealthStatus.UNHEALTHY.value
 
-                message = (
-                    "CPU backend failed "
-                    "its deep runtime "
-                    "check."
-                )
+                message = "CPU backend failed its deep runtime check."
 
-                attributes[
-                    "deep_check_error_type"
-                ] = (
-                    type(exc).__name__
-                )
+                attributes["deep_check_error_type"] = type(exc).__name__
 
         return AcceleratorHealth(
-            component=(
-                "accelerator_backend:cpu"
-            ),
-
+            component=("accelerator_backend:cpu"),
             status=status,
-
             message=message,
-
-            kind=(
-                AcceleratorKind.
-                CPU.value
-            ),
-
-            device_id=(
-                CPU_DEVICE_ID
-            ),
-
-            retryable=(
-                status
-                == AcceleratorHealthStatus.
-                DEGRADED.value
-            ),
-
-            error_type=(
-                memory_error_type
-            ),
-
+            kind=(AcceleratorKind.CPU.value),
+            device_id=(CPU_DEVICE_ID),
+            retryable=(status == AcceleratorHealthStatus.DEGRADED.value),
+            error_type=(memory_error_type),
             attributes=attributes,
         )
 
 
 # ---------------------------------------------------------------
-# Alias
+# Compatibility API
 # ---------------------------------------------------------------
 
-CPUAccelerator = CPUBackend
+
+class CPUAccelerator(CPUBackend):
+    def is_available(self) -> bool:
+        return self.available()
+
+    def device_count(self) -> int:
+        return self.discover().device_count
+
+    def get_device(self, index: int = 0) -> str:
+        if not isinstance(index, int) or isinstance(index, bool):
+            raise TypeError("Device index must be an integer.")
+        if index != 0:
+            raise ValueError("CPU exposes only device index 0.")
+        return CPU_RUNTIME_DEVICE
+
+    def device_name(self, index: int = 0) -> str:
+        self.get_device(index)
+        return "CPU"
 
 
 # ---------------------------------------------------------------
@@ -914,15 +637,12 @@ CPUAccelerator = CPUBackend
 __all__ = [
     "CPU_DEVICE_ID",
     "CPU_RUNTIME_DEVICE",
-
     "logical_processor_count",
     "physical_processor_count",
     "cpu_name",
     "system_memory",
-
     "cpu_supported_precisions",
     "cpu_capabilities",
-
     "CPUBackend",
     "CPUAccelerator",
 ]

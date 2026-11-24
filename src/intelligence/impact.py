@@ -95,24 +95,14 @@ class ImpactConfig:
             self.topology_weight,
         )
 
-        if any(
-            value < 0
-            for value in weights
-        ):
-            raise ValueError(
-                "impact weights must be >= 0"
-            )
+        if any(value < 0 for value in weights):
+            raise ValueError("impact weights must be >= 0")
 
         if sum(weights) <= 0:
-            raise ValueError(
-                "at least one impact weight "
-                "must be > 0"
-            )
+            raise ValueError("at least one impact weight must be > 0")
 
         if self.topology_depth < 1:
-            raise ValueError(
-                "topology_depth must be >= 1"
-            )
+            raise ValueError("topology_depth must be >= 1")
 
         thresholds = (
             self.localized_threshold,
@@ -121,15 +111,8 @@ class ImpactConfig:
             self.widespread_threshold,
         )
 
-        if any(
-            value < 0.0
-            or value > 1.0
-            for value in thresholds
-        ):
-            raise ValueError(
-                "impact thresholds must "
-                "be between 0 and 1"
-            )
+        if any(value < 0.0 or value > 1.0 for value in thresholds):
+            raise ValueError("impact thresholds must be between 0 and 1")
 
         if not (
             self.localized_threshold
@@ -150,9 +133,7 @@ def severity_score(
     return checked_score(
         SEVERITY_SCORES.get(
             severity,
-            SEVERITY_SCORES[
-                Severity.UNKNOWN.value
-            ],
+            SEVERITY_SCORES[Severity.UNKNOWN.value],
         )
     )
 
@@ -160,79 +141,45 @@ def severity_score(
 def records_for_incident(
     incident: IncidentCandidate,
     registry: ResourceRegistry,
-) -> List[
-    TelemetryRecord
-]:
+) -> List[TelemetryRecord]:
     output = []
 
-    for record_id in (
-        incident.record_ids
-    ):
-        telemetry = (
-            registry.get_record(
-                record_id
-            )
-        )
+    for record_id in incident.record_ids:
+        telemetry = registry.get_record(record_id)
 
         if telemetry is not None:
-            output.append(
-                telemetry
-            )
+            output.append(telemetry)
 
     return output
 
 
 def anomalies_for_incident(
     incident: IncidentCandidate,
-    anomalies: Iterable[
-        Anomaly
-    ],
-) -> List[
-    Anomaly
-]:
-    wanted_ids = set(
-        incident.anomaly_ids
-    )
+    anomalies: Iterable[Anomaly],
+) -> List[Anomaly]:
+    wanted_ids = set(incident.anomaly_ids)
 
-    incident_records = set(
-        incident.record_ids
-    )
+    incident_records = set(incident.record_ids)
 
-    incident_resources = set(
-        incident.resource_ids
-    )
+    incident_resources = set(incident.resource_ids)
 
     output = []
 
     for anomaly in anomalies:
         anomaly.finalize()
 
-        if (
-            anomaly.anomaly_id
-            and anomaly.anomaly_id
-            in wanted_ids
-        ):
-            output.append(
-                anomaly
-            )
+        if anomaly.anomaly_id and anomaly.anomaly_id in wanted_ids:
+            output.append(anomaly)
 
             continue
 
-        if incident_records.intersection(
-            anomaly.record_ids
-        ):
-            output.append(
-                anomaly
-            )
+        if incident_records.intersection(anomaly.record_ids):
+            output.append(anomaly)
 
             continue
 
-        if incident_resources.intersection(
-            anomaly.resource_ids
-        ):
-            output.append(
-                anomaly
-            )
+        if incident_resources.intersection(anomaly.resource_ids):
+            output.append(anomaly)
 
     return output
 
@@ -241,11 +188,10 @@ def anomalies_for_incident(
 # Directly affected resources
 # ---------------------------------------------------------------
 
+
 def directly_affected_resources(
     incident: IncidentCandidate,
-    anomalies: Iterable[
-        Anomaly
-    ],
+    anomalies: Iterable[Anomaly],
 ) -> Set[str]:
     """
     Resource IDs supported by direct anomaly or
@@ -255,14 +201,10 @@ def directly_affected_resources(
     only through topology proximity.
     """
 
-    resource_ids = set(
-        incident.resource_ids
-    )
+    resource_ids = set(incident.resource_ids)
 
     for anomaly in anomalies:
-        resource_ids.update(
-            anomaly.resource_ids
-        )
+        resource_ids.update(anomaly.resource_ids)
 
     return resource_ids
 
@@ -273,22 +215,14 @@ def affected_services(
 ) -> Set[str]:
     output = set()
 
-    for resource_id in (
-        resource_ids
-    ):
-        resource = (
-            registry.get_resource(
-                resource_id
-            )
-        )
+    for resource_id in resource_ids:
+        resource = registry.get_resource(resource_id)
 
         if resource is None:
             continue
 
         if resource.service:
-            output.add(
-                resource.service
-            )
+            output.add(resource.service)
 
     return output
 
@@ -299,21 +233,13 @@ def affected_providers(
 ) -> Set[str]:
     output = set()
 
-    for resource_id in (
-        resource_ids
-    ):
-        resource = (
-            registry.get_resource(
-                resource_id
-            )
-        )
+    for resource_id in resource_ids:
+        resource = registry.get_resource(resource_id)
 
         if resource is None:
             continue
 
-        output.add(
-            resource.provider
-        )
+        output.add(resource.provider)
 
     return output
 
@@ -322,11 +248,10 @@ def affected_providers(
 # Topology exposure / blast radius
 # ---------------------------------------------------------------
 
+
 def topology_exposure(
     origins: Iterable[str],
-    topology: Optional[
-        TopologyGraph
-    ],
+    topology: Optional[TopologyGraph],
     *,
     depth: int,
 ) -> Dict[
@@ -344,9 +269,7 @@ def topology_exposure(
     if topology is None:
         return {}
 
-    origin_set = set(
-        origins
-    )
+    origin_set = set(origins)
 
     distances: Dict[
         str,
@@ -356,9 +279,7 @@ def topology_exposure(
     queue = deque()
 
     for resource_id in origin_set:
-        distances[
-            resource_id
-        ] = 0
+        distances[resource_id] = 0
 
         queue.append(
             (
@@ -382,24 +303,14 @@ def topology_exposure(
         )
 
         for neighbor in neighbors:
-            candidate_distance = (
-                current_depth + 1
-            )
+            candidate_distance = current_depth + 1
 
-            existing = distances.get(
-                neighbor
-            )
+            existing = distances.get(neighbor)
 
-            if (
-                existing is not None
-                and existing
-                <= candidate_distance
-            ):
+            if existing is not None and existing <= candidate_distance:
                 continue
 
-            distances[
-                neighbor
-            ] = candidate_distance
+            distances[neighbor] = candidate_distance
 
             queue.append(
                 (
@@ -420,9 +331,7 @@ def maximum_blast_radius_hops(
     if not exposure:
         return None
 
-    return max(
-        exposure.values()
-    )
+    return max(exposure.values())
 
 
 def topology_exposure_score(
@@ -445,88 +354,48 @@ def topology_exposure_score(
 
     nearby = {
         resource_id
-        for resource_id, distance
-        in exposure.items()
-        if (
-            resource_id
-            not in direct_resource_ids
-            and distance > 0
-        )
+        for resource_id, distance in exposure.items()
+        if (resource_id not in direct_resource_ids and distance > 0)
     }
 
     if not nearby:
         return 0.0
 
-    direct_count = len(
-        direct_resource_ids
-    )
+    direct_count = len(direct_resource_ids)
 
-    nearby_count = len(
-        nearby
-    )
+    nearby_count = len(nearby)
 
-    return checked_score(
-        nearby_count
-        / float(
-            nearby_count
-            + direct_count
-        )
-    )
+    return checked_score(nearby_count / float(nearby_count + direct_count))
 
 
 # ---------------------------------------------------------------
 # Score dimensions
 # ---------------------------------------------------------------
 
+
 def direct_anomaly_score(
-    anomalies: Iterable[
-        Anomaly
-    ],
+    anomalies: Iterable[Anomaly],
 ) -> float:
-    values = [
-        anomaly.score
-        for anomaly
-        in anomalies
-    ]
+    values = [anomaly.score for anomaly in anomalies]
 
     if not values:
         return 0.0
 
-    strongest = max(
-        values
-    )
+    strongest = max(values)
 
     density = min(
         1.0,
         len(values) / 5.0,
     )
 
-    return checked_score(
-        (
-            strongest
-            * 0.80
-        )
-        + (
-            density
-            * 0.20
-        )
-    )
+    return checked_score((strongest * 0.80) + (density * 0.20))
 
 
 def incident_severity_score(
-    records: Iterable[
-        TelemetryRecord
-    ],
+    records: Iterable[TelemetryRecord],
 ) -> float:
     return max(
-        (
-            severity_score(
-                telemetry.
-                signal.severity
-            )
-            for telemetry
-            in records
-        ),
+        (severity_score(telemetry.signal.severity) for telemetry in records),
         default=0.0,
     )
 
@@ -546,9 +415,7 @@ def resource_spread_score(
     denominator.
     """
 
-    count = len(
-        direct_resources
-    )
+    count = len(direct_resources)
 
     if count <= 0:
         return 0.0
@@ -571,9 +438,7 @@ def resource_spread_score(
 def service_spread_score(
     services: Set[str],
 ) -> float:
-    count = len(
-        services
-    )
+    count = len(services)
 
     if count <= 0:
         return 0.0
@@ -600,55 +465,25 @@ def calculate_impact_score(
     config: ImpactConfig,
 ) -> float:
     dimensions = {
-        "anomaly": (
-            anomaly_score
-        ),
+        "anomaly": (anomaly_score),
         "severity": severity,
-        "resource_spread": (
-            resource_spread
-        ),
-        "service_spread": (
-            service_spread
-        ),
+        "resource_spread": (resource_spread),
+        "service_spread": (service_spread),
         "topology": topology,
     }
 
     weights = {
-        "anomaly": (
-            config.
-            direct_anomaly_weight
-        ),
-        "severity": (
-            config.severity_weight
-        ),
-        "resource_spread": (
-            config.
-            resource_spread_weight
-        ),
-        "service_spread": (
-            config.
-            service_spread_weight
-        ),
-        "topology": (
-            config.topology_weight
-        ),
+        "anomaly": (config.direct_anomaly_weight),
+        "severity": (config.severity_weight),
+        "resource_spread": (config.resource_spread_weight),
+        "service_spread": (config.service_spread_weight),
+        "topology": (config.topology_weight),
     }
 
-    total_weight = sum(
-        weights.values()
-    )
+    total_weight = sum(weights.values())
 
     return checked_score(
-        sum(
-            dimensions[
-                dimension
-            ]
-            * weights[
-                dimension
-            ]
-            for dimension
-            in weights
-        )
+        sum(dimensions[dimension] * weights[dimension] for dimension in weights)
         / total_weight
     )
 
@@ -658,48 +493,19 @@ def impact_level(
     *,
     config: ImpactConfig,
 ) -> str:
-    value = checked_score(
-        score
-    )
+    value = checked_score(score)
 
-    if (
-        value
-        >= config.
-        widespread_threshold
-    ):
-        return (
-            ImpactLevel.
-            WIDESPREAD.value
-        )
+    if value >= config.widespread_threshold:
+        return ImpactLevel.WIDESPREAD.value
 
-    if (
-        value
-        >= config.
-        significant_threshold
-    ):
-        return (
-            ImpactLevel.
-            SIGNIFICANT.value
-        )
+    if value >= config.significant_threshold:
+        return ImpactLevel.SIGNIFICANT.value
 
-    if (
-        value
-        >= config.
-        limited_threshold
-    ):
-        return (
-            ImpactLevel.LIMITED.value
-        )
+    if value >= config.limited_threshold:
+        return ImpactLevel.LIMITED.value
 
-    if (
-        value
-        >= config.
-        localized_threshold
-    ):
-        return (
-            ImpactLevel.
-            LOCALIZED.value
-        )
+    if value >= config.localized_threshold:
+        return ImpactLevel.LOCALIZED.value
 
     if value > 0:
         return ImpactLevel.NONE.value
@@ -710,6 +516,7 @@ def impact_level(
 # ---------------------------------------------------------------
 # Impact evidence
 # ---------------------------------------------------------------
+
 
 def build_impact_evidence(
     *,
@@ -726,72 +533,42 @@ def build_impact_evidence(
     resource_spread: float,
     service_spread: float,
     topology_score: float,
-) -> List[
-    EvidenceReference
-]:
+) -> List[EvidenceReference]:
     evidence = []
 
     if anomaly_score > 0:
         evidence.append(
             EvidenceReference(
-                evidence_type=(
-                    "direct_anomaly"
-                ),
-                description=(
-                    "Direct anomaly findings "
-                    "support operational impact"
-                ),
+                evidence_type=("direct_anomaly"),
+                description=("Direct anomaly findings support operational impact"),
                 score=anomaly_score,
-                record_ids=list(
-                    incident.record_ids
-                ),
-                resource_ids=sorted(
-                    direct_resources
-                ),
+                record_ids=list(incident.record_ids),
+                resource_ids=sorted(direct_resources),
             )
         )
 
     if severity > 0:
         evidence.append(
             EvidenceReference(
-                evidence_type=(
-                    "signal_severity"
-                ),
-                description=(
-                    "Elevated signal severity "
-                    "supports greater impact"
-                ),
+                evidence_type=("signal_severity"),
+                description=("Elevated signal severity supports greater impact"),
                 score=severity,
-                record_ids=list(
-                    incident.record_ids
-                ),
-                resource_ids=sorted(
-                    direct_resources
-                ),
+                record_ids=list(incident.record_ids),
+                resource_ids=sorted(direct_resources),
             )
         )
 
     if resource_spread > 0:
         evidence.append(
             EvidenceReference(
-                evidence_type=(
-                    "resource_spread"
-                ),
+                evidence_type=("resource_spread"),
                 description=(
-                    "Multiple independently "
-                    "observed resources appear "
-                    "affected"
+                    "Multiple independently observed resources appear affected"
                 ),
                 score=resource_spread,
-                resource_ids=sorted(
-                    direct_resources
-                ),
+                resource_ids=sorted(direct_resources),
                 attributes={
-                    "resource_count": (
-                        len(
-                            direct_resources
-                        )
-                    ),
+                    "resource_count": (len(direct_resources)),
                 },
             )
         )
@@ -799,21 +576,12 @@ def build_impact_evidence(
     if service_spread > 0:
         evidence.append(
             EvidenceReference(
-                evidence_type=(
-                    "service_spread"
-                ),
-                description=(
-                    "Affected resources span "
-                    "one or more known services"
-                ),
+                evidence_type=("service_spread"),
+                description=("Affected resources span one or more known services"),
                 score=service_spread,
-                resource_ids=sorted(
-                    direct_resources
-                ),
+                resource_ids=sorted(direct_resources),
                 attributes={
-                    "services": sorted(
-                        services
-                    ),
+                    "services": sorted(services),
                 },
             )
         )
@@ -821,19 +589,13 @@ def build_impact_evidence(
     if topology_score > 0:
         exposed_resources = {
             resource_id: distance
-            for resource_id, distance
-            in exposure.items()
-            if (
-                resource_id
-                not in direct_resources
-            )
+            for resource_id, distance in exposure.items()
+            if (resource_id not in direct_resources)
         }
 
         evidence.append(
             EvidenceReference(
-                evidence_type=(
-                    "topology_exposure"
-                ),
+                evidence_type=("topology_exposure"),
                 description=(
                     "Topology contains nearby "
                     "resources that could be "
@@ -841,16 +603,10 @@ def build_impact_evidence(
                     "blast radius"
                 ),
                 score=topology_score,
-                resource_ids=sorted(
-                    direct_resources
-                ),
+                resource_ids=sorted(direct_resources),
                 attributes={
-                    "potentially_exposed": (
-                        exposed_resources
-                    ),
-                    "providers": sorted(
-                        providers
-                    ),
+                    "potentially_exposed": (exposed_resources),
+                    "providers": sorted(providers),
                 },
             )
         )
@@ -862,19 +618,14 @@ def build_impact_evidence(
 # Main impact analysis
 # ---------------------------------------------------------------
 
+
 def assess_impact(
     incident: IncidentCandidate,
     registry: ResourceRegistry,
-    anomalies: Iterable[
-        Anomaly
-    ],
+    anomalies: Iterable[Anomaly],
     *,
-    topology: Optional[
-        TopologyGraph
-    ] = None,
-    config: Optional[
-        ImpactConfig
-    ] = None,
+    topology: Optional[TopologyGraph] = None,
+    config: Optional[ImpactConfig] = None,
 ) -> ImpactAssessment:
     """
     Estimate impact for one incident candidate.
@@ -886,10 +637,7 @@ def assess_impact(
     as potentially exposed resources.
     """
 
-    configuration = (
-        config
-        or ImpactConfig()
-    )
+    configuration = config or ImpactConfig()
 
     configuration.validate()
 
@@ -900,18 +648,14 @@ def assess_impact(
         registry,
     )
 
-    anomaly_list = (
-        anomalies_for_incident(
-            incident,
-            anomalies,
-        )
+    anomaly_list = anomalies_for_incident(
+        incident,
+        anomalies,
     )
 
-    direct_resources = (
-        directly_affected_resources(
-            incident,
-            anomaly_list,
-        )
+    direct_resources = directly_affected_resources(
+        incident,
+        anomaly_list,
     )
 
     services = affected_services(
@@ -927,59 +671,28 @@ def assess_impact(
     exposure = topology_exposure(
         direct_resources,
         topology,
-        depth=(
-            configuration.
-            topology_depth
-        ),
+        depth=(configuration.topology_depth),
     )
 
-    anomaly_component = (
-        direct_anomaly_score(
-            anomaly_list
-        )
-    )
+    anomaly_component = direct_anomaly_score(anomaly_list)
 
-    severity_component = (
-        incident_severity_score(
-            records
-        )
-    )
+    severity_component = incident_severity_score(records)
 
-    resource_component = (
-        resource_spread_score(
-            direct_resources
-        )
-    )
+    resource_component = resource_spread_score(direct_resources)
 
-    service_component = (
-        service_spread_score(
-            services
-        )
-    )
+    service_component = service_spread_score(services)
 
-    topology_component = (
-        topology_exposure_score(
-            direct_resources,
-            exposure,
-        )
+    topology_component = topology_exposure_score(
+        direct_resources,
+        exposure,
     )
 
     score = calculate_impact_score(
-        anomaly_score=(
-            anomaly_component
-        ),
-        severity=(
-            severity_component
-        ),
-        resource_spread=(
-            resource_component
-        ),
-        service_spread=(
-            service_component
-        ),
-        topology=(
-            topology_component
-        ),
+        anomaly_score=(anomaly_component),
+        severity=(severity_component),
+        resource_spread=(resource_component),
+        service_spread=(service_component),
+        topology=(topology_component),
         config=configuration,
     )
 
@@ -990,10 +703,8 @@ def assess_impact(
 
     exposed_only = {
         resource_id: distance
-        for resource_id, distance
-        in exposure.items()
-        if resource_id
-        not in direct_resources
+        for resource_id, distance in exposure.items()
+        if resource_id not in direct_resources
     }
 
     user_impact_known = False
@@ -1002,16 +713,10 @@ def assess_impact(
     # established by later service/SLO/business
     # context. Infrastructure topology by itself
     # is not enough to assert it.
-    summary = (
-        f"{len(direct_resources)} resource(s) "
-        "have direct incident evidence"
-    )
+    summary = f"{len(direct_resources)} resource(s) have direct incident evidence"
 
     if services:
-        summary += (
-            f" across {len(services)} "
-            "known service(s)"
-        )
+        summary += f" across {len(services)} known service(s)"
 
     summary += "."
 
@@ -1026,84 +731,37 @@ def assess_impact(
     assessment = ImpactAssessment(
         level=level,
         score=score,
-        affected_resource_ids=sorted(
-            direct_resources
-        ),
-        affected_services=sorted(
-            services
-        ),
-        affected_providers=sorted(
-            providers
-        ),
-        blast_radius_hops=(
-            maximum_blast_radius_hops(
-                exposure
-            )
-        ),
-        user_impact_known=(
-            user_impact_known
-        ),
+        affected_resource_ids=sorted(direct_resources),
+        affected_services=sorted(services),
+        affected_providers=sorted(providers),
+        blast_radius_hops=(maximum_blast_radius_hops(exposure)),
+        user_impact_known=(user_impact_known),
         summary=summary,
         evidence=build_impact_evidence(
             incident=incident,
-            direct_resources=(
-                direct_resources
-            ),
+            direct_resources=(direct_resources),
             services=services,
             providers=providers,
             exposure=exposure,
-            anomaly_score=(
-                anomaly_component
-            ),
-            severity=(
-                severity_component
-            ),
-            resource_spread=(
-                resource_component
-            ),
-            service_spread=(
-                service_component
-            ),
-            topology_score=(
-                topology_component
-            ),
+            anomaly_score=(anomaly_component),
+            severity=(severity_component),
+            resource_spread=(resource_component),
+            service_spread=(service_component),
+            topology_score=(topology_component),
         ),
         attributes={
             "dimension_scores": {
-                "anomaly": (
-                    anomaly_component
-                ),
-                "severity": (
-                    severity_component
-                ),
-                "resource_spread": (
-                    resource_component
-                ),
-                "service_spread": (
-                    service_component
-                ),
-                "topology_exposure": (
-                    topology_component
-                ),
+                "anomaly": (anomaly_component),
+                "severity": (severity_component),
+                "resource_spread": (resource_component),
+                "service_spread": (service_component),
+                "topology_exposure": (topology_component),
             },
-            "direct_resource_count": (
-                len(
-                    direct_resources
-                )
-            ),
-            "known_service_count": (
-                len(services)
-            ),
-            "potentially_exposed_resources": (
-                exposed_only
-            ),
-            "topology_depth": (
-                configuration.
-                topology_depth
-            ),
-            "user_impact_source": (
-                None
-            ),
+            "direct_resource_count": (len(direct_resources)),
+            "known_service_count": (len(services)),
+            "potentially_exposed_resources": (exposed_only),
+            "topology_depth": (configuration.topology_depth),
+            "user_impact_source": (None),
         },
     )
 
@@ -1113,16 +771,10 @@ def assess_impact(
 def analyze_incident_impact(
     incident: IncidentCandidate,
     registry: ResourceRegistry,
-    anomalies: Iterable[
-        Anomaly
-    ],
+    anomalies: Iterable[Anomaly],
     *,
-    topology: Optional[
-        TopologyGraph
-    ] = None,
-    config: Optional[
-        ImpactConfig
-    ] = None,
+    topology: Optional[TopologyGraph] = None,
+    config: Optional[ImpactConfig] = None,
 ) -> IncidentCandidate:
     incident.impact = assess_impact(
         incident,
@@ -1136,26 +788,14 @@ def analyze_incident_impact(
 
 
 def analyze_impacts(
-    incidents: Iterable[
-        IncidentCandidate
-    ],
+    incidents: Iterable[IncidentCandidate],
     registry: ResourceRegistry,
-    anomalies: Iterable[
-        Anomaly
-    ],
+    anomalies: Iterable[Anomaly],
     *,
-    topology: Optional[
-        TopologyGraph
-    ] = None,
-    config: Optional[
-        ImpactConfig
-    ] = None,
-) -> List[
-    IncidentCandidate
-]:
-    anomaly_list = list(
-        anomalies
-    )
+    topology: Optional[TopologyGraph] = None,
+    config: Optional[ImpactConfig] = None,
+) -> List[IncidentCandidate]:
+    anomaly_list = list(anomalies)
 
     return [
         analyze_incident_impact(
@@ -1165,8 +805,7 @@ def analyze_impacts(
             topology=topology,
             config=config,
         )
-        for incident
-        in incidents
+        for incident in incidents
     ]
 
 
@@ -1174,67 +813,36 @@ def analyze_impacts(
 # Summary helpers
 # ---------------------------------------------------------------
 
-def impact_summary(
-    incidents: Iterable[
-        IncidentCandidate
-    ],
-) -> Dict[str, Any]:
-    incident_list = list(
-        incidents
-    )
 
-    level_counts = Counter(
-        incident.impact.level
-        for incident
-        in incident_list
-    )
+def impact_summary(
+    incidents: Iterable[IncidentCandidate],
+) -> Dict[str, Any]:
+    incident_list = list(incidents)
+
+    level_counts = Counter(incident.impact.level for incident in incident_list)
 
     affected_resources = {
         resource_id
-        for incident
-        in incident_list
-        for resource_id
-        in incident.impact.
-        affected_resource_ids
+        for incident in incident_list
+        for resource_id in incident.impact.affected_resource_ids
     }
 
     affected_services = {
         service
-        for incident
-        in incident_list
-        for service
-        in incident.impact.
-        affected_services
+        for incident in incident_list
+        for service in incident.impact.affected_services
     }
 
     user_impact_known = sum(
-        1
-        for incident
-        in incident_list
-        if incident.impact.
-        user_impact_known
+        1 for incident in incident_list if incident.impact.user_impact_known
     )
 
     return {
-        "incident_count": (
-            len(incident_list)
-        ),
-        "impact_levels": dict(
-            level_counts
-        ),
-        "affected_resource_count": (
-            len(
-                affected_resources
-            )
-        ),
-        "affected_service_count": (
-            len(
-                affected_services
-            )
-        ),
-        "incidents_with_known_user_impact": (
-            user_impact_known
-        ),
+        "incident_count": (len(incident_list)),
+        "impact_levels": dict(level_counts),
+        "affected_resource_count": (len(affected_resources)),
+        "affected_service_count": (len(affected_services)),
+        "incidents_with_known_user_impact": (user_impact_known),
     }
 
 
@@ -1248,35 +856,22 @@ class ImpactAnalyzer:
         self,
         registry: ResourceRegistry,
         *,
-        topology: Optional[
-            TopologyGraph
-        ] = None,
-        config: Optional[
-            ImpactConfig
-        ] = None,
+        topology: Optional[TopologyGraph] = None,
+        config: Optional[ImpactConfig] = None,
     ) -> None:
         self.registry = registry
 
         self.topology = topology
 
-        self.config = (
-            config
-            or ImpactConfig()
-        )
+        self.config = config or ImpactConfig()
 
         self.config.validate()
 
     def analyze(
         self,
-        incidents: Iterable[
-            IncidentCandidate
-        ],
-        anomalies: Iterable[
-            Anomaly
-        ],
-    ) -> List[
-        IncidentCandidate
-    ]:
+        incidents: Iterable[IncidentCandidate],
+        anomalies: Iterable[Anomaly],
+    ) -> List[IncidentCandidate]:
         return analyze_impacts(
             incidents,
             self.registry,

@@ -29,6 +29,7 @@ ORCHESTRATOR_SCHEMA_VERSION = "1"
 # Orchestration lifecycle
 # ---------------------------------------------------------------
 
+
 class OrchestrationState(
     str,
     Enum,
@@ -132,17 +133,11 @@ class StopReason(
 
     BLOCKED = "blocked"
 
-    APPROVAL_REQUIRED = (
-        "approval_required"
-    )
+    APPROVAL_REQUIRED = "approval_required"
 
-    ESCALATION_REQUIRED = (
-        "escalation_required"
-    )
+    ESCALATION_REQUIRED = "escalation_required"
 
-    SAFETY_GUARDRAIL = (
-        "safety_guardrail"
-    )
+    SAFETY_GUARDRAIL = "safety_guardrail"
 
     FAILURE = "failure"
 
@@ -153,19 +148,16 @@ class StopReason(
 # Helpers
 # ---------------------------------------------------------------
 
+
 def utc_now() -> str:
-    return datetime.now(
-        timezone.utc
-    ).isoformat()
+    return datetime.now(timezone.utc).isoformat()
 
 
 def checked_score(
     value: Any,
 ) -> float:
     try:
-        number = float(
-            value
-        )
+        number = float(value)
 
     except (
         TypeError,
@@ -173,9 +165,7 @@ def checked_score(
     ):
         return 0.0
 
-    if not math.isfinite(
-        number
-    ):
+    if not math.isfinite(number):
         return 0.0
 
     return min(
@@ -194,20 +184,15 @@ def json_safe(
     maximum_depth: int = 20,
 ) -> Any:
     if depth > maximum_depth:
-        return (
-            "[MAX_DEPTH_REACHED]"
-        )
+        return "[MAX_DEPTH_REACHED]"
 
-    if (
-        value is None
-        or isinstance(
-            value,
-            (
-                bool,
-                int,
-                str,
-            ),
-        )
+    if value is None or isinstance(
+        value,
+        (
+            bool,
+            int,
+            str,
+        ),
     ):
         return value
 
@@ -215,22 +200,14 @@ def json_safe(
         value,
         float,
     ):
-        return (
-            value
-            if math.isfinite(
-                value
-            )
-            else None
-        )
+        return value if math.isfinite(value) else None
 
     if isinstance(
         value,
         datetime,
     ):
         if value.tzinfo is None:
-            value = value.replace(
-                tzinfo=timezone.utc
-            )
+            value = value.replace(tzinfo=timezone.utc)
 
         return value.isoformat()
 
@@ -242,12 +219,9 @@ def json_safe(
             str(key): json_safe(
                 item,
                 depth=depth + 1,
-                maximum_depth=(
-                    maximum_depth
-                ),
+                maximum_depth=(maximum_depth),
             )
-            for key, item
-            in value.items()
+            for key, item in value.items()
         }
 
     if isinstance(
@@ -263,9 +237,7 @@ def json_safe(
             json_safe(
                 item,
                 depth=depth + 1,
-                maximum_depth=(
-                    maximum_depth
-                ),
+                maximum_depth=(maximum_depth),
             )
             for item in value
         ]
@@ -277,9 +249,7 @@ def json_safe(
         return json_safe(
             asdict(value),
             depth=depth + 1,
-            maximum_depth=(
-                maximum_depth
-            ),
+            maximum_depth=(maximum_depth),
         )
 
     return str(value)
@@ -300,18 +270,15 @@ def stable_hash(
             ":",
         ),
         default=str,
-    ).encode(
-        "utf-8"
-    )
+    ).encode("utf-8")
 
-    return hashlib.sha256(
-        encoded
-    ).hexdigest()
+    return hashlib.sha256(encoded).hexdigest()
 
 
 # ---------------------------------------------------------------
 # Evidence
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class OrchestrationEvidence:
@@ -329,64 +296,35 @@ class OrchestrationEvidence:
 
     score: float = 0.0
 
-    source_id: Optional[
-        str
-    ] = None
+    source_id: Optional[str] = None
 
-    resource_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    resource_ids: List[str] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    observed_at: str = field(
-        default_factory=utc_now
-    )
+    observed_at: str = field(default_factory=utc_now)
 
     def to_dict(
         self,
     ) -> Dict[str, Any]:
         return {
-            "evidence_type": (
-                self.evidence_type
-            ),
-            "description": (
-                self.description
-            ),
-            "score": (
-                checked_score(
-                    self.score
-                )
-            ),
-            "source_id": (
-                self.source_id
-            ),
-            "resource_ids": sorted(
-                set(
-                    self.resource_ids
-                )
-            ),
-            "attributes": (
-                json_safe(
-                    self.attributes
-                )
-            ),
-            "observed_at": (
-                self.observed_at
-            ),
+            "evidence_type": (self.evidence_type),
+            "description": (self.description),
+            "score": (checked_score(self.score)),
+            "source_id": (self.source_id),
+            "resource_ids": sorted(set(self.resource_ids)),
+            "attributes": (json_safe(self.attributes)),
+            "observed_at": (self.observed_at),
         }
 
 
 # ---------------------------------------------------------------
 # Stage result
 # ---------------------------------------------------------------
+
 
 @dataclass
 class StageResult:
@@ -398,92 +336,51 @@ class StageResult:
 
     stage: str
 
-    status: str = (
-        StageStatus.PENDING.value
-    )
+    status: str = StageStatus.PENDING.value
 
-    started_at: Optional[
-        str
-    ] = None
+    started_at: Optional[str] = None
 
-    completed_at: Optional[
-        str
-    ] = None
+    completed_at: Optional[str] = None
 
     input_count: int = 0
 
     output_count: int = 0
 
-    output_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    output_ids: List[str] = field(default_factory=list)
 
-    error: Optional[
-        str
-    ] = None
+    error: Optional[str] = None
 
-    evidence: List[
-        OrchestrationEvidence
-    ] = field(
-        default_factory=list
-    )
+    evidence: List[OrchestrationEvidence] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
     ) -> "StageResult":
-        valid_stages = {
-            item.value
-            for item in StageName
-        }
+        valid_stages = {item.value for item in StageName}
 
-        valid_statuses = {
-            item.value
-            for item in StageStatus
-        }
+        valid_statuses = {item.value for item in StageStatus}
 
         if self.stage not in valid_stages:
-            raise ValueError(
-                "Unknown orchestration "
-                f"stage: {self.stage}"
-            )
+            raise ValueError(f"Unknown orchestration stage: {self.stage}")
 
-        if (
-            self.status
-            not in valid_statuses
-        ):
-            raise ValueError(
-                "Unknown stage status: "
-                f"{self.status}"
-            )
+        if self.status not in valid_statuses:
+            raise ValueError(f"Unknown stage status: {self.status}")
 
         self.input_count = max(
             0,
-            int(
-                self.input_count
-            ),
+            int(self.input_count),
         )
 
         self.output_count = max(
             0,
-            int(
-                self.output_count
-            ),
+            int(self.output_count),
         )
 
-        self.output_ids = sorted(
-            set(
-                self.output_ids
-            )
-        )
+        self.output_ids = sorted(set(self.output_ids))
 
         return self
 
@@ -495,38 +392,21 @@ class StageResult:
         return {
             "stage": self.stage,
             "status": self.status,
-            "started_at": (
-                self.started_at
-            ),
-            "completed_at": (
-                self.completed_at
-            ),
-            "input_count": (
-                self.input_count
-            ),
-            "output_count": (
-                self.output_count
-            ),
-            "output_ids": (
-                self.output_ids
-            ),
+            "started_at": (self.started_at),
+            "completed_at": (self.completed_at),
+            "input_count": (self.input_count),
+            "output_count": (self.output_count),
+            "output_ids": (self.output_ids),
             "error": self.error,
-            "evidence": [
-                item.to_dict()
-                for item
-                in self.evidence
-            ],
-            "attributes": (
-                json_safe(
-                    self.attributes
-                )
-            ),
+            "evidence": [item.to_dict() for item in self.evidence],
+            "attributes": (json_safe(self.attributes)),
         }
 
 
 # ---------------------------------------------------------------
 # Orchestration context
 # ---------------------------------------------------------------
+
 
 @dataclass
 class OrchestrationContext:
@@ -537,134 +417,61 @@ class OrchestrationContext:
 
     environment_id: str
 
-    trigger_type: str = (
-        TriggerType.INTERNAL.value
-    )
+    trigger_type: str = TriggerType.INTERNAL.value
 
-    incident_id: Optional[
-        str
-    ] = None
+    incident_id: Optional[str] = None
 
-    correlation_id: Optional[
-        str
-    ] = None
+    correlation_id: Optional[str] = None
 
-    resource_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    resource_ids: List[str] = field(default_factory=list)
 
-    service_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    service_ids: List[str] = field(default_factory=list)
 
-    requested_by: Optional[
-        str
-    ] = None
+    requested_by: Optional[str] = None
 
     dry_run: bool = True
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    created_at: str = field(
-        default_factory=utc_now
-    )
+    created_at: str = field(default_factory=utc_now)
 
-    context_id: Optional[
-        str
-    ] = None
+    context_id: Optional[str] = None
 
     def build_context_id(
         self,
     ) -> str:
-        return (
-            "orchestrator:context:"
-            + stable_hash(
-                {
-                    "environment_id": (
-                        self.environment_id
-                    ),
-                    "trigger_type": (
-                        self.trigger_type
-                    ),
-                    "incident_id": (
-                        self.incident_id
-                    ),
-                    "correlation_id": (
-                        self.correlation_id
-                    ),
-                    "resource_ids": (
-                        sorted(
-                            set(
-                                self.
-                                resource_ids
-                            )
-                        )
-                    ),
-                    "service_ids": (
-                        sorted(
-                            set(
-                                self.
-                                service_ids
-                            )
-                        )
-                    ),
-                    "dry_run": (
-                        self.dry_run
-                    ),
-                }
-            )
+        return "orchestrator:context:" + stable_hash(
+            {
+                "environment_id": (self.environment_id),
+                "trigger_type": (self.trigger_type),
+                "incident_id": (self.incident_id),
+                "correlation_id": (self.correlation_id),
+                "resource_ids": (sorted(set(self.resource_ids))),
+                "service_ids": (sorted(set(self.service_ids))),
+                "dry_run": (self.dry_run),
+            }
         )
 
     def finalize(
         self,
     ) -> "OrchestrationContext":
-        self.environment_id = (
-            self.environment_id.strip()
-        )
+        self.environment_id = self.environment_id.strip()
 
         if not self.environment_id:
-            raise ValueError(
-                "environment_id is required"
-            )
+            raise ValueError("environment_id is required")
 
-        if (
-            self.trigger_type
-            not in {
-                item.value
-                for item
-                in TriggerType
-            }
-        ):
-            raise ValueError(
-                "Unknown trigger type: "
-                f"{self.trigger_type}"
-            )
+        if self.trigger_type not in {item.value for item in TriggerType}:
+            raise ValueError(f"Unknown trigger type: {self.trigger_type}")
 
-        self.resource_ids = sorted(
-            set(
-                self.resource_ids
-            )
-        )
+        self.resource_ids = sorted(set(self.resource_ids))
 
-        self.service_ids = sorted(
-            set(
-                self.service_ids
-            )
-        )
+        self.service_ids = sorted(set(self.service_ids))
 
         if not self.context_id:
-            self.context_id = (
-                self.build_context_id()
-            )
+            self.context_id = self.build_context_id()
 
         return self
 
@@ -673,14 +480,13 @@ class OrchestrationContext:
     ) -> Dict[str, Any]:
         self.finalize()
 
-        return json_safe(
-            asdict(self)
-        )
+        return json_safe(asdict(self))
 
 
 # ---------------------------------------------------------------
 # Orchestration run
 # ---------------------------------------------------------------
+
 
 @dataclass
 class OrchestrationRun:
@@ -695,123 +501,63 @@ class OrchestrationRun:
 
     context: OrchestrationContext
 
-    state: str = (
-        OrchestrationState.
-        CREATED.value
-    )
+    state: str = OrchestrationState.CREATED.value
 
-    current_stage: Optional[
-        str
-    ] = None
+    current_stage: Optional[str] = None
 
-    stages: List[
-        StageResult
-    ] = field(
-        default_factory=list
-    )
+    stages: List[StageResult] = field(default_factory=list)
 
-    decision_id: Optional[
-        str
-    ] = None
+    decision_id: Optional[str] = None
 
-    plan_id: Optional[
-        str
-    ] = None
+    plan_id: Optional[str] = None
 
-    remediation_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    remediation_ids: List[str] = field(default_factory=list)
 
-    healing_session_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    healing_session_ids: List[str] = field(default_factory=list)
 
-    outcome_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    outcome_ids: List[str] = field(default_factory=list)
 
-    stop_reason: str = (
-        StopReason.NONE.value
-    )
+    stop_reason: str = StopReason.NONE.value
 
-    error: Optional[
-        str
-    ] = None
+    error: Optional[str] = None
 
-    evidence: List[
-        OrchestrationEvidence
-    ] = field(
-        default_factory=list
-    )
+    evidence: List[OrchestrationEvidence] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    created_at: str = field(
-        default_factory=utc_now
-    )
+    created_at: str = field(default_factory=utc_now)
 
-    started_at: Optional[
-        str
-    ] = None
+    started_at: Optional[str] = None
 
-    completed_at: Optional[
-        str
-    ] = None
+    completed_at: Optional[str] = None
 
-    updated_at: str = field(
-        default_factory=utc_now
-    )
+    updated_at: str = field(default_factory=utc_now)
 
-    run_id: Optional[
-        str
-    ] = None
+    run_id: Optional[str] = None
 
-    schema_version: str = (
-        ORCHESTRATOR_SCHEMA_VERSION
-    )
+    schema_version: str = ORCHESTRATOR_SCHEMA_VERSION
 
     def build_run_id(
         self,
     ) -> str:
         self.context.finalize()
 
-        return (
-            "orchestrator:run:"
-            + stable_hash(
-                {
-                    "context_id": (
-                        self.context.
-                        context_id
-                    ),
-                    "created_at": (
-                        self.created_at
-                    ),
-                }
-            )
+        return "orchestrator:run:" + stable_hash(
+            {
+                "context_id": (self.context.context_id),
+                "created_at": (self.created_at),
+            }
         )
 
     def stage(
         self,
         stage_name: str,
-    ) -> Optional[
-        StageResult
-    ]:
+    ) -> Optional[StageResult]:
         for result in self.stages:
-            if (
-                result.stage
-                == stage_name
-            ):
+            if result.stage == stage_name:
                 return result
 
         return None
@@ -821,46 +567,16 @@ class OrchestrationRun:
     ) -> "OrchestrationRun":
         self.context.finalize()
 
-        if (
-            self.state
-            not in {
-                item.value
-                for item
-                in OrchestrationState
-            }
-        ):
-            raise ValueError(
-                "Unknown orchestration "
-                f"state: {self.state}"
-            )
+        if self.state not in {item.value for item in OrchestrationState}:
+            raise ValueError(f"Unknown orchestration state: {self.state}")
 
-        if (
-            self.current_stage
-            is not None
-            and self.current_stage
-            not in {
-                item.value
-                for item
-                in StageName
-            }
-        ):
-            raise ValueError(
-                "Unknown current stage: "
-                f"{self.current_stage}"
-            )
+        if self.current_stage is not None and self.current_stage not in {
+            item.value for item in StageName
+        }:
+            raise ValueError(f"Unknown current stage: {self.current_stage}")
 
-        if (
-            self.stop_reason
-            not in {
-                item.value
-                for item
-                in StopReason
-            }
-        ):
-            raise ValueError(
-                "Unknown stop reason: "
-                f"{self.stop_reason}"
-            )
+        if self.stop_reason not in {item.value for item in StopReason}:
+            raise ValueError(f"Unknown stop reason: {self.stop_reason}")
 
         seen = set()
 
@@ -869,51 +585,25 @@ class OrchestrationRun:
         for stage_result in self.stages:
             stage_result.finalize()
 
-            if (
-                stage_result.stage
-                in seen
-            ):
-                raise ValueError(
-                    "Duplicate stage result: "
-                    f"{stage_result.stage}"
-                )
+            if stage_result.stage in seen:
+                raise ValueError(f"Duplicate stage result: {stage_result.stage}")
 
-            seen.add(
-                stage_result.stage
-            )
+            seen.add(stage_result.stage)
 
-            normalized.append(
-                stage_result
-            )
+            normalized.append(stage_result)
 
         self.stages = normalized
 
-        self.remediation_ids = sorted(
-            set(
-                self.remediation_ids
-            )
-        )
+        self.remediation_ids = sorted(set(self.remediation_ids))
 
-        self.healing_session_ids = sorted(
-            set(
-                self.healing_session_ids
-            )
-        )
+        self.healing_session_ids = sorted(set(self.healing_session_ids))
 
-        self.outcome_ids = sorted(
-            set(
-                self.outcome_ids
-            )
-        )
+        self.outcome_ids = sorted(set(self.outcome_ids))
 
         if not self.run_id:
-            self.run_id = (
-                self.build_run_id()
-            )
+            self.run_id = self.build_run_id()
 
-        self.updated_at = (
-            utc_now()
-        )
+        self.updated_at = utc_now()
 
         return self
 
@@ -923,71 +613,32 @@ class OrchestrationRun:
         self.finalize()
 
         return {
-            "schema_version": (
-                self.schema_version
-            ),
-            "run_id": (
-                self.run_id
-            ),
+            "schema_version": (self.schema_version),
+            "run_id": (self.run_id),
             "state": self.state,
-            "current_stage": (
-                self.current_stage
-            ),
-            "context": (
-                self.context.to_dict()
-            ),
-            "stages": [
-                item.to_dict()
-                for item in self.stages
-            ],
-            "decision_id": (
-                self.decision_id
-            ),
-            "plan_id": (
-                self.plan_id
-            ),
-            "remediation_ids": (
-                self.remediation_ids
-            ),
-            "healing_session_ids": (
-                self.
-                healing_session_ids
-            ),
-            "outcome_ids": (
-                self.outcome_ids
-            ),
-            "stop_reason": (
-                self.stop_reason
-            ),
+            "current_stage": (self.current_stage),
+            "context": (self.context.to_dict()),
+            "stages": [item.to_dict() for item in self.stages],
+            "decision_id": (self.decision_id),
+            "plan_id": (self.plan_id),
+            "remediation_ids": (self.remediation_ids),
+            "healing_session_ids": (self.healing_session_ids),
+            "outcome_ids": (self.outcome_ids),
+            "stop_reason": (self.stop_reason),
             "error": self.error,
-            "evidence": [
-                item.to_dict()
-                for item
-                in self.evidence
-            ],
-            "attributes": (
-                json_safe(
-                    self.attributes
-                )
-            ),
-            "created_at": (
-                self.created_at
-            ),
-            "started_at": (
-                self.started_at
-            ),
-            "completed_at": (
-                self.completed_at
-            ),
-            "updated_at": (
-                self.updated_at
-            ),
+            "evidence": [item.to_dict() for item in self.evidence],
+            "attributes": (json_safe(self.attributes)),
+            "created_at": (self.created_at),
+            "started_at": (self.started_at),
+            "completed_at": (self.completed_at),
+            "updated_at": (self.updated_at),
         }
 
 
 # ---------------------------------------------------------------
 # Top-level result
 # ---------------------------------------------------------------
+
 
 @dataclass
 class OrchestrationResult:
@@ -996,34 +647,21 @@ class OrchestrationResult:
     orchestration runs.
     """
 
-    runs: List[
-        OrchestrationRun
-    ] = field(
-        default_factory=list
-    )
+    runs: List[OrchestrationRun] = field(default_factory=list)
 
-    generated_at: str = field(
-        default_factory=utc_now
-    )
+    generated_at: str = field(default_factory=utc_now)
 
     metadata: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    schema_version: str = (
-        ORCHESTRATOR_SCHEMA_VERSION
-    )
+    schema_version: str = ORCHESTRATOR_SCHEMA_VERSION
 
     def finalize(
         self,
     ) -> "OrchestrationResult":
-        self.runs = [
-            run.finalize()
-            for run in self.runs
-        ]
+        self.runs = [run.finalize() for run in self.runs]
 
         return self
 
@@ -1043,9 +681,7 @@ class OrchestrationResult:
         ] = {}
 
         for run in self.runs:
-            states[
-                run.state
-            ] = (
+            states[run.state] = (
                 states.get(
                     run.state,
                     0,
@@ -1053,9 +689,7 @@ class OrchestrationResult:
                 + 1
             )
 
-            stops[
-                run.stop_reason
-            ] = (
+            stops[run.stop_reason] = (
                 stops.get(
                     run.stop_reason,
                     0,
@@ -1064,24 +698,11 @@ class OrchestrationResult:
             )
 
         return {
-            "schema_version": (
-                self.schema_version
-            ),
-            "generated_at": (
-                self.generated_at
-            ),
-            "run_count": len(
-                self.runs
-            ),
+            "schema_version": (self.schema_version),
+            "generated_at": (self.generated_at),
+            "run_count": len(self.runs),
             "states": states,
             "stop_reasons": stops,
-            "runs": [
-                run.to_dict()
-                for run in self.runs
-            ],
-            "metadata": (
-                json_safe(
-                    self.metadata
-                )
-            ),
+            "runs": [run.to_dict() for run in self.runs],
+            "metadata": (json_safe(self.metadata)),
         }

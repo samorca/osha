@@ -1,0 +1,701 @@
+# =============================================================================
+# OSHA - Security Configuration
+# =============================================================================
+#
+# Central security policy for the OSHA platform.
+#
+# Responsibilities:
+#   - secure defaults
+#   - authentication requirements
+#   - authorization policy
+#   - credential handling
+#   - secret protection
+#   - audit requirements
+#   - infrastructure access boundaries
+#   - AI/remediation safety controls
+#
+# IMPORTANT:
+#   Never commit passwords, API keys, tokens, private keys, kubeconfigs,
+#   cloud credentials, or other sensitive values to this file.
+# =============================================================================
+
+
+security:
+
+  # ---------------------------------------------------------------------------
+  # Global Security Policy
+  # ---------------------------------------------------------------------------
+
+  enabled: true
+
+  mode: "production"
+
+  fail_closed: true
+
+  deny_by_default: true
+
+  least_privilege: true
+
+  validate_configuration_on_startup: true
+
+  reject_insecure_configuration: true
+
+  allow_security_bypass: false
+
+  allow_debug_security_overrides: false
+
+
+  # ---------------------------------------------------------------------------
+  # Authentication
+  # ---------------------------------------------------------------------------
+
+  authentication:
+
+    enabled: true
+
+    required: true
+
+    fail_closed: true
+
+    anonymous_access: false
+
+    require_authenticated_identity: true
+
+    reject_unknown_identity: true
+
+    service_identity:
+      required: true
+
+    session:
+      enabled: false
+
+
+  # ---------------------------------------------------------------------------
+  # Authorization
+  # ---------------------------------------------------------------------------
+
+  authorization:
+
+    enabled: true
+
+    required: true
+
+    default_policy: "deny"
+
+    enforce_least_privilege: true
+
+    require_explicit_permission: true
+
+    deny_unknown_actions: true
+
+    deny_unknown_resources: true
+
+    deny_unknown_providers: true
+
+
+  # ---------------------------------------------------------------------------
+  # Roles
+  # ---------------------------------------------------------------------------
+
+  roles:
+
+    enabled: true
+
+    default_role: "observer"
+
+    definitions:
+
+      observer:
+        read: true
+        analyze: false
+        approve: false
+        execute: false
+        administer: false
+
+      analyst:
+        read: true
+        analyze: true
+        approve: false
+        execute: false
+        administer: false
+
+      operator:
+        read: true
+        analyze: true
+        approve: false
+        execute: true
+        administer: false
+
+      approver:
+        read: true
+        analyze: true
+        approve: true
+        execute: false
+        administer: false
+
+      administrator:
+        read: true
+        analyze: true
+        approve: true
+        execute: true
+        administer: true
+
+
+  # ---------------------------------------------------------------------------
+  # Separation of Duties
+  # ---------------------------------------------------------------------------
+
+  separation_of_duties:
+
+    enabled: true
+
+    prevent_self_approval: true
+
+    separate_approval_and_execution: true
+
+    require_distinct_approver_for_remediation: true
+
+    administrative_override_requires_audit: true
+
+
+  # ---------------------------------------------------------------------------
+  # Secrets
+  # ---------------------------------------------------------------------------
+
+  secrets:
+
+    enabled: true
+
+    allow_plaintext: false
+
+    allow_in_configuration_files: false
+
+    allow_in_logs: false
+
+    allow_in_artifacts: false
+
+    allow_in_model_metadata: false
+
+    allow_in_error_messages: false
+
+    require_external_source: true
+
+    permitted_sources:
+      - "environment"
+      - "secret_manager"
+      - "orchestrator_secret"
+
+    environment:
+      enabled: true
+
+    secret_manager:
+      enabled: true
+
+    rotation:
+      supported: true
+
+
+  # ---------------------------------------------------------------------------
+  # Credential Protection
+  # ---------------------------------------------------------------------------
+
+  credentials:
+
+    redact: true
+
+    expose_to_ai: false
+
+    expose_to_logs: false
+
+    expose_to_metrics: false
+
+    expose_to_errors: false
+
+    expose_to_artifacts: false
+
+    persist: false
+
+    cache:
+      enabled: false
+
+
+  # ---------------------------------------------------------------------------
+  # Sensitive Data Redaction
+  # ---------------------------------------------------------------------------
+
+  redaction:
+
+    enabled: true
+
+    replacement: "[REDACTED]"
+
+    recursive: true
+
+    fields:
+      - "password"
+      - "passwd"
+      - "secret"
+      - "token"
+      - "access_token"
+      - "refresh_token"
+      - "api_key"
+      - "apikey"
+      - "authorization"
+      - "credential"
+      - "credentials"
+      - "private_key"
+      - "client_secret"
+      - "session_token"
+
+    headers:
+      - "Authorization"
+      - "Proxy-Authorization"
+      - "X-API-Key"
+
+    redact_environment_variables: true
+
+
+  # ---------------------------------------------------------------------------
+  # Infrastructure Access
+  # ---------------------------------------------------------------------------
+
+  infrastructure:
+
+    default_access: "read_only"
+
+    require_authenticated_provider: true
+
+    require_tls: true
+
+    verify_tls: true
+
+    allow_insecure_tls: false
+
+    mutation:
+      enabled: false
+
+      require_authorization: true
+      require_approval: true
+      require_policy_validation: true
+      require_audit: true
+
+    providers:
+
+      linux:
+        enabled: true
+        read_only: true
+
+      kubernetes:
+        enabled: true
+        read_only: true
+
+      openstack:
+        enabled: true
+        read_only: true
+
+      ceph:
+        enabled: false
+        read_only: true
+
+      minio:
+        enabled: false
+        read_only: true
+
+
+  # ---------------------------------------------------------------------------
+  # Privileged Operations
+  # ---------------------------------------------------------------------------
+
+  privileged_operations:
+
+    enabled: false
+
+    require_explicit_policy: true
+
+    require_approval: true
+
+    require_audit: true
+
+    allow_privilege_escalation: false
+
+    allow_root_execution: false
+
+
+  # ---------------------------------------------------------------------------
+  # Shell / Command Execution
+  # ---------------------------------------------------------------------------
+
+  command_execution:
+
+    enabled: false
+
+    allow_shell: false
+
+    allow_arbitrary_commands: false
+
+    allow_remote_commands: false
+
+    allow_script_execution: false
+
+    require_allowlist: true
+
+    capture_output: false
+
+
+  # ---------------------------------------------------------------------------
+  # AI Security Boundary
+  # ---------------------------------------------------------------------------
+
+  ai:
+
+    allow_credentials: false
+
+    allow_secrets: false
+
+    allow_raw_environment: false
+
+    allow_direct_infrastructure_access: false
+
+    allow_direct_remediation: false
+
+    allow_security_policy_changes: false
+
+    allow_authorization_changes: false
+
+    require_sanitized_input: true
+
+    require_validated_output: true
+
+
+  # ---------------------------------------------------------------------------
+  # Remediation Security
+  # ---------------------------------------------------------------------------
+
+  remediation:
+
+    enabled: true
+
+    execution_enabled: false
+
+    require_authenticated_actor: true
+
+    require_authorization: true
+
+    require_approval: true
+
+    require_separation_of_duties: true
+
+    require_action_allowlist: true
+
+    require_resource_validation: true
+
+    require_preflight_checks: true
+
+    require_audit: true
+
+    require_post_action_verification: true
+
+    deny_unknown_actions: true
+
+    deny_destructive_actions: true
+
+    deny_privilege_escalation: true
+
+
+  # ---------------------------------------------------------------------------
+  # Policy Enforcement
+  # ---------------------------------------------------------------------------
+
+  policy:
+
+    enabled: true
+
+    enforcement: "strict"
+
+    default_effect: "deny"
+
+    validate_before_execution: true
+
+    reject_unknown_policy: true
+
+    reject_invalid_policy: true
+
+    allow_runtime_policy_override: false
+
+    allow_ai_policy_override: false
+
+    allow_remediation_policy_override: false
+
+
+  # ---------------------------------------------------------------------------
+  # Filesystem Security
+  # ---------------------------------------------------------------------------
+
+  filesystem:
+
+    restrict_paths: true
+
+    allow_path_traversal: false
+
+    allow_symlink_escape: false
+
+    allow_world_writable_files: false
+
+    protect_configuration: true
+
+    protect_models: true
+
+    protect_checkpoints: true
+
+    protect_audit_logs: true
+
+    writable_directories:
+      - "./logs"
+      - "./artifacts"
+      - "./checkpoints"
+
+
+  # ---------------------------------------------------------------------------
+  # Model Security
+  # ---------------------------------------------------------------------------
+
+  models:
+
+    require_trusted_source: true
+
+    require_validation: true
+
+    require_checksum: true
+
+    reject_corrupted_models: true
+
+    reject_unknown_models: true
+
+    allow_remote_download: false
+
+    allow_arbitrary_loading: false
+
+    allow_runtime_replacement: false
+
+    allow_ai_model_replacement: false
+
+
+  # ---------------------------------------------------------------------------
+  # Input Validation
+  # ---------------------------------------------------------------------------
+
+  input_validation:
+
+    enabled: true
+
+    reject_malformed_input: true
+
+    reject_unknown_fields: false
+
+    reject_oversized_input: true
+
+    maximum_payload_bytes: 10485760
+
+    normalize_before_processing: true
+
+
+  # ---------------------------------------------------------------------------
+  # Network Security
+  # ---------------------------------------------------------------------------
+
+  network:
+
+    require_tls: true
+
+    verify_certificates: true
+
+    allow_insecure_connections: false
+
+    allow_plaintext_credentials: false
+
+    connection_timeout_seconds: 10
+
+    request_timeout_seconds: 30
+
+
+  # ---------------------------------------------------------------------------
+  # Rate Limiting
+  # ---------------------------------------------------------------------------
+
+  rate_limiting:
+
+    enabled: true
+
+    default_requests_per_minute: 600
+
+    authentication_failures_per_minute: 10
+
+    remediation_requests_per_minute: 5
+
+
+  # ---------------------------------------------------------------------------
+  # Audit
+  # ---------------------------------------------------------------------------
+
+  audit:
+
+    enabled: true
+
+    required: true
+
+    tamper_protection: true
+
+    record:
+
+      authentication_success: true
+      authentication_failure: true
+
+      authorization_success: false
+      authorization_failure: true
+
+      policy_denial: true
+      configuration_change: true
+
+      remediation_plan: true
+      remediation_approval: true
+      remediation_execution: true
+      remediation_failure: true
+      remediation_rollback: true
+
+      privileged_operation: true
+      security_violation: true
+
+    include:
+      timestamp: true
+      actor: true
+      action: true
+      resource: true
+      provider: true
+      incident_id: true
+      result: true
+
+    exclude:
+      credentials: true
+      secrets: true
+      tokens: true
+
+
+  # ---------------------------------------------------------------------------
+  # Security Events
+  # ---------------------------------------------------------------------------
+
+  events:
+
+    emit_on_authentication_failure: true
+
+    emit_on_authorization_failure: true
+
+    emit_on_policy_violation: true
+
+    emit_on_blocked_remediation: true
+
+    emit_on_invalid_credentials: true
+
+    emit_on_model_validation_failure: true
+
+    emit_on_configuration_violation: true
+
+
+  # ---------------------------------------------------------------------------
+  # Security Monitoring
+  # ---------------------------------------------------------------------------
+
+  monitoring:
+
+    enabled: true
+
+    authentication_failures: true
+
+    authorization_failures: true
+
+    policy_denials: true
+
+    blocked_actions: true
+
+    privileged_operations: true
+
+    configuration_changes: true
+
+    credential_failures: true
+
+
+  # ---------------------------------------------------------------------------
+  # Emergency Security Controls
+  # ---------------------------------------------------------------------------
+
+  emergency:
+
+    enabled: true
+
+    kill_switch:
+      enabled: true
+
+      disable_new_remediation: true
+      disable_privileged_operations: true
+      disable_mutation: true
+
+      require_manual_reset: true
+
+
+  # ---------------------------------------------------------------------------
+  # Failure Handling
+  # ---------------------------------------------------------------------------
+
+  failure:
+
+    fail_closed: true
+
+    deny_on_authentication_error: true
+
+    deny_on_authorization_error: true
+
+    deny_on_policy_error: true
+
+    deny_on_secret_provider_error: true
+
+    deny_on_audit_failure: true
+
+    deny_on_unknown_security_state: true
+
+
+  # ---------------------------------------------------------------------------
+  # Production Hardening
+  # ---------------------------------------------------------------------------
+
+  production:
+
+    debug: false
+
+    expose_stack_traces: false
+
+    expose_internal_paths: false
+
+    expose_environment: false
+
+    expose_configuration: false
+
+    expose_model_paths: false
+
+    detailed_client_errors: false
+
+
+  # ---------------------------------------------------------------------------
+  # Experimental Security Features
+  # ---------------------------------------------------------------------------
+
+  experimental:
+
+    enabled: false
+
+    autonomous_permission_changes: false
+
+    automatic_role_changes: false
+
+    ai_generated_security_policy: false
+
+    self_modifying_security_controls: false

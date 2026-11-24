@@ -63,9 +63,7 @@ from src.database.transaction import (
 # ---------------------------------------------------------------
 
 MigrationCallable = Callable[
-    [
-        Any
-    ],
+    [Any],
     None,
 ]
 
@@ -73,6 +71,7 @@ MigrationCallable = Callable[
 # ---------------------------------------------------------------
 # Migration definition
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class Migration:
@@ -94,16 +93,12 @@ class Migration:
 
     apply: MigrationCallable
 
-    checksum: Optional[
-        str
-    ] = None
+    checksum: Optional[str] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
@@ -126,13 +121,8 @@ class Migration:
             minimum=1,
         )
 
-        if not callable(
-            self.apply
-        ):
-            raise ValueError(
-                "migration apply "
-                "must be callable"
-            )
+        if not callable(self.apply):
+            raise ValueError("migration apply must be callable")
 
         return self
 
@@ -158,40 +148,26 @@ class Migration:
         if self.checksum:
             return required_string(
                 self.checksum,
-                name=(
-                    "migration checksum"
-                ),
+                name=("migration checksum"),
                 maximum_length=256,
             )
 
         payload = canonical_json(
             {
-                "migration_id": (
-                    self.migration_id
-                ),
-
+                "migration_id": (self.migration_id),
                 "name": self.name,
-
-                "version": (
-                    self.version
-                ),
-
-                "attributes": (
-                    self.attributes
-                ),
+                "version": (self.version),
+                "attributes": (self.attributes),
             }
         )
 
-        return sha256(
-            payload.encode(
-                "utf-8"
-            )
-        ).hexdigest()
+        return sha256(payload.encode("utf-8")).hexdigest()
 
 
 # ---------------------------------------------------------------
 # Migration registry
 # ---------------------------------------------------------------
+
 
 class MigrationRegistry:
     """
@@ -227,37 +203,23 @@ class MigrationRegistry:
         migration.finalize()
 
         with self._lock:
-            if (
-                migration.version
-                in self._migrations
-            ):
+            if migration.version in self._migrations:
                 raise (
                     MigrationConflictError(
-                        "Migration version "
-                        "already registered: "
-                        f"{migration.version}"
+                        f"Migration version already registered: {migration.version}"
                     )
                 )
 
-            if (
-                migration.migration_id
-                in self._ids
-            ):
+            if migration.migration_id in self._ids:
                 raise (
                     MigrationConflictError(
-                        "Migration ID already "
-                        "registered: "
-                        f"{migration.migration_id}"
+                        f"Migration ID already registered: {migration.migration_id}"
                     )
                 )
 
-            self._migrations[
-                migration.version
-            ] = migration
+            self._migrations[migration.version] = migration
 
-            self._ids[
-                migration.migration_id
-            ] = migration.version
+            self._ids[migration.migration_id] = migration.version
 
         return migration
 
@@ -267,19 +229,9 @@ class MigrationRegistry:
 
     def list(
         self,
-    ) -> List[
-        Migration
-    ]:
+    ) -> List[Migration]:
         with self._lock:
-            return [
-                self._migrations[
-                    version
-                ]
-                for version
-                in sorted(
-                    self._migrations
-                )
-            ]
+            return [self._migrations[version] for version in sorted(self._migrations)]
 
     # ---------------------------------------------------------
     # Up to target version
@@ -287,12 +239,8 @@ class MigrationRegistry:
 
     def up_to(
         self,
-        target_version: Optional[
-            int
-        ],
-    ) -> List[
-        Migration
-    ]:
+        target_version: Optional[int],
+    ) -> List[Migration]:
         values = self.list()
 
         if target_version is None:
@@ -304,20 +252,13 @@ class MigrationRegistry:
             minimum=1,
         )
 
-        return [
-            item
-            for item
-            in values
-            if (
-                item.version
-                <= target_version
-            )
-        ]
+        return [item for item in values if (item.version <= target_version)]
 
 
 # ---------------------------------------------------------------
 # Applied migration store
 # ---------------------------------------------------------------
+
 
 class MigrationStore:
     """
@@ -333,9 +274,7 @@ class MigrationStore:
     table.
     """
 
-    ROOT_KEY = (
-        "__osha_migrations__"
-    )
+    ROOT_KEY = "__osha_migrations__"
 
     def __init__(
         self,
@@ -354,9 +293,7 @@ class MigrationStore:
             Any,
         ],
     ]:
-        handle = (
-            self.connection.handle
-        )
+        handle = self.connection.handle
 
         if not isinstance(
             handle,
@@ -388,19 +325,9 @@ class MigrationStore:
         ]
     ]:
         with self._lock:
-            value = (
-                self._store().get(
-                    migration_id
-                )
-            )
+            value = self._store().get(migration_id)
 
-            return (
-                dict(
-                    value
-                )
-                if value is not None
-                else None
-            )
+            return dict(value) if value is not None else None
 
     # ---------------------------------------------------------
     # Record applied
@@ -412,18 +339,12 @@ class MigrationStore:
     ) -> MigrationRecord:
         migration.finalize()
 
-        checksum = (
-            migration.
-            effective_checksum()
-        )
+        checksum = migration.effective_checksum()
 
         with self._lock:
             store = self._store()
 
-            if (
-                migration.migration_id
-                in store
-            ):
+            if migration.migration_id in store:
                 raise (
                     MigrationConflictError(
                         "Migration is "
@@ -435,50 +356,23 @@ class MigrationStore:
 
             applied_at = utc_now()
 
-            store[
-                migration.migration_id
-            ] = {
-                "migration_id": (
-                    migration.migration_id
-                ),
-
-                "name": (
-                    migration.name
-                ),
-
-                "version": (
-                    migration.version
-                ),
-
-                "checksum": (
-                    checksum
-                ),
-
-                "applied_at": (
-                    applied_at
-                ),
+            store[migration.migration_id] = {
+                "migration_id": (migration.migration_id),
+                "name": (migration.name),
+                "version": (migration.version),
+                "checksum": (checksum),
+                "applied_at": (applied_at),
             }
 
-        return (
-            MigrationRecord(
-                migration_id=(
-                    migration.migration_id
-                ),
-                name=migration.name,
-                version=(
-                    migration.version
-                ),
-                state=(
-                    MigrationState.
-                    APPLIED.value
-                ),
-                checksum=checksum,
-                applied_at=applied_at,
-                attributes=dict(
-                    migration.attributes
-                ),
-            ).finalize()
-        )
+        return MigrationRecord(
+            migration_id=(migration.migration_id),
+            name=migration.name,
+            version=(migration.version),
+            state=(MigrationState.APPLIED.value),
+            checksum=checksum,
+            applied_at=applied_at,
+            attributes=dict(migration.attributes),
+        ).finalize()
 
     # ---------------------------------------------------------
     # Applied migrations
@@ -486,53 +380,22 @@ class MigrationStore:
 
     def applied(
         self,
-    ) -> List[
-        MigrationRecord
-    ]:
+    ) -> List[MigrationRecord]:
         with self._lock:
-            values = list(
-                self._store().
-                values()
-            )
+            values = list(self._store().values())
 
         return [
             MigrationRecord(
-                migration_id=(
-                    item[
-                        "migration_id"
-                    ]
-                ),
-                name=item[
-                    "name"
-                ],
-                version=int(
-                    item[
-                        "version"
-                    ]
-                ),
-                state=(
-                    MigrationState.
-                    APPLIED.value
-                ),
-                checksum=(
-                    item.get(
-                        "checksum"
-                    )
-                ),
-                applied_at=(
-                    item.get(
-                        "applied_at"
-                    )
-                ),
+                migration_id=(item["migration_id"]),
+                name=item["name"],
+                version=int(item["version"]),
+                state=(MigrationState.APPLIED.value),
+                checksum=(item.get("checksum")),
+                applied_at=(item.get("applied_at")),
             ).finalize()
-            for item
-            in sorted(
+            for item in sorted(
                 values,
-                key=lambda item: int(
-                    item[
-                        "version"
-                    ]
-                ),
+                key=lambda item: int(item["version"]),
             )
         ]
 
@@ -540,6 +403,7 @@ class MigrationStore:
 # ---------------------------------------------------------------
 # Migration runner
 # ---------------------------------------------------------------
+
 
 class MigrationRunner:
     """
@@ -553,38 +417,19 @@ class MigrationRunner:
         self,
         *,
         connection: DatabaseConnection,
-        registry: Optional[
-            MigrationRegistry
-        ] = None,
-        config: Optional[
-            MigrationConfig
-        ] = None,
-        store: Optional[
-            MigrationStore
-        ] = None,
+        registry: Optional[MigrationRegistry] = None,
+        config: Optional[MigrationConfig] = None,
+        store: Optional[MigrationStore] = None,
     ) -> None:
-        self.connection = (
-            connection
-        )
+        self.connection = connection
 
-        self.registry = (
-            registry
-            or MigrationRegistry()
-        )
+        self.registry = registry or MigrationRegistry()
 
-        self.config = (
-            config
-            or MigrationConfig()
-        )
+        self.config = config or MigrationConfig()
 
         self.config.validate()
 
-        self.store = (
-            store
-            or MigrationStore(
-                connection
-            )
-        )
+        self.store = store or MigrationStore(connection)
 
     # ---------------------------------------------------------
     # Pending migrations
@@ -592,30 +437,17 @@ class MigrationRunner:
 
     def pending(
         self,
-    ) -> List[
-        Migration
-    ]:
+    ) -> List[Migration]:
         if not self.config.enabled:
             return []
 
-        pending: List[
-            Migration
-        ] = []
+        pending: List[Migration] = []
 
-        for migration in (
-            self.registry.up_to(
-                self.config.
-                target_version
-            )
-        ):
-            applied = self.store.get(
-                migration.migration_id
-            )
+        for migration in self.registry.up_to(self.config.target_version):
+            applied = self.store.get(migration.migration_id)
 
             if applied is None:
-                pending.append(
-                    migration
-                )
+                pending.append(migration)
 
                 continue
 
@@ -623,23 +455,12 @@ class MigrationRunner:
             # Checksum verification
             # -------------------------------------------------
 
-            if (
-                self.config.
-                validate_checksums
-            ):
-                expected = (
-                    migration.
-                    effective_checksum()
-                )
+            if self.config.validate_checksums:
+                expected = migration.effective_checksum()
 
-                actual = applied.get(
-                    "checksum"
-                )
+                actual = applied.get("checksum")
 
-                if (
-                    actual
-                    != expected
-                ):
+                if actual != expected:
                     raise (
                         MigrationChecksumError(
                             "Applied migration "
@@ -647,14 +468,8 @@ class MigrationRunner:
                             "match registered "
                             "migration.",
                             details={
-                                "migration_id": (
-                                    migration.
-                                    migration_id
-                                ),
-                                "version": (
-                                    migration.
-                                    version
-                                ),
+                                "migration_id": (migration.migration_id),
+                                "version": (migration.version),
                             },
                         )
                     )
@@ -671,9 +486,7 @@ class MigrationRunner:
     ) -> MigrationRecord:
         migration.finalize()
 
-        existing = self.store.get(
-            migration.migration_id
-        )
+        existing = self.store.get(migration.migration_id)
 
         # -----------------------------------------------------
         # Already applied
@@ -681,13 +494,8 @@ class MigrationRunner:
 
         if existing is not None:
             if (
-                self.config.
-                validate_checksums
-                and existing.get(
-                    "checksum"
-                )
-                != migration.
-                effective_checksum()
+                self.config.validate_checksums
+                and existing.get("checksum") != migration.effective_checksum()
             ):
                 raise (
                     MigrationChecksumError(
@@ -696,68 +504,32 @@ class MigrationRunner:
                         "match registered "
                         "migration.",
                         details={
-                            "migration_id": (
-                                migration.
-                                migration_id
-                            ),
+                            "migration_id": (migration.migration_id),
                         },
                     )
                 )
 
-            return (
-                MigrationRecord(
-                    migration_id=(
-                        migration.
-                        migration_id
-                    ),
-                    name=(
-                        migration.name
-                    ),
-                    version=(
-                        migration.version
-                    ),
-                    state=(
-                        MigrationState.
-                        SKIPPED.value
-                    ),
-                    checksum=(
-                        existing.get(
-                            "checksum"
-                        )
-                    ),
-                    applied_at=(
-                        existing.get(
-                            "applied_at"
-                        )
-                    ),
-                    attributes={
-                        "reason": (
-                            "already_applied"
-                        ),
-                    },
-                ).finalize()
-            )
+            return MigrationRecord(
+                migration_id=(migration.migration_id),
+                name=(migration.name),
+                version=(migration.version),
+                state=(MigrationState.SKIPPED.value),
+                checksum=(existing.get("checksum")),
+                applied_at=(existing.get("applied_at")),
+                attributes={
+                    "reason": ("already_applied"),
+                },
+            ).finalize()
 
         # -----------------------------------------------------
         # Transactional application
         # -----------------------------------------------------
 
         try:
-            with DatabaseTransaction(
-                connection=(
-                    self.connection
-                )
-            ):
-                migration.apply(
-                    self.connection.handle
-                )
+            with DatabaseTransaction(connection=(self.connection)):
+                migration.apply(self.connection.handle)
 
-                record = (
-                    self.store.
-                    record_applied(
-                        migration
-                    )
-                )
+                record = self.store.record_applied(migration)
 
             return record
 
@@ -769,22 +541,12 @@ class MigrationRunner:
 
         except Exception as exc:
             raise MigrationApplyError(
-                "Database migration "
-                "failed.",
+                "Database migration failed.",
                 details={
-                    "migration_id": (
-                        migration.
-                        migration_id
-                    ),
-                    "version": (
-                        migration.version
-                    ),
-                    "error_type": (
-                        type(exc).__name__
-                    ),
-                    "error_module": (
-                        type(exc).__module__
-                    ),
+                    "migration_id": (migration.migration_id),
+                    "version": (migration.version),
+                    "error_type": (type(exc).__name__),
+                    "error_module": (type(exc).__module__),
                 },
             ) from exc
 
@@ -794,19 +556,11 @@ class MigrationRunner:
 
     def apply_pending(
         self,
-    ) -> List[
-        MigrationRecord
-    ]:
+    ) -> List[MigrationRecord]:
         if not self.config.enabled:
             return []
 
-        return [
-            self.apply_one(
-                migration
-            )
-            for migration
-            in self.pending()
-        ]
+        return [self.apply_one(migration) for migration in self.pending()]
 
     # ---------------------------------------------------------
     # Current version
@@ -815,16 +569,10 @@ class MigrationRunner:
     def current_version(
         self,
     ) -> int:
-        applied = (
-            self.store.applied()
-        )
+        applied = self.store.applied()
 
         return max(
-            (
-                item.version
-                for item
-                in applied
-            ),
+            (item.version for item in applied),
             default=0,
         )
 
@@ -836,40 +584,13 @@ class MigrationRunner:
         self,
     ) -> Dict[str, Any]:
         return {
-            "enabled": (
-                self.config.enabled
-            ),
-
-            "apply_on_startup": (
-                self.config.
-                apply_on_startup
-            ),
-
-            "validate_checksums": (
-                self.config.
-                validate_checksums
-            ),
-
-            "target_version": (
-                self.config.
-                target_version
-            ),
-
-            "registered_migrations": (
-                len(
-                    self.registry.list()
-                )
-            ),
-
-            "applied_migrations": (
-                len(
-                    self.store.applied()
-                )
-            ),
-
-            "current_version": (
-                self.current_version()
-            ),
+            "enabled": (self.config.enabled),
+            "apply_on_startup": (self.config.apply_on_startup),
+            "validate_checksums": (self.config.validate_checksums),
+            "target_version": (self.config.target_version),
+            "registered_migrations": (len(self.registry.list())),
+            "applied_migrations": (len(self.store.applied())),
+            "current_version": (self.current_version()),
         }
 
 
@@ -879,7 +600,6 @@ class MigrationRunner:
 
 __all__ = [
     "MigrationCallable",
-
     "Migration",
     "MigrationRegistry",
     "MigrationStore",

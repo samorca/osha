@@ -26,9 +26,7 @@ SAFE_FILES = (
     Path("/etc/fstab"),
     Path("/etc/resolv.conf"),
     Path("/etc/docker/daemon.json"),
-    Path(
-        "/etc/containerd/config.toml"
-    ),
+    Path("/etc/containerd/config.toml"),
 )
 
 SENSITIVE_NAMES = {
@@ -60,16 +58,10 @@ def sensitive_path(
     if lowered in SENSITIVE_NAMES:
         return True
 
-    if any(
-        lowered.endswith(suffix)
-        for suffix in SENSITIVE_SUFFIXES
-    ):
+    if any(lowered.endswith(suffix) for suffix in SENSITIVE_SUFFIXES):
         return True
 
-    parts = {
-        part.lower()
-        for part in path.parts
-    }
+    parts = {part.lower() for part in path.parts}
 
     if {
         "private",
@@ -87,20 +79,14 @@ def safe_hash(
     maximum_bytes: int = 4_000_000,
 ) -> str | None:
     try:
-        if (
-            not path.is_file()
-            or path.stat().st_size
-            > maximum_bytes
-        ):
+        if not path.is_file() or path.stat().st_size > maximum_bytes:
             return None
 
         digest = hashlib.sha256()
 
         with path.open("rb") as handle:
             while True:
-                chunk = handle.read(
-                    65536
-                )
+                chunk = handle.read(65536)
 
                 if not chunk:
                     break
@@ -191,35 +177,17 @@ def collect_file_metadata(
     ):
         return None
 
-    mode = stat.filemode(
-        metadata.st_mode
-    )
+    mode = stat.filemode(metadata.st_mode)
 
     payload = {
         "path": str(path),
-        "category": (
-            configuration_category(
-                path
-            )
-        ),
-        "size_bytes": (
-            metadata.st_size
-        ),
-        "owner_uid": (
-            metadata.st_uid
-        ),
-        "group_gid": (
-            metadata.st_gid
-        ),
+        "category": (configuration_category(path)),
+        "size_bytes": (metadata.st_size),
+        "owner_uid": (metadata.st_uid),
+        "group_gid": (metadata.st_gid),
         "permissions": mode,
-        "mode_octal": oct(
-            stat.S_IMODE(
-                metadata.st_mode
-            )
-        ),
-        "modified_timestamp": (
-            metadata.st_mtime
-        ),
+        "mode_octal": oct(stat.S_IMODE(metadata.st_mode)),
+        "modified_timestamp": (metadata.st_mtime),
         "sha256": safe_hash(path),
         "contents_collected": False,
         "sensitive": False,
@@ -234,12 +202,8 @@ def collect_file_metadata(
 def collect_configuration() -> List[dict]:
     records: List[dict] = []
 
-    for path in (
-        iter_configuration_paths()
-    ):
-        record = collect_file_metadata(
-            path
-        )
+    for path in iter_configuration_paths():
+        record = collect_file_metadata(path)
 
         if record is not None:
             records.append(record)

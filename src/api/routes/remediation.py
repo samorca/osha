@@ -54,12 +54,8 @@ from src.api.services.remediation import (
 )
 
 
-class RemediationPlanListResponse(
-    APIOutputModel
-):
-    plans: List[
-        RemediationPlanResponse
-    ] = Field(
+class RemediationPlanListResponse(APIOutputModel):
+    plans: List[RemediationPlanResponse] = Field(
         default_factory=list,
     )
 
@@ -99,9 +95,7 @@ def operation_context(
         actor_id=actor_id(request),
         tenant_id=tenant_id(request),
         correlation_id=correlation_id(request),
-        approval_identity=(
-            approval_identity(request)
-        ),
+        approval_identity=(approval_identity(request)),
     )
 
 
@@ -132,11 +126,7 @@ async def list_remediation_plans(
     plans, total = await service.list_plans(
         incident_id=incident_id,
         decision_id=decision_id,
-        status=(
-            plan_status.value
-            if plan_status is not None
-            else None
-        ),
+        status=(plan_status.value if plan_status is not None else None),
         limit=limit,
         offset=offset,
         context=operation_context(request),
@@ -151,9 +141,7 @@ async def list_remediation_plans(
             offset=offset,
             returned=returned,
             total=total,
-            has_more=(
-                offset + returned < total
-            ),
+            has_more=(offset + returned < total),
         ),
         metadata=APIResponseMetadata(
             request_id=request_id(request),

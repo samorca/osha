@@ -1,0 +1,528 @@
+# =============================================================================
+# OSHA - AI Runtime Configuration
+# =============================================================================
+#
+# Controls the AI analysis layer of OSHA.
+#
+# Responsibilities:
+#   - consume validated incident/event context
+#   - invoke configured inference models
+#   - combine classification and anomaly signals
+#   - estimate confidence
+#   - generate structured analysis
+#   - produce root-cause candidates
+#   - produce recommendations for the decision layer
+#
+# The AI layer MUST NOT directly modify infrastructure.
+# =============================================================================
+
+
+ai:
+
+  # ---------------------------------------------------------------------------
+  # Global
+  # ---------------------------------------------------------------------------
+
+  enabled: true
+
+  mode: "production"
+
+  fail_safe: true
+
+  fail_closed: true
+
+  require_valid_input: true
+
+  allow_direct_infrastructure_actions: false
+
+  allow_shell_execution: false
+
+  allow_privileged_execution: false
+
+
+  # ---------------------------------------------------------------------------
+  # Runtime
+  # ---------------------------------------------------------------------------
+
+  runtime:
+
+    enabled: true
+
+    device: "auto"
+
+    timeout_seconds: 30
+
+    max_concurrent_requests: 8
+
+    queue_size: 1000
+
+    deterministic: true
+
+    cache_results: true
+
+    cache_ttl_seconds: 300
+
+
+  # ---------------------------------------------------------------------------
+  # Input
+  # ---------------------------------------------------------------------------
+
+  input:
+
+    validation:
+      enabled: true
+
+      require_incident_id: true
+
+      require_timestamp: true
+
+      require_provider: true
+
+      require_resource_context: true
+
+      reject_invalid_schema: true
+
+      reject_empty_incidents: true
+
+    include:
+      source_events: true
+      correlation_context: true
+      topology_context: true
+      classification_results: true
+      anomaly_results: true
+      infrastructure_context: true
+      historical_context: true
+
+
+  # ---------------------------------------------------------------------------
+  # Event Classification
+  # ---------------------------------------------------------------------------
+
+  event_classification:
+
+    enabled: true
+
+    model: "event-classifier"
+
+    minimum_confidence: 0.80
+
+    reject_below_threshold: false
+
+    mark_low_confidence: true
+
+    include_probabilities: true
+
+    include_top_candidates: true
+
+    maximum_candidates: 5
+
+
+  # ---------------------------------------------------------------------------
+  # Anomaly Detection
+  # ---------------------------------------------------------------------------
+
+  anomaly_detection:
+
+    enabled: true
+
+    model: "anomaly-detector"
+
+    threshold: 0.80
+
+    include_score: true
+
+    include_metadata: true
+
+    mark_below_threshold: false
+
+
+  # ---------------------------------------------------------------------------
+  # Signal Fusion
+  # ---------------------------------------------------------------------------
+
+  signal_fusion:
+
+    enabled: true
+
+    strategy: "weighted"
+
+    weights:
+      event_classification: 0.30
+      anomaly_detection: 0.30
+      correlation: 0.20
+      topology: 0.10
+      historical_context: 0.10
+
+    normalize_weights: true
+
+    minimum_sources: 2
+
+    reject_invalid_scores: true
+
+
+  # ---------------------------------------------------------------------------
+  # Confidence
+  # ---------------------------------------------------------------------------
+
+  confidence:
+
+    enabled: true
+
+    minimum: 0.70
+
+    decision_threshold: 0.80
+
+    high_confidence: 0.90
+
+    clamp:
+      minimum: 0.0
+      maximum: 1.0
+
+    insufficient_evidence:
+      downgrade_confidence: true
+      maximum_confidence: 0.50
+
+
+  # ---------------------------------------------------------------------------
+  # Incident Analysis
+  # ---------------------------------------------------------------------------
+
+  incident_analysis:
+
+    enabled: true
+
+    require_correlated_incident: true
+
+    summarize_events: true
+
+    identify_affected_resources: true
+
+    identify_affected_providers: true
+
+    analyze_severity: true
+
+    analyze_temporal_sequence: true
+
+    analyze_topology: true
+
+    analyze_anomaly_signals: true
+
+    analyze_classification_signals: true
+
+    include_evidence: true
+
+
+  # ---------------------------------------------------------------------------
+  # Root Cause Analysis
+  # ---------------------------------------------------------------------------
+
+  root_cause:
+
+    enabled: true
+
+    generate_candidates: true
+
+    maximum_candidates: 5
+
+    minimum_candidate_confidence: 0.60
+
+    consider:
+      event_sequence: true
+      topology: true
+      anomaly_score: true
+      classification: true
+      correlation_score: true
+      historical_context: true
+
+    require_supporting_evidence: true
+
+    mark_as_confirmed: false
+
+    allow_unknown: true
+
+
+  # ---------------------------------------------------------------------------
+  # Recommendations
+  # ---------------------------------------------------------------------------
+
+  recommendations:
+
+    enabled: true
+
+    maximum_recommendations: 5
+
+    require_evidence: true
+
+    include_confidence: true
+
+    include_risk: true
+
+    include_reason: true
+
+    include_expected_result: true
+
+    allow_destructive_recommendations: false
+
+    allow_unrecognized_actions: false
+
+
+  # ---------------------------------------------------------------------------
+  # Decision Handoff
+  # ---------------------------------------------------------------------------
+
+  decision_handoff:
+
+    enabled: true
+
+    require_structured_output: true
+
+    require_incident_id: true
+
+    require_confidence: true
+
+    require_evidence: true
+
+    require_recommendation: false
+
+    reject_invalid_output: true
+
+    include:
+      incident_summary: true
+      root_cause_candidates: true
+      confidence: true
+      supporting_evidence: true
+      recommendations: true
+      affected_resources: true
+
+
+  # ---------------------------------------------------------------------------
+  # Historical Context
+  # ---------------------------------------------------------------------------
+
+  history:
+
+    enabled: true
+
+    maximum_incidents: 20
+
+    maximum_age_seconds: 604800
+
+    match_provider: true
+
+    match_resource: true
+
+    match_event_type: true
+
+    include_previous_outcomes: true
+
+    include_failed_remediations: true
+
+
+  # ---------------------------------------------------------------------------
+  # Memory
+  # ---------------------------------------------------------------------------
+
+  memory:
+
+    enabled: true
+
+    use_incident_memory: true
+
+    use_resource_memory: true
+
+    use_remediation_memory: true
+
+    maximum_entries: 10000
+
+    retention_seconds: 604800
+
+    persist: true
+
+    directory: "./artifacts/ai/memory"
+
+
+  # ---------------------------------------------------------------------------
+  # Output
+  # ---------------------------------------------------------------------------
+
+  output:
+
+    format: "structured"
+
+    include_timestamp: true
+
+    include_ai_version: true
+
+    include_model_versions: true
+
+    include_confidence: true
+
+    include_evidence: true
+
+    include_reasoning_summary: true
+
+    include_raw_model_output: false
+
+    persist: true
+
+    directory: "./artifacts/ai/results"
+
+
+  # ---------------------------------------------------------------------------
+  # Validation
+  # ---------------------------------------------------------------------------
+
+  validation:
+
+    enabled: true
+
+    validate_model_outputs: true
+
+    validate_confidence: true
+
+    validate_recommendations: true
+
+    reject_nan: true
+
+    reject_infinite_values: true
+
+    reject_unknown_actions: true
+
+    reject_missing_evidence: false
+
+
+  # ---------------------------------------------------------------------------
+  # Retry
+  # ---------------------------------------------------------------------------
+
+  retry:
+
+    enabled: true
+
+    max_attempts: 2
+
+    initial_delay_seconds: 1
+
+    maximum_delay_seconds: 10
+
+    exponential_backoff: true
+
+    retry_model_timeout: true
+
+    retry_invalid_output: false
+
+
+  # ---------------------------------------------------------------------------
+  # Failure Handling
+  # ---------------------------------------------------------------------------
+
+  failure:
+
+    strategy: "safe_degradation"
+
+    fail_incident_on_ai_failure: false
+
+    emit_failure_event: true
+
+    preserve_incident: true
+
+    preserve_input: true
+
+    allow_unverified_results: false
+
+    allow_partial_analysis: true
+
+
+  # ---------------------------------------------------------------------------
+  # Safety
+  # ---------------------------------------------------------------------------
+
+  safety:
+
+    enabled: true
+
+    fail_closed: true
+
+    require_evidence: true
+
+    block_unknown_actions: true
+
+    block_destructive_actions: true
+
+    block_unvalidated_output: true
+
+    block_low_confidence_automatic_action: true
+
+    require_decision_engine_for_actions: true
+
+    require_remediation_layer_for_execution: true
+
+    prohibit_direct_infrastructure_mutation: true
+
+
+  # ---------------------------------------------------------------------------
+  # Security
+  # ---------------------------------------------------------------------------
+
+  security:
+
+    redact_sensitive_input: true
+
+    redact_sensitive_output: true
+
+    expose_credentials: false
+
+    expose_environment_variables: false
+
+    expose_secrets: false
+
+    allow_external_model_calls: false
+
+    allow_remote_code_execution: false
+
+
+  # ---------------------------------------------------------------------------
+  # Observability
+  # ---------------------------------------------------------------------------
+
+  observability:
+
+    metrics:
+      enabled: true
+
+      analysis_count: true
+      analysis_failures: true
+      analysis_latency: true
+      confidence_distribution: true
+      anomaly_distribution: true
+      recommendation_count: true
+
+    logging:
+      enabled: true
+
+      log_analysis_start: false
+      log_analysis_success: true
+      log_analysis_failure: true
+      log_low_confidence: true
+      log_recommendations: true
+      log_raw_inputs: false
+      log_raw_model_outputs: false
+
+
+  # ---------------------------------------------------------------------------
+  # Experimental Features
+  # ---------------------------------------------------------------------------
+
+  experimental:
+
+    enabled: false
+
+    online_learning: false
+
+    autonomous_learning: false
+
+    automatic_model_switching: false
+
+    automatic_threshold_adjustment: false
+
+    autonomous_remediation: false

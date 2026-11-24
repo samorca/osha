@@ -1,0 +1,71 @@
+schema_version: "1"
+
+runtime:
+  environment_id: "local-dev"
+  instance_name: "osha"
+
+  # Keep safe-by-default.
+  dry_run: true
+
+  lifecycle:
+    startup_timeout_seconds: 60.0
+    shutdown_timeout_seconds: 60.0
+    health_interval_seconds: 15.0
+    fail_fast: true
+
+  services:
+    orchestrator:
+      enabled: true
+      required: true
+      startup_timeout_seconds: 30.0
+      shutdown_timeout_seconds: 30.0
+      restart_limit: 3
+
+    telemetry:
+      enabled: true
+      required: true
+      startup_timeout_seconds: 30.0
+      shutdown_timeout_seconds: 30.0
+      restart_limit: 3
+
+    collectors:
+      enabled: true
+      required: false
+      startup_timeout_seconds: 30.0
+      shutdown_timeout_seconds: 30.0
+      restart_limit: 3
+
+    correlation:
+      enabled: true
+      required: true
+      startup_timeout_seconds: 30.0
+      shutdown_timeout_seconds: 30.0
+      restart_limit: 3
+
+    intelligence:
+      enabled: true
+      required: true
+      startup_timeout_seconds: 30.0
+      shutdown_timeout_seconds: 30.0
+      restart_limit: 3
+
+    decision:
+      enabled: true
+      required: true
+      startup_timeout_seconds: 30.0
+      shutdown_timeout_seconds: 30.0
+      restart_limit: 3
+
+    remediation:
+      enabled: true
+      required: false
+      startup_timeout_seconds: 30.0
+      shutdown_timeout_seconds: 30.0
+      restart_limit: 1
+
+    observability:
+      enabled: true
+      required: false
+      startup_timeout_seconds: 30.0
+      shutdown_timeout_seconds: 30.0
+      restart_limit: 3

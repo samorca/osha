@@ -39,14 +39,13 @@ from src.security.schema import (
 # Environment prefix
 # ---------------------------------------------------------------
 
-DEFAULT_ENV_PREFIX = (
-    "OSHA_MINIO_"
-)
+DEFAULT_ENV_PREFIX = "OSHA_MINIO_"
 
 
 # ---------------------------------------------------------------
 # Authentication configuration
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class MinioAuthConfig:
@@ -59,13 +58,9 @@ class MinioAuthConfig:
     SecretReference and SecretManager.
     """
 
-    access_key: Optional[
-        str
-    ] = None
+    access_key: Optional[str] = None
 
-    credential: Optional[
-        SecretReference
-    ] = None
+    credential: Optional[SecretReference] = None
 
     def validate(
         self,
@@ -80,15 +75,8 @@ class MinioAuthConfig:
         if self.credential is not None:
             self.credential.finalize()
 
-        if (
-            self.access_key is None
-            and self.credential
-            is not None
-        ):
-            raise ValueError(
-                "MinIO secret credential "
-                "requires an access_key"
-            )
+        if self.access_key is None and self.credential is not None:
+            raise ValueError("MinIO secret credential requires an access_key")
 
     def to_dict(
         self,
@@ -96,29 +84,19 @@ class MinioAuthConfig:
         self.validate()
 
         return {
-            "access_key_configured": (
-                self.access_key
-                is not None
-            ),
-
+            "access_key_configured": (self.access_key is not None),
             # Do not print the access key in safe
             # config output. Presence is enough
             # for normal diagnostics.
-            "credential": (
-                self.credential.to_dict()
-                if self.credential
-                else None
-            ),
-
-            "credential_value_exposed": (
-                False
-            ),
+            "credential": (self.credential.to_dict() if self.credential else None),
+            "credential_value_exposed": (False),
         }
 
 
 # ---------------------------------------------------------------
 # MinIO config
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class MinioConfig:
@@ -133,17 +111,13 @@ class MinioConfig:
 
     endpoint: str
 
-    auth: MinioAuthConfig = field(
-        default_factory=MinioAuthConfig
-    )
+    auth: MinioAuthConfig = field(default_factory=MinioAuthConfig)
 
     secure: bool = True
 
     verify_tls: bool = True
 
-    region: Optional[
-        str
-    ] = None
+    region: Optional[str] = None
 
     request_timeout_seconds: float = 30.0
 
@@ -154,9 +128,7 @@ class MinioConfig:
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def validate(
         self,
@@ -179,9 +151,7 @@ class MinioConfig:
             maximum_length=2048,
         )
 
-        if (
-            "://" in self.endpoint
-        ):
+        if "://" in self.endpoint:
             raise ValueError(
                 "MinIO endpoint must be "
                 "host[:port] without an "
@@ -197,9 +167,7 @@ class MinioConfig:
 
         number(
             self.request_timeout_seconds,
-            name=(
-                "request_timeout_seconds"
-            ),
+            name=("request_timeout_seconds"),
             minimum=0.001,
         )
 
@@ -215,16 +183,9 @@ class MinioConfig:
     ) -> str:
         self.validate()
 
-        scheme = (
-            "https"
-            if self.secure
-            else "http"
-        )
+        scheme = "https" if self.secure else "http"
 
-        return (
-            f"{scheme}://"
-            f"{self.endpoint}"
-        )
+        return f"{scheme}://{self.endpoint}"
 
     # ---------------------------------------------------------
     # Generic target
@@ -236,45 +197,16 @@ class MinioConfig:
         self.validate()
 
         return IntegrationTarget(
-            provider=(
-                ProviderKind.
-                MINIO.value
-            ),
-
-            environment_id=(
-                self.environment_id
-            ),
-
-            target_id=(
-                self.target_id
-            ),
-
-            endpoint=(
-                self.endpoint_url
-            ),
-
-            region=(
-                self.region
-            ),
-
-            credential=(
-                self.auth.credential
-            ),
-
+            provider=(ProviderKind.MINIO.value),
+            environment_id=(self.environment_id),
+            target_id=(self.target_id),
+            endpoint=(self.endpoint_url),
+            region=(self.region),
+            credential=(self.auth.credential),
             attributes={
-                "secure": (
-                    self.secure
-                ),
-
-                "verify_tls": (
-                    self.verify_tls
-                ),
-
-                "access_key_configured": (
-                    self.auth.
-                    access_key
-                    is not None
-                ),
+                "secure": (self.secure),
+                "verify_tls": (self.verify_tls),
+                "access_key_configured": (self.auth.access_key is not None),
             },
         ).finalize()
 
@@ -288,58 +220,26 @@ class MinioConfig:
         self.validate()
 
         return {
-            "environment_id": (
-                self.environment_id
-            ),
-
-            "target_id": (
-                self.target_id
-            ),
-
-            "endpoint": (
-                self.endpoint_url
-            ),
-
-            "secure": (
-                self.secure
-            ),
-
-            "verify_tls": (
-                self.verify_tls
-            ),
-
-            "region": (
-                self.region
-            ),
-
-            "request_timeout_seconds": (
-                self.
-                request_timeout_seconds
-            ),
-
-            "auth": (
-                self.auth.to_dict()
-            ),
-
+            "environment_id": (self.environment_id),
+            "target_id": (self.target_id),
+            "endpoint": (self.endpoint_url),
+            "secure": (self.secure),
+            "verify_tls": (self.verify_tls),
+            "region": (self.region),
+            "request_timeout_seconds": (self.request_timeout_seconds),
+            "auth": (self.auth.to_dict()),
             "resources": {
-                "buckets": (
-                    self.enable_buckets
-                ),
-
-                "objects": (
-                    self.enable_objects
-                ),
+                "buckets": (self.enable_buckets),
+                "objects": (self.enable_objects),
             },
-
-            "attributes": dict(
-                self.attributes
-            ),
+            "attributes": dict(self.attributes),
         }
 
 
 # ---------------------------------------------------------------
 # Mapping helpers
 # ---------------------------------------------------------------
+
 
 def _get(
     values: Mapping[
@@ -363,9 +263,7 @@ def _text(
     ],
     prefix: str,
     name: str,
-    default: Optional[
-        str
-    ] = None,
+    default: Optional[str] = None,
 ) -> Optional[str]:
     value = _get(
         values,
@@ -377,9 +275,7 @@ def _text(
     if value is None:
         return None
 
-    result = str(
-        value
-    ).strip()
+    result = str(value).strip()
 
     return result or None
 
@@ -399,10 +295,7 @@ def _bool(
         name,
     )
 
-    if (
-        value is None
-        or str(value).strip() == ""
-    ):
+    if value is None or str(value).strip() == "":
         return default
 
     return boolean(
@@ -426,10 +319,7 @@ def _float(
         name,
     )
 
-    if (
-        value is None
-        or str(value).strip() == ""
-    ):
+    if value is None or str(value).strip() == "":
         return default
 
     return number(
@@ -442,6 +332,7 @@ def _float(
 # ---------------------------------------------------------------
 # Mapping loader
 # ---------------------------------------------------------------
+
 
 def from_mapping(
     values: Mapping[
@@ -458,10 +349,7 @@ def from_mapping(
     )
 
     if not endpoint:
-        raise ValueError(
-            "OSHA_MINIO_ENDPOINT "
-            "is required"
-        )
+        raise ValueError("OSHA_MINIO_ENDPOINT is required")
 
     access_key = _text(
         values,
@@ -469,12 +357,10 @@ def from_mapping(
         "ACCESS_KEY",
     )
 
-    secret_key_reference = (
-        _text(
-            values,
-            prefix,
-            "SECRET_KEY",
-        )
+    secret_key_reference = _text(
+        values,
+        prefix,
+        "SECRET_KEY",
     )
 
     secret_name = (
@@ -498,15 +384,8 @@ def from_mapping(
     credential = (
         SecretReference(
             name=secret_name,
-
-            provider=(
-                secret_provider
-            ),
-
-            key=(
-                secret_key_reference
-            ),
-
+            provider=(secret_provider),
+            key=(secret_key_reference),
             version=_text(
                 values,
                 prefix,
@@ -527,7 +406,6 @@ def from_mapping(
             )
             or "local-dev"
         ),
-
         target_id=(
             _text(
                 values,
@@ -537,35 +415,28 @@ def from_mapping(
             )
             or "minio-default"
         ),
-
         endpoint=endpoint,
-
         auth=MinioAuthConfig(
             access_key=access_key,
-
             credential=credential,
         ),
-
         secure=_bool(
             values,
             prefix,
             "SECURE",
             True,
         ),
-
         verify_tls=_bool(
             values,
             prefix,
             "VERIFY_TLS",
             True,
         ),
-
         region=_text(
             values,
             prefix,
             "REGION",
         ),
-
         request_timeout_seconds=(
             _float(
                 values,
@@ -574,25 +445,20 @@ def from_mapping(
                 30.0,
             )
         ),
-
         enable_buckets=_bool(
             values,
             prefix,
             "ENABLE_BUCKETS",
             True,
         ),
-
         enable_objects=_bool(
             values,
             prefix,
             "ENABLE_OBJECTS",
             True,
         ),
-
         attributes={
-            "config_source": (
-                "mapping"
-            ),
+            "config_source": ("mapping"),
         },
     )
 
@@ -605,6 +471,7 @@ def from_mapping(
 # Environment loader
 # ---------------------------------------------------------------
 
+
 def from_environment(
     *,
     environ: Optional[
@@ -615,11 +482,7 @@ def from_environment(
     ] = None,
     prefix: str = DEFAULT_ENV_PREFIX,
 ) -> MinioConfig:
-    source = (
-        os.environ
-        if environ is None
-        else environ
-    )
+    source = os.environ if environ is None else environ
 
     return from_mapping(
         source,
@@ -631,70 +494,30 @@ def from_environment(
 # Safe summary
 # ---------------------------------------------------------------
 
+
 def safe_config_summary(
     config: MinioConfig,
 ) -> Dict[str, Any]:
     config.validate()
 
     return {
-        "environment_id": (
-            config.environment_id
-        ),
-
-        "target_id": (
-            config.target_id
-        ),
-
-        "endpoint": (
-            config.endpoint_url
-        ),
-
-        "secure": (
-            config.secure
-        ),
-
-        "verify_tls": (
-            config.verify_tls
-        ),
-
-        "region": (
-            config.region
-        ),
-
-        "access_key_configured": (
-            config.auth.access_key
-            is not None
-        ),
-
-        "credential_reference_configured": (
-            config.auth.credential
-            is not None
-        ),
-
+        "environment_id": (config.environment_id),
+        "target_id": (config.target_id),
+        "endpoint": (config.endpoint_url),
+        "secure": (config.secure),
+        "verify_tls": (config.verify_tls),
+        "region": (config.region),
+        "access_key_configured": (config.auth.access_key is not None),
+        "credential_reference_configured": (config.auth.credential is not None),
         "credential_provider": (
-            config.auth.
-            credential.provider
-            if config.auth.credential
-            else None
+            config.auth.credential.provider if config.auth.credential else None
         ),
-
         "resources": {
-            "buckets": (
-                config.enable_buckets
-            ),
-
-            "objects": (
-                config.enable_objects
-            ),
+            "buckets": (config.enable_buckets),
+            "objects": (config.enable_objects),
         },
-
-        "mutating_operations_enabled": (
-            False
-        ),
-
-        "credential_value_exposed": (
-            False
-        ),
+        "mutating_operations_enabled": (False),
+        "credential_value_exposed": (False),
     }
 
 
@@ -704,12 +527,9 @@ def safe_config_summary(
 
 __all__ = [
     "DEFAULT_ENV_PREFIX",
-
     "MinioAuthConfig",
     "MinioConfig",
-
     "from_mapping",
     "from_environment",
-
     "safe_config_summary",
 ]

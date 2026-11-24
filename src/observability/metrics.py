@@ -43,15 +43,15 @@ from src.observability.schema import (
 # Errors
 # ---------------------------------------------------------------
 
-class MetricsError(
-    RuntimeError
-):
+
+class MetricsError(RuntimeError):
     pass
 
 
 # ---------------------------------------------------------------
 # Label normalization
 # ---------------------------------------------------------------
+
 
 def normalize_labels(
     labels: Optional[
@@ -79,39 +79,28 @@ def normalize_labels(
         str,
     ] = {}
 
-    for key, value in (
-        labels.items()
-    ):
+    for key, value in labels.items():
         name = required_string(
             key,
-            name=(
-                "metric label name"
-            ),
+            name=("metric label name"),
             maximum_length=128,
         )
 
         label_value = required_string(
             value,
-            name=(
-                f"metric label {name}"
-            ),
+            name=(f"metric label {name}"),
             maximum_length=512,
         )
 
-        normalized[
-            name
-        ] = label_value
+        normalized[name] = label_value
 
-    return dict(
-        sorted(
-            normalized.items()
-        )
-    )
+    return dict(sorted(normalized.items()))
 
 
 # ---------------------------------------------------------------
 # Metric identity key
 # ---------------------------------------------------------------
+
 
 def metric_key(
     name: str,
@@ -142,17 +131,14 @@ def metric_key(
 
     return (
         metric_name,
-        tuple(
-            sorted(
-                labels.items()
-            )
-        ),
+        tuple(sorted(labels.items())),
     )
 
 
 # ---------------------------------------------------------------
 # Metrics registry
 # ---------------------------------------------------------------
+
 
 class MetricsRegistry:
     """
@@ -173,24 +159,14 @@ class MetricsRegistry:
     def __init__(
         self,
         *,
-        config: Optional[
-            MetricsConfig
-        ] = None,
+        config: Optional[MetricsConfig] = None,
     ) -> None:
-        self.config = (
-            config
-            or MetricsConfig()
-        )
+        self.config = config or MetricsConfig()
 
         self.config.validate()
 
-        self._samples: Deque[
-            MetricSample
-        ] = deque(
-            maxlen=(
-                self.config.
-                maximum_buffered_samples
-            )
+        self._samples: Deque[MetricSample] = deque(
+            maxlen=(self.config.maximum_buffered_samples)
         )
 
         self._counters: Dict[
@@ -205,9 +181,7 @@ class MetricsRegistry:
                 ],
             ],
             float,
-        ] = defaultdict(
-            float
-        )
+        ] = defaultdict(float)
 
         self._gauges: Dict[
             Tuple[
@@ -240,9 +214,7 @@ class MetricsRegistry:
             ],
         ] = {}
 
-        self._lock = (
-            RLock()
-        )
+        self._lock = RLock()
 
         self._accepted = 0
         self._evicted = 0
@@ -254,25 +226,16 @@ class MetricsRegistry:
     def _record(
         self,
         sample: MetricSample,
-    ) -> Optional[
-        MetricSample
-    ]:
+    ) -> Optional[MetricSample]:
         sample.finalize()
 
         if not self.config.enabled:
             return None
 
         with self._lock:
-            was_full = (
-                len(
-                    self._samples
-                )
-                == self._samples.maxlen
-            )
+            was_full = len(self._samples) == self._samples.maxlen
 
-            self._samples.append(
-                sample
-            )
+            self._samples.append(sample)
 
             self._accepted += 1
 
@@ -297,12 +260,8 @@ class MetricsRegistry:
                 Any,
             ]
         ] = None,
-        unit: Optional[
-            str
-        ] = None,
-    ) -> Optional[
-        MetricSample
-    ]:
+        unit: Optional[str] = None,
+    ) -> Optional[MetricSample]:
         """
         Increment a monotonic-style counter.
 
@@ -318,9 +277,7 @@ class MetricsRegistry:
             minimum=0.0,
         )
 
-        normalized = normalize_labels(
-            labels
-        )
+        normalized = normalize_labels(labels)
 
         key = metric_key(
             name,
@@ -328,25 +285,16 @@ class MetricsRegistry:
         )
 
         with self._lock:
-            self._counters[
-                key
-            ] += amount
+            self._counters[key] += amount
 
-            value = (
-                self._counters[
-                    key
-                ]
-            )
+            value = self._counters[key]
 
         return self._record(
             MetricSample(
                 name=name,
                 value=value,
                 context=context,
-                metric_type=(
-                    MetricType.
-                    COUNTER.value
-                ),
+                metric_type=(MetricType.COUNTER.value),
                 unit=unit,
                 labels=normalized,
             )
@@ -368,12 +316,8 @@ class MetricsRegistry:
                 Any,
             ]
         ] = None,
-        unit: Optional[
-            str
-        ] = None,
-    ) -> Optional[
-        MetricSample
-    ]:
+        unit: Optional[str] = None,
+    ) -> Optional[MetricSample]:
         """
         Set a gauge to its latest observed value.
         """
@@ -386,9 +330,7 @@ class MetricsRegistry:
             name="gauge value",
         )
 
-        normalized = normalize_labels(
-            labels
-        )
+        normalized = normalize_labels(labels)
 
         key = metric_key(
             name,
@@ -396,19 +338,14 @@ class MetricsRegistry:
         )
 
         with self._lock:
-            self._gauges[
-                key
-            ] = value
+            self._gauges[key] = value
 
         return self._record(
             MetricSample(
                 name=name,
                 value=value,
                 context=context,
-                metric_type=(
-                    MetricType.
-                    GAUGE.value
-                ),
+                metric_type=(MetricType.GAUGE.value),
                 unit=unit,
                 labels=normalized,
             )
@@ -430,12 +367,8 @@ class MetricsRegistry:
                 Any,
             ]
         ] = None,
-        unit: Optional[
-            str
-        ] = None,
-    ) -> Optional[
-        MetricSample
-    ]:
+        unit: Optional[str] = None,
+    ) -> Optional[MetricSample]:
         """
         Record one histogram-style observation.
 
@@ -455,14 +388,10 @@ class MetricsRegistry:
 
         value = number(
             value,
-            name=(
-                "histogram observation"
-            ),
+            name=("histogram observation"),
         )
 
-        normalized = normalize_labels(
-            labels
-        )
+        normalized = normalize_labels(labels)
 
         key = metric_key(
             name,
@@ -470,42 +399,27 @@ class MetricsRegistry:
         )
 
         with self._lock:
-            aggregate = (
-                self._histograms.
-                setdefault(
-                    key,
-                    {
-                        "count": 0.0,
-                        "sum": 0.0,
-                        "min": value,
-                        "max": value,
-                    },
-                )
+            aggregate = self._histograms.setdefault(
+                key,
+                {
+                    "count": 0.0,
+                    "sum": 0.0,
+                    "min": value,
+                    "max": value,
+                },
             )
 
-            aggregate[
-                "count"
-            ] += 1.0
+            aggregate["count"] += 1.0
 
-            aggregate[
-                "sum"
-            ] += value
+            aggregate["sum"] += value
 
-            aggregate[
-                "min"
-            ] = min(
-                aggregate[
-                    "min"
-                ],
+            aggregate["min"] = min(
+                aggregate["min"],
                 value,
             )
 
-            aggregate[
-                "max"
-            ] = max(
-                aggregate[
-                    "max"
-                ],
+            aggregate["max"] = max(
+                aggregate["max"],
                 value,
             )
 
@@ -514,10 +428,7 @@ class MetricsRegistry:
                 name=name,
                 value=value,
                 context=context,
-                metric_type=(
-                    MetricType.
-                    HISTOGRAM.value
-                ),
+                metric_type=(MetricType.HISTOGRAM.value),
                 unit=unit,
                 labels=normalized,
             )
@@ -530,22 +441,12 @@ class MetricsRegistry:
     def samples(
         self,
         *,
-        name: Optional[
-            str
-        ] = None,
-        metric_type: Optional[
-            str
-        ] = None,
-        service: Optional[
-            str
-        ] = None,
-        limit: Optional[
-            int
-        ] = None,
+        name: Optional[str] = None,
+        metric_type: Optional[str] = None,
+        service: Optional[str] = None,
+        limit: Optional[int] = None,
         newest_first: bool = False,
-    ) -> List[
-        MetricSample
-    ]:
+    ) -> List[MetricSample]:
         """
         Query buffered samples without removing
         them.
@@ -558,63 +459,32 @@ class MetricsRegistry:
                 minimum=1,
             )
 
-        if (
-            metric_type is not None
-            and metric_type
-            not in {
-                item.value
-                for item
-                in MetricType
-            }
-        ):
-            raise MetricsError(
-                "Unknown metric type: "
-                f"{metric_type}"
-            )
+        if metric_type is not None and metric_type not in {
+            item.value for item in MetricType
+        }:
+            raise MetricsError(f"Unknown metric type: {metric_type}")
 
         with self._lock:
-            values = list(
-                self._samples
-            )
+            values = list(self._samples)
 
         if newest_first:
             values.reverse()
 
-        output: List[
-            MetricSample
-        ] = []
+        output: List[MetricSample] = []
 
         for sample in values:
-            if (
-                name is not None
-                and sample.name
-                != name
-            ):
+            if name is not None and sample.name != name:
                 continue
 
-            if (
-                metric_type is not None
-                and sample.metric_type
-                != metric_type
-            ):
+            if metric_type is not None and sample.metric_type != metric_type:
                 continue
 
-            if (
-                service is not None
-                and sample.context.service
-                != service
-            ):
+            if service is not None and sample.context.service != service:
                 continue
 
-            output.append(
-                sample
-            )
+            output.append(sample)
 
-            if (
-                limit is not None
-                and len(output)
-                >= limit
-            ):
+            if limit is not None and len(output) >= limit:
                 break
 
         return output
@@ -626,12 +496,8 @@ class MetricsRegistry:
     def drain(
         self,
         *,
-        limit: Optional[
-            int
-        ] = None,
-    ) -> List[
-        MetricSample
-    ]:
+        limit: Optional[int] = None,
+    ) -> List[MetricSample]:
         """
         Remove and return oldest samples.
 
@@ -647,25 +513,15 @@ class MetricsRegistry:
 
         with self._lock:
             count = (
-                len(
-                    self._samples
-                )
+                len(self._samples)
                 if limit is None
                 else min(
                     limit,
-                    len(
-                        self._samples
-                    ),
+                    len(self._samples),
                 )
             )
 
-            return [
-                self._samples.popleft()
-                for _
-                in range(
-                    count
-                )
-            ]
+            return [self._samples.popleft() for _ in range(count)]
 
     # ---------------------------------------------------------
     # Counter value
@@ -684,9 +540,7 @@ class MetricsRegistry:
     ) -> float:
         key = metric_key(
             name,
-            normalize_labels(
-                labels
-            ),
+            normalize_labels(labels),
         )
 
         with self._lock:
@@ -709,20 +563,14 @@ class MetricsRegistry:
                 Any,
             ]
         ] = None,
-    ) -> Optional[
-        float
-    ]:
+    ) -> Optional[float]:
         key = metric_key(
             name,
-            normalize_labels(
-                labels
-            ),
+            normalize_labels(labels),
         )
 
         with self._lock:
-            return self._gauges.get(
-                key
-            )
+            return self._gauges.get(key)
 
     # ---------------------------------------------------------
     # Histogram summary
@@ -746,37 +594,20 @@ class MetricsRegistry:
     ]:
         key = metric_key(
             name,
-            normalize_labels(
-                labels
-            ),
+            normalize_labels(labels),
         )
 
         with self._lock:
-            aggregate = (
-                self._histograms.get(
-                    key
-                )
-            )
+            aggregate = self._histograms.get(key)
 
             if aggregate is None:
                 return None
 
-            count = aggregate[
-                "count"
-            ]
+            count = aggregate["count"]
 
             return {
-                **dict(
-                    aggregate
-                ),
-                "average": (
-                    aggregate[
-                        "sum"
-                    ]
-                    / count
-                    if count
-                    else 0.0
-                ),
+                **dict(aggregate),
+                "average": (aggregate["sum"] / count if count else 0.0),
             }
 
     # ---------------------------------------------------------
@@ -792,9 +623,7 @@ class MetricsRegistry:
         """
 
         with self._lock:
-            count = len(
-                self._samples
-            )
+            count = len(self._samples)
 
             self._samples.clear()
 
@@ -831,12 +660,8 @@ class MetricsRegistry:
                 int,
             ] = {}
 
-            for sample in (
-                self._samples
-            ):
-                by_type[
-                    sample.metric_type
-                ] = (
+            for sample in self._samples:
+                by_type[sample.metric_type] = (
                     by_type.get(
                         sample.metric_type,
                         0,
@@ -845,50 +670,15 @@ class MetricsRegistry:
                 )
 
             return {
-                "enabled": (
-                    self.config.enabled
-                ),
-
-                "buffered_samples": (
-                    len(
-                        self._samples
-                    )
-                ),
-
-                "maximum_buffered_samples": (
-                    self.config.
-                    maximum_buffered_samples
-                ),
-
-                "accepted_total": (
-                    self._accepted
-                ),
-
-                "evicted_total": (
-                    self._evicted
-                ),
-
-                "registered_counters": (
-                    len(
-                        self._counters
-                    )
-                ),
-
-                "registered_gauges": (
-                    len(
-                        self._gauges
-                    )
-                ),
-
-                "registered_histograms": (
-                    len(
-                        self._histograms
-                    )
-                ),
-
-                "buffered_by_type": (
-                    by_type
-                ),
+                "enabled": (self.config.enabled),
+                "buffered_samples": (len(self._samples)),
+                "maximum_buffered_samples": (self.config.maximum_buffered_samples),
+                "accepted_total": (self._accepted),
+                "evicted_total": (self._evicted),
+                "registered_counters": (len(self._counters)),
+                "registered_gauges": (len(self._gauges)),
+                "registered_histograms": (len(self._histograms)),
+                "buffered_by_type": (by_type),
             }
 
 
@@ -898,9 +688,7 @@ class MetricsRegistry:
 
 __all__ = [
     "MetricsError",
-
     "normalize_labels",
     "metric_key",
-
     "MetricsRegistry",
 ]

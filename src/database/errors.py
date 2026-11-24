@@ -23,9 +23,8 @@ from src.core.exceptions import (
 # Base database error
 # ---------------------------------------------------------------
 
-class DatabaseError(
-    PersistenceError
-):
+
+class DatabaseError(PersistenceError):
     """
     Base class for expected OSHA database-layer
     failures.
@@ -35,38 +34,28 @@ class DatabaseError(
     leave the database boundary.
     """
 
-    default_code = (
-        "database_error"
-    )
+    default_code = "database_error"
 
 
 # ---------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------
 
-class DatabaseConfigurationError(
-    DatabaseError
-):
-    default_code = (
-        "database_configuration_error"
-    )
+
+class DatabaseConfigurationError(DatabaseError):
+    default_code = "database_configuration_error"
 
 
 # ---------------------------------------------------------------
 # Connection
 # ---------------------------------------------------------------
 
-class DatabaseConnectionError(
-    DatabaseError
-):
-    default_code = (
-        "database_connection_error"
-    )
+
+class DatabaseConnectionError(DatabaseError):
+    default_code = "database_connection_error"
 
 
-class DatabaseUnavailableError(
-    DatabaseConnectionError
-):
+class DatabaseUnavailableError(DatabaseConnectionError):
     """
     Database availability failure.
 
@@ -76,16 +65,11 @@ class DatabaseUnavailableError(
     whether to actually retry.
     """
 
-    default_code = (
-        "database_unavailable"
-    )
+    default_code = "database_unavailable"
 
     def __init__(
         self,
-        message: str = (
-            "Database dependency is "
-            "unavailable."
-        ),
+        message: str = ("Database dependency is unavailable."),
         *,
         details: Optional[
             Mapping[
@@ -106,19 +90,16 @@ class DatabaseUnavailableError(
 # Timeout
 # ---------------------------------------------------------------
 
+
 class DatabaseTimeoutError(
     DatabaseError,
     TimeoutErrorBase,
 ):
-    default_code = (
-        "database_timeout"
-    )
+    default_code = "database_timeout"
 
     def __init__(
         self,
-        message: str = (
-            "Database operation timed out."
-        ),
+        message: str = ("Database operation timed out."),
         *,
         details: Optional[
             Mapping[
@@ -139,128 +120,85 @@ class DatabaseTimeoutError(
 # Transactions
 # ---------------------------------------------------------------
 
-class TransactionError(
-    DatabaseError
-):
-    default_code = (
-        "transaction_error"
-    )
+
+class TransactionError(DatabaseError):
+    default_code = "transaction_error"
 
 
-class TransactionStateError(
-    TransactionError
-):
-    default_code = (
-        "transaction_state_error"
-    )
+class TransactionStateError(TransactionError):
+    default_code = "transaction_state_error"
 
 
-class TransactionCommitError(
-    TransactionError
-):
-    default_code = (
-        "transaction_commit_error"
-    )
+class TransactionCommitError(TransactionError):
+    default_code = "transaction_commit_error"
 
 
-class TransactionRollbackError(
-    TransactionError
-):
-    default_code = (
-        "transaction_rollback_error"
-    )
+class TransactionRollbackError(TransactionError):
+    default_code = "transaction_rollback_error"
 
 
 # ---------------------------------------------------------------
 # Repositories
 # ---------------------------------------------------------------
 
-class RepositoryError(
-    DatabaseError
-):
-    default_code = (
-        "repository_error"
-    )
+
+class RepositoryError(DatabaseError):
+    default_code = "repository_error"
 
 
 class RepositoryNotFoundError(
     RepositoryError,
     NotFoundError,
 ):
-    default_code = (
-        "repository_record_not_found"
-    )
+    default_code = "repository_record_not_found"
 
 
 class RepositoryConflictError(
     RepositoryError,
     ConflictError,
 ):
-    default_code = (
-        "repository_conflict"
-    )
+    default_code = "repository_conflict"
 
 
-class RepositoryValidationError(
-    RepositoryError
-):
-    default_code = (
-        "repository_validation_error"
-    )
+class RepositoryValidationError(RepositoryError):
+    default_code = "repository_validation_error"
 
 
 # ---------------------------------------------------------------
 # Migrations
 # ---------------------------------------------------------------
 
-class MigrationError(
-    DatabaseError
-):
-    default_code = (
-        "migration_error"
-    )
+
+class MigrationError(DatabaseError):
+    default_code = "migration_error"
 
 
 class MigrationConflictError(
     MigrationError,
     ConflictError,
 ):
-    default_code = (
-        "migration_conflict"
-    )
+    default_code = "migration_conflict"
 
 
-class MigrationChecksumError(
-    MigrationError
-):
-    default_code = (
-        "migration_checksum_error"
-    )
+class MigrationChecksumError(MigrationError):
+    default_code = "migration_checksum_error"
 
 
-class MigrationApplyError(
-    MigrationError
-):
-    default_code = (
-        "migration_apply_error"
-    )
+class MigrationApplyError(MigrationError):
+    default_code = "migration_apply_error"
 
 
 # ---------------------------------------------------------------
 # Driver error wrapping
 # ---------------------------------------------------------------
 
+
 def wrap_driver_error(
     error: BaseException,
     *,
-    message: str = (
-        "Database driver operation "
-        "failed."
-    ),
+    message: str = ("Database driver operation failed."),
     retryable: bool = False,
-    code: str = (
-        "database_driver_error"
-    ),
+    code: str = ("database_driver_error"),
 ) -> DatabaseError:
     """
     Convert a raw driver exception into bounded
@@ -284,12 +222,8 @@ def wrap_driver_error(
         code=code,
         retryable=retryable,
         details={
-            "error_type": (
-                type(error).__name__
-            ),
-            "error_module": (
-                type(error).__module__
-            ),
+            "error_type": (type(error).__name__),
+            "error_module": (type(error).__module__),
         },
     )
 
@@ -300,27 +234,21 @@ def wrap_driver_error(
 
 __all__ = [
     "DatabaseError",
-
     "DatabaseConfigurationError",
-
     "DatabaseConnectionError",
     "DatabaseUnavailableError",
     "DatabaseTimeoutError",
-
     "TransactionError",
     "TransactionStateError",
     "TransactionCommitError",
     "TransactionRollbackError",
-
     "RepositoryError",
     "RepositoryNotFoundError",
     "RepositoryConflictError",
     "RepositoryValidationError",
-
     "MigrationError",
     "MigrationConflictError",
     "MigrationChecksumError",
     "MigrationApplyError",
-
     "wrap_driver_error",
 ]

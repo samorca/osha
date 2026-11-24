@@ -121,9 +121,7 @@ from src.api.schema import (
 # Logging
 # ------------------------------------------------------------------
 
-logger = logging.getLogger(
-    __name__
-)
+logger = logging.getLogger(__name__)
 
 
 # ------------------------------------------------------------------
@@ -138,6 +136,7 @@ MODEL_SERVICE_VERSION = "1"
 # ------------------------------------------------------------------
 # Operation context
 # ------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class ModelOperationContext:
@@ -165,15 +164,14 @@ class ModelOperationContext:
             "actor_id": self.actor_id,
             "tenant_id": self.tenant_id,
             "correlation_id": self.correlation_id,
-            "idempotency_key_present": bool(
-                self.idempotency_key
-            ),
+            "idempotency_key_present": bool(self.idempotency_key),
         }
 
 
 # ------------------------------------------------------------------
 # Generic object helpers
 # ------------------------------------------------------------------
+
 
 def _mapping(
     value: Any,
@@ -185,9 +183,7 @@ def _mapping(
         value,
         Mapping,
     ):
-        return dict(
-            value
-        )
+        return dict(value)
 
     converter = getattr(
         value,
@@ -195,18 +191,14 @@ def _mapping(
         None,
     )
 
-    if callable(
-        converter
-    ):
+    if callable(converter):
         converted = converter()
 
         if isinstance(
             converted,
             Mapping,
         ):
-            return dict(
-                converted
-            )
+            return dict(converted)
 
     dumper = getattr(
         value,
@@ -214,18 +206,14 @@ def _mapping(
         None,
     )
 
-    if callable(
-        dumper
-    ):
+    if callable(dumper):
         converted = dumper()
 
         if isinstance(
             converted,
             Mapping,
         ):
-            return dict(
-                converted
-            )
+            return dict(converted)
 
     return {}
 
@@ -268,11 +256,7 @@ def _nested_value(
             None,
         )
 
-    return (
-        default
-        if current is None
-        else current
-    )
+    return default if current is None else current
 
 
 def _text(
@@ -283,9 +267,7 @@ def _text(
     if value is None:
         return default
 
-    return str(
-        value
-    ).strip()
+    return str(value).strip()
 
 
 def _optional_datetime(
@@ -300,9 +282,7 @@ def _optional_datetime(
     ):
         return value
 
-    text = str(
-        value
-    ).strip()
+    text = str(value).strip()
 
     if not text:
         return None
@@ -320,15 +300,11 @@ def _optional_datetime(
 
 
 def _utc_now() -> datetime:
-    return datetime.now(
-        timezone.utc
-    )
+    return datetime.now(timezone.utc)
 
 
 def _operation_id() -> str:
-    return str(
-        uuid4()
-    )
+    return str(uuid4())
 
 
 def _safe_public_attributes(
@@ -339,9 +315,7 @@ def _safe_public_attributes(
     excluding path-like or credential-like keys.
     """
 
-    source = _mapping(
-        value
-    )
+    source = _mapping(value)
 
     blocked_fragments = {
         "path",
@@ -360,25 +334,12 @@ def _safe_public_attributes(
 
     output: Dict[str, Any] = {}
 
-    for raw_key, item in list(
-        source.items()
-    )[
-        :128
-    ]:
-        key = str(
-            raw_key
-        ).strip()
+    for raw_key, item in list(source.items())[:128]:
+        key = str(raw_key).strip()
 
         normalized = key.lower()
 
-        if (
-            not key
-            or any(
-                fragment in normalized
-                for fragment
-                in blocked_fragments
-            )
-        ):
+        if not key or any(fragment in normalized for fragment in blocked_fragments):
             continue
 
         if isinstance(
@@ -391,9 +352,7 @@ def _safe_public_attributes(
                 type(None),
             ),
         ):
-            output[
-                key
-            ] = item
+            output[key] = item
 
         elif isinstance(
             item,
@@ -402,13 +361,9 @@ def _safe_public_attributes(
                 tuple,
             ),
         ):
-            output[
-                key
-            ] = [
+            output[key] = [
                 child
-                for child in item[
-                    :64
-                ]
+                for child in item[:64]
                 if isinstance(
                     child,
                     (
@@ -427,27 +382,13 @@ def _safe_public_attributes(
         ):
             nested: Dict[str, Any] = {}
 
-            for nested_key, nested_value in list(
-                item.items()
-            )[
-                :64
-            ]:
-                nested_name = str(
-                    nested_key
-                ).strip()
+            for nested_key, nested_value in list(item.items())[:64]:
+                nested_name = str(nested_key).strip()
 
-                nested_normalized = (
-                    nested_name.lower()
-                )
+                nested_normalized = nested_name.lower()
 
-                if (
-                    not nested_name
-                    or any(
-                        fragment
-                        in nested_normalized
-                        for fragment
-                        in blocked_fragments
-                    )
+                if not nested_name or any(
+                    fragment in nested_normalized for fragment in blocked_fragments
                 ):
                     continue
 
@@ -461,13 +402,9 @@ def _safe_public_attributes(
                         type(None),
                     ),
                 ):
-                    nested[
-                        nested_name
-                    ] = nested_value
+                    nested[nested_name] = nested_value
 
-            output[
-                key
-            ] = nested
+            output[key] = nested
 
     return output
 
@@ -476,12 +413,11 @@ def _safe_public_attributes(
 # Async compatibility
 # ------------------------------------------------------------------
 
+
 async def _await_if_needed(
     value: Any,
 ) -> Any:
-    if inspect.isawaitable(
-        value
-    ):
+    if inspect.isawaitable(value):
         return await value
 
     return value
@@ -497,50 +433,36 @@ def _invoke_supported(
     """
 
     try:
-        signature = inspect.signature(
-            method
-        )
+        signature = inspect.signature(method)
 
     except (
         TypeError,
         ValueError,
     ):
-        return method(
-            **dict(
-                arguments
-            )
-        )
+        return method(**dict(arguments))
 
     parameters = signature.parameters
 
     accepts_kwargs = any(
-        parameter.kind
-        == inspect.Parameter.VAR_KEYWORD
-        for parameter
-        in parameters.values()
+        parameter.kind == inspect.Parameter.VAR_KEYWORD
+        for parameter in parameters.values()
     )
 
     if accepts_kwargs:
-        values = dict(
-            arguments
-        )
+        values = dict(arguments)
 
     else:
         values = {
-            name: value
-            for name, value
-            in arguments.items()
-            if name in parameters
+            name: value for name, value in arguments.items() if name in parameters
         }
 
-    return method(
-        **values
-    )
+    return method(**values)
 
 
 # ------------------------------------------------------------------
 # Registry entry helpers
 # ------------------------------------------------------------------
+
 
 def _descriptor(
     value: Any,
@@ -555,9 +477,7 @@ def _descriptor(
 def model_id_of(
     value: Any,
 ) -> str:
-    descriptor = _descriptor(
-        value
-    )
+    descriptor = _descriptor(value)
 
     return _text(
         _value(
@@ -582,9 +502,7 @@ def model_id_of(
 def model_name_of(
     value: Any,
 ) -> str:
-    descriptor = _descriptor(
-        value
-    )
+    descriptor = _descriptor(value)
 
     return _text(
         _nested_value(
@@ -605,9 +523,7 @@ def model_name_of(
 def model_family_of(
     value: Any,
 ) -> str:
-    descriptor = _descriptor(
-        value
-    )
+    descriptor = _descriptor(value)
 
     return _text(
         _nested_value(
@@ -628,9 +544,7 @@ def model_family_of(
 def model_version_of(
     value: Any,
 ) -> str:
-    descriptor = _descriptor(
-        value
-    )
+    descriptor = _descriptor(value)
 
     return _text(
         _nested_value(
@@ -651,9 +565,7 @@ def model_version_of(
 def model_state_of(
     value: Any,
 ) -> str:
-    descriptor = _descriptor(
-        value
-    )
+    descriptor = _descriptor(value)
 
     return _text(
         _value(
@@ -679,13 +591,9 @@ def model_ready_of(
     )
 
     if ready is not None:
-        return bool(
-            ready
-        )
+        return bool(ready)
 
-    descriptor = _descriptor(
-        value
-    )
+    descriptor = _descriptor(value)
 
     ready = _value(
         descriptor,
@@ -694,13 +602,9 @@ def model_ready_of(
     )
 
     if ready is not None:
-        return bool(
-            ready
-        )
+        return bool(ready)
 
-    return model_state_of(
-        value
-    ) == "ready"
+    return model_state_of(value) == "ready"
 
 
 def model_loaded_of(
@@ -713,9 +617,7 @@ def model_loaded_of(
     )
 
     if loaded is not None:
-        return bool(
-            loaded
-        )
+        return bool(loaded)
 
     adapter = _value(
         value,
@@ -731,13 +633,9 @@ def model_loaded_of(
         )
 
         if loaded is not None:
-            return bool(
-                loaded
-            )
+            return bool(loaded)
 
-    return model_state_of(
-        value
-    ) in {
+    return model_state_of(value) in {
         "loading",
         "ready",
         "degraded",
@@ -747,9 +645,7 @@ def model_loaded_of(
 def model_device_of(
     value: Any,
 ) -> Optional[str]:
-    descriptor = _descriptor(
-        value
-    )
+    descriptor = _descriptor(value)
 
     device = _value(
         descriptor,
@@ -764,48 +660,29 @@ def model_device_of(
     if device is None:
         return None
 
-    text = _text(
-        device
-    )
+    text = _text(device)
 
-    return (
-        text
-        if text
-        else None
-    )
+    return text if text else None
 
 
 def model_response(
     value: Any,
 ) -> ModelResponse:
-    descriptor = _descriptor(
-        value
-    )
+    descriptor = _descriptor(value)
 
-    model_id = model_id_of(
-        value
-    )
+    model_id = model_id_of(value)
 
-    name = model_name_of(
-        value
-    )
+    name = model_name_of(value)
 
-    family = model_family_of(
-        value
-    )
+    family = model_family_of(value)
 
-    version = model_version_of(
-        value
-    )
+    version = model_version_of(value)
 
     if not model_id:
         raise InternalServerAPIError(
-            "Registered model has no "
-            "public model identifier.",
+            "Registered model has no public model identifier.",
             details={
-                "resource": (
-                    "model_registry_entry"
-                ),
+                "resource": ("model_registry_entry"),
             },
         )
 
@@ -820,39 +697,21 @@ def model_response(
 
     return ModelResponse(
         model_id=model_id,
-
         name=name,
-
         family=family,
-
         version=version,
-
-        state=model_state_of(
-            value
-        ),
-
-        ready=model_ready_of(
-            value
-        ),
-
-        loaded=model_loaded_of(
-            value
-        ),
-
-        device=model_device_of(
-            value
-        ),
-
+        state=model_state_of(value),
+        ready=model_ready_of(value),
+        loaded=model_loaded_of(value),
+        device=model_device_of(value),
         artifact_path_exposed=False,
-
-        model_configuration=_safe_public_attributes(
+        model_config=_safe_public_attributes(
             _value(
                 descriptor,
                 "model_config",
                 {},
             )
         ),
-
         attributes=_safe_public_attributes(
             _value(
                 descriptor,
@@ -864,7 +723,6 @@ def model_response(
                 ),
             )
         ),
-
         registered_at=_optional_datetime(
             _value(
                 descriptor,
@@ -876,7 +734,6 @@ def model_response(
                 ),
             )
         ),
-
         loaded_at=_optional_datetime(
             _value(
                 descriptor,
@@ -894,6 +751,7 @@ def model_response(
 # ------------------------------------------------------------------
 # Model service
 # ------------------------------------------------------------------
+
 
 class ModelService:
     """
@@ -919,12 +777,8 @@ class ModelService:
         self._closed = False
         self._lock = RLock()
 
-        self._operation_semaphore = (
-            asyncio.Semaphore(
-     config.
-                limits.
-                maximum_concurrent_model_operations
-            )
+        self._operation_semaphore = asyncio.Semaphore(
+            config.limits.maximum_concurrent_model_operations
         )
 
         self._model_locks: Dict[
@@ -932,9 +786,7 @@ class ModelService:
             asyncio.Lock,
         ] = {}
 
-        self._model_locks_guard = (
-            asyncio.Lock()
-        )
+        self._model_locks_guard = asyncio.Lock()
 
         self._idempotency_results: Dict[
             str,
@@ -953,41 +805,27 @@ class ModelService:
                 raise ModelUnavailableAPIError(
                     "The model service is closed.",
                     details={
-                        "resource": (
-                            MODEL_SERVICE_NAME
-                        ),
+                        "resource": (MODEL_SERVICE_NAME),
                     },
                 )
 
     def _require_read_enabled(
         self,
     ) -> None:
-        if not (
-            self.config.
-            features.
-            model_read_enabled
-        ):
+        if not (self.config.features.model_read_enabled):
             raise FeatureDisabledError(
                 details={
-                    "resource": (
-                        "model_read"
-                    ),
+                    "resource": ("model_read"),
                 },
             )
 
     def _require_operations_enabled(
         self,
     ) -> None:
-        if not (
-            self.config.
-            features.
-            model_load_operations_enabled
-        ):
+        if not (self.config.features.model_load_operations_enabled):
             raise FeatureDisabledError(
                 details={
-                    "resource": (
-                        "model_operations"
-                    ),
+                    "resource": ("model_operations"),
                 },
             )
 
@@ -1014,16 +852,12 @@ class ModelService:
             None,
         )
 
-        if callable(
-            finder
-        ):
+        if callable(finder):
             try:
                 result = finder()
 
                 if result is not None:
-                    return tuple(
-                        result
-                    )
+                    return tuple(result)
 
             except TypeError:
                 pass
@@ -1038,17 +872,13 @@ class ModelService:
             entries,
             Mapping,
         ):
-            return tuple(
-                entries.values()
-            )
+            return tuple(entries.values())
 
         if isinstance(
             entries,
             Iterable,
         ):
-            return tuple(
-                entries
-            )
+            return tuple(entries)
 
         lister = getattr(
             self.registry,
@@ -1056,15 +886,11 @@ class ModelService:
             None,
         )
 
-        if callable(
-            lister
-        ):
+        if callable(lister):
             result = lister()
 
             if result is not None:
-                return tuple(
-                    result
-                )
+                return tuple(result)
 
         models = getattr(
             self.registry,
@@ -1076,17 +902,13 @@ class ModelService:
             models,
             Mapping,
         ):
-            return tuple(
-                models.values()
-            )
+            return tuple(models.values())
 
         if isinstance(
             models,
             Iterable,
         ):
-            return tuple(
-                models
-            )
+            return tuple(models)
 
         return ()
 
@@ -1100,81 +922,35 @@ class ModelService:
     ) -> Tuple[Any, ...]:
         entries = self._all_entries()
 
-        family_filter = (
-            _text(
-                family
-            ).lower()
-            if family
-            else None
-        )
+        family_filter = _text(family).lower() if family else None
 
-        state_filter = (
-            _text(
-                state
-            ).lower()
-            if state
-            else None
-        )
+        state_filter = _text(state).lower() if state else None
 
         output = []
 
         for entry in entries:
-            if (
-                family_filter
-                and model_family_of(
-                    entry
-                ).lower()
-                != family_filter
-            ):
+            if family_filter and model_family_of(entry).lower() != family_filter:
                 continue
 
-            if (
-                state_filter
-                and model_state_of(
-                    entry
-                ).lower()
-                != state_filter
-            ):
+            if state_filter and model_state_of(entry).lower() != state_filter:
                 continue
 
-            if (
-                loaded is not None
-                and model_loaded_of(
-                    entry
-                )
-                != loaded
-            ):
+            if loaded is not None and model_loaded_of(entry) != loaded:
                 continue
 
-            if (
-                ready is not None
-                and model_ready_of(
-                    entry
-                )
-                != ready
-            ):
+            if ready is not None and model_ready_of(entry) != ready:
                 continue
 
-            output.append(
-                entry
-            )
+            output.append(entry)
 
         return tuple(
             sorted(
                 output,
                 key=lambda entry: (
-                    model_family_of(
-                        entry
-                    ),
-                    model_name_of(
-                        entry
-                    ),
-                    model_version_of(
-                        entry
-                    ),
-                    model_id_of(
-                        entry
-                    ),
+                    model_family_of(entry),
+                    model_name_of(entry),
+                    model_version_of(entry),
+                    model_id_of(entry),
                 ),
             )
         )
@@ -1187,16 +963,12 @@ class ModelService:
         self,
         model_id: str,
     ) -> Any:
-        normalized = _text(
-            model_id
-        )
+        normalized = _text(model_id)
 
         if not normalized:
             raise ModelNotFoundAPIError(
                 details={
-                    "resource": (
-                        "model"
-                    ),
+                    "resource": ("model"),
                 },
             )
 
@@ -1206,13 +978,9 @@ class ModelService:
             None,
         )
 
-        if callable(
-            getter
-        ):
+        if callable(getter):
             try:
-                entry = getter(
-                    normalized
-                )
+                entry = getter(normalized)
 
                 if entry is not None:
                     return entry
@@ -1224,23 +992,13 @@ class ModelService:
                 pass
 
         for entry in self._all_entries():
-            if (
-                model_id_of(
-                    entry
-                )
-                == normalized
-            ):
+            if model_id_of(entry) == normalized:
                 return entry
 
         raise ModelNotFoundAPIError(
             details={
-                "resource": (
-                    "model"
-                ),
-
-                "model_id": (
-                    normalized
-                ),
+                "resource": ("model"),
+                "model_id": (normalized),
             },
         )
 
@@ -1257,23 +1015,16 @@ class ModelService:
         ready: Optional[bool] = None,
         limit: int = 100,
         offset: int = 0,
-        context: Optional[
-            ModelOperationContext
-        ] = None,
+        context: Optional[ModelOperationContext] = None,
     ) -> ModelListResponse:
         self._ensure_open()
         self._require_read_enabled()
 
         if limit < 1 or limit > 1000:
-            raise ValueError(
-                "limit must be between "
-                "1 and 1000"
-            )
+            raise ValueError("limit must be between 1 and 1000")
 
         if offset < 0:
-            raise ValueError(
-                "offset must be >= 0"
-            )
+            raise ValueError("offset must be >= 0")
 
         entries = self._filtered_entries(
             family=family,
@@ -1282,50 +1033,26 @@ class ModelService:
             ready=ready,
         )
 
-        total = len(
-            entries
-        )
+        total = len(entries)
 
-        selected = entries[
-            offset:
-            offset + limit
-        ]
+        selected = entries[offset : offset + limit]
 
-        returned = len(
-            selected
-        )
+        returned = len(selected)
 
         return ModelListResponse(
-            models=[
-                model_response(
-                    entry
-                )
-                for entry
-                in selected
-            ],
-
+            models=[model_response(entry) for entry in selected],
             pagination=(
                 PaginationMetadata(
                     limit=limit,
                     offset=offset,
                     returned=returned,
                     total=total,
-                    has_more=(
-                        offset
-                        + returned
-                        < total
-                    ),
+                    has_more=(offset + returned < total),
                 )
             ),
-
             metadata=(
                 APIResponseMetadata(
-                    request_id=(
-                        context.request_id
-                        if context
-                        is not None
-                        else None
-                    ),
+                    request_id=(context.request_id if context is not None else None),
                 )
             ),
         )
@@ -1334,18 +1061,12 @@ class ModelService:
         self,
         model_id: str,
         *,
-        context: Optional[
-            ModelOperationContext
-        ] = None,
+        context: Optional[ModelOperationContext] = None,
     ) -> ModelResponse:
         self._ensure_open()
         self._require_read_enabled()
 
-        return model_response(
-            self._find_entry(
-                model_id
-            )
-        )
+        return model_response(self._find_entry(model_id))
 
     # ------------------------------------------------------
     # Per-model lock
@@ -1355,21 +1076,15 @@ class ModelService:
         self,
         model_id: str,
     ) -> asyncio.Lock:
-        normalized = _text(
-            model_id
-        )
+        normalized = _text(model_id)
 
         async with self._model_locks_guard:
-            lock = self._model_locks.get(
-                normalized
-            )
+            lock = self._model_locks.get(normalized)
 
             if lock is None:
                 lock = asyncio.Lock()
 
-                self._model_locks[
-                    normalized
-                ] = lock
+                self._model_locks[normalized] = lock
 
             return lock
 
@@ -1380,25 +1095,16 @@ class ModelService:
     @staticmethod
     def _idempotency_key(
         request: ModelOperationRequest,
-        context: Optional[
-            ModelOperationContext
-        ],
+        context: Optional[ModelOperationContext],
     ) -> Optional[str]:
-        key = (
-            request.idempotency_key
-            or (
-                context.idempotency_key
-                if context is not None
-                else None
-            )
+        key = request.idempotency_key or (
+            context.idempotency_key if context is not None else None
         )
 
         if not key:
             return None
 
-        return _text(
-            key
-        )
+        return _text(key)
 
     def _cached_operation(
         self,
@@ -1408,9 +1114,7 @@ class ModelService:
             return None
 
         with self._lock:
-            return self._idempotency_results.get(
-                key
-            )
+            return self._idempotency_results.get(key)
 
     def _store_operation(
         self,
@@ -1421,27 +1125,15 @@ class ModelService:
             return
 
         with self._lock:
-            if (
-                len(
-                    self._idempotency_results
-                )
-                >= 10_000
-            ):
-                oldest = next(
-                    iter(
-                        self.
-                        _idempotency_results
-                    )
-                )
+            if len(self._idempotency_results) >= 10_000:
+                oldest = next(iter(self._idempotency_results))
 
                 self._idempotency_results.pop(
                     oldest,
                     None,
                 )
 
-            self._idempotency_results[
-                key
-            ] = response
+            self._idempotency_results[key] = response
 
     # ------------------------------------------------------
     # Timed mutation
@@ -1457,23 +1149,15 @@ class ModelService:
         model_id: str,
         operation_name: str,
     ) -> Any:
-        timeout = (
-            self.config.
-            timeouts.
-            model_operation_seconds
-        )
+        timeout = self.config.timeouts.model_operation_seconds
 
-        lock = await self._model_lock(
-            model_id
-        )
+        lock = await self._model_lock(model_id)
 
         try:
             async with self._operation_semaphore:
                 async with lock:
                     return await asyncio.wait_for(
-                        _await_if_needed(
-                            operation()
-                        ),
+                        _await_if_needed(operation()),
                         timeout=timeout,
                     )
 
@@ -1481,13 +1165,8 @@ class ModelService:
             raise RequestTimeoutAPIError(
                 "The model operation timed out.",
                 details={
-                    "operation": (
-                        operation_name
-                    ),
-
-                    "model_id": (
-                        model_id
-                    ),
+                    "operation": (operation_name),
+                    "model_id": (model_id),
                 },
             ) from exc
 
@@ -1498,79 +1177,45 @@ class ModelService:
     async def load_model(
         self,
         model_id: str,
-        request: Optional[
-            ModelOperationRequest
-        ] = None,
+        request: Optional[ModelOperationRequest] = None,
         *,
-        context: Optional[
-            ModelOperationContext
-        ] = None,
+        context: Optional[ModelOperationContext] = None,
     ) -> OperationResponse:
         self._ensure_open()
         self._require_operations_enabled()
 
-        normalized = _text(
-            model_id
-        )
+        normalized = _text(model_id)
 
-        operation_request = (
-            request
-            or ModelOperationRequest()
-        )
+        operation_request = request or ModelOperationRequest()
 
         key = self._idempotency_key(
             operation_request,
             context,
         )
 
-        cached = self._cached_operation(
-            key
-        )
+        cached = self._cached_operation(key)
 
         if cached is not None:
             return cached
 
-        entry = self._find_entry(
-            normalized
-        )
+        entry = self._find_entry(normalized)
 
-        if (
-            model_loaded_of(
-                entry
-            )
-            and not operation_request.force
-        ):
+        if model_loaded_of(entry) and not operation_request.force:
             response = OperationResponse(
                 operation_id=uuid4(),
-
-                state=(
-                    OperationState.
-                    COMPLETED.value
-                ),
-
-                message=(
-                    "The model is already loaded."
-                ),
-
+                state=(OperationState.COMPLETED.value),
+                message=("The model is already loaded."),
                 result={
                     "model": (
-                        model_response(
-                            entry
-                        ).model_dump(
+                        model_response(entry).model_dump(
                             mode="json",
                             exclude_none=True,
                         )
                     ),
-
                     "changed": False,
                 },
-
                 metadata=APIResponseMetadata(
-                    request_id=(
-                        context.request_id
-                        if context is not None
-                        else None
-                    ),
+                    request_id=(context.request_id if context is not None else None),
                 ),
             )
 
@@ -1588,21 +1233,15 @@ class ModelService:
                 None,
             )
 
-            if callable(
-                loader
-            ):
+            if callable(loader):
                 try:
                     return loader(
                         normalized,
-                        force=(
-                            operation_request.force
-                        ),
+                        force=(operation_request.force),
                     )
 
                 except TypeError:
-                    return loader(
-                        normalized
-                    )
+                    return loader(normalized)
 
             loader = getattr(
                 self.loader,
@@ -1610,29 +1249,20 @@ class ModelService:
                 None,
             )
 
-            if callable(
-                loader
-            ):
+            if callable(loader):
                 try:
                     return loader(
                         normalized,
-                        force=(
-                            operation_request.force
-                        ),
+                        force=(operation_request.force),
                     )
 
                 except TypeError:
-                    return loader(
-                        normalized
-                    )
+                    return loader(normalized)
 
             raise ModelUnavailableAPIError(
-                "No model load operation "
-                "is available.",
+                "No model load operation is available.",
                 details={
-                    "model_id": (
-                        normalized
-                    ),
+                    "model_id": (normalized),
                 },
             )
 
@@ -1640,46 +1270,26 @@ class ModelService:
             await self._run_operation(
                 operation,
                 model_id=normalized,
-                operation_name=(
-                    "model_load"
-                ),
+                operation_name=("model_load"),
             )
 
-            refreshed = self._find_entry(
-                normalized
-            )
+            refreshed = self._find_entry(normalized)
 
             response = OperationResponse(
                 operation_id=uuid4(),
-
-                state=(
-                    OperationState.
-                    COMPLETED.value
-                ),
-
-                message=(
-                    "The model was loaded."
-                ),
-
+                state=(OperationState.COMPLETED.value),
+                message=("The model was loaded."),
                 result={
                     "model": (
-                        model_response(
-                            refreshed
-                        ).model_dump(
+                        model_response(refreshed).model_dump(
                             mode="json",
                             exclude_none=True,
                         )
                     ),
-
                     "changed": True,
                 },
-
                 metadata=APIResponseMetadata(
-                    request_id=(
-                        context.request_id
-                        if context is not None
-                        else None
-                    ),
+                    request_id=(context.request_id if context is not None else None),
                 ),
             )
 
@@ -1694,31 +1304,16 @@ class ModelService:
             raise
 
         except Exception as exc:
-            translated = translate_exception(
-                exc
-            )
+            translated = translate_exception(exc)
 
-            if (
-                translated.status_code
-                < 500
-            ):
+            if translated.status_code < 500:
                 raise translated from exc
 
             raise ModelLoadAPIError(
                 details={
-                    "operation": (
-                        "model_load"
-                    ),
-
-                    "model_id": (
-                        normalized
-                    ),
-
-                    "error_type": (
-                        type(
-                            exc
-                        ).__name__
-                    ),
+                    "operation": ("model_load"),
+                    "model_id": (normalized),
+                    "error_type": (type(exc).__name__),
                 },
             ) from exc
 
@@ -1729,79 +1324,45 @@ class ModelService:
     async def unload_model(
         self,
         model_id: str,
-        request: Optional[
-            ModelOperationRequest
-        ] = None,
+        request: Optional[ModelOperationRequest] = None,
         *,
-        context: Optional[
-            ModelOperationContext
-        ] = None,
+        context: Optional[ModelOperationContext] = None,
     ) -> OperationResponse:
         self._ensure_open()
         self._require_operations_enabled()
 
-        normalized = _text(
-            model_id
-        )
+        normalized = _text(model_id)
 
-        operation_request = (
-            request
-            or ModelOperationRequest()
-        )
+        operation_request = request or ModelOperationRequest()
 
         key = self._idempotency_key(
             operation_request,
             context,
         )
 
-        cached = self._cached_operation(
-            key
-        )
+        cached = self._cached_operation(key)
 
         if cached is not None:
             return cached
 
-        entry = self._find_entry(
-            normalized
-        )
+        entry = self._find_entry(normalized)
 
-        if (
-            not model_loaded_of(
-                entry
-            )
-            and not operation_request.force
-        ):
+        if not model_loaded_of(entry) and not operation_request.force:
             response = OperationResponse(
                 operation_id=uuid4(),
-
-                state=(
-                    OperationState.
-                    COMPLETED.value
-                ),
-
-                message=(
-                    "The model is already unloaded."
-                ),
-
+                state=(OperationState.COMPLETED.value),
+                message=("The model is already unloaded."),
                 result={
                     "model": (
-                        model_response(
-                            entry
-                        ).model_dump(
+                        model_response(entry).model_dump(
                             mode="json",
                             exclude_none=True,
                         )
                     ),
-
                     "changed": False,
                 },
-
                 metadata=APIResponseMetadata(
-                    request_id=(
-                        context.request_id
-                        if context is not None
-                        else None
-                    ),
+                    request_id=(context.request_id if context is not None else None),
                 ),
             )
 
@@ -1819,76 +1380,47 @@ class ModelService:
                 None,
             )
 
-            if not callable(
-                unloader
-            ):
+            if not callable(unloader):
                 raise ModelUnavailableAPIError(
-                    "No model unload operation "
-                    "is available.",
+                    "No model unload operation is available.",
                     details={
-                        "model_id": (
-                            normalized
-                        ),
+                        "model_id": (normalized),
                     },
                 )
 
             try:
                 return unloader(
                     normalized,
-                    force=(
-                        operation_request.force
-                    ),
+                    force=(operation_request.force),
                 )
 
             except TypeError:
-                return unloader(
-                    normalized
-                )
+                return unloader(normalized)
 
         try:
             await self._run_operation(
                 operation,
                 model_id=normalized,
-                operation_name=(
-                    "model_unload"
-                ),
+                operation_name=("model_unload"),
             )
 
-            refreshed = self._find_entry(
-                normalized
-            )
+            refreshed = self._find_entry(normalized)
 
             response = OperationResponse(
                 operation_id=uuid4(),
-
-                state=(
-                    OperationState.
-                    COMPLETED.value
-                ),
-
-                message=(
-                    "The model was unloaded."
-                ),
-
+                state=(OperationState.COMPLETED.value),
+                message=("The model was unloaded."),
                 result={
                     "model": (
-                        model_response(
-                            refreshed
-                        ).model_dump(
+                        model_response(refreshed).model_dump(
                             mode="json",
                             exclude_none=True,
                         )
                     ),
-
                     "changed": True,
                 },
-
                 metadata=APIResponseMetadata(
-                    request_id=(
-                        context.request_id
-                        if context is not None
-                        else None
-                    ),
+                    request_id=(context.request_id if context is not None else None),
                 ),
             )
 
@@ -1907,19 +1439,9 @@ class ModelService:
                 "The model could not be unloaded.",
                 retryable=False,
                 details={
-                    "operation": (
-                        "model_unload"
-                    ),
-
-                    "model_id": (
-                        normalized
-                    ),
-
-                    "error_type": (
-                        type(
-                            exc
-                        ).__name__
-                    ),
+                    "operation": ("model_unload"),
+                    "model_id": (normalized),
+                    "error_type": (type(exc).__name__),
                 },
             ) from exc
 
@@ -1929,21 +1451,14 @@ class ModelService:
 
     async def refresh_models(
         self,
-        request: Optional[
-            ModelRefreshRequest
-        ] = None,
+        request: Optional[ModelRefreshRequest] = None,
         *,
-        context: Optional[
-            ModelOperationContext
-        ] = None,
+        context: Optional[ModelOperationContext] = None,
     ) -> ModelRefreshResponse:
         self._ensure_open()
         self._require_operations_enabled()
 
-        refresh_request = (
-            request
-            or ModelRefreshRequest()
-        )
+        refresh_request = request or ModelRefreshRequest()
 
         discover = getattr(
             self.loader,
@@ -1951,15 +1466,11 @@ class ModelService:
             None,
         )
 
-        if not callable(
-            discover
-        ):
+        if not callable(discover):
             raise ModelUnavailableAPIError(
                 "Model discovery is unavailable.",
                 details={
-                    "resource": (
-                        "model_loader"
-                    ),
+                    "resource": ("model_loader"),
                 },
             )
 
@@ -1967,40 +1478,24 @@ class ModelService:
             return _invoke_supported(
                 discover,
                 {
-                    "fail_fast": (
-                        refresh_request.fail_fast
-                    ),
-
-                    "replace": (
-                        refresh_request.replace
-                    ),
-
-                    "eager_load": (
-                        refresh_request.eager_load
-                    ),
+                    "fail_fast": (refresh_request.fail_fast),
+                    "replace": (refresh_request.replace),
+                    "eager_load": (refresh_request.eager_load),
                 },
             )
 
         try:
             async with self._operation_semaphore:
                 result = await asyncio.wait_for(
-                    _await_if_needed(
-                        operation()
-                    ),
-                    timeout=(
-                        self.config.
-                        timeouts.
-                        model_operation_seconds
-                    ),
+                    _await_if_needed(operation()),
+                    timeout=(self.config.timeouts.model_operation_seconds),
                 )
 
         except asyncio.TimeoutError as exc:
             raise RequestTimeoutAPIError(
                 "Model discovery timed out.",
                 details={
-                    "operation": (
-                        "model_discovery"
-                    ),
+                    "operation": ("model_discovery"),
                 },
             ) from exc
 
@@ -2011,21 +1506,12 @@ class ModelService:
             raise ModelLoadAPIError(
                 "Model discovery failed.",
                 details={
-                    "operation": (
-                        "model_discovery"
-                    ),
-
-                    "error_type": (
-                        type(
-                            exc
-                        ).__name__
-                    ),
+                    "operation": ("model_discovery"),
+                    "error_type": (type(exc).__name__),
                 },
             ) from exc
 
-        source = _mapping(
-            result
-        )
+        source = _mapping(result)
 
         discovered = int(
             source.get(
@@ -2068,46 +1554,28 @@ class ModelService:
         failures = []
 
         for failure in raw_failures or ():
-            failure_source = _mapping(
-                failure
-            )
+            failure_source = _mapping(failure)
 
             failures.append(
                 {
-                    "model_id": (
-                        failure_source.get(
-                            "model_id"
-                        )
-                    ),
-
+                    "model_id": (failure_source.get("model_id")),
                     "error_type": (
                         failure_source.get(
                             "error_type",
                             "ModelDiscoveryError",
                         )
                     ),
-
-                    "message": (
-                        "Model discovery failed."
-                    ),
+                    "message": ("Model discovery failed."),
                 }
             )
 
         return ModelRefreshResponse(
             discovered=discovered,
-
             registered=registered,
-
             failed=failed,
-
             failures=failures,
-
             metadata=APIResponseMetadata(
-                request_id=(
-                    context.request_id
-                    if context is not None
-                    else None
-                ),
+                request_id=(context.request_id if context is not None else None),
             ),
         )
 
@@ -2127,12 +1595,8 @@ class ModelService:
                 None,
             )
 
-            if callable(
-                summary_method
-            ):
-                summary = _mapping(
-                    summary_method()
-                )
+            if callable(summary_method):
+                summary = _mapping(summary_method())
 
             else:
                 summary = {}
@@ -2140,36 +1604,11 @@ class ModelService:
             entries = self._all_entries()
 
             return {
-                "status": (
-                    "healthy"
-                    if entries
-                    else "degraded"
-                ),
-
-                "ready": bool(
-                    entries
-                ),
-
-                "registered_models": len(
-                    entries
-                ),
-
-                "loaded_models": sum(
-                    1
-                    for entry in entries
-                    if model_loaded_of(
-                        entry
-                    )
-                ),
-
-                "ready_models": sum(
-                    1
-                    for entry in entries
-                    if model_ready_of(
-                        entry
-                    )
-                ),
-
+                "status": ("healthy" if entries else "degraded"),
+                "ready": bool(entries),
+                "registered_models": len(entries),
+                "loaded_models": sum(1 for entry in entries if model_loaded_of(entry)),
+                "ready_models": sum(1 for entry in entries if model_ready_of(entry)),
                 "registry": summary,
             }
 
@@ -2180,11 +1619,7 @@ class ModelService:
                 "registered_models": 0,
                 "loaded_models": 0,
                 "ready_models": 0,
-                "error_type": (
-                    type(
-                        exc
-                    ).__name__
-                ),
+                "error_type": (type(exc).__name__),
             }
 
     # ------------------------------------------------------
@@ -2198,50 +1633,18 @@ class ModelService:
             closed = self._closed
 
         return {
-            "service": (
-                MODEL_SERVICE_NAME
-            ),
-
-            "version": (
-                MODEL_SERVICE_VERSION
-            ),
-
+            "service": (MODEL_SERVICE_NAME),
+            "version": (MODEL_SERVICE_VERSION),
             "closed": closed,
-
-            "read_enabled": (
-                self.config.
-                features.
-                model_read_enabled
-            ),
-
-            "operations_enabled": (
-                self.config.
-                features.
-                model_load_operations_enabled
-            ),
-
-            "operation_timeout_seconds": (
-                self.config.
-                timeouts.
-                model_operation_seconds
-            ),
-
+            "read_enabled": (self.config.features.model_read_enabled),
+            "operations_enabled": (self.config.features.model_load_operations_enabled),
+            "operation_timeout_seconds": (self.config.timeouts.model_operation_seconds),
             "maximum_concurrent_operations": (
-                self.config.
-                limits.
-                maximum_concurrent_model_operations
+                self.config.limits.maximum_concurrent_model_operations
             ),
-
-            "registry": type(
-                self.registry
-            ).__name__,
-
-            "loader": type(
-                self.loader
-            ).__name__,
-
+            "registry": type(self.registry).__name__,
+            "loader": type(self.loader).__name__,
             "training_supported": False,
-
             "promotion_supported": False,
         }
 
@@ -2249,6 +1652,7 @@ class ModelService:
 # ------------------------------------------------------------------
 # Construction
 # ------------------------------------------------------------------
+
 
 def create_model_service(
     *,
@@ -2266,6 +1670,7 @@ def create_model_service(
 # ------------------------------------------------------------------
 # Dependency registration
 # ------------------------------------------------------------------
+
 
 def register_model_service(
     dependencies: Any,
@@ -2305,9 +1710,7 @@ def register_model_service(
         raise InternalServerAPIError(
             "API configuration is unavailable.",
             details={
-                "resource": (
-                    "api_config"
-                ),
+                "resource": ("api_config"),
             },
         )
 
@@ -2315,9 +1718,7 @@ def register_model_service(
         raise InternalServerAPIError(
             "Model registry is unavailable.",
             details={
-                "resource": (
-                    "model_registry"
-                ),
+                "resource": ("model_registry"),
             },
         )
 
@@ -2325,22 +1726,15 @@ def register_model_service(
         raise InternalServerAPIError(
             "Model loader is unavailable.",
             details={
-                "resource": (
-                    "model_loader"
-                ),
+                "resource": ("model_loader"),
             },
         )
 
-    if not callable(
-        register
-    ):
+    if not callable(register):
         raise InternalServerAPIError(
-            "API service registration is "
-            "unavailable.",
+            "API service registration is unavailable.",
             details={
-                "resource": (
-                    "api_dependencies"
-                ),
+                "resource": ("api_dependencies"),
             },
         )
 
@@ -2366,9 +1760,7 @@ def register_model_service(
 __all__ = [
     "MODEL_SERVICE_NAME",
     "MODEL_SERVICE_VERSION",
-
     "ModelOperationContext",
-
     "model_id_of",
     "model_name_of",
     "model_family_of",
@@ -2377,11 +1769,8 @@ __all__ = [
     "model_ready_of",
     "model_loaded_of",
     "model_device_of",
-
     "model_response",
-
     "ModelService",
-
     "create_model_service",
     "register_model_service",
 ]

@@ -24,10 +24,7 @@ def collect_pod_logs(
         environment_id,
     )
 
-    containers = (
-        pod.spec.containers
-        or []
-    )
+    containers = pod.spec.containers or []
 
     for container in containers:
         try:
@@ -41,21 +38,13 @@ def collect_pod_logs(
         except Exception as exc:
             results.append(
                 make_record(
-                    signal_type=(
-                        "collector_error"
-                    ),
+                    signal_type=("collector_error"),
                     timestamp=utc_now(),
                     identity=identity,
                     payload={
-                        "collector": (
-                            "pod_log"
-                        ),
-                        "container_name": (
-                            container.name
-                        ),
-                        "error": (
-                            type(exc).__name__
-                        ),
+                        "collector": ("pod_log"),
+                        "container_name": (container.name),
+                        "error": (type(exc).__name__),
                         "message": str(exc),
                     },
                 )
@@ -80,14 +69,10 @@ def collect_pod_logs(
             )
 
             if len(parts) == 2:
-                candidate_time = (
-                    parts[0]
-                )
+                candidate_time = parts[0]
 
                 if "T" in candidate_time:
-                    timestamp = (
-                        candidate_time
-                    )
+                    timestamp = candidate_time
                     message = parts[1]
 
             results.append(
@@ -96,9 +81,7 @@ def collect_pod_logs(
                     timestamp=timestamp,
                     identity=identity,
                     payload={
-                        "container_name": (
-                            container.name
-                        ),
+                        "container_name": (container.name),
                         "message": message,
                     },
                 )

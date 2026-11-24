@@ -53,6 +53,7 @@ INTEGRATION_SCHEMA_VERSION = "1"
 # Provider kind
 # ---------------------------------------------------------------
 
+
 class ProviderKind(
     str,
     Enum,
@@ -73,6 +74,7 @@ class ProviderKind(
 # ---------------------------------------------------------------
 # Integration lifecycle state
 # ---------------------------------------------------------------
+
 
 class IntegrationState(
     str,
@@ -97,6 +99,7 @@ class IntegrationState(
 # Integration health
 # ---------------------------------------------------------------
 
+
 class IntegrationHealthStatus(
     str,
     Enum,
@@ -113,6 +116,7 @@ class IntegrationHealthStatus(
 # ---------------------------------------------------------------
 # Operation status
 # ---------------------------------------------------------------
+
 
 class OperationStatus(
     str,
@@ -134,6 +138,7 @@ class OperationStatus(
 # ---------------------------------------------------------------
 # Integration target
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class IntegrationTarget:
@@ -160,48 +165,26 @@ class IntegrationTarget:
 
     target_id: str
 
-    endpoint: Optional[
-        str
-    ] = None
+    endpoint: Optional[str] = None
 
-    region: Optional[
-        str
-    ] = None
+    region: Optional[str] = None
 
-    namespace: Optional[
-        str
-    ] = None
+    namespace: Optional[str] = None
 
-    credential: Optional[
-        SecretReference
-    ] = None
+    credential: Optional[SecretReference] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
     ) -> "IntegrationTarget":
-        if (
-            self.provider
-            not in {
-                item.value
-                for item
-                in ProviderKind
-            }
-        ):
-            raise ValueError(
-                "Unknown integration "
-                f"provider: {self.provider}"
-            )
+        if self.provider not in {item.value for item in ProviderKind}:
+            raise ValueError(f"Unknown integration provider: {self.provider}")
 
-        environment_id(
-            self.environment_id
-        )
+        environment_id(self.environment_id)
 
         required_string(
             self.target_id,
@@ -241,48 +224,21 @@ class IntegrationTarget:
         self.finalize()
 
         return {
-            "provider": (
-                self.provider
-            ),
-
-            "environment_id": (
-                self.environment_id
-            ),
-
-            "target_id": (
-                self.target_id
-            ),
-
-            "endpoint": (
-                self.endpoint
-            ),
-
-            "region": (
-                self.region
-            ),
-
-            "namespace": (
-                self.namespace
-            ),
-
-            "credential": (
-                self.credential.
-                to_dict()
-                if self.credential
-                else None
-            ),
-
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
+            "provider": (self.provider),
+            "environment_id": (self.environment_id),
+            "target_id": (self.target_id),
+            "endpoint": (self.endpoint),
+            "region": (self.region),
+            "namespace": (self.namespace),
+            "credential": (self.credential.to_dict() if self.credential else None),
+            "attributes": (to_json_safe(self.attributes)),
         }
 
 
 # ---------------------------------------------------------------
 # Integration capability
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class IntegrationCapability:
@@ -306,20 +262,14 @@ class IntegrationCapability:
 
     resource: str
 
-    actions: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    actions: List[str] = field(default_factory=list)
 
     read_only: bool = True
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
@@ -339,9 +289,7 @@ class IntegrationCapability:
         object.__setattr__(
             self,
             "actions",
-            unique_strings(
-                self.actions
-            ),
+            unique_strings(self.actions),
         )
 
         return self
@@ -353,30 +301,17 @@ class IntegrationCapability:
 
         return {
             "name": self.name,
-
-            "resource": (
-                self.resource
-            ),
-
-            "actions": list(
-                self.actions
-            ),
-
-            "read_only": (
-                self.read_only
-            ),
-
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
+            "resource": (self.resource),
+            "actions": list(self.actions),
+            "read_only": (self.read_only),
+            "attributes": (to_json_safe(self.attributes)),
         }
 
 
 # ---------------------------------------------------------------
 # Integration status
 # ---------------------------------------------------------------
+
 
 @dataclass
 class IntegrationStatus:
@@ -387,77 +322,39 @@ class IntegrationStatus:
 
     target: IntegrationTarget
 
-    state: str = (
-        IntegrationState.CREATED.value
-    )
+    state: str = IntegrationState.CREATED.value
 
-    integration_id: Optional[
-        str
-    ] = None
+    integration_id: Optional[str] = None
 
-    connected_at: Optional[
-        str
-    ] = None
+    connected_at: Optional[str] = None
 
-    closed_at: Optional[
-        str
-    ] = None
+    closed_at: Optional[str] = None
 
-    last_error_type: Optional[
-        str
-    ] = None
+    last_error_type: Optional[str] = None
 
-    capabilities: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    capabilities: List[str] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    updated_at: str = field(
-        default_factory=utc_now
-    )
+    updated_at: str = field(default_factory=utc_now)
 
     def finalize(
         self,
     ) -> "IntegrationStatus":
         self.target.finalize()
 
-        if (
-            self.state
-            not in {
-                item.value
-                for item
-                in IntegrationState
-            }
-        ):
-            raise ValueError(
-                "Unknown integration state: "
-                f"{self.state}"
-            )
+        if self.state not in {item.value for item in IntegrationState}:
+            raise ValueError(f"Unknown integration state: {self.state}")
 
-        self.capabilities = (
-            unique_strings(
-                self.capabilities
-            )
-        )
+        self.capabilities = unique_strings(self.capabilities)
 
         if not self.integration_id:
-            self.integration_id = (
-                random_id(
-                    "integration:connection"
-                )
-            )
+            self.integration_id = random_id("integration:connection")
 
-        self.updated_at = (
-            utc_now()
-        )
+        self.updated_at = utc_now()
 
         return self
 
@@ -467,53 +364,23 @@ class IntegrationStatus:
         self.finalize()
 
         return {
-            "schema_version": (
-                INTEGRATION_SCHEMA_VERSION
-            ),
-
-            "integration_id": (
-                self.integration_id
-            ),
-
-            "target": (
-                self.target.to_dict()
-            ),
-
+            "schema_version": (INTEGRATION_SCHEMA_VERSION),
+            "integration_id": (self.integration_id),
+            "target": (self.target.to_dict()),
             "state": self.state,
-
-            "connected_at": (
-                self.connected_at
-            ),
-
-            "closed_at": (
-                self.closed_at
-            ),
-
-            "last_error_type": (
-                self.last_error_type
-            ),
-
-            "capabilities": (
-                list(
-                    self.capabilities
-                )
-            ),
-
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
-
-            "updated_at": (
-                self.updated_at
-            ),
+            "connected_at": (self.connected_at),
+            "closed_at": (self.closed_at),
+            "last_error_type": (self.last_error_type),
+            "capabilities": (list(self.capabilities)),
+            "attributes": (to_json_safe(self.attributes)),
+            "updated_at": (self.updated_at),
         }
 
 
 # ---------------------------------------------------------------
 # Integration operation
 # ---------------------------------------------------------------
+
 
 @dataclass
 class IntegrationOperation:
@@ -534,30 +401,18 @@ class IntegrationOperation:
 
     action: str
 
-    resource_id: Optional[
-        str
-    ] = None
+    resource_id: Optional[str] = None
 
     parameters: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    reference_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    reference_ids: List[str] = field(default_factory=list)
 
-    requested_at: str = field(
-        default_factory=utc_now
-    )
+    requested_at: str = field(default_factory=utc_now)
 
-    operation_id: Optional[
-        str
-    ] = None
+    operation_id: Optional[str] = None
 
     def finalize(
         self,
@@ -576,28 +431,17 @@ class IntegrationOperation:
             maximum_length=128,
         )
 
-        if (
-            self.resource_id
-            is not None
-        ):
+        if self.resource_id is not None:
             required_string(
                 self.resource_id,
                 name="resource_id",
                 maximum_length=1024,
             )
 
-        self.reference_ids = (
-            unique_strings(
-                self.reference_ids
-            )
-        )
+        self.reference_ids = unique_strings(self.reference_ids)
 
         if not self.operation_id:
-            self.operation_id = (
-                random_id(
-                    "integration:operation"
-                )
-            )
+            self.operation_id = random_id("integration:operation")
 
         return self
 
@@ -607,49 +451,22 @@ class IntegrationOperation:
         self.finalize()
 
         return {
-            "schema_version": (
-                INTEGRATION_SCHEMA_VERSION
-            ),
-
-            "operation_id": (
-                self.operation_id
-            ),
-
-            "target": (
-                self.target.to_dict()
-            ),
-
-            "capability": (
-                self.capability
-            ),
-
+            "schema_version": (INTEGRATION_SCHEMA_VERSION),
+            "operation_id": (self.operation_id),
+            "target": (self.target.to_dict()),
+            "capability": (self.capability),
             "action": self.action,
-
-            "resource_id": (
-                self.resource_id
-            ),
-
-            "parameters": (
-                to_json_safe(
-                    self.parameters
-                )
-            ),
-
-            "reference_ids": (
-                list(
-                    self.reference_ids
-                )
-            ),
-
-            "requested_at": (
-                self.requested_at
-            ),
+            "resource_id": (self.resource_id),
+            "parameters": (to_json_safe(self.parameters)),
+            "reference_ids": (list(self.reference_ids)),
+            "requested_at": (self.requested_at),
         }
 
 
 # ---------------------------------------------------------------
 # Integration result
 # ---------------------------------------------------------------
+
 
 @dataclass
 class IntegrationResult:
@@ -667,28 +484,18 @@ class IntegrationResult:
 
     value: Any = None
 
-    error_type: Optional[
-        str
-    ] = None
+    error_type: Optional[str] = None
 
     retryable: bool = False
 
-    reference_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    reference_ids: List[str] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    completed_at: str = field(
-        default_factory=utc_now
-    )
+    completed_at: str = field(default_factory=utc_now)
 
     def finalize(
         self,
@@ -699,25 +506,10 @@ class IntegrationResult:
             maximum_length=512,
         )
 
-        if (
-            self.status
-            not in {
-                item.value
-                for item
-                in OperationStatus
-            }
-        ):
-            raise ValueError(
-                "Unknown integration "
-                "operation status: "
-                f"{self.status}"
-            )
+        if self.status not in {item.value for item in OperationStatus}:
+            raise ValueError(f"Unknown integration operation status: {self.status}")
 
-        self.reference_ids = (
-            unique_strings(
-                self.reference_ids
-            )
-        )
+        self.reference_ids = unique_strings(self.reference_ids)
 
         return self
 
@@ -725,11 +517,7 @@ class IntegrationResult:
     def success(
         self,
     ) -> bool:
-        return (
-            self.status
-            == OperationStatus.
-            SUCCEEDED.value
-        )
+        return self.status == OperationStatus.SUCCEEDED.value
 
     def to_dict(
         self,
@@ -739,51 +527,19 @@ class IntegrationResult:
         self.finalize()
 
         result = {
-            "schema_version": (
-                INTEGRATION_SCHEMA_VERSION
-            ),
-
-            "operation_id": (
-                self.operation_id
-            ),
-
+            "schema_version": (INTEGRATION_SCHEMA_VERSION),
+            "operation_id": (self.operation_id),
             "status": self.status,
-
-            "success": (
-                self.success
-            ),
-
-            "error_type": (
-                self.error_type
-            ),
-
-            "retryable": (
-                self.retryable
-            ),
-
-            "reference_ids": (
-                list(
-                    self.reference_ids
-                )
-            ),
-
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
-
-            "completed_at": (
-                self.completed_at
-            ),
+            "success": (self.success),
+            "error_type": (self.error_type),
+            "retryable": (self.retryable),
+            "reference_ids": (list(self.reference_ids)),
+            "attributes": (to_json_safe(self.attributes)),
+            "completed_at": (self.completed_at),
         }
 
         if include_value:
-            result[
-                "value"
-            ] = to_json_safe(
-                self.value
-            )
+            result["value"] = to_json_safe(self.value)
 
         return result
 
@@ -791,6 +547,7 @@ class IntegrationResult:
 # ---------------------------------------------------------------
 # Integration health
 # ---------------------------------------------------------------
+
 
 @dataclass
 class IntegrationHealth:
@@ -809,61 +566,31 @@ class IntegrationHealth:
 
     status: str
 
-    integration_id: Optional[
-        str
-    ] = None
+    integration_id: Optional[str] = None
 
-    latency_seconds: Optional[
-        float
-    ] = None
+    latency_seconds: Optional[float] = None
 
-    message: Optional[
-        str
-    ] = None
+    message: Optional[str] = None
 
-    error_type: Optional[
-        str
-    ] = None
+    error_type: Optional[str] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    observed_at: str = field(
-        default_factory=utc_now
-    )
+    observed_at: str = field(default_factory=utc_now)
 
     def finalize(
         self,
     ) -> "IntegrationHealth":
         self.target.finalize()
 
-        if (
-            self.status
-            not in {
-                item.value
-                for item
-                in IntegrationHealthStatus
-            }
-        ):
-            raise ValueError(
-                "Unknown integration "
-                f"health status: {self.status}"
-            )
+        if self.status not in {item.value for item in IntegrationHealthStatus}:
+            raise ValueError(f"Unknown integration health status: {self.status}")
 
-        if (
-            self.latency_seconds
-            is not None
-            and self.latency_seconds
-            < 0
-        ):
-            raise ValueError(
-                "latency_seconds "
-                "must be >= 0"
-            )
+        if self.latency_seconds is not None and self.latency_seconds < 0:
+            raise ValueError("latency_seconds must be >= 0")
 
         return self
 
@@ -873,39 +600,15 @@ class IntegrationHealth:
         self.finalize()
 
         return {
-            "schema_version": (
-                INTEGRATION_SCHEMA_VERSION
-            ),
-
-            "target": (
-                self.target.to_dict()
-            ),
-
+            "schema_version": (INTEGRATION_SCHEMA_VERSION),
+            "target": (self.target.to_dict()),
             "status": self.status,
-
-            "integration_id": (
-                self.integration_id
-            ),
-
-            "latency_seconds": (
-                self.latency_seconds
-            ),
-
+            "integration_id": (self.integration_id),
+            "latency_seconds": (self.latency_seconds),
             "message": self.message,
-
-            "error_type": (
-                self.error_type
-            ),
-
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
-
-            "observed_at": (
-                self.observed_at
-            ),
+            "error_type": (self.error_type),
+            "attributes": (to_json_safe(self.attributes)),
+            "observed_at": (self.observed_at),
         }
 
 
@@ -915,18 +618,14 @@ class IntegrationHealth:
 
 __all__ = [
     "INTEGRATION_SCHEMA_VERSION",
-
     "ProviderKind",
     "IntegrationState",
     "IntegrationHealthStatus",
     "OperationStatus",
-
     "IntegrationTarget",
     "IntegrationCapability",
     "IntegrationStatus",
-
     "IntegrationOperation",
     "IntegrationResult",
-
     "IntegrationHealth",
 ]

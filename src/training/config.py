@@ -39,9 +39,7 @@ from src.training.schema import (
 # Environment prefix
 # ---------------------------------------------------------------
 
-DEFAULT_ENV_PREFIX = (
-    "OSHA_TRAINING_"
-)
+DEFAULT_ENV_PREFIX = "OSHA_TRAINING_"
 
 
 # ---------------------------------------------------------------
@@ -60,6 +58,7 @@ SUPPORTED_ACCELERATORS = (
 # Training paths
 # ---------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class TrainingPathConfig:
     """
@@ -69,29 +68,17 @@ class TrainingPathConfig:
     Python source-code directories.
     """
 
-    prepared_data_directory: str = (
-        "data/prepared"
-    )
+    prepared_data_directory: str = "data/prepared"
 
-    orchestration_data_directory: str = (
-        "orchestration-ai-data"
-    )
+    orchestration_data_directory: str = "orchestration-ai-data"
 
-    checkpoint_directory: str = (
-        "checkpoints"
-    )
+    checkpoint_directory: str = "checkpoints"
 
-    artifact_directory: str = (
-        "artifacts"
-    )
+    artifact_directory: str = "artifacts"
 
-    model_directory: str = (
-        "models"
-    )
+    model_directory: str = "models"
 
-    log_directory: str = (
-        "logs/training"
-    )
+    log_directory: str = "logs/training"
 
     def validate(
         self,
@@ -99,23 +86,19 @@ class TrainingPathConfig:
         for name, value in (
             (
                 "prepared_data_directory",
-                self.
-                prepared_data_directory,
+                self.prepared_data_directory,
             ),
             (
                 "orchestration_data_directory",
-                self.
-                orchestration_data_directory,
+                self.orchestration_data_directory,
             ),
             (
                 "checkpoint_directory",
-                self.
-                checkpoint_directory,
+                self.checkpoint_directory,
             ),
             (
                 "artifact_directory",
-                self.
-                artifact_directory,
+                self.artifact_directory,
             ),
             (
                 "model_directory",
@@ -126,12 +109,8 @@ class TrainingPathConfig:
                 self.log_directory,
             ),
         ):
-            if not str(
-                value
-            ).strip():
-                raise ValueError(
-                    f"{name} cannot be empty"
-                )
+            if not str(value).strip():
+                raise ValueError(f"{name} cannot be empty")
 
     def resolved(
         self,
@@ -140,50 +119,22 @@ class TrainingPathConfig:
 
         return {
             "prepared_data": str(
-                Path(
-                    self.
-                    prepared_data_directory
-                ).expanduser().resolve()
+                Path(self.prepared_data_directory).expanduser().resolve()
             ),
-
             "orchestration_data": str(
-                Path(
-                    self.
-                    orchestration_data_directory
-                ).expanduser().resolve()
+                Path(self.orchestration_data_directory).expanduser().resolve()
             ),
-
-            "checkpoints": str(
-                Path(
-                    self.
-                    checkpoint_directory
-                ).expanduser().resolve()
-            ),
-
-            "artifacts": str(
-                Path(
-                    self.
-                    artifact_directory
-                ).expanduser().resolve()
-            ),
-
-            "models": str(
-                Path(
-                    self.model_directory
-                ).expanduser().resolve()
-            ),
-
-            "logs": str(
-                Path(
-                    self.log_directory
-                ).expanduser().resolve()
-            ),
+            "checkpoints": str(Path(self.checkpoint_directory).expanduser().resolve()),
+            "artifacts": str(Path(self.artifact_directory).expanduser().resolve()),
+            "models": str(Path(self.model_directory).expanduser().resolve()),
+            "logs": str(Path(self.log_directory).expanduser().resolve()),
         }
 
 
 # ---------------------------------------------------------------
 # Reproducibility
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class ReproducibilityConfig:
@@ -207,10 +158,7 @@ class ReproducibilityConfig:
             minimum=0,
         )
 
-        if (
-            self.deterministic
-            and self.benchmark
-        ):
+        if self.deterministic and self.benchmark:
             raise ValueError(
                 "deterministic and "
                 "benchmark should not both "
@@ -222,6 +170,7 @@ class ReproducibilityConfig:
 # ---------------------------------------------------------------
 # Optimization configuration
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class OptimizationConfig:
@@ -237,17 +186,11 @@ class OptimizationConfig:
 
     epochs: int = 20
 
-    learning_rate: float = (
-        0.001
-    )
+    learning_rate: float = 0.001
 
-    weight_decay: float = (
-        0.0
-    )
+    weight_decay: float = 0.0
 
-    gradient_clip_norm: Optional[
-        float
-    ] = 1.0
+    gradient_clip_norm: Optional[float] = 1.0
 
     accumulation_steps: int = 1
 
@@ -278,23 +221,16 @@ class OptimizationConfig:
             minimum=0.0,
         )
 
-        if (
-            self.gradient_clip_norm
-            is not None
-        ):
+        if self.gradient_clip_norm is not None:
             number(
                 self.gradient_clip_norm,
-                name=(
-                    "gradient_clip_norm"
-                ),
+                name=("gradient_clip_norm"),
                 minimum=0.0,
             )
 
         integer(
             self.accumulation_steps,
-            name=(
-                "accumulation_steps"
-            ),
+            name=("accumulation_steps"),
             minimum=1,
         )
 
@@ -302,6 +238,7 @@ class OptimizationConfig:
 # ---------------------------------------------------------------
 # Accelerator configuration
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class AcceleratorConfig:
@@ -315,31 +252,19 @@ class AcceleratorConfig:
 
     preferred: str = "auto"
 
-    allow_fallback_to_cpu: bool = (
-        True
-    )
+    allow_fallback_to_cpu: bool = True
 
     mixed_precision: bool = False
 
-    device_index: Optional[
-        int
-    ] = None
+    device_index: Optional[int] = None
 
     def validate(
         self,
     ) -> None:
-        normalized = str(
-            self.preferred
-        ).strip().lower()
+        normalized = str(self.preferred).strip().lower()
 
-        if (
-            normalized
-            not in SUPPORTED_ACCELERATORS
-        ):
-            raise ValueError(
-                "Unsupported accelerator: "
-                f"{self.preferred}"
-            )
+        if normalized not in SUPPORTED_ACCELERATORS:
+            raise ValueError(f"Unsupported accelerator: {self.preferred}")
 
         if self.device_index is not None:
             integer(
@@ -353,6 +278,7 @@ class AcceleratorConfig:
 # Checkpoint policy
 # ---------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class CheckpointConfig:
     enabled: bool = True
@@ -363,9 +289,7 @@ class CheckpointConfig:
 
     keep_best: bool = True
 
-    monitor_metric: str = (
-        "validation_loss"
-    )
+    monitor_metric: str = "validation_loss"
 
     mode: str = "min"
 
@@ -386,30 +310,20 @@ class CheckpointConfig:
             minimum=1,
         )
 
-        if (
-            self.mode
-            not in {
-                "min",
-                "max",
-            }
-        ):
-            raise ValueError(
-                "checkpoint mode must "
-                "be min or max"
-            )
+        if self.mode not in {
+            "min",
+            "max",
+        }:
+            raise ValueError("checkpoint mode must be min or max")
 
-        if not str(
-            self.monitor_metric
-        ).strip():
-            raise ValueError(
-                "monitor_metric cannot "
-                "be empty"
-            )
+        if not str(self.monitor_metric).strip():
+            raise ValueError("monitor_metric cannot be empty")
 
 
 # ---------------------------------------------------------------
 # Evaluation policy
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class EvaluationConfig:
@@ -426,43 +340,29 @@ class EvaluationConfig:
 
     evaluate_test: bool = True
 
-    require_test_before_promotion: bool = (
-        True
-    )
+    require_test_before_promotion: bool = True
 
-    fail_on_non_finite_metric: bool = (
-        True
-    )
+    fail_on_non_finite_metric: bool = True
 
     thresholds: Dict[
         str,
         float,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def validate(
         self,
     ) -> None:
-        for name, value in (
-            self.thresholds.items()
-        ):
-            if not str(
-                name
-            ).strip():
-                raise ValueError(
-                    "Evaluation threshold "
-                    "name cannot be empty"
-                )
+        for name, value in self.thresholds.items():
+            if not str(name).strip():
+                raise ValueError("Evaluation threshold name cannot be empty")
 
-            float(
-                value
-            )
+            float(value)
 
 
 # ---------------------------------------------------------------
 # Promotion policy
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class PromotionConfig:
@@ -477,44 +377,26 @@ class PromotionConfig:
 
     automatic: bool = False
 
-    require_evaluation_pass: bool = (
-        True
-    )
+    require_evaluation_pass: bool = True
 
     require_checksum: bool = True
 
-    allow_replace_promoted_model: bool = (
-        False
-    )
+    allow_replace_promoted_model: bool = False
 
     def validate(
         self,
     ) -> None:
-        if (
-            self.automatic
-            and not self.enabled
-        ):
-            raise ValueError(
-                "automatic promotion "
-                "requires promotion to "
-                "be enabled"
-            )
+        if self.automatic and not self.enabled:
+            raise ValueError("automatic promotion requires promotion to be enabled")
 
-        if (
-            self.automatic
-            and not self.
-            require_evaluation_pass
-        ):
-            raise ValueError(
-                "automatic promotion "
-                "requires an evaluation "
-                "pass"
-            )
+        if self.automatic and not self.require_evaluation_pass:
+            raise ValueError("automatic promotion requires an evaluation pass")
 
 
 # ---------------------------------------------------------------
 # Source configuration
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class TrainingSourceConfig:
@@ -528,37 +410,21 @@ class TrainingSourceConfig:
     filtering.
     """
 
-    include_prepared_datasets: bool = (
-        True
-    )
+    include_prepared_datasets: bool = True
 
-    include_processed_operational_data: bool = (
-        True
-    )
+    include_processed_operational_data: bool = True
 
-    include_normalized_telemetry: bool = (
-        True
-    )
+    include_normalized_telemetry: bool = True
 
-    include_correlated_data: bool = (
-        True
-    )
+    include_correlated_data: bool = True
 
-    include_intelligence_data: bool = (
-        True
-    )
+    include_intelligence_data: bool = True
 
-    include_decision_data: bool = (
-        False
-    )
+    include_decision_data: bool = False
 
-    include_remediation_data: bool = (
-        True
-    )
+    include_remediation_data: bool = True
 
-    include_memory_data: bool = (
-        False
-    )
+    include_memory_data: bool = False
 
     include_live_data: bool = False
 
@@ -582,6 +448,7 @@ class TrainingSourceConfig:
 # Main training configuration
 # ---------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class TrainingConfig:
     enabled: bool = True
@@ -594,62 +461,28 @@ class TrainingConfig:
         TrainingTask.ANOMALY.value,
     )
 
-    paths: TrainingPathConfig = field(
-        default_factory=(
-            TrainingPathConfig
-        )
+    paths: TrainingPathConfig = field(default_factory=(TrainingPathConfig))
+
+    reproducibility: ReproducibilityConfig = field(
+        default_factory=(ReproducibilityConfig)
     )
 
-    reproducibility: ReproducibilityConfig = (
-        field(
-            default_factory=(
-                ReproducibilityConfig
-            )
-        )
-    )
+    optimization: OptimizationConfig = field(default_factory=(OptimizationConfig))
 
-    optimization: OptimizationConfig = field(
-        default_factory=(
-            OptimizationConfig
-        )
-    )
+    accelerator: AcceleratorConfig = field(default_factory=(AcceleratorConfig))
 
-    accelerator: AcceleratorConfig = field(
-        default_factory=(
-            AcceleratorConfig
-        )
-    )
+    checkpoint: CheckpointConfig = field(default_factory=(CheckpointConfig))
 
-    checkpoint: CheckpointConfig = field(
-        default_factory=(
-            CheckpointConfig
-        )
-    )
+    evaluation: EvaluationConfig = field(default_factory=(EvaluationConfig))
 
-    evaluation: EvaluationConfig = field(
-        default_factory=(
-            EvaluationConfig
-        )
-    )
+    promotion: PromotionConfig = field(default_factory=(PromotionConfig))
 
-    promotion: PromotionConfig = field(
-        default_factory=(
-            PromotionConfig
-        )
-    )
-
-    sources: TrainingSourceConfig = field(
-        default_factory=(
-            TrainingSourceConfig
-        )
-    )
+    sources: TrainingSourceConfig = field(default_factory=(TrainingSourceConfig))
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def validate(
         self,
@@ -676,28 +509,12 @@ class TrainingConfig:
             allow_empty=False,
         )
 
-        valid_tasks = {
-            item.value
-            for item
-            in TrainingTask
-        }
+        valid_tasks = {item.value for item in TrainingTask}
 
-        unsupported = [
-            task
-            for task
-            in tasks
-            if task
-            not in valid_tasks
-        ]
+        unsupported = [task for task in tasks if task not in valid_tasks]
 
         if unsupported:
-            raise ValueError(
-                "Unsupported training "
-                "tasks: "
-                + ", ".join(
-                    unsupported
-                )
-            )
+            raise ValueError("Unsupported training tasks: " + ", ".join(unsupported))
 
     # ---------------------------------------------------------
     # Task allowed
@@ -709,15 +526,7 @@ class TrainingConfig:
     ) -> bool:
         self.validate()
 
-        return (
-            self.enabled
-            and str(
-                task
-            ).strip().lower()
-            in set(
-                self.allowed_tasks
-            )
-        )
+        return self.enabled and str(task).strip().lower() in set(self.allowed_tasks)
 
     # ---------------------------------------------------------
     # Dictionary
@@ -729,237 +538,79 @@ class TrainingConfig:
         self.validate()
 
         return {
-            "enabled": (
-                self.enabled
-            ),
-
-            "allowed_tasks": list(
-                self.allowed_tasks
-            ),
-
-            "paths": (
-                self.paths.resolved()
-            ),
-
+            "enabled": (self.enabled),
+            "allowed_tasks": list(self.allowed_tasks),
+            "paths": (self.paths.resolved()),
             "reproducibility": {
-                "random_seed": (
-                    self.reproducibility.
-                    random_seed
-                ),
-
-                "deterministic": (
-                    self.reproducibility.
-                    deterministic
-                ),
-
-                "benchmark": (
-                    self.reproducibility.
-                    benchmark
-                ),
+                "random_seed": (self.reproducibility.random_seed),
+                "deterministic": (self.reproducibility.deterministic),
+                "benchmark": (self.reproducibility.benchmark),
             },
-
             "optimization": {
-                "batch_size": (
-                    self.optimization.
-                    batch_size
-                ),
-
-                "epochs": (
-                    self.optimization.
-                    epochs
-                ),
-
-                "learning_rate": (
-                    self.optimization.
-                    learning_rate
-                ),
-
-                "weight_decay": (
-                    self.optimization.
-                    weight_decay
-                ),
-
-                "gradient_clip_norm": (
-                    self.optimization.
-                    gradient_clip_norm
-                ),
-
-                "accumulation_steps": (
-                    self.optimization.
-                    accumulation_steps
-                ),
+                "batch_size": (self.optimization.batch_size),
+                "epochs": (self.optimization.epochs),
+                "learning_rate": (self.optimization.learning_rate),
+                "weight_decay": (self.optimization.weight_decay),
+                "gradient_clip_norm": (self.optimization.gradient_clip_norm),
+                "accumulation_steps": (self.optimization.accumulation_steps),
             },
-
             "accelerator": {
-                "preferred": (
-                    self.accelerator.
-                    preferred
-                ),
-
-                "allow_fallback_to_cpu": (
-                    self.accelerator.
-                    allow_fallback_to_cpu
-                ),
-
-                "mixed_precision": (
-                    self.accelerator.
-                    mixed_precision
-                ),
-
-                "device_index": (
-                    self.accelerator.
-                    device_index
-                ),
+                "preferred": (self.accelerator.preferred),
+                "allow_fallback_to_cpu": (self.accelerator.allow_fallback_to_cpu),
+                "mixed_precision": (self.accelerator.mixed_precision),
+                "device_index": (self.accelerator.device_index),
             },
-
             "checkpoint": {
-                "enabled": (
-                    self.checkpoint.enabled
-                ),
-
-                "save_every_epochs": (
-                    self.checkpoint.
-                    save_every_epochs
-                ),
-
-                "keep_last": (
-                    self.checkpoint.
-                    keep_last
-                ),
-
-                "keep_best": (
-                    self.checkpoint.
-                    keep_best
-                ),
-
-                "monitor_metric": (
-                    self.checkpoint.
-                    monitor_metric
-                ),
-
-                "mode": (
-                    self.checkpoint.mode
-                ),
-
-                "save_optimizer_state": (
-                    self.checkpoint.
-                    save_optimizer_state
-                ),
+                "enabled": (self.checkpoint.enabled),
+                "save_every_epochs": (self.checkpoint.save_every_epochs),
+                "keep_last": (self.checkpoint.keep_last),
+                "keep_best": (self.checkpoint.keep_best),
+                "monitor_metric": (self.checkpoint.monitor_metric),
+                "mode": (self.checkpoint.mode),
+                "save_optimizer_state": (self.checkpoint.save_optimizer_state),
             },
-
             "evaluation": {
-                "enabled": (
-                    self.evaluation.enabled
-                ),
-
-                "evaluate_validation": (
-                    self.evaluation.
-                    evaluate_validation
-                ),
-
-                "evaluate_test": (
-                    self.evaluation.
-                    evaluate_test
-                ),
-
+                "enabled": (self.evaluation.enabled),
+                "evaluate_validation": (self.evaluation.evaluate_validation),
+                "evaluate_test": (self.evaluation.evaluate_test),
                 "require_test_before_promotion": (
-                    self.evaluation.
-                    require_test_before_promotion
+                    self.evaluation.require_test_before_promotion
                 ),
-
                 "fail_on_non_finite_metric": (
-                    self.evaluation.
-                    fail_on_non_finite_metric
+                    self.evaluation.fail_on_non_finite_metric
                 ),
-
-                "thresholds": dict(
-                    self.evaluation.
-                    thresholds
-                ),
+                "thresholds": dict(self.evaluation.thresholds),
             },
-
             "promotion": {
-                "enabled": (
-                    self.promotion.enabled
-                ),
-
-                "automatic": (
-                    self.promotion.
-                    automatic
-                ),
-
-                "require_evaluation_pass": (
-                    self.promotion.
-                    require_evaluation_pass
-                ),
-
-                "require_checksum": (
-                    self.promotion.
-                    require_checksum
-                ),
-
+                "enabled": (self.promotion.enabled),
+                "automatic": (self.promotion.automatic),
+                "require_evaluation_pass": (self.promotion.require_evaluation_pass),
+                "require_checksum": (self.promotion.require_checksum),
                 "allow_replace_promoted_model": (
-                    self.promotion.
-                    allow_replace_promoted_model
+                    self.promotion.allow_replace_promoted_model
                 ),
             },
-
             "sources": {
-                "prepared_datasets": (
-                    self.sources.
-                    include_prepared_datasets
-                ),
-
+                "prepared_datasets": (self.sources.include_prepared_datasets),
                 "processed_operational_data": (
-                    self.sources.
-                    include_processed_operational_data
+                    self.sources.include_processed_operational_data
                 ),
-
-                "normalized_telemetry": (
-                    self.sources.
-                    include_normalized_telemetry
-                ),
-
-                "correlated_data": (
-                    self.sources.
-                    include_correlated_data
-                ),
-
-                "intelligence_data": (
-                    self.sources.
-                    include_intelligence_data
-                ),
-
-                "decision_data": (
-                    self.sources.
-                    include_decision_data
-                ),
-
-                "remediation_data": (
-                    self.sources.
-                    include_remediation_data
-                ),
-
-                "memory_data": (
-                    self.sources.
-                    include_memory_data
-                ),
-
-                "live_data": (
-                    self.sources.
-                    include_live_data
-                ),
+                "normalized_telemetry": (self.sources.include_normalized_telemetry),
+                "correlated_data": (self.sources.include_correlated_data),
+                "intelligence_data": (self.sources.include_intelligence_data),
+                "decision_data": (self.sources.include_decision_data),
+                "remediation_data": (self.sources.include_remediation_data),
+                "memory_data": (self.sources.include_memory_data),
+                "live_data": (self.sources.include_live_data),
             },
-
-            "attributes": dict(
-                self.attributes
-            ),
+            "attributes": dict(self.attributes),
         }
 
 
 # ---------------------------------------------------------------
 # Parsing helpers
 # ---------------------------------------------------------------
+
 
 def _get(
     values: Mapping[
@@ -983,9 +634,7 @@ def _text(
     ],
     prefix: str,
     name: str,
-    default: Optional[
-        str
-    ] = None,
+    default: Optional[str] = None,
 ) -> Optional[str]:
     value = _get(
         values,
@@ -997,14 +646,9 @@ def _text(
     if value is None:
         return None
 
-    text = str(
-        value
-    ).strip()
+    text = str(value).strip()
 
-    return (
-        text
-        or None
-    )
+    return text or None
 
 
 def _bool(
@@ -1022,10 +666,7 @@ def _bool(
         name,
     )
 
-    if (
-        value is None
-        or str(value).strip() == ""
-    ):
+    if value is None or str(value).strip() == "":
         return default
 
     return boolean(
@@ -1051,10 +692,7 @@ def _int(
         name,
     )
 
-    if (
-        value is None
-        or str(value).strip() == ""
-    ):
+    if value is None or str(value).strip() == "":
         return default
 
     return integer(
@@ -1081,10 +719,7 @@ def _float(
         name,
     )
 
-    if (
-        value is None
-        or str(value).strip() == ""
-    ):
+    if value is None or str(value).strip() == "":
         return default
 
     return number(
@@ -1101,9 +736,7 @@ def _optional_float(
     ],
     prefix: str,
     name: str,
-    default: Optional[
-        float
-    ],
+    default: Optional[float],
 ) -> Optional[float]:
     value = _get(
         values,
@@ -1111,10 +744,7 @@ def _optional_float(
         name,
     )
 
-    if (
-        value is None
-        or str(value).strip() == ""
-    ):
+    if value is None or str(value).strip() == "":
         return default
 
     return number(
@@ -1131,9 +761,7 @@ def _optional_int(
     ],
     prefix: str,
     name: str,
-    default: Optional[
-        int
-    ],
+    default: Optional[int],
 ) -> Optional[int]:
     value = _get(
         values,
@@ -1141,10 +769,7 @@ def _optional_int(
         name,
     )
 
-    if (
-        value is None
-        or str(value).strip() == ""
-    ):
+    if value is None or str(value).strip() == "":
         return default
 
     return integer(
@@ -1175,21 +800,13 @@ def _csv(
         name,
     )
 
-    if (
-        value is None
-        or str(value).strip() == ""
-    ):
+    if value is None or str(value).strip() == "":
         return default
 
     return tuple(
         item.lower()
-        for item
-        in unique_strings(
-            str(
-                value
-            ).split(
-                ","
-            ),
+        for item in unique_strings(
+            str(value).split(","),
             name=prefix + name,
             allow_empty=False,
         )
@@ -1199,6 +816,7 @@ def _csv(
 # ---------------------------------------------------------------
 # Mapping loader
 # ---------------------------------------------------------------
+
 
 def from_mapping(
     values: Mapping[
@@ -1216,71 +834,54 @@ def from_mapping(
                 values,
                 prefix,
                 "PREPARED_DATA_DIRECTORY",
-                defaults.paths.
-                prepared_data_directory,
+                defaults.paths.prepared_data_directory,
             )
-            or defaults.paths.
-            prepared_data_directory
+            or defaults.paths.prepared_data_directory
         ),
-
         orchestration_data_directory=(
             _text(
                 values,
                 prefix,
                 "ORCHESTRATION_DATA_DIRECTORY",
-                defaults.paths.
-                orchestration_data_directory,
+                defaults.paths.orchestration_data_directory,
             )
-            or defaults.paths.
-            orchestration_data_directory
+            or defaults.paths.orchestration_data_directory
         ),
-
         checkpoint_directory=(
             _text(
                 values,
                 prefix,
                 "CHECKPOINT_DIRECTORY",
-                defaults.paths.
-                checkpoint_directory,
+                defaults.paths.checkpoint_directory,
             )
-            or defaults.paths.
-            checkpoint_directory
+            or defaults.paths.checkpoint_directory
         ),
-
         artifact_directory=(
             _text(
                 values,
                 prefix,
                 "ARTIFACT_DIRECTORY",
-                defaults.paths.
-                artifact_directory,
+                defaults.paths.artifact_directory,
             )
-            or defaults.paths.
-            artifact_directory
+            or defaults.paths.artifact_directory
         ),
-
         model_directory=(
             _text(
                 values,
                 prefix,
                 "MODEL_DIRECTORY",
-                defaults.paths.
-                model_directory,
+                defaults.paths.model_directory,
             )
-            or defaults.paths.
-            model_directory
+            or defaults.paths.model_directory
         ),
-
         log_directory=(
             _text(
                 values,
                 prefix,
                 "LOG_DIRECTORY",
-                defaults.paths.
-                log_directory,
+                defaults.paths.log_directory,
             )
-            or defaults.paths.
-            log_directory
+            or defaults.paths.log_directory
         ),
     )
 
@@ -1291,16 +892,13 @@ def from_mapping(
             "ENABLED",
             True,
         ),
-
         allowed_tasks=_csv(
             values,
             prefix,
             "ALLOWED_TASKS",
             defaults.allowed_tasks,
         ),
-
         paths=paths,
-
         reproducibility=(
             ReproducibilityConfig(
                 random_seed=_int(
@@ -1310,14 +908,12 @@ def from_mapping(
                     42,
                     minimum=0,
                 ),
-
                 deterministic=_bool(
                     values,
                     prefix,
                     "DETERMINISTIC",
                     True,
                 ),
-
                 benchmark=_bool(
                     values,
                     prefix,
@@ -1326,7 +922,6 @@ def from_mapping(
                 ),
             )
         ),
-
         optimization=(
             OptimizationConfig(
                 batch_size=_int(
@@ -1336,7 +931,6 @@ def from_mapping(
                     64,
                     minimum=1,
                 ),
-
                 epochs=_int(
                     values,
                     prefix,
@@ -1344,7 +938,6 @@ def from_mapping(
                     20,
                     minimum=1,
                 ),
-
                 learning_rate=_float(
                     values,
                     prefix,
@@ -1352,14 +945,12 @@ def from_mapping(
                     0.001,
                     minimum=1e-12,
                 ),
-
                 weight_decay=_float(
                     values,
                     prefix,
                     "WEIGHT_DECAY",
                     0.0,
                 ),
-
                 gradient_clip_norm=(
                     _optional_float(
                         values,
@@ -1368,7 +959,6 @@ def from_mapping(
                         1.0,
                     )
                 ),
-
                 accumulation_steps=_int(
                     values,
                     prefix,
@@ -1378,7 +968,6 @@ def from_mapping(
                 ),
             )
         ),
-
         accelerator=(
             AcceleratorConfig(
                 preferred=(
@@ -1390,7 +979,6 @@ def from_mapping(
                     )
                     or "auto"
                 ).lower(),
-
                 allow_fallback_to_cpu=(
                     _bool(
                         values,
@@ -1399,14 +987,12 @@ def from_mapping(
                         True,
                     )
                 ),
-
                 mixed_precision=_bool(
                     values,
                     prefix,
                     "MIXED_PRECISION",
                     False,
                 ),
-
                 device_index=(
                     _optional_int(
                         values,
@@ -1417,7 +1003,6 @@ def from_mapping(
                 ),
             )
         ),
-
         checkpoint=CheckpointConfig(
             enabled=_bool(
                 values,
@@ -1425,7 +1010,6 @@ def from_mapping(
                 "CHECKPOINT_ENABLED",
                 True,
             ),
-
             save_every_epochs=_int(
                 values,
                 prefix,
@@ -1433,7 +1017,6 @@ def from_mapping(
                 1,
                 minimum=1,
             ),
-
             keep_last=_int(
                 values,
                 prefix,
@@ -1441,14 +1024,12 @@ def from_mapping(
                 5,
                 minimum=1,
             ),
-
             keep_best=_bool(
                 values,
                 prefix,
                 "CHECKPOINT_KEEP_BEST",
                 True,
             ),
-
             monitor_metric=(
                 _text(
                     values,
@@ -1458,7 +1039,6 @@ def from_mapping(
                 )
                 or "validation_loss"
             ),
-
             mode=(
                 _text(
                     values,
@@ -1468,7 +1048,6 @@ def from_mapping(
                 )
                 or "min"
             ).lower(),
-
             save_optimizer_state=_bool(
                 values,
                 prefix,
@@ -1476,7 +1055,6 @@ def from_mapping(
                 True,
             ),
         ),
-
         evaluation=EvaluationConfig(
             enabled=_bool(
                 values,
@@ -1484,21 +1062,18 @@ def from_mapping(
                 "EVALUATION_ENABLED",
                 True,
             ),
-
             evaluate_validation=_bool(
                 values,
                 prefix,
                 "EVALUATE_VALIDATION",
                 True,
             ),
-
             evaluate_test=_bool(
                 values,
                 prefix,
                 "EVALUATE_TEST",
                 True,
             ),
-
             require_test_before_promotion=(
                 _bool(
                     values,
@@ -1507,7 +1082,6 @@ def from_mapping(
                     True,
                 )
             ),
-
             fail_on_non_finite_metric=(
                 _bool(
                     values,
@@ -1517,7 +1091,6 @@ def from_mapping(
                 )
             ),
         ),
-
         promotion=PromotionConfig(
             enabled=_bool(
                 values,
@@ -1525,14 +1098,12 @@ def from_mapping(
                 "PROMOTION_ENABLED",
                 True,
             ),
-
             automatic=_bool(
                 values,
                 prefix,
                 "PROMOTION_AUTOMATIC",
                 False,
             ),
-
             require_evaluation_pass=(
                 _bool(
                     values,
@@ -1541,14 +1112,12 @@ def from_mapping(
                     True,
                 )
             ),
-
             require_checksum=_bool(
                 values,
                 prefix,
                 "PROMOTION_REQUIRE_CHECKSUM",
                 True,
             ),
-
             allow_replace_promoted_model=(
                 _bool(
                     values,
@@ -1558,7 +1127,6 @@ def from_mapping(
                 )
             ),
         ),
-
         sources=TrainingSourceConfig(
             include_prepared_datasets=(
                 _bool(
@@ -1568,7 +1136,6 @@ def from_mapping(
                     True,
                 )
             ),
-
             include_processed_operational_data=(
                 _bool(
                     values,
@@ -1577,7 +1144,6 @@ def from_mapping(
                     True,
                 )
             ),
-
             include_normalized_telemetry=(
                 _bool(
                     values,
@@ -1586,7 +1152,6 @@ def from_mapping(
                     True,
                 )
             ),
-
             include_correlated_data=(
                 _bool(
                     values,
@@ -1595,7 +1160,6 @@ def from_mapping(
                     True,
                 )
             ),
-
             include_intelligence_data=(
                 _bool(
                     values,
@@ -1604,14 +1168,12 @@ def from_mapping(
                     True,
                 )
             ),
-
             include_decision_data=_bool(
                 values,
                 prefix,
                 "SOURCE_DECISION_DATA",
                 False,
             ),
-
             include_remediation_data=(
                 _bool(
                     values,
@@ -1620,14 +1182,12 @@ def from_mapping(
                     True,
                 )
             ),
-
             include_memory_data=_bool(
                 values,
                 prefix,
                 "SOURCE_MEMORY_DATA",
                 False,
             ),
-
             include_live_data=_bool(
                 values,
                 prefix,
@@ -1635,14 +1195,9 @@ def from_mapping(
                 False,
             ),
         ),
-
         attributes={
-            "config_source": (
-                "mapping"
-            ),
-            "environment_prefix": (
-                prefix
-            ),
+            "config_source": ("mapping"),
+            "environment_prefix": (prefix),
         },
     )
 
@@ -1655,6 +1210,7 @@ def from_mapping(
 # Environment loader
 # ---------------------------------------------------------------
 
+
 def from_environment(
     *,
     environ: Optional[
@@ -1665,11 +1221,7 @@ def from_environment(
     ] = None,
     prefix: str = DEFAULT_ENV_PREFIX,
 ) -> TrainingConfig:
-    source = (
-        os.environ
-        if environ is None
-        else environ
-    )
+    source = os.environ if environ is None else environ
 
     config = from_mapping(
         source,
@@ -1678,32 +1230,18 @@ def from_environment(
 
     return TrainingConfig(
         enabled=config.enabled,
-        allowed_tasks=(
-            config.allowed_tasks
-        ),
+        allowed_tasks=(config.allowed_tasks),
         paths=config.paths,
-        reproducibility=(
-            config.reproducibility
-        ),
-        optimization=(
-            config.optimization
-        ),
-        accelerator=(
-            config.accelerator
-        ),
-        checkpoint=(
-            config.checkpoint
-        ),
-        evaluation=(
-            config.evaluation
-        ),
+        reproducibility=(config.reproducibility),
+        optimization=(config.optimization),
+        accelerator=(config.accelerator),
+        checkpoint=(config.checkpoint),
+        evaluation=(config.evaluation),
         promotion=config.promotion,
         sources=config.sources,
         attributes={
             **config.attributes,
-            "config_source": (
-                "environment"
-            ),
+            "config_source": ("environment"),
         },
     )
 
@@ -1712,84 +1250,29 @@ def from_environment(
 # Safe summary
 # ---------------------------------------------------------------
 
+
 def safe_config_summary(
     config: TrainingConfig,
 ) -> Dict[str, Any]:
     config.validate()
 
     return {
-        "enabled": (
-            config.enabled
-        ),
-
-        "allowed_tasks": list(
-            config.allowed_tasks
-        ),
-
-        "paths": (
-            config.paths.resolved()
-        ),
-
-        "random_seed": (
-            config.reproducibility.
-            random_seed
-        ),
-
-        "deterministic": (
-            config.reproducibility.
-            deterministic
-        ),
-
-        "batch_size": (
-            config.optimization.
-            batch_size
-        ),
-
-        "epochs": (
-            config.optimization.
-            epochs
-        ),
-
-        "learning_rate": (
-            config.optimization.
-            learning_rate
-        ),
-
-        "accelerator": (
-            config.accelerator.
-            preferred
-        ),
-
-        "cpu_fallback": (
-            config.accelerator.
-            allow_fallback_to_cpu
-        ),
-
-        "mixed_precision": (
-            config.accelerator.
-            mixed_precision
-        ),
-
-        "checkpoint_enabled": (
-            config.checkpoint.enabled
-        ),
-
-        "evaluation_enabled": (
-            config.evaluation.enabled
-        ),
-
-        "promotion_enabled": (
-            config.promotion.enabled
-        ),
-
-        "automatic_promotion": (
-            config.promotion.automatic
-        ),
-
-        "live_data_training_enabled": (
-            config.sources.
-            include_live_data
-        ),
+        "enabled": (config.enabled),
+        "allowed_tasks": list(config.allowed_tasks),
+        "paths": (config.paths.resolved()),
+        "random_seed": (config.reproducibility.random_seed),
+        "deterministic": (config.reproducibility.deterministic),
+        "batch_size": (config.optimization.batch_size),
+        "epochs": (config.optimization.epochs),
+        "learning_rate": (config.optimization.learning_rate),
+        "accelerator": (config.accelerator.preferred),
+        "cpu_fallback": (config.accelerator.allow_fallback_to_cpu),
+        "mixed_precision": (config.accelerator.mixed_precision),
+        "checkpoint_enabled": (config.checkpoint.enabled),
+        "evaluation_enabled": (config.evaluation.enabled),
+        "promotion_enabled": (config.promotion.enabled),
+        "automatic_promotion": (config.promotion.automatic),
+        "live_data_training_enabled": (config.sources.include_live_data),
     }
 
 
@@ -1800,7 +1283,6 @@ def safe_config_summary(
 __all__ = [
     "DEFAULT_ENV_PREFIX",
     "SUPPORTED_ACCELERATORS",
-
     "TrainingPathConfig",
     "ReproducibilityConfig",
     "OptimizationConfig",
@@ -1809,11 +1291,8 @@ __all__ = [
     "EvaluationConfig",
     "PromotionConfig",
     "TrainingSourceConfig",
-
     "TrainingConfig",
-
     "from_mapping",
     "from_environment",
-
     "safe_config_summary",
 ]

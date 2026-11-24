@@ -35,6 +35,7 @@ from src.security.secrets import (
 # Credential resolution metadata
 # ---------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class CredentialResolution:
     """
@@ -57,51 +58,28 @@ class CredentialResolution:
 
     resolved: bool
 
-    secret_provider: Optional[
-        str
-    ] = None
+    secret_provider: Optional[str] = None
 
-    reference_id: Optional[
-        str
-    ] = None
+    reference_id: Optional[str] = None
 
     def to_dict(
         self,
     ) -> Dict[str, Any]:
         return {
-            "provider": (
-                self.provider
-            ),
-
-            "target_id": (
-                self.target_id
-            ),
-
-            "configured": (
-                self.configured
-            ),
-
-            "resolved": (
-                self.resolved
-            ),
-
-            "secret_provider": (
-                self.secret_provider
-            ),
-
-            "reference_id": (
-                self.reference_id
-            ),
-
-            "secret_value_exposed": (
-                False
-            ),
+            "provider": (self.provider),
+            "target_id": (self.target_id),
+            "configured": (self.configured),
+            "resolved": (self.resolved),
+            "secret_provider": (self.secret_provider),
+            "reference_id": (self.reference_id),
+            "secret_value_exposed": (False),
         }
 
 
 # ---------------------------------------------------------------
 # Credential resolver
 # ---------------------------------------------------------------
+
 
 class IntegrationCredentialResolver:
     """
@@ -121,15 +99,11 @@ class IntegrationCredentialResolver:
     def __init__(
         self,
         *,
-        secrets: Optional[
-            SecretManager
-        ] = None,
+        secrets: Optional[SecretManager] = None,
     ) -> None:
         self.secrets = secrets
 
-        self._last: Optional[
-            CredentialResolution
-        ] = None
+        self._last: Optional[CredentialResolution] = None
 
     # ---------------------------------------------------------
     # Last resolution
@@ -138,9 +112,7 @@ class IntegrationCredentialResolver:
     @property
     def last(
         self,
-    ) -> Optional[
-        CredentialResolution
-    ]:
+    ) -> Optional[CredentialResolution]:
         return self._last
 
     # ---------------------------------------------------------
@@ -152,9 +124,7 @@ class IntegrationCredentialResolver:
         target: IntegrationTarget,
         *,
         required: bool = False,
-    ) -> Optional[
-        SecretValue
-    ]:
+    ) -> Optional[SecretValue]:
         """
         Resolve target credentials.
 
@@ -170,26 +140,18 @@ class IntegrationCredentialResolver:
 
         target.finalize()
 
-        reference = (
-            target.credential
-        )
+        reference = target.credential
 
         # -----------------------------------------------------
         # No credential reference
         # -----------------------------------------------------
 
         if reference is None:
-            self._last = (
-                CredentialResolution(
-                    provider=(
-                        target.provider
-                    ),
-                    target_id=(
-                        target.target_id
-                    ),
-                    configured=False,
-                    resolved=False,
-                )
+            self._last = CredentialResolution(
+                provider=(target.provider),
+                target_id=(target.target_id),
+                configured=False,
+                resolved=False,
             )
 
             if required:
@@ -210,24 +172,13 @@ class IntegrationCredentialResolver:
         # -----------------------------------------------------
 
         if self.secrets is None:
-            self._last = (
-                CredentialResolution(
-                    provider=(
-                        target.provider
-                    ),
-                    target_id=(
-                        target.target_id
-                    ),
-                    configured=True,
-                    resolved=False,
-                    secret_provider=(
-                        reference.provider
-                    ),
-                    reference_id=(
-                        reference.
-                        reference_id
-                    ),
-                )
+            self._last = CredentialResolution(
+                provider=(target.provider),
+                target_id=(target.target_id),
+                configured=True,
+                resolved=False,
+                secret_provider=(reference.provider),
+                reference_id=(reference.reference_id),
             )
 
             raise (
@@ -244,64 +195,30 @@ class IntegrationCredentialResolver:
         # -----------------------------------------------------
 
         try:
-            value = (
-                self.secrets.resolve(
-                    reference
-                )
-            )
+            value = self.secrets.resolve(reference)
 
         except SecretError as exc:
-            self._last = (
-                CredentialResolution(
-                    provider=(
-                        target.provider
-                    ),
-                    target_id=(
-                        target.target_id
-                    ),
-                    configured=True,
-                    resolved=False,
-                    secret_provider=(
-                        reference.provider
-                    ),
-                    reference_id=(
-                        reference.
-                        reference_id
-                    ),
-                )
+            self._last = CredentialResolution(
+                provider=(target.provider),
+                target_id=(target.target_id),
+                configured=True,
+                resolved=False,
+                secret_provider=(reference.provider),
+                reference_id=(reference.reference_id),
             )
 
             # Do not copy the secret manager's
             # arbitrary error text.
             raise (
                 IntegrationAuthenticationError(
-                    "Integration credential "
-                    "resolution failed.",
+                    "Integration credential resolution failed.",
                     details={
-                        "provider": (
-                            target.provider
-                        ),
-
-                        "target_id": (
-                            target.target_id
-                        ),
-
-                        "secret_provider": (
-                            reference.provider
-                        ),
-
-                        "reference_id": (
-                            reference.
-                            reference_id
-                        ),
-
-                        "error_type": (
-                            type(exc).__name__
-                        ),
-
-                        "error_module": (
-                            type(exc).__module__
-                        ),
+                        "provider": (target.provider),
+                        "target_id": (target.target_id),
+                        "secret_provider": (reference.provider),
+                        "reference_id": (reference.reference_id),
+                        "error_type": (type(exc).__name__),
+                        "error_module": (type(exc).__module__),
                     },
                 )
             ) from exc
@@ -310,23 +227,13 @@ class IntegrationCredentialResolver:
         # Resolved
         # -----------------------------------------------------
 
-        self._last = (
-            CredentialResolution(
-                provider=(
-                    target.provider
-                ),
-                target_id=(
-                    target.target_id
-                ),
-                configured=True,
-                resolved=True,
-                secret_provider=(
-                    reference.provider
-                ),
-                reference_id=(
-                    reference.reference_id
-                ),
-            )
+        self._last = CredentialResolution(
+            provider=(target.provider),
+            target_id=(target.target_id),
+            configured=True,
+            resolved=True,
+            secret_provider=(reference.provider),
+            reference_id=(reference.reference_id),
         )
 
         return value
@@ -347,15 +254,10 @@ class IntegrationCredentialResolver:
 
         target.finalize()
 
-        if (
-            target.credential is None
-            or self.secrets is None
-        ):
+        if target.credential is None or self.secrets is None:
             return False
 
-        return self.secrets.invalidate(
-            target.credential
-        )
+        return self.secrets.invalidate(target.credential)
 
     # ---------------------------------------------------------
     # Safe summary
@@ -365,20 +267,9 @@ class IntegrationCredentialResolver:
         self,
     ) -> Dict[str, Any]:
         return {
-            "secret_manager_registered": (
-                self.secrets
-                is not None
-            ),
-
-            "last_resolution": (
-                self._last.to_dict()
-                if self._last
-                else None
-            ),
-
-            "secret_value_exposed": (
-                False
-            ),
+            "secret_manager_registered": (self.secrets is not None),
+            "last_resolution": (self._last.to_dict() if self._last else None),
+            "secret_value_exposed": (False),
         }
 
 
@@ -388,6 +279,5 @@ class IntegrationCredentialResolver:
 
 __all__ = [
     "CredentialResolution",
-
     "IntegrationCredentialResolver",
 ]

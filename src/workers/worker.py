@@ -50,6 +50,7 @@ JobHandler = Callable[
 # Handler result
 # ---------------------------------------------------------------
 
+
 @dataclass
 class HandlerResult:
     """
@@ -65,34 +66,19 @@ class HandlerResult:
 
     retryable: bool = False
 
-    result_reference_ids: list[
-        str
-    ] = field(
-        default_factory=list
-    )
+    result_reference_ids: list[str] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    error: Optional[
-        str
-    ] = None
+    error: Optional[str] = None
 
     def finalize(
         self,
     ) -> "HandlerResult":
-        self.result_reference_ids = (
-            sorted(
-                set(
-                    self.
-                    result_reference_ids
-                )
-            )
-        )
+        self.result_reference_ids = sorted(set(self.result_reference_ids))
 
         return self
 
@@ -101,27 +87,23 @@ class HandlerResult:
 # Worker errors
 # ---------------------------------------------------------------
 
-class WorkerError(
-    RuntimeError
-):
+
+class WorkerError(RuntimeError):
     pass
 
 
-class MissingJobHandlerError(
-    WorkerError
-):
+class MissingJobHandlerError(WorkerError):
     pass
 
 
-class WorkerPolicyError(
-    WorkerError
-):
+class WorkerPolicyError(WorkerError):
     pass
 
 
 # ---------------------------------------------------------------
 # Dry-run policy
 # ---------------------------------------------------------------
+
 
 def payload_requests_live_execution(
     job: WorkerJob,
@@ -146,20 +128,19 @@ def payload_requests_live_execution(
     ):
         return True
 
-    if (
-        payload.get(
-            "dry_run"
-        )
-        is False
-    ):
+    if payload.get("dry_run") is False:
         return True
 
-    mode = str(
-        payload.get(
-            "mode",
-            "",
+    mode = (
+        str(
+            payload.get(
+                "mode",
+                "",
+            )
         )
-    ).strip().lower()
+        .strip()
+        .lower()
+    )
 
     return mode in {
         "execute",
@@ -171,6 +152,7 @@ def payload_requests_live_execution(
 # ---------------------------------------------------------------
 # Handler-result normalization
 # ---------------------------------------------------------------
+
 
 def normalize_handler_result(
     value: Any,
@@ -194,13 +176,8 @@ def normalize_handler_result(
         return HandlerResult(
             success=value.success,
             retryable=False,
-            result_reference_ids=list(
-                value.
-                result_reference_ids
-            ),
-            attributes=dict(
-                value.attributes
-            ),
+            result_reference_ids=list(value.result_reference_ids),
+            attributes=dict(value.attributes),
             error=value.error,
         ).finalize()
 
@@ -233,18 +210,14 @@ def normalize_handler_result(
                     {},
                 )
             ),
-            error=value.get(
-                "error"
-            ),
+            error=value.get("error"),
         ).finalize()
 
     if isinstance(
         value,
         bool,
     ):
-        return HandlerResult(
-            success=value
-        ).finalize()
+        return HandlerResult(success=value).finalize()
 
     # A non-exceptional handler return is treated
     # as successful, but its arbitrary value is
@@ -252,9 +225,7 @@ def normalize_handler_result(
     return HandlerResult(
         success=True,
         attributes={
-            "handler_returned_value": (
-                value is not None
-            ),
+            "handler_returned_value": (value is not None),
         },
     ).finalize()
 
@@ -262,6 +233,7 @@ def normalize_handler_result(
 # ---------------------------------------------------------------
 # Worker
 # ---------------------------------------------------------------
+
 
 class Worker:
     """
@@ -283,71 +255,39 @@ class Worker:
     def __init__(
         self,
         *,
-        config: Optional[
-            WorkerConfig
-        ] = None,
-        queue: Optional[
-            InMemoryJobQueue
-        ] = None,
+        config: Optional[WorkerConfig] = None,
+        queue: Optional[InMemoryJobQueue] = None,
         handlers: Optional[
             Mapping[
                 str,
                 JobHandler,
             ]
         ] = None,
-        state: Optional[
-            WorkerStateManager
-        ] = None,
+        state: Optional[WorkerStateManager] = None,
     ) -> None:
-        self.config = (
-            config
-            or WorkerConfig()
-        )
+        self.config = config or WorkerConfig()
 
         self.config.validate()
 
-        self.queue = (
-            queue
-            or InMemoryJobQueue(
-                lease_config=(
-                    self.config.lease
-                ),
-                retry_config=(
-                    self.config.retry
-                ),
-            )
+        self.queue = queue or InMemoryJobQueue(
+            lease_config=(self.config.lease),
+            retry_config=(self.config.retry),
         )
 
         self.handlers: Dict[
             str,
             JobHandler,
-        ] = dict(
-            handlers
-            or {}
-        )
+        ] = dict(handlers or {})
 
-        self.state = (
-            state
-            or WorkerStateManager()
-        )
+        self.state = state or WorkerStateManager()
 
-        self.status = (
-            WorkerStatus(
-                worker_id=(
-                    self.config.worker_id
-                ),
-                concurrency=(
-                    self.config.concurrency
-                ),
-                attributes={
-                    "config": (
-                        safe_config_summary(
-                            self.config
-                        )
-                    ),
-                },
-            ).finalize()
-        )
+        self.status = WorkerStatus(
+            worker_id=(self.config.worker_id),
+            concurrency=(self.config.concurrency),
+            attributes={
+                "config": (safe_config_summary(self.config)),
+            },
+        ).finalize()
 
         self._validate_handlers()
 
@@ -358,55 +298,25 @@ class Worker:
     def _validate_handlers(
         self,
     ) -> None:
-        valid_types = {
-            item.value
-            for item in JobType
-        }
+        valid_types = {item.value for item in JobType}
 
-        unknown = sorted(
-            set(
-                self.handlers
-            )
-            - valid_types
-        )
+        unknown = sorted(set(self.handlers) - valid_types)
 
         if unknown:
-            raise ValueError(
-                "Handlers registered for "
-                "unknown job types: "
-                f"{unknown}"
-            )
+            raise ValueError(f"Handlers registered for unknown job types: {unknown}")
 
     def register_handler(
         self,
         job_type: str,
         handler: JobHandler,
     ) -> None:
-        if (
-            job_type
-            not in {
-                item.value
-                for item in JobType
-            }
-        ):
-            raise ValueError(
-                "Unknown job type: "
-                f"{job_type}"
-            )
+        if job_type not in {item.value for item in JobType}:
+            raise ValueError(f"Unknown job type: {job_type}")
 
-        if (
-            job_type
-            in self.handlers
-        ):
-            raise ValueError(
-                "Handler already "
-                "registered for job "
-                f"type: {job_type}"
-            )
+        if job_type in self.handlers:
+            raise ValueError(f"Handler already registered for job type: {job_type}")
 
-        self.handlers[
-            job_type
-        ] = handler
+        self.handlers[job_type] = handler
 
     # ---------------------------------------------------------
     # Start
@@ -415,26 +325,14 @@ class Worker:
     def start(
         self,
     ) -> WorkerStatus:
-        if (
-            self.status.state
-            == WorkerState.CREATED.value
-        ):
-            self.state.start(
-                self.status
-            )
+        if self.status.state == WorkerState.CREATED.value:
+            self.state.start(self.status)
 
-        elif (
-            self.status.state
-            not in {
-                WorkerState.IDLE.value,
-                WorkerState.BUSY.value,
-            }
-        ):
-            raise WorkerError(
-                "Worker cannot start "
-                "from state "
-                f"{self.status.state}"
-            )
+        elif self.status.state not in {
+            WorkerState.IDLE.value,
+            WorkerState.BUSY.value,
+        }:
+            raise WorkerError(f"Worker cannot start from state {self.status.state}")
 
         return self.status
 
@@ -444,9 +342,7 @@ class Worker:
 
     def lease_next(
         self,
-    ) -> Optional[
-        WorkerJob
-    ]:
+    ) -> Optional[WorkerJob]:
         """
         Lease one compatible job when the worker
         has capacity.
@@ -454,34 +350,20 @@ class Worker:
         No job execution happens here.
         """
 
-        if (
-            self.status.state
-            in {
-                WorkerState.
-                DRAINING.value,
-                WorkerState.
-                STOPPING.value,
-                WorkerState.
-                STOPPED.value,
-                WorkerState.
-                FAILED.value,
-            }
-        ):
+        if self.status.state in {
+            WorkerState.DRAINING.value,
+            WorkerState.STOPPING.value,
+            WorkerState.STOPPED.value,
+            WorkerState.FAILED.value,
+        }:
             return None
 
-        if not worker_has_capacity(
-            self.status
-        ):
+        if not worker_has_capacity(self.status):
             return None
 
         return self.queue.lease(
-            worker_id=(
-                self.status.worker_id
-            ),
-            accepted_job_types=(
-                self.config.
-                accepted_job_types
-            ),
+            worker_id=(self.status.worker_id),
+            accepted_job_types=(self.config.accepted_job_types),
         )
 
     # ---------------------------------------------------------
@@ -503,52 +385,29 @@ class Worker:
         # Job type policy
         # -----------------------------------------------------
 
-        if not self.config.accepts(
-            job.job_type
-        ):
-            raise WorkerPolicyError(
-                "Worker does not accept "
-                f"job type: {job.job_type}"
-            )
+        if not self.config.accepts(job.job_type):
+            raise WorkerPolicyError(f"Worker does not accept job type: {job.job_type}")
 
         # -----------------------------------------------------
         # Dry-run policy
         # -----------------------------------------------------
 
-        if (
-            self.config.dry_run_only
-            and payload_requests_live_execution(
-                job
-            )
-        ):
+        if self.config.dry_run_only and payload_requests_live_execution(job):
             # Policy block is not retryable.
             self.queue.release_lease(
                 job.job_id,
-                worker_id=(
-                    self.status.worker_id
-                ),
+                worker_id=(self.status.worker_id),
                 return_to_ready=False,
             )
 
             return JobResult(
                 job_id=job.job_id,
-                worker_id=(
-                    self.status.worker_id
-                ),
+                worker_id=(self.status.worker_id),
                 success=False,
-                state=(
-                    JobState.
-                    CANCELLED.value
-                ),
-                error=(
-                    "Worker dry-run policy "
-                    "rejected live "
-                    "execution."
-                ),
+                state=(JobState.CANCELLED.value),
+                error=("Worker dry-run policy rejected live execution."),
                 attributes={
-                    "policy_block": (
-                        "dry_run_only"
-                    ),
+                    "policy_block": ("dry_run_only"),
                 },
             ).finalize()
 
@@ -556,26 +415,20 @@ class Worker:
         # Handler lookup
         # -----------------------------------------------------
 
-        handler = self.handlers.get(
-            job.job_type
-        )
+        handler = self.handlers.get(job.job_type)
 
         if handler is None:
             # Return the job to READY because the
             # worker didn't begin processing it.
             self.queue.release_lease(
                 job.job_id,
-                worker_id=(
-                    self.status.worker_id
-                ),
+                worker_id=(self.status.worker_id),
                 return_to_ready=True,
             )
 
             raise (
                 MissingJobHandlerError(
-                    "No handler registered "
-                    "for job type: "
-                    f"{job.job_type}"
+                    f"No handler registered for job type: {job.job_type}"
                 )
             )
 
@@ -589,63 +442,32 @@ class Worker:
         )
 
         try:
-            handler_result = (
-                normalize_handler_result(
-                    handler(
-                        job
-                    )
-                )
-            )
+            handler_result = normalize_handler_result(handler(job))
 
         except Exception as exc:
             # Unexpected handler failures may be
             # retried while attempts remain.
-            retry = (
-                job.attempt
-                < job.max_attempts
-            )
+            retry = job.attempt < job.max_attempts
 
             self.state.fail_job(
                 self.status,
                 job,
                 retry=retry,
-                error=(
-                    "Job handler raised "
-                    "an unexpected "
-                    "exception."
-                ),
+                error=("Job handler raised an unexpected exception."),
             )
 
-            if (
-                job.state
-                == JobState.
-                RETRY_WAIT.value
-            ):
-                self.queue.schedule_retry(
-                    job.job_id
-                )
+            if job.state == JobState.RETRY_WAIT.value:
+                self.queue.schedule_retry(job.job_id)
 
             return JobResult(
                 job_id=job.job_id,
-                worker_id=(
-                    self.status.worker_id
-                ),
+                worker_id=(self.status.worker_id),
                 success=False,
                 state=job.state,
-                error=(
-                    "Job handler raised "
-                    "an unexpected "
-                    "exception."
-                ),
+                error=("Job handler raised an unexpected exception."),
                 attributes={
-                    "error_type": (
-                        type(exc).__name__
-                    ),
-                    "retry_scheduled": (
-                        job.state
-                        == JobState.
-                        RETRY_WAIT.value
-                    ),
+                    "error_type": (type(exc).__name__),
+                    "retry_scheduled": (job.state == JobState.RETRY_WAIT.value),
                 },
             ).finalize()
 
@@ -654,14 +476,9 @@ class Worker:
         # -----------------------------------------------------
 
         if handler_result.success:
-            job.result_reference_ids = list(
-                handler_result.
-                result_reference_ids
-            )
+            job.result_reference_ids = list(handler_result.result_reference_ids)
 
-            job.attributes.update(
-                handler_result.attributes
-            )
+            job.attributes.update(handler_result.attributes)
 
             self.state.succeed_job(
                 self.status,
@@ -670,82 +487,39 @@ class Worker:
 
             return JobResult(
                 job_id=job.job_id,
-                worker_id=(
-                    self.status.worker_id
-                ),
+                worker_id=(self.status.worker_id),
                 success=True,
-                state=(
-                    JobState.
-                    SUCCEEDED.value
-                ),
-                result_reference_ids=list(
-                    job.
-                    result_reference_ids
-                ),
-                attributes=dict(
-                    handler_result.
-                    attributes
-                ),
+                state=(JobState.SUCCEEDED.value),
+                result_reference_ids=list(job.result_reference_ids),
+                attributes=dict(handler_result.attributes),
             ).finalize()
 
         # -----------------------------------------------------
         # Handler-reported failure
         # -----------------------------------------------------
 
-        retry = bool(
-            handler_result.retryable
-            and job.attempt
-            < job.max_attempts
-        )
+        retry = bool(handler_result.retryable and job.attempt < job.max_attempts)
 
         self.state.fail_job(
             self.status,
             job,
             retry=retry,
-            error=(
-                handler_result.error
-                or (
-                    "Job handler "
-                    "reported failure."
-                )
-            ),
+            error=(handler_result.error or ("Job handler reported failure.")),
         )
 
-        if (
-            job.state
-            == JobState.
-            RETRY_WAIT.value
-        ):
-            self.queue.schedule_retry(
-                job.job_id
-            )
+        if job.state == JobState.RETRY_WAIT.value:
+            self.queue.schedule_retry(job.job_id)
 
         return JobResult(
             job_id=job.job_id,
-            worker_id=(
-                self.status.worker_id
-            ),
+            worker_id=(self.status.worker_id),
             success=False,
             state=job.state,
-            result_reference_ids=list(
-                handler_result.
-                result_reference_ids
-            ),
-            error=(
-                handler_result.error
-                or (
-                    "Job handler "
-                    "reported failure."
-                )
-            ),
+            result_reference_ids=list(handler_result.result_reference_ids),
+            error=(handler_result.error or ("Job handler reported failure.")),
             attributes={
-                **handler_result.
-                attributes,
-                "retry_scheduled": (
-                    job.state
-                    == JobState.
-                    RETRY_WAIT.value
-                ),
+                **handler_result.attributes,
+                "retry_scheduled": (job.state == JobState.RETRY_WAIT.value),
             },
         ).finalize()
 
@@ -755,9 +529,7 @@ class Worker:
 
     def run_once(
         self,
-    ) -> Optional[
-        JobResult
-    ]:
+    ) -> Optional[JobResult]:
         """
         Lease and process at most one job.
 
@@ -765,10 +537,7 @@ class Worker:
         polling loop.
         """
 
-        if (
-            self.status.state
-            == WorkerState.CREATED.value
-        ):
+        if self.status.state == WorkerState.CREATED.value:
             self.start()
 
         job = self.lease_next()
@@ -776,9 +545,7 @@ class Worker:
         if job is None:
             return None
 
-        return self.process(
-            job
-        )
+        return self.process(job)
 
     # ---------------------------------------------------------
     # Drain and stop
@@ -787,9 +554,7 @@ class Worker:
     def drain(
         self,
     ) -> WorkerStatus:
-        self.state.drain(
-            self.status
-        )
+        self.state.drain(self.status)
 
         return self.status
 
@@ -805,19 +570,12 @@ class Worker:
         those jobs finish.
         """
 
-        if (
-            self.config.
-            drain_on_shutdown
-            and self.status.
-            active_job_ids
-        ):
+        if self.config.drain_on_shutdown and self.status.active_job_ids:
             self.drain()
 
             return self.status
 
-        self.state.stop(
-            self.status
-        )
+        self.state.stop(self.status)
 
         return self.status
 
@@ -829,19 +587,8 @@ class Worker:
         self,
     ) -> Dict[str, Any]:
         return {
-            "worker": (
-                self.status.to_dict()
-            ),
-            "queue": (
-                self.queue.summary()
-            ),
-            "registered_job_types": (
-                sorted(
-                    self.handlers
-                )
-            ),
-            "dry_run_only": (
-                self.config.
-                dry_run_only
-            ),
+            "worker": (self.status.to_dict()),
+            "queue": (self.queue.summary()),
+            "registered_job_types": (sorted(self.handlers)),
+            "dry_run_only": (self.config.dry_run_only),
         }

@@ -54,27 +54,20 @@ from src.security.schema import (
 # Errors
 # ---------------------------------------------------------------
 
-class AuthenticationErrorBase(
-    RuntimeError
-):
+
+class AuthenticationErrorBase(RuntimeError):
     pass
 
 
-class AuthenticationFailedError(
-    AuthenticationErrorBase
-):
+class AuthenticationFailedError(AuthenticationErrorBase):
     pass
 
 
-class AuthenticationMethodError(
-    AuthenticationErrorBase
-):
+class AuthenticationMethodError(AuthenticationErrorBase):
     pass
 
 
-class SessionNotFoundError(
-    AuthenticationErrorBase
-):
+class SessionNotFoundError(AuthenticationErrorBase):
     pass
 
 
@@ -95,18 +88,15 @@ class SessionNotFoundError(
 # ---------------------------------------------------------------
 
 AuthenticationProvider = Callable[
-    [
-        Any
-    ],
-    Optional[
-        SecurityPrincipal
-    ],
+    [Any],
+    Optional[SecurityPrincipal],
 ]
 
 
 # ---------------------------------------------------------------
 # Registered provider
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class RegisteredAuthenticationProvider:
@@ -117,14 +107,13 @@ class RegisteredAuthenticationProvider:
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------
 # Authentication service
 # ---------------------------------------------------------------
+
 
 class AuthenticationService:
     """
@@ -148,21 +137,14 @@ class AuthenticationService:
     def __init__(
         self,
         *,
-        config: Optional[
-            AuthenticationConfig
-        ] = None,
+        config: Optional[AuthenticationConfig] = None,
         redact_sensitive: bool = True,
     ) -> None:
-        self.config = (
-            config
-            or AuthenticationConfig()
-        )
+        self.config = config or AuthenticationConfig()
 
         self.config.validate()
 
-        self.redact_sensitive = bool(
-            redact_sensitive
-        )
+        self.redact_sensitive = bool(redact_sensitive)
 
         self._providers: Dict[
             str,
@@ -194,19 +176,11 @@ class AuthenticationService:
     ) -> None:
         normalized = required_string(
             method,
-            name=(
-                "authentication method"
-            ),
+            name=("authentication method"),
             maximum_length=128,
         ).lower()
 
-        if (
-            normalized
-            not in set(
-                self.config.
-                accepted_methods
-            )
-        ):
+        if normalized not in set(self.config.accepted_methods):
             raise (
                 AuthenticationMethodError(
                     "Authentication method "
@@ -217,41 +191,23 @@ class AuthenticationService:
             )
 
         with self._lock:
-            if (
-                normalized
-                in self._providers
-            ):
+            if normalized in self._providers:
                 raise (
                     AuthenticationMethodError(
-                        "Authentication "
-                        "provider already "
-                        "registered: "
-                        f"{normalized}"
+                        f"Authentication provider already registered: {normalized}"
                     )
                 )
 
-            self._providers[
-                normalized
-            ] = (
-                RegisteredAuthenticationProvider(
-                    method=normalized,
-                    provider=provider,
-                    attributes=(
-                        to_json_safe(
-                            dict(
-                                attributes
-                                or {}
-                            ),
-                            redact_sensitive=(
-                                self.
-                                redact_sensitive
-                            ),
-                            sensitive_keys=(
-                                DEFAULT_SENSITIVE_KEYS
-                            ),
-                        )
-                    ),
-                )
+            self._providers[normalized] = RegisteredAuthenticationProvider(
+                method=normalized,
+                provider=provider,
+                attributes=(
+                    to_json_safe(
+                        dict(attributes or {}),
+                        redact_sensitive=(self.redact_sensitive),
+                        sensitive_keys=(DEFAULT_SENSITIVE_KEYS),
+                    )
+                ),
             )
 
     # ---------------------------------------------------------
@@ -273,10 +229,7 @@ class AuthenticationService:
         """
 
         if not self.config.enabled:
-            if (
-                self.config.
-                require_authentication
-            ):
+            if self.config.require_authentication:
                 raise (
                     AuthenticationFailedError(
                         "Authentication is "
@@ -287,126 +240,66 @@ class AuthenticationService:
                     )
                 )
 
-            return (
-                AuthenticationContext(
-                    status=(
-                        AuthenticationStatus.
-                        UNAUTHENTICATED.value
-                    ),
-                    method=None,
-                    attributes={
-                        "authentication_required": (
-                            False
-                        ),
-                    },
-                ).finalize()
-            )
+            return AuthenticationContext(
+                status=(AuthenticationStatus.UNAUTHENTICATED.value),
+                method=None,
+                attributes={
+                    "authentication_required": (False),
+                },
+            ).finalize()
 
         normalized = required_string(
             method,
-            name=(
-                "authentication method"
-            ),
+            name=("authentication method"),
             maximum_length=128,
         ).lower()
 
-        if (
-            normalized
-            not in set(
-                self.config.
-                accepted_methods
-            )
-        ):
+        if normalized not in set(self.config.accepted_methods):
             raise AuthenticationMethodError(
-                "Authentication method "
-                "is not allowed: "
-                f"{normalized}"
+                f"Authentication method is not allowed: {normalized}"
             )
 
         with self._lock:
-            registered = (
-                self._providers.get(
-                    normalized
-                )
-            )
+            registered = self._providers.get(normalized)
 
         if registered is None:
             raise AuthenticationMethodError(
-                "No authentication "
-                "provider is registered "
-                "for method: "
-                f"{normalized}"
+                f"No authentication provider is registered for method: {normalized}"
             )
 
         try:
-            authenticated_principal = (
-                registered.provider(
-                    credential
-                )
-            )
+            authenticated_principal = registered.provider(credential)
 
         except Exception as exc:
             # Do not propagate arbitrary provider
             # exception messages into normal
             # authentication output.
             raise (
-                AuthenticationFailedError(
-                    "Authentication "
-                    "provider failed."
-                )
+                AuthenticationFailedError("Authentication provider failed.")
             ) from exc
 
-        if (
-            authenticated_principal
-            is None
-        ):
-            raise AuthenticationFailedError(
-                "Authentication failed."
-            )
+        if authenticated_principal is None:
+            raise AuthenticationFailedError("Authentication failed.")
 
         authenticated_principal.finalize()
 
         now = utc_datetime()
 
-        expires = (
-            now
-            + timedelta(
-                seconds=(
-                    self.config.
-                    session_lifetime_seconds
-                )
-            )
-        )
+        expires = now + timedelta(seconds=(self.config.session_lifetime_seconds))
 
-        context = (
-            AuthenticationContext(
-                status=(
-                    AuthenticationStatus.
-                    AUTHENTICATED.value
-                ),
-                principal=(
-                    authenticated_principal
-                ),
-                method=normalized,
-                authenticated_at=(
-                    now.isoformat()
-                ),
-                expires_at=(
-                    expires.isoformat()
-                ),
-                attributes={
-                    "provider_attributes": (
-                        registered.
-                        attributes
-                    ),
-                },
-            ).finalize()
-        )
+        context = AuthenticationContext(
+            status=(AuthenticationStatus.AUTHENTICATED.value),
+            principal=(authenticated_principal),
+            method=normalized,
+            authenticated_at=(now.isoformat()),
+            expires_at=(expires.isoformat()),
+            attributes={
+                "provider_attributes": (registered.attributes),
+            },
+        ).finalize()
 
         with self._lock:
-            self._sessions[
-                context.session_id
-            ] = context
+            self._sessions[context.session_id] = context
 
         return context
 
@@ -417,9 +310,7 @@ class AuthenticationService:
     def session(
         self,
         session_id: str,
-    ) -> Optional[
-        AuthenticationContext
-    ]:
+    ) -> Optional[AuthenticationContext]:
         normalized = required_string(
             session_id,
             name="session_id",
@@ -427,25 +318,13 @@ class AuthenticationService:
         )
 
         with self._lock:
-            context = (
-                self._sessions.get(
-                    normalized
-                )
-            )
+            context = self._sessions.get(normalized)
 
         if context is None:
             return None
 
-        if (
-            context.expires_at
-            and is_expired(
-                context.expires_at
-            )
-        ):
-            context.status = (
-                AuthenticationStatus.
-                EXPIRED.value
-            )
+        if context.expires_at and is_expired(context.expires_at):
+            context.status = AuthenticationStatus.EXPIRED.value
 
         return context.finalize()
 
@@ -457,26 +336,15 @@ class AuthenticationService:
         self,
         session_id: str,
     ) -> AuthenticationContext:
-        context = self.session(
-            session_id
-        )
+        context = self.session(session_id)
 
         if context is None:
-            raise SessionNotFoundError(
-                "Unknown session: "
-                f"{session_id}"
-            )
+            raise SessionNotFoundError(f"Unknown session: {session_id}")
 
-        if (
-            context.status
-            != AuthenticationStatus.
-            AUTHENTICATED.value
-        ):
+        if context.status != AuthenticationStatus.AUTHENTICATED.value:
             raise (
                 AuthenticationFailedError(
-                    "Session is not "
-                    "authenticated: "
-                    f"{context.status}"
+                    f"Session is not authenticated: {context.status}"
                 )
             )
 
@@ -490,29 +358,17 @@ class AuthenticationService:
         self,
         session_id: str,
     ) -> AuthenticationContext:
-        context = self.session(
-            session_id
-        )
+        context = self.session(session_id)
 
         if context is None:
-            raise SessionNotFoundError(
-                "Unknown session: "
-                f"{session_id}"
-            )
+            raise SessionNotFoundError(f"Unknown session: {session_id}")
 
-        context.status = (
-            AuthenticationStatus.
-            REVOKED.value
-        )
+        context.status = AuthenticationStatus.REVOKED.value
 
-        context.attributes[
-            "revoked_at"
-        ] = utc_now()
+        context.attributes["revoked_at"] = utc_now()
 
         with self._lock:
-            self._sessions[
-                context.session_id
-            ] = context
+            self._sessions[context.session_id] = context
 
         return context.finalize()
 
@@ -531,18 +387,13 @@ class AuthenticationService:
         )
 
         with self._lock:
-            context = (
-                self._sessions.pop(
-                    normalized,
-                    None,
-                )
+            context = self._sessions.pop(
+                normalized,
+                None,
             )
 
         if context is None:
-            raise SessionNotFoundError(
-                "Unknown session: "
-                f"{session_id}"
-            )
+            raise SessionNotFoundError(f"Unknown session: {session_id}")
 
         return context
 
@@ -559,15 +410,8 @@ class AuthenticationService:
                 for (
                     session_id,
                     context,
-                )
-                in self._sessions.items()
-                if (
-                    context.expires_at
-                    is not None
-                    and is_expired(
-                        context.expires_at
-                    )
-                )
+                ) in self._sessions.items()
+                if (context.expires_at is not None and is_expired(context.expires_at))
             ]
 
             for session_id in expired:
@@ -576,9 +420,7 @@ class AuthenticationService:
                     None,
                 )
 
-            return len(
-                expired
-            )
+            return len(expired)
 
     # ---------------------------------------------------------
     # Summary
@@ -593,27 +435,13 @@ class AuthenticationService:
                 int,
             ] = {}
 
-            for context in (
-                self._sessions.values()
-            ):
-                status = (
-                    context.status
-                )
+            for context in self._sessions.values():
+                status = context.status
 
-                if (
-                    context.expires_at
-                    and is_expired(
-                        context.expires_at
-                    )
-                ):
-                    status = (
-                        AuthenticationStatus.
-                        EXPIRED.value
-                    )
+                if context.expires_at and is_expired(context.expires_at):
+                    status = AuthenticationStatus.EXPIRED.value
 
-                statuses[
-                    status
-                ] = (
+                statuses[status] = (
                     statuses.get(
                         status,
                         0,
@@ -622,37 +450,12 @@ class AuthenticationService:
                 )
 
             return {
-                "enabled": (
-                    self.config.enabled
-                ),
-
-                "require_authentication": (
-                    self.config.
-                    require_authentication
-                ),
-
-                "accepted_methods": (
-                    list(
-                        self.config.
-                        accepted_methods
-                    )
-                ),
-
-                "registered_methods": (
-                    sorted(
-                        self._providers
-                    )
-                ),
-
-                "session_count": (
-                    len(
-                        self._sessions
-                    )
-                ),
-
-                "sessions_by_status": (
-                    statuses
-                ),
+                "enabled": (self.config.enabled),
+                "require_authentication": (self.config.require_authentication),
+                "accepted_methods": (list(self.config.accepted_methods)),
+                "registered_methods": (sorted(self._providers)),
+                "session_count": (len(self._sessions)),
+                "sessions_by_status": (statuses),
             }
 
 
@@ -665,9 +468,7 @@ __all__ = [
     "AuthenticationFailedError",
     "AuthenticationMethodError",
     "SessionNotFoundError",
-
     "AuthenticationProvider",
     "RegisteredAuthenticationProvider",
-
     "AuthenticationService",
 ]

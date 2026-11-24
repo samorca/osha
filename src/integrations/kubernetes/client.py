@@ -55,17 +55,15 @@ except ImportError:
 # Client error
 # ---------------------------------------------------------------
 
-class KubernetesClientError(
-    IntegrationOperationError
-):
-    default_code = (
-        "kubernetes_client_error"
-    )
+
+class KubernetesClientError(IntegrationOperationError):
+    default_code = "kubernetes_client_error"
 
 
 # ---------------------------------------------------------------
 # Kubernetes object serialization
 # ---------------------------------------------------------------
+
 
 def resource_to_dict(
     resource: Any,
@@ -85,19 +83,11 @@ def resource_to_dict(
         resource,
         dict,
     ):
-        return dict(
-            resource
-        )
+        return dict(resource)
 
     if kubernetes_client is not None:
         try:
-            value = (
-                kubernetes_client.
-                ApiClient().
-                sanitize_for_serialization(
-                    resource
-                )
-            )
+            value = kubernetes_client.ApiClient().sanitize_for_serialization(resource)
 
             if isinstance(
                 value,
@@ -140,45 +130,32 @@ def resource_to_dict(
         )
 
         if name is not None:
-            result[
-                "name"
-            ] = name
+            result["name"] = name
 
         if namespace is not None:
-            result[
-                "namespace"
-            ] = namespace
+            result["namespace"] = namespace
 
         if uid is not None:
-            result[
-                "uid"
-            ] = uid
+            result["uid"] = uid
 
     return result
 
 
 def resources_to_dicts(
-    resources: Iterable[
-        Any
-    ],
+    resources: Iterable[Any],
 ) -> List[
     Dict[
         str,
         Any,
     ]
 ]:
-    return [
-        resource_to_dict(
-            resource
-        )
-        for resource
-        in resources
-    ]
+    return [resource_to_dict(resource) for resource in resources]
 
 
 # ---------------------------------------------------------------
 # Kubernetes client
 # ---------------------------------------------------------------
+
 
 class KubernetesClient:
     """
@@ -194,17 +171,13 @@ class KubernetesClient:
         self,
         *,
         config: KubernetesConfig,
-        credential: Optional[
-            SecretValue
-        ] = None,
+        credential: Optional[SecretValue] = None,
     ) -> None:
         self.config = config
 
         self.config.validate()
 
-        self.credential = (
-            credential
-        )
+        self.credential = credential
 
         self._api_client: Any = None
 
@@ -224,10 +197,7 @@ class KubernetesClient:
     def connected(
         self,
     ) -> bool:
-        return (
-            self._api_client
-            is not None
-        )
+        return self._api_client is not None
 
     # ---------------------------------------------------------
     # API accessors
@@ -240,12 +210,7 @@ class KubernetesClient:
         self._require_connected()
 
         if self._core is None:
-            raise (
-                IntegrationCapabilityError(
-                    "Kubernetes CoreV1Api "
-                    "is disabled."
-                )
-            )
+            raise (IntegrationCapabilityError("Kubernetes CoreV1Api is disabled."))
 
         return self._core
 
@@ -256,12 +221,7 @@ class KubernetesClient:
         self._require_connected()
 
         if self._apps is None:
-            raise (
-                IntegrationCapabilityError(
-                    "Kubernetes AppsV1Api "
-                    "is disabled."
-                )
-            )
+            raise (IntegrationCapabilityError("Kubernetes AppsV1Api is disabled."))
 
         return self._apps
 
@@ -273,11 +233,7 @@ class KubernetesClient:
 
         if self._networking is None:
             raise (
-                IntegrationCapabilityError(
-                    "Kubernetes "
-                    "NetworkingV1Api is "
-                    "disabled."
-                )
+                IntegrationCapabilityError("Kubernetes NetworkingV1Api is disabled.")
             )
 
         return self._networking
@@ -295,162 +251,81 @@ class KubernetesClient:
         OSHA configuration objects.
         """
 
-        if (
-            kubernetes_client is None
-            or kubernetes_config is None
-        ):
+        if kubernetes_client is None or kubernetes_config is None:
             raise (
-                IntegrationConnectionError(
-                    "Kubernetes Python "
-                    "client is not "
-                    "installed."
-                )
+                IntegrationConnectionError("Kubernetes Python client is not installed.")
             )
 
-        mode = (
-            self.config.auth.mode
-        )
+        mode = self.config.auth.mode
 
         # -----------------------------------------------------
         # Kubeconfig
         # -----------------------------------------------------
 
-        if (
-            mode
-            == KubernetesConfigMode.
-            KUBECONFIG.value
-        ):
+        if mode == KubernetesConfigMode.KUBECONFIG.value:
             try:
                 kubernetes_config.load_kube_config(
-                        config_file=(
-                            self.config.
-                            auth.
-                            kubeconfig_path
-                        ),
-
-                        context=(
-                            self.config.
-                            auth.context
-                        ),
-                    )
-
-                configuration = (
-                    kubernetes_client.
-                    Configuration.
-                    get_default_copy()
+                    config_file=(self.config.auth.kubeconfig_path),
+                    context=(self.config.auth.context),
                 )
+
+                configuration = kubernetes_client.Configuration.get_default_copy()
 
             except Exception as exc:
                 raise wrap_provider_error(
                     exc,
                     provider="kubernetes",
-                    target_id=(
-                        self.config.
-                        target_id
-                    ),
-                    message=(
-                        "Kubernetes "
-                        "kubeconfig loading "
-                        "failed."
-                    ),
+                    target_id=(self.config.target_id),
+                    message=("Kubernetes kubeconfig loading failed."),
                     retryable=False,
-                    code=(
-                        "kubernetes_config_failed"
-                    ),
+                    code=("kubernetes_config_failed"),
                 ) from exc
 
         # -----------------------------------------------------
         # In-cluster
         # -----------------------------------------------------
 
-        elif (
-            mode
-            == KubernetesConfigMode.
-            IN_CLUSTER.value
-        ):
+        elif mode == KubernetesConfigMode.IN_CLUSTER.value:
             try:
                 kubernetes_config.load_incluster_config()
 
-                configuration = (
-                    kubernetes_client.
-                    Configuration.
-                    get_default_copy()
-                )
+                configuration = kubernetes_client.Configuration.get_default_copy()
 
             except Exception as exc:
                 raise wrap_provider_error(
                     exc,
                     provider="kubernetes",
-                    target_id=(
-                        self.config.
-                        target_id
-                    ),
-                    message=(
-                        "Kubernetes "
-                        "in-cluster "
-                        "configuration "
-                        "failed."
-                    ),
+                    target_id=(self.config.target_id),
+                    message=("Kubernetes in-cluster configuration failed."),
                     retryable=False,
-                    code=(
-                        "kubernetes_incluster_"
-                        "config_failed"
-                    ),
+                    code=("kubernetes_incluster_config_failed"),
                 ) from exc
 
         # -----------------------------------------------------
         # Direct
         # -----------------------------------------------------
 
-        elif (
-            mode
-            == KubernetesConfigMode.
-            DIRECT.value
-        ):
-            configuration = (
-                kubernetes_client.
-                Configuration()
-            )
+        elif mode == KubernetesConfigMode.DIRECT.value:
+            configuration = kubernetes_client.Configuration()
 
-            configuration.host = (
-                self.config.auth.
-                api_server
-            )
+            configuration.host = self.config.auth.api_server
 
-            configuration.verify_ssl = (
-                self.config.
-                verify_tls
-            )
+            configuration.verify_ssl = self.config.verify_tls
 
-            if (
-                self.config.auth.
-                ca_cert_path
-            ):
-                configuration.ssl_ca_cert = (
-                    self.config.auth.
-                    ca_cert_path
-                )
+            if self.config.auth.ca_cert_path:
+                configuration.ssl_ca_cert = self.config.auth.ca_cert_path
 
-            if (
-                self.credential
-                is not None
-            ):
+            if self.credential is not None:
                 # Reveal only at the provider
                 # client authentication boundary.
                 configuration.api_key = {
-                    "authorization": (
-                        "Bearer "
-                        + self.
-                        credential.reveal()
-                    )
+                    "authorization": ("Bearer " + self.credential.reveal())
                 }
 
         else:
             raise (
                 IntegrationConnectionError(
-                    "Unsupported Kubernetes "
-                    "configuration mode: "
-                    f"{mode}"
+                    f"Unsupported Kubernetes configuration mode: {mode}"
                 )
             )
 
@@ -458,18 +333,10 @@ class KubernetesClient:
         # OSHA TLS policy
         # -----------------------------------------------------
 
-        configuration.verify_ssl = (
-            self.config.verify_tls
-        )
+        configuration.verify_ssl = self.config.verify_tls
 
-        if (
-            self.config.auth.
-            ca_cert_path
-        ):
-            configuration.ssl_ca_cert = (
-                self.config.auth.
-                ca_cert_path
-            )
+        if self.config.auth.ca_cert_path:
+            configuration.ssl_ca_cert = self.config.auth.ca_cert_path
 
         return configuration
 
@@ -483,58 +350,22 @@ class KubernetesClient:
         if self.connected:
             return self._api_client
 
-        configuration = (
-            self._load_configuration()
-        )
+        configuration = self._load_configuration()
 
         try:
-            self._api_client = (
-                kubernetes_client.
-                ApiClient(
-                    configuration
-                )
-            )
+            self._api_client = kubernetes_client.ApiClient(configuration)
 
-            if (
-                self.config.enable_core
-            ):
-                self._core = (
-                    kubernetes_client.
-                    CoreV1Api(
-                        self._api_client
-                    )
-                )
+            if self.config.enable_core:
+                self._core = kubernetes_client.CoreV1Api(self._api_client)
 
-            if (
-                self.config.enable_apps
-            ):
-                self._apps = (
-                    kubernetes_client.
-                    AppsV1Api(
-                        self._api_client
-                    )
-                )
+            if self.config.enable_apps:
+                self._apps = kubernetes_client.AppsV1Api(self._api_client)
 
-            if (
-                self.config.
-                enable_networking
-            ):
-                self._networking = (
-                    kubernetes_client.
-                    NetworkingV1Api(
-                        self._api_client
-                    )
-                )
+            if self.config.enable_networking:
+                self._networking = kubernetes_client.NetworkingV1Api(self._api_client)
 
-            if (
-                self.config.enable_batch
-            ):
-                self._batch = (
-                    kubernetes_client.
-                    BatchV1Api(
-                        self._api_client
-                    )
-                )
+            if self.config.enable_batch:
+                self._batch = kubernetes_client.BatchV1Api(self._api_client)
 
             return self._api_client
 
@@ -544,17 +375,10 @@ class KubernetesClient:
             raise wrap_provider_error(
                 exc,
                 provider="kubernetes",
-                target_id=(
-                    self.config.target_id
-                ),
-                message=(
-                    "Kubernetes API client "
-                    "creation failed."
-                ),
+                target_id=(self.config.target_id),
+                message=("Kubernetes API client creation failed."),
                 retryable=True,
-                code=(
-                    "kubernetes_connection_failed"
-                ),
+                code=("kubernetes_connection_failed"),
             ) from exc
 
     # ---------------------------------------------------------
@@ -564,9 +388,7 @@ class KubernetesClient:
     def close(
         self,
     ) -> None:
-        api_client = (
-            self._api_client
-        )
+        api_client = self._api_client
 
         if api_client is None:
             return
@@ -578,26 +400,17 @@ class KubernetesClient:
                 None,
             )
 
-            if callable(
-                close
-            ):
+            if callable(close):
                 close()
 
         except Exception as exc:
             raise wrap_provider_error(
                 exc,
                 provider="kubernetes",
-                target_id=(
-                    self.config.target_id
-                ),
-                message=(
-                    "Kubernetes client "
-                    "close failed."
-                ),
+                target_id=(self.config.target_id),
+                message=("Kubernetes client close failed."),
                 retryable=False,
-                code=(
-                    "kubernetes_close_failed"
-                ),
+                code=("kubernetes_close_failed"),
             ) from exc
 
         finally:
@@ -631,10 +444,7 @@ class KubernetesClient:
             if self._core is not None:
                 self._core.list_namespace(
                     limit=1,
-                    _request_timeout=(
-                        self.config.
-                        request_timeout_seconds
-                    ),
+                    _request_timeout=(self.config.request_timeout_seconds),
                 )
 
                 return True
@@ -642,10 +452,7 @@ class KubernetesClient:
             if self._apps is not None:
                 self._apps.list_deployment_for_all_namespaces(
                     limit=1,
-                    _request_timeout=(
-                        self.config.
-                        request_timeout_seconds
-                    ),
+                    _request_timeout=(self.config.request_timeout_seconds),
                 )
 
                 return True
@@ -662,9 +469,7 @@ class KubernetesClient:
     def list_pods(
         self,
         *,
-        namespace: Optional[
-            str
-        ] = None,
+        namespace: Optional[str] = None,
     ) -> List[
         Dict[
             str,
@@ -673,76 +478,46 @@ class KubernetesClient:
     ]:
         try:
             if namespace:
-                response = (
-                    self.core.
-                    list_namespaced_pod(
-                        namespace=namespace,
-                        _request_timeout=(
-                            self.config.
-                            request_timeout_seconds
-                        ),
-                    )
+                response = self.core.list_namespaced_pod(
+                    namespace=namespace,
+                    _request_timeout=(self.config.request_timeout_seconds),
                 )
 
             else:
-                response = (
-                    self.core.
-                    list_pod_for_all_namespaces(
-                        watch=False,
-                        _request_timeout=(
-                            self.config.
-                            request_timeout_seconds
-                        ),
-                    )
+                response = self.core.list_pod_for_all_namespaces(
+                    watch=False,
+                    _request_timeout=(self.config.request_timeout_seconds),
                 )
 
-            return resources_to_dicts(
-                response.items
-            )
+            return resources_to_dicts(response.items)
 
         except Exception as exc:
             raise self._operation_error(
                 exc,
-                "Kubernetes pod "
-                "listing failed.",
+                "Kubernetes pod listing failed.",
             ) from exc
 
     def get_pod(
         self,
         *,
         name: str,
-        namespace: Optional[
-            str
-        ] = None,
+        namespace: Optional[str] = None,
     ) -> Dict[str, Any]:
-        namespace = (
-            namespace
-            or self.config.
-            default_namespace
-        )
+        namespace = namespace or self.config.default_namespace
 
         try:
-            value = (
-                self.core.
-                read_namespaced_pod(
-                    name=name,
-                    namespace=namespace,
-                    _request_timeout=(
-                        self.config.
-                        request_timeout_seconds
-                    ),
-                )
+            value = self.core.read_namespaced_pod(
+                name=name,
+                namespace=namespace,
+                _request_timeout=(self.config.request_timeout_seconds),
             )
 
-            return resource_to_dict(
-                value
-            )
+            return resource_to_dict(value)
 
         except Exception as exc:
             raise self._operation_error(
                 exc,
-                "Kubernetes pod lookup "
-                "failed.",
+                "Kubernetes pod lookup failed.",
             ) from exc
 
     # ---------------------------------------------------------
@@ -758,24 +533,16 @@ class KubernetesClient:
         ]
     ]:
         try:
-            response = (
-                self.core.list_node(
-                    _request_timeout=(
-                        self.config.
-                        request_timeout_seconds
-                    )
-                )
+            response = self.core.list_node(
+                _request_timeout=(self.config.request_timeout_seconds)
             )
 
-            return resources_to_dicts(
-                response.items
-            )
+            return resources_to_dicts(response.items)
 
         except Exception as exc:
             raise self._operation_error(
                 exc,
-                "Kubernetes node "
-                "listing failed.",
+                "Kubernetes node listing failed.",
             ) from exc
 
     def get_node(
@@ -784,25 +551,17 @@ class KubernetesClient:
         name: str,
     ) -> Dict[str, Any]:
         try:
-            value = (
-                self.core.read_node(
-                    name=name,
-                    _request_timeout=(
-                        self.config.
-                        request_timeout_seconds
-                    ),
-                )
+            value = self.core.read_node(
+                name=name,
+                _request_timeout=(self.config.request_timeout_seconds),
             )
 
-            return resource_to_dict(
-                value
-            )
+            return resource_to_dict(value)
 
         except Exception as exc:
             raise self._operation_error(
                 exc,
-                "Kubernetes node lookup "
-                "failed.",
+                "Kubernetes node lookup failed.",
             ) from exc
 
     # ---------------------------------------------------------
@@ -818,24 +577,16 @@ class KubernetesClient:
         ]
     ]:
         try:
-            response = (
-                self.core.list_namespace(
-                    _request_timeout=(
-                        self.config.
-                        request_timeout_seconds
-                    )
-                )
+            response = self.core.list_namespace(
+                _request_timeout=(self.config.request_timeout_seconds)
             )
 
-            return resources_to_dicts(
-                response.items
-            )
+            return resources_to_dicts(response.items)
 
         except Exception as exc:
             raise self._operation_error(
                 exc,
-                "Kubernetes namespace "
-                "listing failed.",
+                "Kubernetes namespace listing failed.",
             ) from exc
 
     # ---------------------------------------------------------
@@ -845,9 +596,7 @@ class KubernetesClient:
     def list_services(
         self,
         *,
-        namespace: Optional[
-            str
-        ] = None,
+        namespace: Optional[str] = None,
     ) -> List[
         Dict[
             str,
@@ -856,37 +605,22 @@ class KubernetesClient:
     ]:
         try:
             if namespace:
-                response = (
-                    self.core.
-                    list_namespaced_service(
-                        namespace=namespace,
-                        _request_timeout=(
-                            self.config.
-                            request_timeout_seconds
-                        ),
-                    )
+                response = self.core.list_namespaced_service(
+                    namespace=namespace,
+                    _request_timeout=(self.config.request_timeout_seconds),
                 )
 
             else:
-                response = (
-                    self.core.
-                    list_service_for_all_namespaces(
-                        _request_timeout=(
-                            self.config.
-                            request_timeout_seconds
-                        )
-                    )
+                response = self.core.list_service_for_all_namespaces(
+                    _request_timeout=(self.config.request_timeout_seconds)
                 )
 
-            return resources_to_dicts(
-                response.items
-            )
+            return resources_to_dicts(response.items)
 
         except Exception as exc:
             raise self._operation_error(
                 exc,
-                "Kubernetes service "
-                "listing failed.",
+                "Kubernetes service listing failed.",
             ) from exc
 
     # ---------------------------------------------------------
@@ -896,9 +630,7 @@ class KubernetesClient:
     def list_deployments(
         self,
         *,
-        namespace: Optional[
-            str
-        ] = None,
+        namespace: Optional[str] = None,
     ) -> List[
         Dict[
             str,
@@ -907,75 +639,45 @@ class KubernetesClient:
     ]:
         try:
             if namespace:
-                response = (
-                    self.apps.
-                    list_namespaced_deployment(
-                        namespace=namespace,
-                        _request_timeout=(
-                            self.config.
-                            request_timeout_seconds
-                        ),
-                    )
+                response = self.apps.list_namespaced_deployment(
+                    namespace=namespace,
+                    _request_timeout=(self.config.request_timeout_seconds),
                 )
 
             else:
-                response = (
-                    self.apps.
-                    list_deployment_for_all_namespaces(
-                        _request_timeout=(
-                            self.config.
-                            request_timeout_seconds
-                        )
-                    )
+                response = self.apps.list_deployment_for_all_namespaces(
+                    _request_timeout=(self.config.request_timeout_seconds)
                 )
 
-            return resources_to_dicts(
-                response.items
-            )
+            return resources_to_dicts(response.items)
 
         except Exception as exc:
             raise self._operation_error(
                 exc,
-                "Kubernetes deployment "
-                "listing failed.",
+                "Kubernetes deployment listing failed.",
             ) from exc
 
     def get_deployment(
         self,
         *,
         name: str,
-        namespace: Optional[
-            str
-        ] = None,
+        namespace: Optional[str] = None,
     ) -> Dict[str, Any]:
-        namespace = (
-            namespace
-            or self.config.
-            default_namespace
-        )
+        namespace = namespace or self.config.default_namespace
 
         try:
-            value = (
-                self.apps.
-                read_namespaced_deployment(
-                    name=name,
-                    namespace=namespace,
-                    _request_timeout=(
-                        self.config.
-                        request_timeout_seconds
-                    ),
-                )
+            value = self.apps.read_namespaced_deployment(
+                name=name,
+                namespace=namespace,
+                _request_timeout=(self.config.request_timeout_seconds),
             )
 
-            return resource_to_dict(
-                value
-            )
+            return resource_to_dict(value)
 
         except Exception as exc:
             raise self._operation_error(
                 exc,
-                "Kubernetes deployment "
-                "lookup failed.",
+                "Kubernetes deployment lookup failed.",
             ) from exc
 
     # ---------------------------------------------------------
@@ -985,9 +687,7 @@ class KubernetesClient:
     def list_ingresses(
         self,
         *,
-        namespace: Optional[
-            str
-        ] = None,
+        namespace: Optional[str] = None,
     ) -> List[
         Dict[
             str,
@@ -996,37 +696,22 @@ class KubernetesClient:
     ]:
         try:
             if namespace:
-                response = (
-                    self.networking.
-                    list_namespaced_ingress(
-                        namespace=namespace,
-                        _request_timeout=(
-                            self.config.
-                            request_timeout_seconds
-                        ),
-                    )
+                response = self.networking.list_namespaced_ingress(
+                    namespace=namespace,
+                    _request_timeout=(self.config.request_timeout_seconds),
                 )
 
             else:
-                response = (
-                    self.networking.
-                    list_ingress_for_all_namespaces(
-                        _request_timeout=(
-                            self.config.
-                            request_timeout_seconds
-                        )
-                    )
+                response = self.networking.list_ingress_for_all_namespaces(
+                    _request_timeout=(self.config.request_timeout_seconds)
                 )
 
-            return resources_to_dicts(
-                response.items
-            )
+            return resources_to_dicts(response.items)
 
         except Exception as exc:
             raise self._operation_error(
                 exc,
-                "Kubernetes ingress "
-                "listing failed.",
+                "Kubernetes ingress listing failed.",
             ) from exc
 
     # ---------------------------------------------------------
@@ -1037,12 +722,7 @@ class KubernetesClient:
         self,
     ) -> None:
         if not self.connected:
-            raise (
-                IntegrationConnectionError(
-                    "Kubernetes client "
-                    "is not connected."
-                )
-            )
+            raise (IntegrationConnectionError("Kubernetes client is not connected."))
 
     # ---------------------------------------------------------
     # Error translation
@@ -1056,25 +736,17 @@ class KubernetesClient:
         wrapped = wrap_provider_error(
             error,
             provider="kubernetes",
-            target_id=(
-                self.config.target_id
-            ),
+            target_id=(self.config.target_id),
             message=message,
             retryable=False,
-            code=(
-                "kubernetes_operation_failed"
-            ),
+            code=("kubernetes_operation_failed"),
         )
 
         return KubernetesClientError(
             message,
             code=wrapped.code,
-            retryable=(
-                wrapped.retryable
-            ),
-            details=(
-                wrapped.details
-            ),
+            retryable=(wrapped.retryable),
+            details=(wrapped.details),
         )
 
     # ---------------------------------------------------------
@@ -1085,48 +757,17 @@ class KubernetesClient:
         self,
     ) -> Dict[str, Any]:
         return {
-            "connected": (
-                self.connected
-            ),
-
-            "target_id": (
-                self.config.target_id
-            ),
-
-            "configuration_mode": (
-                self.config.auth.mode
-            ),
-
-            "default_namespace": (
-                self.config.
-                default_namespace
-            ),
-
+            "connected": (self.connected),
+            "target_id": (self.config.target_id),
+            "configuration_mode": (self.config.auth.mode),
+            "default_namespace": (self.config.default_namespace),
             "api_groups": {
-                "core": (
-                    self._core
-                    is not None
-                ),
-
-                "apps": (
-                    self._apps
-                    is not None
-                ),
-
-                "networking": (
-                    self._networking
-                    is not None
-                ),
-
-                "batch": (
-                    self._batch
-                    is not None
-                ),
+                "core": (self._core is not None),
+                "apps": (self._apps is not None),
+                "networking": (self._networking is not None),
+                "batch": (self._batch is not None),
             },
-
-            "credential_value_exposed": (
-                False
-            ),
+            "credential_value_exposed": (False),
         }
 
 
@@ -1136,9 +777,7 @@ class KubernetesClient:
 
 __all__ = [
     "KubernetesClientError",
-
     "resource_to_dict",
     "resources_to_dicts",
-
     "KubernetesClient",
 ]

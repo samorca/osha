@@ -10,9 +10,7 @@ from src.collectors.linux.schema import (
 )
 
 
-PROCESS_PATTERN = re.compile(
-    r'\("(?P<name>[^"]+)",pid=(?P<pid>\d+)'
-)
+PROCESS_PATTERN = re.compile(r'\("(?P<name>[^"]+)",pid=(?P<pid>\d+)')
 
 
 def run_command(
@@ -37,13 +35,9 @@ def split_endpoint(
         closing = endpoint.rfind("]")
 
         if closing >= 0:
-            address = endpoint[
-                1:closing
-            ]
+            address = endpoint[1:closing]
 
-            port_text = endpoint[
-                closing + 1:
-            ].lstrip(":")
+            port_text = endpoint[closing + 1 :].lstrip(":")
 
             try:
                 return (
@@ -57,11 +51,9 @@ def split_endpoint(
                 )
 
     if ":" in endpoint:
-        address, port_text = (
-            endpoint.rsplit(
-                ":",
-                1,
-            )
+        address, port_text = endpoint.rsplit(
+            ":",
+            1,
         )
 
         try:
@@ -114,9 +106,7 @@ def process_details(
     Optional[str],
     Optional[int],
 ]:
-    match = PROCESS_PATTERN.search(
-        text
-    )
+    match = PROCESS_PATTERN.search(text)
 
     if not match:
         return (
@@ -134,20 +124,11 @@ def collect_sockets() -> List[dict]:
     if shutil.which("ss") is None:
         return [
             build_record(
-                signal_type=(
-                    "collector_error"
-                ),
+                signal_type=("collector_error"),
                 payload={
-                    "collector": (
-                        "linux_sockets"
-                    ),
-                    "error": (
-                        "ss_not_found"
-                    ),
-                    "message": (
-                        "The ss command is "
-                        "not available"
-                    ),
+                    "collector": ("linux_sockets"),
+                    "error": ("ss_not_found"),
+                    "message": ("The ss command is not available"),
                 },
             )
         ]
@@ -167,19 +148,11 @@ def collect_sockets() -> List[dict]:
     if result.returncode != 0:
         return [
             build_record(
-                signal_type=(
-                    "collector_error"
-                ),
+                signal_type=("collector_error"),
                 payload={
-                    "collector": (
-                        "linux_sockets"
-                    ),
-                    "error": (
-                        "ss_failed"
-                    ),
-                    "message": (
-                        result.stderr.strip()
-                    ),
+                    "collector": ("linux_sockets"),
+                    "error": ("ss_failed"),
+                    "message": (result.stderr.strip()),
                 },
             )
         ]
@@ -202,39 +175,25 @@ def collect_sockets() -> List[dict]:
 
         local_endpoint = parts[4]
 
-        address, port = split_endpoint(
-            local_endpoint
-        )
+        address, port = split_endpoint(local_endpoint)
 
-        process_name, pid = (
-            process_details(line)
-        )
+        process_name, pid = process_details(line)
 
         payload = {
             "protocol": protocol,
             "state": state,
-            "address_family": (
-                protocol_family(address)
-            ),
+            "address_family": (protocol_family(address)),
             "local_address": address,
             "local_port": port,
-            "exposure": (
-                exposure_type(address)
-            ),
-            "process_name": (
-                process_name
-            ),
+            "exposure": (exposure_type(address)),
+            "process_name": (process_name),
             "pid": pid,
-            "process_visible": (
-                process_name is not None
-            ),
+            "process_visible": (process_name is not None),
         }
 
         records.append(
             build_record(
-                signal_type=(
-                    "listening_socket"
-                ),
+                signal_type=("listening_socket"),
                 payload=payload,
             )
         )

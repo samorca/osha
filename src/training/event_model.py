@@ -70,13 +70,7 @@ class InfrastructureEventModel(nn.Module):
 
         return {
             "representation": representation,
-            "source_logits": self.source_head(
-                representation
-            ),
-            "component_logits": self.component_head(
-                representation
-            ),
-            "event_logits": self.event_head(
-                representation
-            ),
+            "source_logits": self.source_head(representation),
+            "component_logits": self.component_head(representation),
+            "event_logits": self.event_head(representation),
         }

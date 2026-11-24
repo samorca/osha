@@ -22,12 +22,8 @@ SENSITIVE_PATTERNS = (
         r"(?i)(password|passwd|secret|token|api[_-]?key)"
         r"\s*[=:]\s*[^\s,;]+"
     ),
-    re.compile(
-        r"(?i)authorization:\s*bearer\s+[^\s]+"
-    ),
-    re.compile(
-        r"(?i)-----BEGIN [A-Z ]+PRIVATE KEY-----"
-    ),
+    re.compile(r"(?i)authorization:\s*bearer\s+[^\s]+"),
+    re.compile(r"(?i)-----BEGIN [A-Z ]+PRIVATE KEY-----"),
 )
 
 
@@ -49,33 +45,21 @@ def parse_timestamp(value: Any) -> datetime:
     )
 
     if match and len(match.group(2)) > 6:
-        text = (
-            match.group(1)
-            + match.group(2)[:6]
-            + match.group(3)
-        )
+        text = match.group(1) + match.group(2)[:6] + match.group(3)
 
     try:
         parsed = datetime.fromisoformat(text)
     except ValueError as exc:
-        raise ValueError(
-            f"Unsupported timestamp: {value}"
-        ) from exc
+        raise ValueError(f"Unsupported timestamp: {value}") from exc
 
     if parsed.tzinfo is None:
-        parsed = parsed.replace(
-            tzinfo=timezone.utc
-        )
+        parsed = parsed.replace(tzinfo=timezone.utc)
 
-    return parsed.astimezone(
-        timezone.utc
-    )
+    return parsed.astimezone(timezone.utc)
 
 
 def timestamp_string(value: Any) -> str:
-    return parse_timestamp(
-        value
-    ).isoformat()
+    return parse_timestamp(value).isoformat()
 
 
 def redact_text(value: str) -> str:
@@ -120,17 +104,11 @@ def discover_service_name(
     container_name: str | None,
 ) -> str:
     candidates = (
-        labels.get(
-            "app.kubernetes.io/instance"
-        ),
-        labels.get(
-            "app.kubernetes.io/name"
-        ),
+        labels.get("app.kubernetes.io/instance"),
+        labels.get("app.kubernetes.io/name"),
         labels.get("app"),
         container_name,
-        clean_string(
-            record.get("pod_name")
-        ),
+        clean_string(record.get("pod_name")),
         "unknown-service",
     )
 
@@ -144,16 +122,12 @@ def discover_service_name(
 def discover_cluster_id(
     record: dict,
 ) -> str:
-    explicit = clean_string(
-        record.get("cluster_id")
-    )
+    explicit = clean_string(record.get("cluster_id"))
 
     if explicit:
         return explicit
 
-    labels = clean_labels(
-        record.get("labels")
-    )
+    labels = clean_labels(record.get("labels"))
 
     label_cluster = (
         labels.get("k8s.cluster.name")
@@ -166,9 +140,7 @@ def discover_cluster_id(
 
     # Current local collector has node identity but cluster_id
     # is null. This fallback keeps records correlatable.
-    node_name = clean_string(
-        record.get("node_name")
-    )
+    node_name = clean_string(record.get("node_name"))
 
     if node_name:
         return f"kubernetes-{node_name}"
@@ -186,12 +158,7 @@ def build_resource_key(
     container_name: str | None,
     node_name: str | None,
 ) -> str:
-    pod_identity = (
-        pod_uid
-        or pod_name
-        or node_name
-        or "cluster"
-    )
+    pod_identity = pod_uid or pod_name or node_name or "cluster"
 
     parts = (
         environment_id,
@@ -209,26 +176,10 @@ def build_record_id(
 ) -> str:
     identity = "|".join(
         [
-            str(
-                normalized.get(
-                    "source_record_type"
-                )
-            ),
-            str(
-                normalized.get(
-                    "signal_type"
-                )
-            ),
-            str(
-                normalized.get(
-                    "timestamp"
-                )
-            ),
-            str(
-                normalized.get(
-                    "resource_key"
-                )
-            ),
+            str(normalized.get("source_record_type")),
+            str(normalized.get("signal_type")),
+            str(normalized.get("timestamp")),
+            str(normalized.get("resource_key")),
             json.dumps(
                 normalized.get(
                     "payload",
@@ -240,9 +191,7 @@ def build_record_id(
         ]
     )
 
-    return hashlib.sha256(
-        identity.encode("utf-8")
-    ).hexdigest()
+    return hashlib.sha256(identity.encode("utf-8")).hexdigest()
 
 
 def normalize_payload(
@@ -258,21 +207,15 @@ def normalize_payload(
         message = output.get("message")
 
         if not isinstance(message, str):
-            message = str(
-                message or ""
-            )
+            message = str(message or "")
 
-        output["message"] = redact_text(
-            message
-        )
+        output["message"] = redact_text(message)
 
     if signal_type == "kubernetes_event":
         message = output.get("message")
 
         if isinstance(message, str):
-            output["message"] = redact_text(
-                message
-            )
+            output["message"] = redact_text(message)
 
     return output
 
@@ -281,87 +224,46 @@ def normalize_record(
     record: dict,
 ) -> dict:
     if not isinstance(record, dict):
-        raise ValueError(
-            "Telemetry record must be an object"
-        )
+        raise ValueError("Telemetry record must be an object")
 
-    if (
-        record.get("record_type")
-        != "kubernetes_telemetry"
-    ):
-        raise ValueError(
-            "Unsupported record_type"
-        )
+    if record.get("record_type") != "kubernetes_telemetry":
+        raise ValueError("Unsupported record_type")
 
-    signal_type = clean_string(
-        record.get("signal_type")
-    )
+    signal_type = clean_string(record.get("signal_type"))
 
     if signal_type not in SUPPORTED_SIGNAL_TYPES:
-        raise ValueError(
-            f"Unsupported signal_type: {signal_type}"
-        )
+        raise ValueError(f"Unsupported signal_type: {signal_type}")
 
-    timestamp = timestamp_string(
-        record.get("timestamp")
-    )
+    timestamp = timestamp_string(record.get("timestamp"))
 
-    collected_at_value = (
-        record.get("collected_at")
-        or record.get("timestamp")
-    )
+    collected_at_value = record.get("collected_at") or record.get("timestamp")
 
-    collected_at = timestamp_string(
-        collected_at_value
-    )
+    collected_at = timestamp_string(collected_at_value)
 
-    environment_id = (
-        clean_string(
-            record.get("environment_id")
-        )
-        or "default"
-    )
+    environment_id = clean_string(record.get("environment_id")) or "default"
 
-    cluster_id = discover_cluster_id(
-        record
-    )
+    cluster_id = discover_cluster_id(record)
 
-    namespace = clean_string(
-        record.get("namespace")
-    )
+    namespace = clean_string(record.get("namespace"))
 
-    pod_name = clean_string(
-        record.get("pod_name")
-    )
+    pod_name = clean_string(record.get("pod_name"))
 
-    pod_uid = clean_string(
-        record.get("pod_uid")
-    )
+    pod_uid = clean_string(record.get("pod_uid"))
 
-    node_name = clean_string(
-        record.get("node_name")
-    )
+    node_name = clean_string(record.get("node_name"))
 
-    pod_ip = clean_string(
-        record.get("pod_ip")
-    )
+    pod_ip = clean_string(record.get("pod_ip"))
 
-    phase = clean_string(
-        record.get("phase")
-    )
+    phase = clean_string(record.get("phase"))
 
-    labels = clean_labels(
-        record.get("labels")
-    )
+    labels = clean_labels(record.get("labels"))
 
     payload = normalize_payload(
         signal_type,
         record.get("payload"),
     )
 
-    container_name = clean_string(
-        payload.get("container_name")
-    )
+    container_name = clean_string(payload.get("container_name"))
 
     service_name = discover_service_name(
         record,
@@ -382,9 +284,7 @@ def normalize_record(
     normalized = {
         "schema_version": "1",
         "record_type": "normalized_telemetry",
-        "source_record_type": (
-            record.get("record_type")
-        ),
+        "source_record_type": (record.get("record_type")),
         "signal_type": signal_type,
         "timestamp": timestamp,
         "collected_at": collected_at,
@@ -403,9 +303,7 @@ def normalize_record(
         "payload": payload,
     }
 
-    normalized["record_id"] = (
-        build_record_id(normalized)
-    )
+    normalized["record_id"] = build_record_id(normalized)
 
     return normalized
 
@@ -431,8 +329,7 @@ def read_jsonl(
                 )
             except json.JSONDecodeError as exc:
                 raise ValueError(
-                    f"Invalid JSON at "
-                    f"{path}:{line_number}: {exc}"
+                    f"Invalid JSON at {path}:{line_number}: {exc}"
                 ) from exc
 
 
@@ -474,15 +371,11 @@ def normalize_file(
             "w",
             encoding="utf-8",
         ) as output_handle:
-            for line_number, record in read_jsonl(
-                input_path
-            ):
+            for line_number, record in read_jsonl(input_path):
                 processed += 1
 
                 try:
-                    normalized = normalize_record(
-                        record
-                    )
+                    normalized = normalize_record(record)
                 except Exception as exc:
                     failed += 1
 
@@ -490,12 +383,8 @@ def normalize_file(
                         error_handle.write(
                             json.dumps(
                                 {
-                                    "line_number": (
-                                        line_number
-                                    ),
-                                    "error": (
-                                        type(exc).__name__
-                                    ),
+                                    "line_number": (line_number),
+                                    "error": (type(exc).__name__),
                                     "message": str(exc),
                                 },
                                 ensure_ascii=False,
@@ -505,9 +394,7 @@ def normalize_file(
 
                     continue
 
-                record_id = normalized[
-                    "record_id"
-                ]
+                record_id = normalized["record_id"]
 
                 if record_id in seen:
                     duplicates += 1
@@ -539,33 +426,23 @@ def normalize_file(
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description=(
-            "Normalize OSHA Kubernetes telemetry."
-        )
+        description=("Normalize OSHA Kubernetes telemetry.")
     )
 
     parser.add_argument(
         "--input",
-        default=(
-            "orchestration-ai-data/live/"
-            "kubernetes/telemetry.jsonl"
-        ),
+        default=("orchestration-ai-data/live/kubernetes/telemetry.jsonl"),
     )
 
     parser.add_argument(
         "--output",
-        default=(
-            "orchestration-ai-data/processed/"
-            "live/kubernetes/normalized.jsonl"
-        ),
+        default=("orchestration-ai-data/processed/live/kubernetes/normalized.jsonl"),
     )
 
     parser.add_argument(
         "--errors",
         default=(
-            "orchestration-ai-data/processed/"
-            "live/kubernetes/"
-            "normalization_errors.jsonl"
+            "orchestration-ai-data/processed/live/kubernetes/normalization_errors.jsonl"
         ),
     )
 

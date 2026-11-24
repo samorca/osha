@@ -20,7 +20,7 @@ def fake_torch(cuda_available=True, hip=None, cuda="12.1", device_count=2):
     torch.version = types.SimpleNamespace(cuda=cuda, hip=hip)
     properties = types.SimpleNamespace(
         name="Test GPU",
-        total_memory=8 * 1024 ** 3,
+        total_memory=8 * 1024**3,
         major=8,
         minor=9,
     )
@@ -30,11 +30,11 @@ def fake_torch(cuda_available=True, hip=None, cuda="12.1", device_count=2):
         get_device_name=lambda index: f"device-{index}",
         get_device_properties=lambda device: properties,
         mem_get_info=lambda device: (
-            2 * 1024 ** 3,
-            8 * 1024 ** 3,
+            2 * 1024**3,
+            8 * 1024**3,
         ),
-        memory_allocated=lambda device: 1 * 1024 ** 3,
-        memory_reserved=lambda device: 2 * 1024 ** 3,
+        memory_allocated=lambda device: 1 * 1024**3,
+        memory_reserved=lambda device: 2 * 1024**3,
     )
     torch.device = lambda name: name
     torch.get_num_threads = lambda: 4
@@ -111,15 +111,15 @@ class AcceleratorTests(unittest.TestCase):
             cpu_freq=lambda: types.SimpleNamespace(current=2400.0),
             getloadavg=lambda: (1.0, 1.5, 2.0),
             virtual_memory=lambda: types.SimpleNamespace(
-                total=16 * 1024 ** 3,
-                available=8 * 1024 ** 3,
-                used=8 * 1024 ** 3,
+                total=16 * 1024**3,
+                available=8 * 1024**3,
+                used=8 * 1024**3,
                 percent=50.0,
             ),
             swap_memory=lambda: types.SimpleNamespace(
-                total=4 * 1024 ** 3,
-                used=1 * 1024 ** 3,
-                free=3 * 1024 ** 3,
+                total=4 * 1024**3,
+                used=1 * 1024**3,
+                free=3 * 1024**3,
                 percent=25.0,
             ),
         )
@@ -139,8 +139,14 @@ class AcceleratorTests(unittest.TestCase):
             self.assertEqual(cpu_devices.get_device_info()["pytorch_threads"], None)
 
         with patch.object(cpu_metrics, "psutil", None):
-            self.assertEqual(cpu_metrics.get_cpu_metrics()["logical_cores"], cpu_devices.get_device_count())
-            self.assertEqual(cpu_metrics.get_memory_metrics()["total_memory_bytes"], cpu_metrics.get_memory_metrics()["available_memory_bytes"])
+            self.assertEqual(
+                cpu_metrics.get_cpu_metrics()["logical_cores"],
+                cpu_devices.get_device_count(),
+            )
+            self.assertEqual(
+                cpu_metrics.get_memory_metrics()["total_memory_bytes"],
+                cpu_metrics.get_memory_metrics()["available_memory_bytes"],
+            )
             self.assertEqual(cpu_metrics.get_swap_metrics()["total_swap_bytes"], 0)
 
     def test_cuda_devices_and_metrics(self):
@@ -161,7 +167,7 @@ class AcceleratorTests(unittest.TestCase):
             metrics = cuda_metrics.get_memory_metrics(0)
             all_metrics = cuda_metrics.get_all_memory_metrics()
         self.assertEqual(metrics["backend"], "cuda")
-        self.assertEqual(metrics["used_memory_bytes"], 6 * 1024 ** 3)
+        self.assertEqual(metrics["used_memory_bytes"], 6 * 1024**3)
         self.assertEqual(len(all_metrics), 2)
 
     def test_rocm_devices_and_metrics(self):

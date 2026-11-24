@@ -37,12 +37,7 @@ def optional_string(
 
 
 def openstack_cli_available() -> bool:
-    return (
-        shutil.which(
-            "openstack"
-        )
-        is not None
-    )
+    return shutil.which("openstack") is not None
 
 
 def safe_environment() -> Dict[str, str]:
@@ -87,10 +82,7 @@ def run_openstack_json(
         return (
             False,
             None,
-            (
-                "openstack CLI is not "
-                "installed"
-            ),
+            ("openstack CLI is not installed"),
         )
 
     command = [
@@ -113,30 +105,21 @@ def run_openstack_json(
         return (
             False,
             None,
-            (
-                "OpenStack command "
-                "timed out"
-            ),
+            ("OpenStack command timed out"),
         )
 
     except OSError as exc:
         return (
             False,
             None,
-            (
-                f"Unable to execute "
-                f"openstack CLI: {exc}"
-            ),
+            (f"Unable to execute openstack CLI: {exc}"),
         )
 
     if result.returncode != 0:
         # Do not persist complete stderr because
         # authentication tooling may print
         # sensitive configuration information.
-        message = (
-            result.stderr.strip()
-            or "OpenStack command failed"
-        )
+        message = result.stderr.strip() or "OpenStack command failed"
 
         # Store only a bounded message.
         return (
@@ -155,17 +138,12 @@ def run_openstack_json(
         )
 
     try:
-        parsed = json.loads(
-            output
-        )
+        parsed = json.loads(output)
     except json.JSONDecodeError:
         return (
             False,
             None,
-            (
-                "OpenStack command did not "
-                "return valid JSON"
-            ),
+            ("OpenStack command did not return valid JSON"),
         )
 
     return (
@@ -200,11 +178,7 @@ def normalize_json_rows(
         value,
         Mapping,
     ):
-        return [
-            sanitize(
-                dict(value)
-            )
-        ]
+        return [sanitize(dict(value))]
 
     return []
 
@@ -218,19 +192,13 @@ def find_value(
     capitalization differences.
     """
 
-    lowered = {
-        str(key).lower(): value
-        for key, value
-        in payload.items()
-    }
+    lowered = {str(key).lower(): value for key, value in payload.items()}
 
     for name in names:
         if name in payload:
             return payload[name]
 
-        candidate = lowered.get(
-            name.lower()
-        )
+        candidate = lowered.get(name.lower())
 
         if candidate is not None:
             return candidate
@@ -290,16 +258,14 @@ def collect_metric_resources(
 
     records: List[dict] = []
 
-    success, data, message = (
-        run_openstack_json(
-            [
-                "metric",
-                "resource",
-                "list",
-                "-f",
-                "json",
-            ]
-        )
+    success, data, message = run_openstack_json(
+        [
+            "metric",
+            "resource",
+            "list",
+            "-f",
+            "json",
+        ]
     )
 
     if not success:
@@ -308,31 +274,21 @@ def collect_metric_resources(
                 "telemetry",
                 "collector_status",
                 {
-                    "component": (
-                        "gnocchi"
-                    ),
-                    "capability": (
-                        "metric_resources"
-                    ),
+                    "component": ("gnocchi"),
+                    "capability": ("metric_resources"),
                     "available": False,
                     "reason": message,
                 },
-                cloud_id=(
-                    ctx.cloud_id
-                ),
+                cloud_id=(ctx.cloud_id),
                 region=ctx.region,
-                environment_id=(
-                    ctx.environment_id
-                ),
+                environment_id=(ctx.environment_id),
                 source="gnocchi",
             )
         )
 
         return records
 
-    rows = normalize_json_rows(
-        data
-    )
+    rows = normalize_json_rows(data)
 
     records.append(
         record(
@@ -340,44 +296,28 @@ def collect_metric_resources(
             "collector_status",
             {
                 "component": "gnocchi",
-                "capability": (
-                    "metric_resources"
-                ),
+                "capability": ("metric_resources"),
                 "available": True,
             },
-            cloud_id=(
-                ctx.cloud_id
-            ),
+            cloud_id=(ctx.cloud_id),
             region=ctx.region,
-            environment_id=(
-                ctx.environment_id
-            ),
+            environment_id=(ctx.environment_id),
             source="gnocchi",
         )
     )
 
     for row in rows:
-        resource_id = (
-            resource_id_from_row(
-                row
-            )
-        )
+        resource_id = resource_id_from_row(row)
 
         records.append(
             record(
                 "telemetry",
                 "metric_resource",
                 row,
-                cloud_id=(
-                    ctx.cloud_id
-                ),
+                cloud_id=(ctx.cloud_id),
                 region=ctx.region,
-                environment_id=(
-                    ctx.environment_id
-                ),
-                resource_id=(
-                    resource_id
-                ),
+                environment_id=(ctx.environment_id),
+                resource_id=(resource_id),
                 source="gnocchi",
             )
         )
@@ -398,15 +338,13 @@ def collect_metrics(
 
     records: List[dict] = []
 
-    success, data, message = (
-        run_openstack_json(
-            [
-                "metric",
-                "list",
-                "-f",
-                "json",
-            ]
-        )
+    success, data, message = run_openstack_json(
+        [
+            "metric",
+            "list",
+            "-f",
+            "json",
+        ]
     )
 
     if not success:
@@ -415,54 +353,34 @@ def collect_metrics(
                 "telemetry",
                 "collector_status",
                 {
-                    "component": (
-                        "gnocchi"
-                    ),
-                    "capability": (
-                        "metrics"
-                    ),
+                    "component": ("gnocchi"),
+                    "capability": ("metrics"),
                     "available": False,
                     "reason": message,
                 },
-                cloud_id=(
-                    ctx.cloud_id
-                ),
+                cloud_id=(ctx.cloud_id),
                 region=ctx.region,
-                environment_id=(
-                    ctx.environment_id
-                ),
+                environment_id=(ctx.environment_id),
                 source="gnocchi",
             )
         )
 
         return records
 
-    rows = normalize_json_rows(
-        data
-    )
+    rows = normalize_json_rows(data)
 
     for row in rows:
-        metric_id = (
-            metric_id_from_row(
-                row
-            )
-        )
+        metric_id = metric_id_from_row(row)
 
         records.append(
             record(
                 "telemetry",
                 "metric_definition",
                 row,
-                cloud_id=(
-                    ctx.cloud_id
-                ),
+                cloud_id=(ctx.cloud_id),
                 region=ctx.region,
-                environment_id=(
-                    ctx.environment_id
-                ),
-                resource_id=(
-                    metric_id
-                ),
+                environment_id=(ctx.environment_id),
+                resource_id=(metric_id),
                 source="gnocchi",
             )
         )
@@ -505,29 +423,19 @@ def extract_metric_names(
             str,
         ):
             if value.strip():
-                names.append(
-                    value.strip()
-                )
+                names.append(value.strip())
 
         elif isinstance(
             value,
             list,
         ):
             for item in value:
-                text = optional_string(
-                    item
-                )
+                text = optional_string(item)
 
                 if text:
-                    names.append(
-                        text
-                    )
+                    names.append(text)
 
-    return list(
-        dict.fromkeys(
-            names
-        )
-    )
+    return list(dict.fromkeys(names))
 
 
 def collect_measurements(
@@ -551,44 +459,24 @@ def collect_measurements(
     candidates = []
 
     for item in metric_records:
-        if (
-            item.get("signal_type")
-            != "metric_definition"
-        ):
+        if item.get("signal_type") != "metric_definition":
             continue
 
-        payload = (
-            item.get("payload")
-            or {}
-        )
+        payload = item.get("payload") or {}
 
-        metric_id = (
-            metric_id_from_row(
-                payload
-            )
-        )
+        metric_id = metric_id_from_row(payload)
 
-        names = (
-         (
-                payload
-            )
-        )
+        names = payload
 
         if metric_id:
             candidates.append(
                 (
                     metric_id,
-                    (
-                        names[0]
-                        if names
-                        else None
-                    ),
+                    (names[0] if names else None),
                 )
             )
 
-    candidates = candidates[
-        :maximum_metrics
-    ]
+    candidates = candidates[:maximum_metrics]
 
     for (
         metric_id,
@@ -611,11 +499,7 @@ def collect_measurements(
                 ]
             )
 
-        success, data, _ = (
-            run_openstack_json(
-                command
-            )
-        )
+        success, data, _ = run_openstack_json(command)
 
         if not success:
             # Do not produce one collector error
@@ -640,21 +524,12 @@ def collect_measurements(
                 measurement,
                 list,
             ):
-                if (
-                    len(measurement)
-                    >= 3
-                ):
-                    timestamp = (
-                        measurement[0]
-                    )
+                if len(measurement) >= 3:
+                    timestamp = measurement[0]
 
-                    measurement_granularity = (
-                        measurement[1]
-                    )
+                    measurement_granularity = measurement[1]
 
-                    value = (
-                        measurement[2]
-                    )
+                    value = measurement[2]
 
             elif isinstance(
                 measurement,
@@ -665,11 +540,9 @@ def collect_measurements(
                     "timestamp",
                 )
 
-                measurement_granularity = (
-                    find_value(
-                        measurement,
-                        "granularity",
-                    )
+                measurement_granularity = find_value(
+                    measurement,
+                    "granularity",
                 )
 
                 value = find_value(
@@ -681,15 +554,9 @@ def collect_measurements(
                 continue
 
             payload = {
-                "metric_id": (
-                    metric_id
-                ),
-                "metric_name": (
-                    metric_name
-                ),
-                "granularity": (
-                    measurement_granularity
-                ),
+                "metric_id": (metric_id),
+                "metric_name": (metric_name),
+                "granularity": (measurement_granularity),
                 "value": value,
             }
 
@@ -698,19 +565,11 @@ def collect_measurements(
                     "telemetry",
                     "metric",
                     payload,
-                    cloud_id=(
-                        ctx.cloud_id
-                    ),
+                    cloud_id=(ctx.cloud_id),
                     region=ctx.region,
-                    environment_id=(
-                        ctx.environment_id
-                    ),
-                    resource_id=(
-                        metric_id
-                    ),
-                    timestamp=(
-                        timestamp
-                    ),
+                    environment_id=(ctx.environment_id),
+                    resource_id=(metric_id),
+                    timestamp=(timestamp),
                     source="gnocchi",
                 )
             )
@@ -730,15 +589,13 @@ def collect_alarms(
 
     records: List[dict] = []
 
-    success, data, message = (
-        run_openstack_json(
-            [
-                "alarm",
-                "list",
-                "-f",
-                "json",
-            ]
-        )
+    success, data, message = run_openstack_json(
+        [
+            "alarm",
+            "list",
+            "-f",
+            "json",
+        ]
     )
 
     if not success:
@@ -752,22 +609,16 @@ def collect_alarms(
                     "available": False,
                     "reason": message,
                 },
-                cloud_id=(
-                    ctx.cloud_id
-                ),
+                cloud_id=(ctx.cloud_id),
                 region=ctx.region,
-                environment_id=(
-                    ctx.environment_id
-                ),
+                environment_id=(ctx.environment_id),
                 source="aodh",
             )
         )
 
         return records
 
-    rows = normalize_json_rows(
-        data
-    )
+    rows = normalize_json_rows(data)
 
     records.append(
         record(
@@ -778,21 +629,15 @@ def collect_alarms(
                 "capability": "alarms",
                 "available": True,
             },
-            cloud_id=(
-                ctx.cloud_id
-            ),
+            cloud_id=(ctx.cloud_id),
             region=ctx.region,
-            environment_id=(
-                ctx.environment_id
-            ),
+            environment_id=(ctx.environment_id),
             source="aodh",
         )
     )
 
     for row in rows:
-        alarm_id = alarm_id_from_row(
-            row
-        )
+        alarm_id = alarm_id_from_row(row)
 
         state = optional_string(
             find_value(
@@ -813,13 +658,11 @@ def collect_alarms(
             )
         )
 
-        state_reason = (
-            optional_string(
-                find_value(
-                    row,
-                    "state_reason",
-                    "state reason",
-                )
+        state_reason = optional_string(
+            find_value(
+                row,
+                "state_reason",
+                "state reason",
             )
         )
 
@@ -829,9 +672,7 @@ def collect_alarms(
             "state": state,
             "enabled": enabled,
             "severity": severity,
-            "state_reason": (
-                state_reason
-            ),
+            "state_reason": (state_reason),
         }
 
         records.append(
@@ -839,16 +680,10 @@ def collect_alarms(
                 "telemetry",
                 "alarm",
                 sanitize(payload),
-                cloud_id=(
-                    ctx.cloud_id
-                ),
+                cloud_id=(ctx.cloud_id),
                 region=ctx.region,
-                environment_id=(
-                    ctx.environment_id
-                ),
-                resource_id=(
-                    alarm_id
-                ),
+                environment_id=(ctx.environment_id),
+                resource_id=(alarm_id),
                 source="aodh",
             )
         )
@@ -879,92 +714,39 @@ def telemetry_summary(
 
         counts[signal] += 1
 
-        payload = (
-            item.get("payload")
-            or {}
-        )
+        payload = item.get("payload") or {}
 
         if signal == "metric":
             metric_values += 1
 
         elif signal == "alarm":
-            state = (
-                payload.get("state")
-                or "unknown"
-            )
+            state = payload.get("state") or "unknown"
 
-            severity = (
-                payload.get(
-                    "severity"
-                )
-                or "unknown"
-            )
+            severity = payload.get("severity") or "unknown"
 
-            alarm_states[
-                str(state)
-            ] += 1
+            alarm_states[str(state)] += 1
 
-            alarm_severities[
-                str(severity)
-            ] += 1
+            alarm_severities[str(severity)] += 1
 
-        elif (
-            signal
-            == "collector_status"
-        ):
-            component = (
-                payload.get(
-                    "component"
-                )
-            )
+        elif signal == "collector_status":
+            component = payload.get("component")
 
-            available_value = (
-                payload.get(
-                    "available"
-                )
-            )
+            available_value = payload.get("available")
 
-            if (
-                component
-                == "gnocchi"
-            ):
-                gnocchi_available = (
-                    bool(
-                        available_value
-                    )
-                )
+            if component == "gnocchi":
+                gnocchi_available = bool(available_value)
 
             elif component == "aodh":
-                aodh_available = (
-                    bool(
-                        available_value
-                    )
-                )
+                aodh_available = bool(available_value)
 
     return {
-        "record_counts": (
-            dict(counts)
-        ),
-        "metric_measurement_count": (
-            metric_values
-        ),
-        "alarm_states": (
-            dict(
-                alarm_states
-            )
-        ),
-        "alarm_severities": (
-            dict(
-                alarm_severities
-            )
-        ),
+        "record_counts": (dict(counts)),
+        "metric_measurement_count": (metric_values),
+        "alarm_states": (dict(alarm_states)),
+        "alarm_severities": (dict(alarm_severities)),
         "components": {
-            "gnocchi_available": (
-                gnocchi_available
-            ),
-            "aodh_available": (
-                aodh_available
-            ),
+            "gnocchi_available": (gnocchi_available),
+            "aodh_available": (aodh_available),
         },
     }
 
@@ -999,85 +781,48 @@ def collect(
                 "telemetry",
                 "collector_status",
                 {
-                    "component": (
-                        "openstack_cli"
-                    ),
+                    "component": ("openstack_cli"),
                     "available": False,
-                    "reason": (
-                        "openstack CLI is not "
-                        "installed"
-                    ),
+                    "reason": ("openstack CLI is not installed"),
                 },
-                cloud_id=(
-                    ctx.cloud_id
-                ),
+                cloud_id=(ctx.cloud_id),
                 region=ctx.region,
-                environment_id=(
-                    ctx.environment_id
-                ),
+                environment_id=(ctx.environment_id),
                 source="collector",
             )
         )
 
         return records
 
-    resource_records = (
-        collect_metric_resources(
-            ctx
-        )
-    )
+    resource_records = collect_metric_resources(ctx)
 
-    records.extend(
-        resource_records
-    )
+    records.extend(resource_records)
 
-    metric_records = (
-        collect_metrics(
-            ctx
-        )
-    )
+    metric_records = collect_metrics(ctx)
 
-    records.extend(
-        metric_records
-    )
+    records.extend(metric_records)
 
     if include_measurements:
         records.extend(
             collect_measurements(
                 ctx,
                 metric_records,
-                maximum_metrics=(
-                    maximum_metrics
-                ),
-                granularity=(
-                    granularity
-                ),
+                maximum_metrics=(maximum_metrics),
+                granularity=(granularity),
             )
         )
 
-    records.extend(
-        collect_alarms(
-            ctx
-        )
-    )
+    records.extend(collect_alarms(ctx))
 
     records.append(
         record(
             "telemetry",
             "telemetry_summary",
-            telemetry_summary(
-                records
-            ),
-            cloud_id=(
-                ctx.cloud_id
-            ),
+            telemetry_summary(records),
+            cloud_id=(ctx.cloud_id),
             region=ctx.region,
-            environment_id=(
-                ctx.environment_id
-            ),
-            resource_id=(
-                ctx.cloud_id
-            ),
+            environment_id=(ctx.environment_id),
+            resource_id=(ctx.cloud_id),
             source="osha",
         )
     )

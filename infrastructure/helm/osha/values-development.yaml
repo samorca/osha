@@ -1,0 +1,73 @@
+---
+global:
+  environment: development
+
+  dryRun: true
+
+  image:
+    repository: osha
+    tag: dev
+    pullPolicy: IfNotPresent
+
+
+config:
+  environmentId: development
+
+  failFast: false
+
+  runtimeLogLevel: debug
+
+
+remediation:
+  enabled: true
+
+  dryRun: true
+
+  automaticExecution: false
+
+  requireApproval: true
+
+  allowDestructiveActions: false
+
+
+api:
+  replicaCount: 1
+
+  workers: 1
+
+  logLevel: debug
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+
+runtime:
+  replicaCount: 1
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+
+worker:
+  replicaCount: 1
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+    limits:
+      cpu: "1"
+      memory: 1Gi

@@ -1,0 +1,49 @@
+schema_version: "1"
+
+training:
+  seed: 42
+
+  accelerator:
+    preferred: "auto"
+    allow_cpu_fallback: true
+    mixed_precision: false
+    minimum_free_memory_gb: 0.0
+
+  dataloader:
+    batch_size: 32
+    num_workers: 0
+    pin_memory: false
+
+  optimization:
+    epochs: 10
+    learning_rate: 0.001
+    weight_decay: 0.0001
+    gradient_clip_norm: 1.0
+
+  splitting:
+    train_ratio: 0.80
+    validation_ratio: 0.10
+    test_ratio: 0.10
+
+  checkpoints:
+    root: "checkpoints"
+    keep_last: 5
+
+  event:
+    enabled: true
+
+    model:
+      hidden_dim: 256
+      representation_dim: 128
+      dropout: 0.10
+
+  anomaly:
+    enabled: true
+
+    model:
+      hidden_dim: 256
+      representation_dim: 128
+      dropout: 0.10
+
+    threshold: 0.50
+    class_weighting: true

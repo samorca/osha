@@ -39,6 +39,7 @@ from src.remediation.validator import (
 # Executor configuration
 # ---------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class ExecutorConfig:
     """
@@ -59,23 +60,15 @@ class ExecutorConfig:
 
     redact_output: bool = True
 
-    preferred_adapter: Optional[
-        str
-    ] = None
+    preferred_adapter: Optional[str] = None
 
     catch_adapter_exceptions: bool = True
 
     def validate(
         self,
     ) -> None:
-        if (
-            self.maximum_output_chars
-            < 128
-        ):
-            raise ValueError(
-                "maximum_output_chars "
-                "must be >= 128"
-            )
+        if self.maximum_output_chars < 128:
+            raise ValueError("maximum_output_chars must be >= 128")
 
 
 # ---------------------------------------------------------------
@@ -111,18 +104,11 @@ def redact_text(
     if value is None:
         return None
 
-    text = str(
-        value
-    )
+    text = str(value)
 
-    for pattern in (
-        REDACTION_PATTERNS
-    ):
+    for pattern in REDACTION_PATTERNS:
         text = pattern.sub(
-            lambda match: (
-                f"{match.group(1)}"
-                "=[REDACTED]"
-            ),
+            lambda match: f"{match.group(1)}=[REDACTED]",
             text,
         )
 
@@ -137,27 +123,19 @@ def truncate_text(
     if value is None:
         return None
 
-    text = str(
-        value
-    )
+    text = str(value)
 
     if len(text) <= maximum_chars:
         return text
 
-    suffix = (
-        "\n[OUTPUT TRUNCATED]"
-    )
+    suffix = "\n[OUTPUT TRUNCATED]"
 
     remaining = max(
         0,
-        maximum_chars
-        - len(suffix),
+        maximum_chars - len(suffix),
     )
 
-    return (
-        text[:remaining]
-        + suffix
-    )
+    return text[:remaining] + suffix
 
 
 def sanitize_output(
@@ -168,16 +146,11 @@ def sanitize_output(
     result = value
 
     if config.redact_output:
-        result = redact_text(
-            result
-        )
+        result = redact_text(result)
 
     return truncate_text(
         result,
-        maximum_chars=(
-            config.
-            maximum_output_chars
-        ),
+        maximum_chars=(config.maximum_output_chars),
     )
 
 
@@ -191,18 +164,14 @@ def sanitize_execution_result(
     passed into audit or memory.
     """
 
-    result.stdout = (
-        sanitize_output(
-            result.stdout,
-            config=config,
-        )
+    result.stdout = sanitize_output(
+        result.stdout,
+        config=config,
     )
 
-    result.stderr = (
-        sanitize_output(
-            result.stderr,
-            config=config,
-        )
+    result.stderr = sanitize_output(
+        result.stderr,
+        config=config,
     )
 
     return result.finalize()
@@ -211,6 +180,7 @@ def sanitize_execution_result(
 # ---------------------------------------------------------------
 # Blocked/failure results
 # ---------------------------------------------------------------
+
 
 def blocked_result(
     request: RemediationRequest,
@@ -222,51 +192,27 @@ def blocked_result(
     """
 
     return ExecutionResult(
-        status=(
-            ExecutionStatus.
-            BLOCKED.value
-        ),
+        status=(ExecutionStatus.BLOCKED.value),
         success=False,
-        operation=(
-            request.action_type
-        ),
+        operation=(request.action_type),
         started_at=utc_now(),
         finished_at=utc_now(),
         changed=False,
         evidence=[
             RemediationEvidence(
-                evidence_type=(
-                    "execution_blocked"
-                ),
-                description=(
-                    "Remediation execution "
-                    "was blocked by validation."
-                ),
+                evidence_type=("execution_blocked"),
+                description=("Remediation execution was blocked by validation."),
                 score=0.0,
-                source_id=(
-                    request.request_id
-                ),
-                resource_ids=list(
-                    request.
-                    target_resource_ids
-                ),
+                source_id=(request.request_id),
+                resource_ids=list(request.target_resource_ids),
                 attributes={
-                    "validation_status": (
-                        validation.status
-                    ),
-                    "blocking_reasons": (
-                        list(
-                            validation.
-                            blocking_reasons
-                        )
-                    ),
+                    "validation_status": (validation.status),
+                    "blocking_reasons": (list(validation.blocking_reasons)),
                 },
             )
         ],
         attributes={
-            "validation": (
-                validation.to_dict()
-            ),
+            "validation": (validation.to_dict()),
         },
     ).finalize()
 
@@ -274,56 +220,32 @@ def blocked_result(
 def failed_result(
     request: RemediationRequest,
     *,
-    adapter_name: Optional[
-        str
-    ],
+    adapter_name: Optional[str],
     error_type: str,
     error_message: str,
     started_at: str,
     duration_seconds: float,
 ) -> ExecutionResult:
     return ExecutionResult(
-        status=(
-            ExecutionStatus.
-            FAILED.value
-        ),
+        status=(ExecutionStatus.FAILED.value),
         success=False,
         adapter_name=adapter_name,
-        operation=(
-            request.action_type
-        ),
+        operation=(request.action_type),
         started_at=started_at,
         finished_at=utc_now(),
-        duration_seconds=(
-            duration_seconds
-        ),
+        duration_seconds=(duration_seconds),
         changed=False,
         stderr=error_message,
         evidence=[
             RemediationEvidence(
-                evidence_type=(
-                    "adapter_failure"
-                ),
-                description=(
-                    "The remediation adapter "
-                    "failed or refused the "
-                    "request."
-                ),
+                evidence_type=("adapter_failure"),
+                description=("The remediation adapter failed or refused the request."),
                 score=0.0,
-                source_id=(
-                    request.request_id
-                ),
-                resource_ids=list(
-                    request.
-                    target_resource_ids
-                ),
+                source_id=(request.request_id),
+                resource_ids=list(request.target_resource_ids),
                 attributes={
-                    "error_type": (
-                        error_type
-                    ),
-                    "adapter_name": (
-                        adapter_name
-                    ),
+                    "error_type": (error_type),
+                    "adapter_name": (adapter_name),
                 },
             )
         ],
@@ -337,18 +259,13 @@ def failed_result(
 # Execution
 # ---------------------------------------------------------------
 
+
 def execute_request(
     request: RemediationRequest,
     *,
-    validator: Optional[
-        RemediationValidator
-    ] = None,
-    registry: Optional[
-        AdapterRegistry
-    ] = None,
-    config: Optional[
-        ExecutorConfig
-    ] = None,
+    validator: Optional[RemediationValidator] = None,
+    registry: Optional[AdapterRegistry] = None,
+    config: Optional[ExecutorConfig] = None,
 ) -> ExecutionResult:
     """
     Validate and dispatch one remediation
@@ -360,37 +277,20 @@ def execute_request(
     No fallback from execute -> dry_run occurs.
     """
 
-    configuration = (
-        config
-        or ExecutorConfig()
-    )
+    configuration = config or ExecutorConfig()
 
     configuration.validate()
 
-    adapters = (
-        registry
-        or default_adapter_registry()
-    )
+    adapters = registry or default_adapter_registry()
 
-    active_validator = (
-        validator
-        or RemediationValidator(
-            config=(
-                ValidatorConfig()
-            ),
-            adapter_capabilities=(
-                adapters.capabilities()
-            ),
-        )
+    active_validator = validator or RemediationValidator(
+        config=(ValidatorConfig()),
+        adapter_capabilities=(adapters.capabilities()),
     )
 
     request.finalize()
 
-    validation = (
-        active_validator.validate(
-            request
-        )
-    )
+    validation = active_validator.validate(request)
 
     if not validation.valid:
         return blocked_result(
@@ -404,29 +304,19 @@ def execute_request(
     # but the executor itself must independently
     # refuse execute mode when disabled.
     if (
-        request.mode
-        == RemediationMode.
-        EXECUTE.value
-        and not configuration.
-        execution_enabled
+        request.mode == RemediationMode.EXECUTE.value
+        and not configuration.execution_enabled
     ):
         return ExecutionResult(
-            status=(
-                ExecutionStatus.
-                BLOCKED.value
-            ),
+            status=(ExecutionStatus.BLOCKED.value),
             success=False,
-            operation=(
-                request.action_type
-            ),
+            operation=(request.action_type),
             started_at=utc_now(),
             finished_at=utc_now(),
             changed=False,
             evidence=[
                 RemediationEvidence(
-                    evidence_type=(
-                        "execution_kill_switch"
-                    ),
+                    evidence_type=("execution_kill_switch"),
                     description=(
                         "Executor refused "
                         "execute mode because "
@@ -434,13 +324,8 @@ def execute_request(
                         "is false."
                     ),
                     score=0.0,
-                    source_id=(
-                        request.request_id
-                    ),
-                    resource_ids=list(
-                        request.
-                        target_resource_ids
-                    ),
+                    source_id=(request.request_id),
+                    resource_ids=list(request.target_resource_ids),
                 )
             ],
             attributes={
@@ -450,37 +335,23 @@ def execute_request(
 
     started_at = utc_now()
 
-    monotonic_started = (
-        time.monotonic()
-    )
+    monotonic_started = time.monotonic()
 
     adapter_name = None
 
     try:
         adapter = adapters.resolve(
             request,
-            preferred_adapter=(
-                configuration.
-                preferred_adapter
-            ),
+            preferred_adapter=(configuration.preferred_adapter),
         )
 
-        adapter_name = (
-            adapter.capability.
-            adapter_name
-        )
+        adapter_name = adapter.capability.adapter_name
 
-        result = adapter.execute(
-            request
-        )
+        result = adapter.execute(request)
 
-        result.attributes[
-            "validation"
-        ] = validation.to_dict()
+        result.attributes["validation"] = validation.to_dict()
 
-        result.attributes[
-            "request_id"
-        ] = request.request_id
+        result.attributes["request_id"] = request.request_id
 
         return sanitize_execution_result(
             result,
@@ -492,120 +363,66 @@ def execute_request(
         AdapterExecutionDisabledError,
         AdapterError,
     ) as exc:
-        duration = (
-            time.monotonic()
-            - monotonic_started
-        )
+        duration = time.monotonic() - monotonic_started
 
         return sanitize_execution_result(
             failed_result(
                 request,
-                adapter_name=(
-                    adapter_name
-                ),
-                error_type=(
-                    type(exc).__name__
-                ),
-                error_message=str(
-                    exc
-                ),
-                started_at=(
-                    started_at
-                ),
-                duration_seconds=(
-                    duration
-                ),
+                adapter_name=(adapter_name),
+                error_type=(type(exc).__name__),
+                error_message=str(exc),
+                started_at=(started_at),
+                duration_seconds=(duration),
             ),
             config=configuration,
         )
 
     except Exception as exc:
-        if not (
-            configuration.
-            catch_adapter_exceptions
-        ):
+        if not (configuration.catch_adapter_exceptions):
             raise
 
-        duration = (
-            time.monotonic()
-            - monotonic_started
-        )
+        duration = time.monotonic() - monotonic_started
 
         # Do not expose traceback or exception
         # internals in the result.
         return sanitize_execution_result(
             failed_result(
                 request,
-                adapter_name=(
-                    adapter_name
-                ),
-                error_type=(
-                    type(exc).__name__
-                ),
-                error_message=(
-                    "Unexpected adapter "
-                    "execution failure."
-                ),
-                started_at=(
-                    started_at
-                ),
-                duration_seconds=(
-                    duration
-                ),
+                adapter_name=(adapter_name),
+                error_type=(type(exc).__name__),
+                error_message=("Unexpected adapter execution failure."),
+                started_at=(started_at),
+                duration_seconds=(duration),
             ),
             config=configuration,
         )
 
 
 def execute_requests(
-    requests: Iterable[
-        RemediationRequest
-    ],
+    requests: Iterable[RemediationRequest],
     *,
-    validator: Optional[
-        RemediationValidator
-    ] = None,
-    registry: Optional[
-        AdapterRegistry
-    ] = None,
-    config: Optional[
-        ExecutorConfig
-    ] = None,
-) -> List[
-    ExecutionResult
-]:
-    adapters = (
-        registry
-        or default_adapter_registry()
-    )
+    validator: Optional[RemediationValidator] = None,
+    registry: Optional[AdapterRegistry] = None,
+    config: Optional[ExecutorConfig] = None,
+) -> List[ExecutionResult]:
+    adapters = registry or default_adapter_registry()
 
-    configuration = (
-        config
-        or ExecutorConfig()
-    )
+    configuration = config or ExecutorConfig()
 
     configuration.validate()
 
-    active_validator = (
-        validator
-        or RemediationValidator(
-            adapter_capabilities=(
-                adapters.capabilities()
-            )
-        )
+    active_validator = validator or RemediationValidator(
+        adapter_capabilities=(adapters.capabilities())
     )
 
     return [
         execute_request(
             request,
-            validator=(
-                active_validator
-            ),
+            validator=(active_validator),
             registry=adapters,
             config=configuration,
         )
-        for request
-        in requests
+        for request in requests
     ]
 
 
@@ -613,14 +430,11 @@ def execute_requests(
 # Summary
 # ---------------------------------------------------------------
 
+
 def execution_summary(
-    results: Iterable[
-        ExecutionResult
-    ],
+    results: Iterable[ExecutionResult],
 ) -> Dict[str, Any]:
-    values = list(
-        results
-    )
+    values = list(results)
 
     statuses: Dict[
         str,
@@ -628,9 +442,7 @@ def execution_summary(
     ] = {}
 
     for result in values:
-        statuses[
-            result.status
-        ] = (
+        statuses[result.status] = (
             statuses.get(
                 result.status,
                 0,
@@ -639,27 +451,11 @@ def execution_summary(
         )
 
     return {
-        "execution_count": len(
-            values
-        ),
-        "success_count": sum(
-            1
-            for result in values
-            if result.success
-        ),
-        "changed_count": sum(
-            1
-            for result in values
-            if result.changed
-        ),
+        "execution_count": len(values),
+        "success_count": sum(1 for result in values if result.success),
+        "changed_count": sum(1 for result in values if result.changed),
         "blocked_count": sum(
-            1
-            for result in values
-            if (
-                result.status
-                == ExecutionStatus.
-                BLOCKED.value
-            )
+            1 for result in values if (result.status == ExecutionStatus.BLOCKED.value)
         ),
         "failed_count": sum(
             1
@@ -667,10 +463,8 @@ def execution_summary(
             if (
                 result.status
                 in {
-                    ExecutionStatus.
-                    FAILED.value,
-                    ExecutionStatus.
-                    TIMED_OUT.value,
+                    ExecutionStatus.FAILED.value,
+                    ExecutionStatus.TIMED_OUT.value,
                 }
             )
         ),
@@ -688,36 +482,18 @@ class RemediationExecutor:
     def __init__(
         self,
         *,
-        registry: Optional[
-            AdapterRegistry
-        ] = None,
-        validator: Optional[
-            RemediationValidator
-        ] = None,
-        config: Optional[
-            ExecutorConfig
-        ] = None,
+        registry: Optional[AdapterRegistry] = None,
+        validator: Optional[RemediationValidator] = None,
+        config: Optional[ExecutorConfig] = None,
     ) -> None:
-        self.registry = (
-            registry
-            or default_adapter_registry()
-        )
+        self.registry = registry or default_adapter_registry()
 
-        self.config = (
-            config
-            or ExecutorConfig()
-        )
+        self.config = config or ExecutorConfig()
 
         self.config.validate()
 
-        self.validator = (
-            validator
-            or RemediationValidator(
-                adapter_capabilities=(
-                    self.registry.
-                    capabilities()
-                )
-            )
+        self.validator = validator or RemediationValidator(
+            adapter_capabilities=(self.registry.capabilities())
         )
 
     def execute(
@@ -733,16 +509,6 @@ class RemediationExecutor:
 
     def execute_many(
         self,
-        requests: Iterable[
-            RemediationRequest
-        ],
-    ) -> List[
-        ExecutionResult
-    ]:
-        return [
-            self.execute(
-                request
-            )
-            for request
-            in requests
-        ]
+        requests: Iterable[RemediationRequest],
+    ) -> List[ExecutionResult]:
+        return [self.execute(request) for request in requests]

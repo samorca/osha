@@ -75,17 +75,15 @@ except ImportError:
 # Client error
 # ---------------------------------------------------------------
 
-class MinioClientError(
-    IntegrationOperationError
-):
-    default_code = (
-        "minio_client_error"
-    )
+
+class MinioClientError(IntegrationOperationError):
+    default_code = "minio_client_error"
 
 
 # ---------------------------------------------------------------
 # Serialization helpers
 # ---------------------------------------------------------------
+
 
 def _safe_scalar(
     value: Any,
@@ -117,15 +115,7 @@ def bucket_to_dict(
         bucket,
         Mapping,
     ):
-        return {
-            str(key): (
-                _safe_scalar(
-                    value
-                )
-            )
-            for key, value
-            in bucket.items()
-        }
+        return {str(key): (_safe_scalar(value)) for key, value in bucket.items()}
 
     value: Dict[
         str,
@@ -143,11 +133,7 @@ def bucket_to_dict(
         )
 
         if item is not None:
-            value[
-                attribute
-            ] = _safe_scalar(
-                item
-            )
+            value[attribute] = _safe_scalar(item)
 
     return value
 
@@ -167,15 +153,7 @@ def object_to_dict(
         obj,
         Mapping,
     ):
-        return {
-            str(key): (
-                _safe_scalar(
-                    value
-                )
-            )
-            for key, value
-            in obj.items()
-        }
+        return {str(key): (_safe_scalar(value)) for key, value in obj.items()}
 
     value: Dict[
         str,
@@ -201,11 +179,7 @@ def object_to_dict(
         )
 
         if item is not None:
-            value[
-                attribute
-            ] = _safe_scalar(
-                item
-            )
+            value[attribute] = _safe_scalar(item)
 
     metadata = getattr(
         obj,
@@ -221,37 +195,26 @@ def object_to_dict(
         # values. Preserve it as ordinary data;
         # normal OSHA serialization/redaction
         # controls still apply upstream.
-        value[
-            "metadata"
-        ] = dict(
-            metadata
-        )
+        value["metadata"] = dict(metadata)
 
     return value
 
 
 def objects_to_dicts(
-    objects: Iterable[
-        Any
-    ],
+    objects: Iterable[Any],
 ) -> List[
     Dict[
         str,
         Any,
     ]
 ]:
-    return [
-        object_to_dict(
-            item
-        )
-        for item
-        in objects
-    ]
+    return [object_to_dict(item) for item in objects]
 
 
 # ---------------------------------------------------------------
 # MinIO client
 # ---------------------------------------------------------------
+
 
 class MinioClient:
     """
@@ -268,17 +231,13 @@ class MinioClient:
         self,
         *,
         config: MinioConfig,
-        credential: Optional[
-            SecretValue
-        ] = None,
+        credential: Optional[SecretValue] = None,
     ) -> None:
         self.config = config
 
         self.config.validate()
 
-        self.credential = (
-            credential
-        )
+        self.credential = credential
 
         self._client: Any = None
 
@@ -292,10 +251,7 @@ class MinioClient:
     def connected(
         self,
     ) -> bool:
-        return (
-            self._client
-            is not None
-        )
+        return self._client is not None
 
     # ---------------------------------------------------------
     # Provider client
@@ -306,12 +262,7 @@ class MinioClient:
         self,
     ) -> Any:
         if not self.connected:
-            raise (
-                IntegrationConnectionError(
-                    "MinIO client is not "
-                    "connected."
-                )
-            )
+            raise (IntegrationConnectionError("MinIO client is not connected."))
 
         return self._client
 
@@ -332,27 +283,15 @@ class MinioClient:
             return None
 
         certificate_requirement = (
-            "CERT_REQUIRED"
-            if self.config.verify_tls
-            else "CERT_NONE"
+            "CERT_REQUIRED" if self.config.verify_tls else "CERT_NONE"
         )
 
         return urllib3.PoolManager(
             timeout=urllib3.Timeout(
-                connect=(
-                    self.config.
-                    request_timeout_seconds
-                ),
-                read=(
-                    self.config.
-                    request_timeout_seconds
-                ),
+                connect=(self.config.request_timeout_seconds),
+                read=(self.config.request_timeout_seconds),
             ),
-
-            cert_reqs=(
-                certificate_requirement
-            ),
-
+            cert_reqs=(certificate_requirement),
             retries=False,
         )
 
@@ -367,31 +306,18 @@ class MinioClient:
             return self
 
         if Minio is None:
-            raise (
-                IntegrationConnectionError(
-                    "MinIO Python SDK is "
-                    "not installed."
-                )
-            )
+            raise (IntegrationConnectionError("MinIO Python SDK is not installed."))
 
-        access_key = (
-            self.config.auth.
-            access_key
-        )
+        access_key = self.config.auth.access_key
 
         secret_key = None
 
         if self.credential is not None:
             # Reveal only at provider SDK
             # construction.
-            secret_key = (
-                self.credential.reveal()
-            )
+            secret_key = self.credential.reveal()
 
-        if (
-            access_key is not None
-            and secret_key is None
-        ):
+        if access_key is not None and secret_key is None:
             raise (
                 IntegrationConnectionError(
                     "MinIO access key is "
@@ -401,62 +327,31 @@ class MinioClient:
                 )
             )
 
-        if (
-            access_key is None
-            and secret_key is not None
-        ):
+        if access_key is None and secret_key is not None:
             raise (
                 IntegrationConnectionError(
-                    "MinIO secret "
-                    "credential cannot be "
-                    "used without an "
-                    "access key."
+                    "MinIO secret credential cannot be used without an access key."
                 )
             )
 
         try:
-            self._http_client = (
-                self._build_http_client()
-            )
+            self._http_client = self._build_http_client()
 
             arguments: Dict[
                 str,
                 Any,
             ] = {
-                "endpoint": (
-                    self.config.endpoint
-                ),
-
-                "access_key": (
-                    access_key
-                ),
-
-                "secret_key": (
-                    secret_key
-                ),
-
-                "secure": (
-                    self.config.secure
-                ),
-
-                "region": (
-                    self.config.region
-                ),
+                "endpoint": (self.config.endpoint),
+                "access_key": (access_key),
+                "secret_key": (secret_key),
+                "secure": (self.config.secure),
+                "region": (self.config.region),
             }
 
-            if (
-                self._http_client
-                is not None
-            ):
-                arguments[
-                    "http_client"
-                ] = (
-                    self._http_client
-                )
+            if self._http_client is not None:
+                arguments["http_client"] = self._http_client
 
-            self._client = Minio(
-                **arguments
-            )
+            self._client = Minio(**arguments)
 
             return self
 
@@ -466,17 +361,10 @@ class MinioClient:
             raise wrap_provider_error(
                 exc,
                 provider="minio",
-                target_id=(
-                    self.config.target_id
-                ),
-                message=(
-                    "MinIO client creation "
-                    "failed."
-                ),
+                target_id=(self.config.target_id),
+                message=("MinIO client creation failed."),
                 retryable=False,
-                code=(
-                    "minio_connection_failed"
-                ),
+                code=("minio_connection_failed"),
             ) from exc
 
     # ---------------------------------------------------------
@@ -500,9 +388,7 @@ class MinioClient:
     ) -> None:
         self._client = None
 
-        http_client = (
-            self._http_client
-        )
+        http_client = self._http_client
 
         self._http_client = None
 
@@ -513,9 +399,7 @@ class MinioClient:
                 None,
             )
 
-            if callable(
-                clear
-            ):
+            if callable(clear):
                 try:
                     clear()
 
@@ -558,26 +442,17 @@ class MinioClient:
         ]
     ]:
         self._require_feature(
-            self.config.
-            enable_buckets,
+            self.config.enable_buckets,
             "buckets",
         )
 
         try:
-            return [
-                bucket_to_dict(
-                    bucket
-                )
-                for bucket
-                in self.client.
-                list_buckets()
-            ]
+            return [bucket_to_dict(bucket) for bucket in self.client.list_buckets()]
 
         except Exception as exc:
             raise self._operation_error(
                 exc,
-                "MinIO bucket listing "
-                "failed.",
+                "MinIO bucket listing failed.",
             ) from exc
 
     def bucket_exists(
@@ -585,31 +460,22 @@ class MinioClient:
         bucket_name: str,
     ) -> bool:
         self._require_feature(
-            self.config.
-            enable_buckets,
+            self.config.enable_buckets,
             "buckets",
         )
 
-        bucket_name = (
-            self._identifier(
-                bucket_name,
-                "bucket_name",
-            )
+        bucket_name = self._identifier(
+            bucket_name,
+            "bucket_name",
         )
 
         try:
-            return bool(
-                self.client.
-                bucket_exists(
-                    bucket_name
-                )
-            )
+            return bool(self.client.bucket_exists(bucket_name))
 
         except Exception as exc:
             raise self._operation_error(
                 exc,
-                "MinIO bucket existence "
-                "check failed.",
+                "MinIO bucket existence check failed.",
             ) from exc
 
     # ---------------------------------------------------------
@@ -620,13 +486,9 @@ class MinioClient:
         self,
         *,
         bucket_name: str,
-        prefix: Optional[
-            str
-        ] = None,
+        prefix: Optional[str] = None,
         recursive: bool = False,
-        limit: Optional[
-            int
-        ] = None,
+        limit: Optional[int] = None,
     ) -> List[
         Dict[
             str,
@@ -634,35 +496,23 @@ class MinioClient:
         ]
     ]:
         self._require_feature(
-            self.config.
-            enable_objects,
+            self.config.enable_objects,
             "objects",
         )
 
-        bucket_name = (
-            self._identifier(
-                bucket_name,
-                "bucket_name",
-            )
+        bucket_name = self._identifier(
+            bucket_name,
+            "bucket_name",
         )
 
-        if (
-            limit is not None
-            and limit < 1
-        ):
-            raise ValueError(
-                "object limit must "
-                "be >= 1"
-            )
+        if limit is not None and limit < 1:
+            raise ValueError("object limit must be >= 1")
 
         try:
-            iterator = (
-                self.client.
-                list_objects(
-                    bucket_name,
-                    prefix=prefix,
-                    recursive=recursive,
-                )
+            iterator = self.client.list_objects(
+                bucket_name,
+                prefix=prefix,
+                recursive=recursive,
             )
 
             output: List[
@@ -673,17 +523,9 @@ class MinioClient:
             ] = []
 
             for item in iterator:
-                output.append(
-                    object_to_dict(
-                        item
-                    )
-                )
+                output.append(object_to_dict(item))
 
-                if (
-                    limit is not None
-                    and len(output)
-                    >= limit
-                ):
+                if limit is not None and len(output) >= limit:
                     break
 
             return output
@@ -691,8 +533,7 @@ class MinioClient:
         except Exception as exc:
             raise self._operation_error(
                 exc,
-                "MinIO object listing "
-                "failed.",
+                "MinIO object listing failed.",
             ) from exc
 
     def stat_object(
@@ -700,44 +541,28 @@ class MinioClient:
         *,
         bucket_name: str,
         object_name: str,
-        version_id: Optional[
-            str
-        ] = None,
+        version_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         self._require_feature(
-            self.config.
-            enable_objects,
+            self.config.enable_objects,
             "objects",
         )
 
-        bucket_name = (
-            self._identifier(
-                bucket_name,
-                "bucket_name",
-            )
+        bucket_name = self._identifier(
+            bucket_name,
+            "bucket_name",
         )
 
-        object_name = (
-            self._object_name(
-                object_name
-            )
-        )
+        object_name = self._object_name(object_name)
 
         try:
-            value = (
-                self.client.
-                stat_object(
-                    bucket_name,
-                    object_name,
-                    version_id=(
-                        version_id
-                    ),
-                )
+            value = self.client.stat_object(
+                bucket_name,
+                object_name,
+                version_id=(version_id),
             )
 
-            return object_to_dict(
-                value
-            )
+            return object_to_dict(value)
 
         except S3Error as exc:
             code = getattr(
@@ -753,23 +578,19 @@ class MinioClient:
             }:
                 raise (
                     IntegrationResourceNotFoundError(
-                        "MinIO object or "
-                        "bucket was not "
-                        "found."
+                        "MinIO object or bucket was not found."
                     )
                 ) from exc
 
             raise self._operation_error(
                 exc,
-                "MinIO object metadata "
-                "lookup failed.",
+                "MinIO object metadata lookup failed.",
             ) from exc
 
         except Exception as exc:
             raise self._operation_error(
                 exc,
-                "MinIO object metadata "
-                "lookup failed.",
+                "MinIO object metadata lookup failed.",
             ) from exc
 
     # ---------------------------------------------------------
@@ -782,19 +603,12 @@ class MinioClient:
         feature: str,
     ) -> None:
         if not self.connected:
-            raise (
-                IntegrationConnectionError(
-                    "MinIO client is not "
-                    "connected."
-                )
-            )
+            raise (IntegrationConnectionError("MinIO client is not connected."))
 
         if not enabled:
             raise (
                 IntegrationCapabilityError(
-                    "MinIO integration "
-                    "feature is disabled: "
-                    f"{feature}"
+                    f"MinIO integration feature is disabled: {feature}"
                 )
             )
 
@@ -807,23 +621,16 @@ class MinioClient:
         value: Any,
         name: str,
     ) -> str:
-        text = str(
-            value
-        ).strip()
+        text = str(value).strip()
 
         if not text:
-            raise (
-                IntegrationOperationError(
-                    f"{name} is required."
-                )
-            )
+            raise (IntegrationOperationError(f"{name} is required."))
 
         # Bucket identifiers should not be allowed
         # to masquerade as arbitrary URLs/paths.
         if any(
-            character       in text
-            for character
-            in (
+            character in text
+            for character in (
                 "/",
                 "\\",
                 "?",
@@ -831,11 +638,7 @@ class MinioClient:
             )
         ):
             raise (
-                IntegrationOperationError(
-                    f"{name} contains "
-                    "unsupported "
-                    "characters."
-                )
+                IntegrationOperationError(f"{name} contains unsupported characters.")
             )
 
         return text
@@ -856,17 +659,10 @@ class MinioClient:
         We still reject an empty key.
         """
 
-        text = str(
-            value
-        )
+        text = str(value)
 
         if not text:
-            raise (
-                IntegrationOperationError(
-                    "object_name is "
-                    "required."
-                )
-            )
+            raise (IntegrationOperationError("object_name is required."))
 
         return text
 
@@ -879,30 +675,20 @@ class MinioClient:
         error: BaseException,
         message: str,
     ) -> MinioClientError:
-        wrapped = (
-            wrap_provider_error(
-                error,
-                provider="minio",
-                target_id=(
-                    self.config.target_id
-                ),
-                message=message,
-                retryable=False,
-                code=(
-                    "minio_operation_failed"
-                ),
-            )
+        wrapped = wrap_provider_error(
+            error,
+            provider="minio",
+            target_id=(self.config.target_id),
+            message=message,
+            retryable=False,
+            code=("minio_operation_failed"),
         )
 
         return MinioClientError(
             message,
             code=wrapped.code,
-            retryable=(
-                wrapped.retryable
-            ),
-            details=(
-                wrapped.details
-            ),
+            retryable=(wrapped.retryable),
+            details=(wrapped.details),
         )
 
     # ---------------------------------------------------------
@@ -913,49 +699,18 @@ class MinioClient:
         self,
     ) -> Dict[str, Any]:
         return {
-            "connected": (
-                self.connected
-            ),
-
-            "target_id": (
-                self.config.target_id
-            ),
-
-            "endpoint": (
-                self.config.endpoint_url
-            ),
-
-            "secure": (
-                self.config.secure
-            ),
-
-            "verify_tls": (
-                self.config.verify_tls
-            ),
-
-            "region": (
-                self.config.region
-            ),
-
+            "connected": (self.connected),
+            "target_id": (self.config.target_id),
+            "endpoint": (self.config.endpoint_url),
+            "secure": (self.config.secure),
+            "verify_tls": (self.config.verify_tls),
+            "region": (self.config.region),
             "resources": {
-                "buckets": (
-                    self.config.
-                    enable_buckets
-                ),
-
-                "objects": (
-                    self.config.
-                    enable_objects
-                ),
+                "buckets": (self.config.enable_buckets),
+                "objects": (self.config.enable_objects),
             },
-
-            "mutating_operations_enabled": (
-                False
-            ),
-
-            "credential_value_exposed": (
-                False
-            ),
+            "mutating_operations_enabled": (False),
+            "credential_value_exposed": (False),
         }
 
 
@@ -965,10 +720,8 @@ class MinioClient:
 
 __all__ = [
     "MinioClientError",
-
     "bucket_to_dict",
     "object_to_dict",
     "objects_to_dicts",
-
     "MinioClient",
 ]

@@ -38,9 +38,7 @@ from src.security.schema import (
 # Environment prefix
 # ---------------------------------------------------------------
 
-DEFAULT_ENV_PREFIX = (
-    "OSHA_OPENSTACK_"
-)
+DEFAULT_ENV_PREFIX = "OSHA_OPENSTACK_"
 
 
 # ---------------------------------------------------------------
@@ -58,6 +56,7 @@ _ALLOWED_INTERFACES = {
 # OpenStack authentication configuration
 # ---------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class OpenStackAuthConfig:
     """
@@ -70,41 +69,23 @@ class OpenStackAuthConfig:
 
     auth_url: str
 
-    username: Optional[
-        str
-    ] = None
+    username: Optional[str] = None
 
-    user_id: Optional[
-        str
-    ] = None
+    user_id: Optional[str] = None
 
-    project_name: Optional[
-        str
-    ] = None
+    project_name: Optional[str] = None
 
-    project_id: Optional[
-        str
-    ] = None
+    project_id: Optional[str] = None
 
-    user_domain_name: Optional[
-        str
-    ] = None
+    user_domain_name: Optional[str] = None
 
-    user_domain_id: Optional[
-        str
-    ] = None
+    user_domain_id: Optional[str] = None
 
-    project_domain_name: Optional[
-        str
-    ] = None
+    project_domain_name: Optional[str] = None
 
-    project_domain_id: Optional[
-        str
-    ] = None
+    project_domain_id: Optional[str] = None
 
-    credential: Optional[
-        SecretReference
-    ] = None
+    credential: Optional[SecretReference] = None
 
     def validate(
         self,
@@ -115,24 +96,12 @@ class OpenStackAuthConfig:
             maximum_length=2048,
         )
 
-        if (
-            self.username is None
-            and self.user_id is None
-        ):
-            raise ValueError(
-                "OpenStack authentication "
-                "requires username or "
-                "user_id"
-            )
+        if self.username is None and self.user_id is None:
+            raise ValueError("OpenStack authentication requires username or user_id")
 
-        if (
-            self.project_name is None
-            and self.project_id is None
-        ):
+        if self.project_name is None and self.project_id is None:
             raise ValueError(
-                "OpenStack authentication "
-                "requires project_name or "
-                "project_id"
+                "OpenStack authentication requires project_name or project_id"
             )
 
         if self.username is not None:
@@ -172,53 +141,23 @@ class OpenStackAuthConfig:
         self.validate()
 
         return {
-            "auth_url": (
-                self.auth_url
-            ),
-
-            "username": (
-                self.username
-            ),
-
-            "user_id": (
-                self.user_id
-            ),
-
-            "project_name": (
-                self.project_name
-            ),
-
-            "project_id": (
-                self.project_id
-            ),
-
-            "user_domain_name": (
-                self.user_domain_name
-            ),
-
-            "user_domain_id": (
-                self.user_domain_id
-            ),
-
-            "project_domain_name": (
-                self.project_domain_name
-            ),
-
-            "project_domain_id": (
-                self.project_domain_id
-            ),
-
-            "credential": (
-                self.credential.to_dict()
-                if self.credential
-                else None
-            ),
+            "auth_url": (self.auth_url),
+            "username": (self.username),
+            "user_id": (self.user_id),
+            "project_name": (self.project_name),
+            "project_id": (self.project_id),
+            "user_domain_name": (self.user_domain_name),
+            "user_domain_id": (self.user_domain_id),
+            "project_domain_name": (self.project_domain_name),
+            "project_domain_id": (self.project_domain_id),
+            "credential": (self.credential.to_dict() if self.credential else None),
         }
 
 
 # ---------------------------------------------------------------
 # OpenStack integration configuration
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class OpenStackConfig:
@@ -235,9 +174,7 @@ class OpenStackConfig:
 
     auth: OpenStackAuthConfig
 
-    region_name: Optional[
-        str
-    ] = None
+    region_name: Optional[str] = None
 
     interface: str = "public"
 
@@ -267,9 +204,7 @@ class OpenStackConfig:
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def validate(
         self,
@@ -288,14 +223,9 @@ class OpenStackConfig:
 
         self.auth.validate()
 
-        if (
-            self.interface
-            not in _ALLOWED_INTERFACES
-        ):
+        if self.interface not in _ALLOWED_INTERFACES:
             raise ValueError(
-                "OpenStack interface must "
-                "be one of public, "
-                "internal, or admin"
+                "OpenStack interface must be one of public, internal, or admin"
             )
 
         if self.region_name is not None:
@@ -333,39 +263,15 @@ class OpenStackConfig:
         self.validate()
 
         return IntegrationTarget(
-            provider=(
-                ProviderKind.
-                OPENSTACK.value
-            ),
-
-            environment_id=(
-                self.environment_id
-            ),
-
-            target_id=(
-                self.target_id
-            ),
-
-            endpoint=(
-                self.auth.auth_url
-            ),
-
-            region=(
-                self.region_name
-            ),
-
-            credential=(
-                self.auth.credential
-            ),
-
+            provider=(ProviderKind.OPENSTACK.value),
+            environment_id=(self.environment_id),
+            target_id=(self.target_id),
+            endpoint=(self.auth.auth_url),
+            region=(self.region_name),
+            credential=(self.auth.credential),
             attributes={
-                "interface": (
-                    self.interface
-                ),
-
-                "verify_tls": (
-                    self.verify_tls
-                ),
+                "interface": (self.interface),
+                "verify_tls": (self.verify_tls),
             },
         ).finalize()
 
@@ -379,73 +285,31 @@ class OpenStackConfig:
         self.validate()
 
         return {
-            "environment_id": (
-                self.environment_id
-            ),
-
-            "target_id": (
-                self.target_id
-            ),
-
-            "auth": (
-                self.auth.to_dict()
-            ),
-
-            "region_name": (
-                self.region_name
-            ),
-
-            "interface": (
-                self.interface
-            ),
-
-            "verify_tls": (
-                self.verify_tls
-            ),
-
-            "compute_api_version": (
-                self.compute_api_version
-            ),
-
-            "identity_api_version": (
-                self.identity_api_version
-            ),
-
-            "network_api_version": (
-                self.network_api_version
-            ),
-
+            "environment_id": (self.environment_id),
+            "target_id": (self.target_id),
+            "auth": (self.auth.to_dict()),
+            "region_name": (self.region_name),
+            "interface": (self.interface),
+            "verify_tls": (self.verify_tls),
+            "compute_api_version": (self.compute_api_version),
+            "identity_api_version": (self.identity_api_version),
+            "network_api_version": (self.network_api_version),
             "services": {
-                "compute": (
-                    self.enable_compute
-                ),
-                "network": (
-                    self.enable_network
-                ),
-                "identity": (
-                    self.enable_identity
-                ),
-                "image": (
-                    self.enable_image
-                ),
-                "volume": (
-                    self.enable_volume
-                ),
-                "object_store": (
-                    self.
-                    enable_object_store
-                ),
+                "compute": (self.enable_compute),
+                "network": (self.enable_network),
+                "identity": (self.enable_identity),
+                "image": (self.enable_image),
+                "volume": (self.enable_volume),
+                "object_store": (self.enable_object_store),
             },
-
-            "attributes": dict(
-                self.attributes
-            ),
+            "attributes": dict(self.attributes),
         }
 
 
 # ---------------------------------------------------------------
 # Environment parsing helpers
 # ---------------------------------------------------------------
+
 
 def _get(
     values: Mapping[
@@ -469,9 +333,7 @@ def _text(
     ],
     prefix: str,
     name: str,
-    default: Optional[
-        str
-    ] = None,
+    default: Optional[str] = None,
 ) -> Optional[str]:
     value = _get(
         values,
@@ -483,9 +345,7 @@ def _text(
     if value is None:
         return None
 
-    result = str(
-        value
-    ).strip()
+    result = str(value).strip()
 
     return result or None
 
@@ -505,10 +365,7 @@ def _bool(
         name,
     )
 
-    if (
-        value is None
-        or str(value).strip() == ""
-    ):
+    if value is None or str(value).strip() == "":
         return default
 
     return boolean(
@@ -520,6 +377,7 @@ def _bool(
 # ---------------------------------------------------------------
 # Mapping loader
 # ---------------------------------------------------------------
+
 
 def from_mapping(
     values: Mapping[
@@ -583,10 +441,7 @@ def from_mapping(
     )
 
     if auth_url is None:
-        raise ValueError(
-            "OSHA_OPENSTACK_AUTH_URL "
-            "is required"
-        )
+        raise ValueError("OSHA_OPENSTACK_AUTH_URL is required")
 
     config = OpenStackConfig(
         environment_id=(
@@ -598,7 +453,6 @@ def from_mapping(
             )
             or "local-dev"
         ),
-
         target_id=(
             _text(
                 values,
@@ -608,69 +462,57 @@ def from_mapping(
             )
             or "openstack-default"
         ),
-
         auth=OpenStackAuthConfig(
             auth_url=auth_url,
-
             username=_text(
                 values,
                 prefix,
                 "USERNAME",
             ),
-
             user_id=_text(
                 values,
                 prefix,
                 "USER_ID",
             ),
-
             project_name=_text(
                 values,
                 prefix,
                 "PROJECT_NAME",
             ),
-
             project_id=_text(
                 values,
                 prefix,
                 "PROJECT_ID",
             ),
-
             user_domain_name=_text(
                 values,
                 prefix,
                 "USER_DOMAIN_NAME",
                 "Default",
             ),
-
             user_domain_id=_text(
                 values,
                 prefix,
                 "USER_DOMAIN_ID",
             ),
-
             project_domain_name=_text(
                 values,
                 prefix,
                 "PROJECT_DOMAIN_NAME",
                 "Default",
             ),
-
             project_domain_id=_text(
                 values,
                 prefix,
                 "PROJECT_DOMAIN_ID",
             ),
-
             credential=credential,
         ),
-
         region_name=_text(
             values,
             prefix,
             "REGION_NAME",
         ),
-
         interface=(
             _text(
                 values,
@@ -680,14 +522,12 @@ def from_mapping(
             )
             or "public"
         ).lower(),
-
         verify_tls=_bool(
             values,
             prefix,
             "VERIFY_TLS",
             True,
         ),
-
         compute_api_version=(
             _text(
                 values,
@@ -697,7 +537,6 @@ def from_mapping(
             )
             or "2"
         ),
-
         identity_api_version=(
             _text(
                 values,
@@ -707,7 +546,6 @@ def from_mapping(
             )
             or "3"
         ),
-
         network_api_version=(
             _text(
                 values,
@@ -717,53 +555,44 @@ def from_mapping(
             )
             or "2"
         ),
-
         enable_compute=_bool(
             values,
             prefix,
             "ENABLE_COMPUTE",
             True,
         ),
-
         enable_network=_bool(
             values,
             prefix,
             "ENABLE_NETWORK",
             True,
         ),
-
         enable_identity=_bool(
             values,
             prefix,
             "ENABLE_IDENTITY",
             True,
         ),
-
         enable_image=_bool(
             values,
             prefix,
             "ENABLE_IMAGE",
             True,
         ),
-
         enable_volume=_bool(
             values,
             prefix,
             "ENABLE_VOLUME",
             True,
         ),
-
         enable_object_store=_bool(
             values,
             prefix,
             "ENABLE_OBJECT_STORE",
             False,
         ),
-
         attributes={
-            "config_source": (
-                "mapping"
-            ),
+            "config_source": ("mapping"),
         },
     )
 
@@ -776,6 +605,7 @@ def from_mapping(
 # Environment loader
 # ---------------------------------------------------------------
 
+
 def from_environment(
     *,
     environ: Optional[
@@ -786,11 +616,7 @@ def from_environment(
     ] = None,
     prefix: str = DEFAULT_ENV_PREFIX,
 ) -> OpenStackConfig:
-    source = (
-        os.environ
-        if environ is None
-        else environ
-    )
+    source = os.environ if environ is None else environ
 
     return from_mapping(
         source,
@@ -802,87 +628,35 @@ def from_environment(
 # Safe summary
 # ---------------------------------------------------------------
 
+
 def safe_config_summary(
     config: OpenStackConfig,
 ) -> Dict[str, Any]:
     config.validate()
 
     return {
-        "environment_id": (
-            config.environment_id
-        ),
-
-        "target_id": (
-            config.target_id
-        ),
-
-        "auth_url": (
-            config.auth.auth_url
-        ),
-
-        "region_name": (
-            config.region_name
-        ),
-
-        "interface": (
-            config.interface
-        ),
-
-        "verify_tls": (
-            config.verify_tls
-        ),
-
-        "username_configured": (
-            config.auth.username
-            is not None
-        ),
-
-        "project_name_configured": (
-            config.auth.project_name
-            is not None
-        ),
-
-        "project_id_configured": (
-            config.auth.project_id
-            is not None
-        ),
-
-        "credential_reference_configured": (
-            config.auth.credential
-            is not None
-        ),
-
+        "environment_id": (config.environment_id),
+        "target_id": (config.target_id),
+        "auth_url": (config.auth.auth_url),
+        "region_name": (config.region_name),
+        "interface": (config.interface),
+        "verify_tls": (config.verify_tls),
+        "username_configured": (config.auth.username is not None),
+        "project_name_configured": (config.auth.project_name is not None),
+        "project_id_configured": (config.auth.project_id is not None),
+        "credential_reference_configured": (config.auth.credential is not None),
         "credential_provider": (
-            config.auth.credential.
-            provider
-            if config.auth.credential
-            else None
+            config.auth.credential.provider if config.auth.credential else None
         ),
-
         "services": {
-            "compute": (
-                config.enable_compute
-            ),
-            "network": (
-                config.enable_network
-            ),
-            "identity": (
-                config.enable_identity
-            ),
-            "image": (
-                config.enable_image
-            ),
-            "volume": (
-                config.enable_volume
-            ),
-            "object_store": (
-                config.enable_object_store
-            ),
+            "compute": (config.enable_compute),
+            "network": (config.enable_network),
+            "identity": (config.enable_identity),
+            "image": (config.enable_image),
+            "volume": (config.enable_volume),
+            "object_store": (config.enable_object_store),
         },
-
-        "secret_value_exposed": (
-            False
-        ),
+        "secret_value_exposed": (False),
     }
 
 
@@ -892,12 +666,9 @@ def safe_config_summary(
 
 __all__ = [
     "DEFAULT_ENV_PREFIX",
-
     "OpenStackAuthConfig",
     "OpenStackConfig",
-
     "from_mapping",
     "from_environment",
-
     "safe_config_summary",
 ]

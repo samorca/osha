@@ -28,10 +28,7 @@ class KubernetesCollectorConfig:
 
     tail_lines: int = 200
 
-    output_path: str = (
-        "orchestration-ai-data/live/"
-        "kubernetes/telemetry.jsonl"
-    )
+    output_path: str = "orchestration-ai-data/live/kubernetes/telemetry.jsonl"
 
     @classmethod
     def auto(
@@ -46,10 +43,7 @@ class KubernetesCollectorConfig:
         output_path: Optional[str] = None,
     ) -> "KubernetesCollectorConfig":
 
-        discovered_kubeconfig = (
-            kubeconfig
-            or cls._discover_kubeconfig()
-        )
+        discovered_kubeconfig = kubeconfig or cls._discover_kubeconfig()
 
         return cls(
             cluster_id=cluster_id,
@@ -60,11 +54,7 @@ class KubernetesCollectorConfig:
             connection_mode="auto",
             tail_lines=tail_lines,
             output_path=(
-                output_path
-                or (
-                    "orchestration-ai-data/live/"
-                    "kubernetes/telemetry.jsonl"
-                )
+                output_path or ("orchestration-ai-data/live/kubernetes/telemetry.jsonl")
             ),
         )
 
@@ -78,28 +68,16 @@ class KubernetesCollectorConfig:
         explicit = os.getenv("KUBECONFIG")
 
         if explicit:
-            first_path = explicit.split(
-                os.pathsep
-            )[0]
+            first_path = explicit.split(os.pathsep)[0]
 
-            candidate = Path(
-                first_path
-            ).expanduser()
+            candidate = Path(first_path).expanduser()
 
             if candidate.is_file():
-                return str(
-                    candidate
-                )
+                return str(candidate)
 
-        default_path = (
-            Path.home()
-            / ".kube"
-            / "config"
-        )
+        default_path = Path.home() / ".kube" / "config"
 
         if default_path.is_file():
-            return str(
-                default_path
-            )
+            return str(default_path)
 
         return None

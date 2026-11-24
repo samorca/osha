@@ -83,9 +83,7 @@ class GuardrailConfig:
 
     require_request_expiry: bool = True
 
-    require_rollback_for_execution: bool = (
-        True
-    )
+    require_rollback_for_execution: bool = True
 
     forbid_unknown_parameters: bool = True
 
@@ -104,33 +102,14 @@ class GuardrailConfig:
     def validate(
         self,
     ) -> None:
-        if (
-            self.maximum_target_resources
-            < 1
-        ):
-            raise ValueError(
-                "maximum_target_resources "
-                "must be >= 1"
-            )
+        if self.maximum_target_resources < 1:
+            raise ValueError("maximum_target_resources must be >= 1")
 
-        if (
-            self.maximum_target_services
-            < 1
-        ):
-            raise ValueError(
-                "maximum_target_services "
-                "must be >= 1"
-            )
+        if self.maximum_target_services < 1:
+            raise ValueError("maximum_target_services must be >= 1")
 
-        if not (
-            0.0
-            <= self.maximum_risk_score
-            <= 1.0
-        ):
-            raise ValueError(
-                "maximum_risk_score must "
-                "be between 0 and 1"
-            )
+        if not (0.0 <= self.maximum_risk_score <= 1.0):
+            raise ValueError("maximum_risk_score must be between 0 and 1")
 
 
 @dataclass
@@ -141,54 +120,25 @@ class GuardrailEvaluation:
 
     allowed: bool = False
 
-    checks: List[
-        GuardrailCheck
-    ] = field(
-        default_factory=list
-    )
+    checks: List[GuardrailCheck] = field(default_factory=list)
 
-    blocking_reasons: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    blocking_reasons: List[str] = field(default_factory=list)
 
-    warnings: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    warnings: List[str] = field(default_factory=list)
 
     evaluated_at: str = field(
-        default_factory=lambda: (
-            datetime.now(
-                timezone.utc
-            ).isoformat()
-        )
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
 
     def finalize(
         self,
     ) -> "GuardrailEvaluation":
-        self.blocking_reasons = list(
-            dict.fromkeys(
-                self.blocking_reasons
-            )
-        )
+        self.blocking_reasons = list(dict.fromkeys(self.blocking_reasons))
 
-        self.warnings = list(
-            dict.fromkeys(
-                self.warnings
-            )
-        )
+        self.warnings = list(dict.fromkeys(self.warnings))
 
         self.allowed = not any(
-            (
-                check.blocking
-                and check.status
-                == GuardrailStatus.
-                FAILED.value
-            )
+            (check.blocking and check.status == GuardrailStatus.FAILED.value)
             for check in self.checks
         )
 
@@ -201,19 +151,10 @@ class GuardrailEvaluation:
 
         return {
             "allowed": self.allowed,
-            "checks": [
-                check.to_dict()
-                for check in self.checks
-            ],
-            "blocking_reasons": (
-                self.blocking_reasons
-            ),
-            "warnings": (
-                self.warnings
-            ),
-            "evaluated_at": (
-                self.evaluated_at
-            ),
+            "checks": [check.to_dict() for check in self.checks],
+            "blocking_reasons": (self.blocking_reasons),
+            "warnings": (self.warnings),
+            "evaluated_at": (self.evaluated_at),
         }
 
 
@@ -221,38 +162,28 @@ class GuardrailEvaluation:
 # Helpers
 # ---------------------------------------------------------------
 
+
 def parse_timestamp(
     value: Optional[str],
-) -> Optional[
-    datetime
-]:
+) -> Optional[datetime]:
     if not value:
         return None
 
     text = value.strip()
 
     if text.endswith("Z"):
-        text = (
-            text[:-1]
-            + "+00:00"
-        )
+        text = text[:-1] + "+00:00"
 
     try:
-        parsed = datetime.fromisoformat(
-            text
-        )
+        parsed = datetime.fromisoformat(text)
 
     except ValueError:
         return None
 
     if parsed.tzinfo is None:
-        parsed = parsed.replace(
-            tzinfo=timezone.utc
-        )
+        parsed = parsed.replace(tzinfo=timezone.utc)
 
-    return parsed.astimezone(
-        timezone.utc
-    )
+    return parsed.astimezone(timezone.utc)
 
 
 def make_check(
@@ -263,57 +194,34 @@ def make_check(
     failure_description: str,
     *,
     blocking: bool = True,
-    attributes: Optional[
-        Dict[str, Any]
-    ] = None,
+    attributes: Optional[Dict[str, Any]] = None,
 ) -> GuardrailCheck:
-    description = (
-        success_description
-        if passed
-        else failure_description
-    )
+    description = success_description if passed else failure_description
 
     return GuardrailCheck(
         guardrail_id=guardrail_id,
         name=name,
         status=(
-            GuardrailStatus.
-            PASSED.value
-            if passed
-            else GuardrailStatus.
-            FAILED.value
+            GuardrailStatus.PASSED.value if passed else GuardrailStatus.FAILED.value
         ),
         description=description,
         blocking=blocking,
         evidence=[
             RemediationEvidence(
-                evidence_type=(
-                    "guardrail"
-                ),
-                description=(
-                    description
-                ),
-                score=(
-                    1.0
-                    if passed
-                    else 0.0
-                ),
-                attributes=dict(
-                    attributes
-                    or {}
-                ),
+                evidence_type=("guardrail"),
+                description=(description),
+                score=(1.0 if passed else 0.0),
+                attributes=dict(attributes or {}),
             )
         ],
-        attributes=dict(
-            attributes
-            or {}
-        ),
+        attributes=dict(attributes or {}),
     )
 
 
 # ---------------------------------------------------------------
 # Individual guardrails
 # ---------------------------------------------------------------
+
 
 def execution_mode_check(
     request: RemediationRequest,
@@ -325,33 +233,17 @@ def execution_mode_check(
     Execute mode requires execution_enabled=True.
     """
 
-    passed = (
-        request.mode
-        == RemediationMode.
-        DRY_RUN.value
-        or config.execution_enabled
-    )
+    passed = request.mode == RemediationMode.DRY_RUN.value or config.execution_enabled
 
     return make_check(
-        (
-            "remediation."
-            "execution-enabled"
-        ),
+        ("remediation.execution-enabled"),
         "Execution authority",
         passed,
-        (
-            "Dry-run mode is safe or "
-            "execution is explicitly enabled."
-        ),
-        (
-            "Execute mode was requested "
-            "while execution is disabled."
-        ),
+        ("Dry-run mode is safe or execution is explicitly enabled."),
+        ("Execute mode was requested while execution is disabled."),
         attributes={
             "mode": request.mode,
-            "execution_enabled": (
-                config.execution_enabled
-            ),
+            "execution_enabled": (config.execution_enabled),
         },
     )
 
@@ -368,50 +260,22 @@ def environment_check(
     allowlist.
     """
 
-    environment = (
-        request.environment_id
-        .strip()
-        .lower()
-    )
+    environment = request.environment_id.strip().lower()
 
-    protected = {
-        item.lower()
-        for item
-        in config.
-        protected_environments
-    }
+    protected = {item.lower() for item in config.protected_environments}
 
-    allowed = {
-        item.lower()
-        for item
-        in config.
-        allowed_environments
-    }
+    allowed = {item.lower() for item in config.allowed_environments}
 
-    passed = (
-        environment in allowed
-        and environment
-        not in protected
-    )
+    passed = environment in allowed and environment not in protected
 
     return make_check(
         "remediation.environment",
         "Environment restriction",
         passed,
-        (
-            "Environment is explicitly "
-            "allowed for remediation "
-            "evaluation."
-        ),
-        (
-            "Environment is protected or "
-            "is not in the execution "
-            "allowlist."
-        ),
+        ("Environment is explicitly allowed for remediation evaluation."),
+        ("Environment is protected or is not in the execution allowlist."),
         attributes={
-            "environment": (
-                request.environment_id
-            ),
+            "environment": (request.environment_id),
         },
     )
 
@@ -420,30 +284,16 @@ def action_type_check(
     request: RemediationRequest,
     config: GuardrailConfig,
 ) -> GuardrailCheck:
-    passed = (
-        request.action_type
-        in set(
-            config.
-            allowed_action_types
-        )
-    )
+    passed = request.action_type in set(config.allowed_action_types)
 
     return make_check(
         "remediation.action-type",
         "Action allowlist",
         passed,
-        (
-            "Action type is explicitly "
-            "allowlisted."
-        ),
-        (
-            "Action type is not explicitly "
-            "allowlisted."
-        ),
+        ("Action type is explicitly allowlisted."),
+        ("Action type is not explicitly allowlisted."),
         attributes={
-            "action_type": (
-                request.action_type
-            ),
+            "action_type": (request.action_type),
         },
     )
 
@@ -460,48 +310,24 @@ def approval_check(
     approval handoff metadata.
     """
 
-    if (
-        request.mode
-        == RemediationMode.
-        DRY_RUN.value
-    ):
+    if request.mode == RemediationMode.DRY_RUN.value:
         passed = True
 
-        description = (
-            "Dry-run mode does not require "
-            "execution approval."
-        )
+        description = "Dry-run mode does not require execution approval."
 
     else:
         status_ok = (
-            not config.
-            require_approved_status
-            or request.approval_status
-            == "approved"
+            not config.require_approved_status or request.approval_status == "approved"
         )
 
-        ids_ok = (
-            not config.
-            require_approval_ids
-            or bool(
-                request.approval_ids
-            )
-        )
+        ids_ok = not config.require_approval_ids or bool(request.approval_ids)
 
-        passed = (
-            status_ok
-            and ids_ok
-        )
+        passed = status_ok and ids_ok
 
         description = (
-            "Execution approval metadata "
-            "is present."
+            "Execution approval metadata is present."
             if passed
-            else (
-                "Execute mode requires "
-                "approved status and "
-                "approval identifiers."
-            )
+            else ("Execute mode requires approved status and approval identifiers.")
         )
 
     return make_check(
@@ -511,12 +337,8 @@ def approval_check(
         description,
         description,
         attributes={
-            "approval_status": (
-                request.approval_status
-            ),
-            "approval_count": len(
-                request.approval_ids
-            ),
+            "approval_status": (request.approval_status),
+            "approval_count": len(request.approval_ids),
         },
     )
 
@@ -525,9 +347,7 @@ def expiry_check(
     request: RemediationRequest,
     config: GuardrailConfig,
     *,
-    now: Optional[
-        datetime
-    ] = None,
+    now: Optional[datetime] = None,
 ) -> GuardrailCheck:
     """
     Block stale execute requests.
@@ -536,80 +356,40 @@ def expiry_check(
     longer be relevant after expiration.
     """
 
-    if (
-        request.mode
-        == RemediationMode.
-        DRY_RUN.value
-        and not request.expires_at
-    ):
+    if request.mode == RemediationMode.DRY_RUN.value and not request.expires_at:
         passed = True
 
-        description = (
-            "Dry-run request has no "
-            "mandatory expiry requirement."
-        )
+        description = "Dry-run request has no mandatory expiry requirement."
 
     else:
-        expiry = parse_timestamp(
-            request.expires_at
-        )
+        expiry = parse_timestamp(request.expires_at)
 
-        current = (
-            now
-            or datetime.now(
-                timezone.utc
-            )
-        )
+        current = now or datetime.now(timezone.utc)
 
         if current.tzinfo is None:
-            current = current.replace(
-                tzinfo=timezone.utc
-            )
+            current = current.replace(tzinfo=timezone.utc)
 
-        passed = (
-            expiry is not None
-            and current.astimezone(
-                timezone.utc
-            )
-            < expiry
-        )
+        passed = expiry is not None and current.astimezone(timezone.utc) < expiry
 
         description = (
-            "Remediation request has not "
-            "expired."
+            "Remediation request has not expired."
             if passed
-            else (
-                "Remediation request is "
-                "expired or has no valid "
-                "expiry timestamp."
-            )
+            else ("Remediation request is expired or has no valid expiry timestamp.")
         )
 
-        if (
-            not config.
-            require_request_expiry
-            and expiry is None
-        ):
+        if not config.require_request_expiry and expiry is None:
             passed = True
 
-            description = (
-                "Request expiry is not "
-                "required by configuration."
-            )
+            description = "Request expiry is not required by configuration."
 
     return make_check(
-        (
-            "remediation."
-            "request-expiry"
-        ),
+        ("remediation.request-expiry"),
         "Request freshness",
         passed,
         description,
         description,
         attributes={
-            "expires_at": (
-                request.expires_at
-            ),
+            "expires_at": (request.expires_at),
         },
     )
 
@@ -622,67 +402,30 @@ def target_scope_check(
     Require explicit and bounded targets.
     """
 
-    resource_count = len(
-        set(
-            request.
-            target_resource_ids
-        )
-    )
+    resource_count = len(set(request.target_resource_ids))
 
-    service_count = len(
-        set(
-            request.
-            target_service_ids
-        )
-    )
+    service_count = len(set(request.target_service_ids))
 
-    has_target = (
-        resource_count > 0
-        or service_count > 0
-    )
+    has_target = resource_count > 0 or service_count > 0
 
     within_limits = (
-        resource_count
-        <= config.
-        maximum_target_resources
-        and service_count
-        <= config.
-        maximum_target_services
+        resource_count <= config.maximum_target_resources
+        and service_count <= config.maximum_target_services
     )
 
-    passed = (
-        has_target
-        and within_limits
-    )
+    passed = has_target and within_limits
 
     return make_check(
         "remediation.target-scope",
         "Target scope",
         passed,
-        (
-            "Request has explicit targets "
-            "within configured limits."
-        ),
-        (
-            "Request has no target or "
-            "exceeds configured target "
-            "limits."
-        ),
+        ("Request has explicit targets within configured limits."),
+        ("Request has no target or exceeds configured target limits."),
         attributes={
-            "resource_count": (
-                resource_count
-            ),
-            "service_count": (
-                service_count
-            ),
-            "maximum_resources": (
-                config.
-                maximum_target_resources
-            ),
-            "maximum_services": (
-                config.
-                maximum_target_services
-            ),
+            "resource_count": (resource_count),
+            "service_count": (service_count),
+            "maximum_resources": (config.maximum_target_resources),
+            "maximum_services": (config.maximum_target_services),
         },
     )
 
@@ -691,34 +434,18 @@ def risk_check(
     request: RemediationRequest,
     config: GuardrailConfig,
 ) -> GuardrailCheck:
-    passed = (
-        request.risk_score
-        <= config.maximum_risk_score
-    )
+    passed = request.risk_score <= config.maximum_risk_score
 
     return make_check(
         "remediation.risk-limit",
         "Risk tolerance",
         passed,
-        (
-            "Action risk is within the "
-            "remediation limit."
-        ),
-        (
-            "Action risk exceeds the "
-            "remediation limit."
-        ),
+        ("Action risk is within the remediation limit."),
+        ("Action risk exceeds the remediation limit."),
         attributes={
-            "risk_score": (
-                request.risk_score
-            ),
-            "risk_level": (
-                request.risk_level
-            ),
-            "maximum_risk_score": (
-                config.
-                maximum_risk_score
-            ),
+            "risk_score": (request.risk_score),
+            "risk_level": (request.risk_level),
+            "maximum_risk_score": (config.maximum_risk_score),
         },
     )
 
@@ -737,35 +464,20 @@ def rollback_check(
     independently.
     """
 
-    if (
-        request.mode
-        == RemediationMode.
-        DRY_RUN.value
-    ):
+    if request.mode == RemediationMode.DRY_RUN.value:
         passed = True
 
-        description = (
-            "Dry-run mode does not require "
-            "an executable rollback."
-        )
+        description = "Dry-run mode does not require an executable rollback."
 
     else:
-        passed = (
-            not config.
-            require_rollback_for_execution
-            or bool(
-                request.
-                rollback_action_type
-            )
+        passed = not config.require_rollback_for_execution or bool(
+            request.rollback_action_type
         )
 
         description = (
             "Rollback action is defined."
             if passed
-            else (
-                "Execute mode requires a "
-                "rollback action."
-            )
+            else ("Execute mode requires a rollback action.")
         )
 
     return make_check(
@@ -775,10 +487,7 @@ def rollback_check(
         description,
         description,
         attributes={
-            "rollback_action_type": (
-                request.
-                rollback_action_type
-            ),
+            "rollback_action_type": (request.rollback_action_type),
         },
     )
 
@@ -792,38 +501,18 @@ def parameter_check(
     adapter receives the request.
     """
 
-    unknown = sorted(
-        set(
-            request.parameters
-        )
-        - set(
-            config.
-            allowed_parameter_names
-        )
-    )
+    unknown = sorted(set(request.parameters) - set(config.allowed_parameter_names))
 
-    passed = not (
-        config.
-        forbid_unknown_parameters
-        and unknown
-    )
+    passed = not (config.forbid_unknown_parameters and unknown)
 
     return make_check(
         "remediation.parameters",
         "Parameter allowlist",
         passed,
-        (
-            "All remediation parameters are "
-            "allowlisted."
-        ),
-        (
-            "Request contains parameters "
-            "that are not allowlisted."
-        ),
+        ("All remediation parameters are allowlisted."),
+        ("Request contains parameters that are not allowlisted."),
         attributes={
-            "unknown_parameters": (
-                unknown
-            ),
+            "unknown_parameters": (unknown),
         },
     )
 
@@ -832,20 +521,14 @@ def parameter_check(
 # Combined evaluation
 # ---------------------------------------------------------------
 
+
 def evaluate_guardrails(
     request: RemediationRequest,
     *,
-    config: Optional[
-        GuardrailConfig
-    ] = None,
-    now: Optional[
-        datetime
-    ] = None,
+    config: Optional[GuardrailConfig] = None,
+    now: Optional[datetime] = None,
 ) -> GuardrailEvaluation:
-    configuration = (
-        config
-        or GuardrailConfig()
-    )
+    configuration = config or GuardrailConfig()
 
     configuration.validate()
 
@@ -894,29 +577,18 @@ def evaluate_guardrails(
     blocking_reasons = [
         check.description
         for check in checks
-        if (
-            check.blocking
-            and check.status
-            == GuardrailStatus.
-            FAILED.value
-        )
+        if (check.blocking and check.status == GuardrailStatus.FAILED.value)
     ]
 
     warnings = [
         check.description
         for check in checks
-        if (
-            check.status
-            == GuardrailStatus.
-            WARNING.value
-        )
+        if (check.status == GuardrailStatus.WARNING.value)
     ]
 
     return GuardrailEvaluation(
         checks=checks,
-        blocking_reasons=(
-            blocking_reasons
-        ),
+        blocking_reasons=(blocking_reasons),
         warnings=warnings,
     ).finalize()
 
@@ -924,9 +596,7 @@ def evaluate_guardrails(
 def guardrails_pass(
     request: RemediationRequest,
     *,
-    config: Optional[
-        GuardrailConfig
-    ] = None,
+    config: Optional[GuardrailConfig] = None,
 ) -> bool:
     return evaluate_guardrails(
         request,
@@ -938,46 +608,21 @@ def guardrails_pass(
 # Summary
 # ---------------------------------------------------------------
 
-def guardrail_summary(
-    evaluations: Iterable[
-        GuardrailEvaluation
-    ],
-) -> Dict[str, Any]:
-    values = list(
-        evaluations
-    )
 
-    checks = [
-        check
-        for evaluation in values
-        for check in evaluation.checks
-    ]
+def guardrail_summary(
+    evaluations: Iterable[GuardrailEvaluation],
+) -> Dict[str, Any]:
+    values = list(evaluations)
+
+    checks = [check for evaluation in values for check in evaluation.checks]
 
     return {
-        "evaluation_count": len(
-            values
-        ),
-        "allowed_count": sum(
-            1
-            for item in values
-            if item.allowed
-        ),
-        "blocked_count": sum(
-            1
-            for item in values
-            if not item.allowed
-        ),
-        "check_count": len(
-            checks
-        ),
+        "evaluation_count": len(values),
+        "allowed_count": sum(1 for item in values if item.allowed),
+        "blocked_count": sum(1 for item in values if not item.allowed),
+        "check_count": len(checks),
         "failed_check_count": sum(
-            1
-            for check in checks
-            if (
-                check.status
-                == GuardrailStatus.
-                FAILED.value
-            )
+            1 for check in checks if (check.status == GuardrailStatus.FAILED.value)
         ),
     }
 
@@ -992,14 +637,9 @@ class GuardrailEngine:
     def __init__(
         self,
         *,
-        config: Optional[
-            GuardrailConfig
-        ] = None,
+        config: Optional[GuardrailConfig] = None,
     ) -> None:
-        self.config = (
-            config
-            or GuardrailConfig()
-        )
+        self.config = config or GuardrailConfig()
 
         self.config.validate()
 
@@ -1007,9 +647,7 @@ class GuardrailEngine:
         self,
         request: RemediationRequest,
         *,
-        now: Optional[
-            datetime
-        ] = None,
+        now: Optional[datetime] = None,
     ) -> GuardrailEvaluation:
         return evaluate_guardrails(
             request,
@@ -1021,6 +659,4 @@ class GuardrailEngine:
         self,
         request: RemediationRequest,
     ) -> bool:
-        return self.evaluate(
-            request
-        ).allowed
+        return self.evaluate(request).allowed

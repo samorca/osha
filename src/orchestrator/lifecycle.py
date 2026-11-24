@@ -45,38 +45,28 @@ STAGE_DEPENDENCIES: Dict[
     str,
     Set[str],
 ] = {
-    StageName.COLLECTION.value: (
-        set()
-    ),
-
+    StageName.COLLECTION.value: (set()),
     StageName.TELEMETRY.value: {
         StageName.COLLECTION.value,
     },
-
     StageName.CORRELATION.value: {
         StageName.TELEMETRY.value,
     },
-
     StageName.INTELLIGENCE.value: {
         StageName.CORRELATION.value,
     },
-
     StageName.MEMORY.value: {
         StageName.INTELLIGENCE.value,
     },
-
     StageName.DECISION.value: {
         StageName.INTELLIGENCE.value,
     },
-
     StageName.REMEDIATION.value: {
         StageName.DECISION.value,
     },
-
     StageName.SELF_HEALING.value: {
         StageName.REMEDIATION.value,
     },
-
     StageName.OUTCOME.value: {
         StageName.SELF_HEALING.value,
     },
@@ -102,15 +92,15 @@ TERMINAL_STAGE_STATUSES = {
 # Exceptions
 # ---------------------------------------------------------------
 
-class LifecycleError(
-    ValueError
-):
+
+class LifecycleError(ValueError):
     pass
 
 
 # ---------------------------------------------------------------
 # Lifecycle decision
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class LifecycleDecision:
@@ -135,9 +125,7 @@ class LifecycleDecision:
 
     allowed: bool
 
-    stage: Optional[
-        str
-    ]
+    stage: Optional[str]
 
     stop: bool
 
@@ -160,16 +148,9 @@ class LifecycleDecision:
             "allowed": self.allowed,
             "stage": self.stage,
             "stop": self.stop,
-            "stop_reason": (
-                self.stop_reason
-            ),
+            "stop_reason": (self.stop_reason),
             "reason": self.reason,
-            "missing_dependencies": (
-                list(
-                    self.
-                    missing_dependencies
-                )
-            ),
+            "missing_dependencies": (list(self.missing_dependencies)),
         }
 
 
@@ -177,31 +158,20 @@ class LifecycleDecision:
 # Stage helpers
 # ---------------------------------------------------------------
 
+
 def valid_stage(
     stage: str,
 ) -> bool:
-    return stage in {
-        item.value
-        for item in StageName
-    }
+    return stage in {item.value for item in StageName}
 
 
 def stage_position(
     stage: str,
 ) -> int:
-    if (
-        stage
-        not in DEFAULT_STAGE_ORDER
-    ):
-        raise LifecycleError(
-            f"Unknown stage: {stage}"
-        )
+    if stage not in DEFAULT_STAGE_ORDER:
+        raise LifecycleError(f"Unknown stage: {stage}")
 
-    return (
-        DEFAULT_STAGE_ORDER.index(
-            stage
-        )
-    )
+    return DEFAULT_STAGE_ORDER.index(stage)
 
 
 def stage_completed(
@@ -213,15 +183,9 @@ def stage_completed(
     terminal state.
     """
 
-    result = run.stage(
-        stage
-    )
+    result = run.stage(stage)
 
-    return bool(
-        result
-        and result.status
-        in TERMINAL_STAGE_STATUSES
-    )
+    return bool(result and result.status in TERMINAL_STAGE_STATUSES)
 
 
 def stage_satisfied(
@@ -236,32 +200,21 @@ def stage_satisfied(
     not satisfy downstream dependencies.
     """
 
-    result = run.stage(
-        stage
-    )
+    result = run.stage(stage)
 
-    return bool(
-        result
-        and result.status
-        in SATISFIED_STAGE_STATUSES
-    )
+    return bool(result and result.status in SATISFIED_STAGE_STATUSES)
 
 
 def missing_dependencies(
     run: OrchestrationRun,
     stage: str,
 ) -> List[str]:
-    if not valid_stage(
-        stage
-    ):
-        raise LifecycleError(
-            f"Unknown stage: {stage}"
-        )
+    if not valid_stage(stage):
+        raise LifecycleError(f"Unknown stage: {stage}")
 
     return sorted(
         dependency
-        for dependency
-        in STAGE_DEPENDENCIES.get(
+        for dependency in STAGE_DEPENDENCIES.get(
             stage,
             set(),
         )
@@ -276,6 +229,7 @@ def missing_dependencies(
 # Stage-entry gate
 # ---------------------------------------------------------------
 
+
 def can_enter_stage(
     run: OrchestrationRun,
     stage: str,
@@ -287,37 +241,23 @@ def can_enter_stage(
 
     run.finalize()
 
-    if not valid_stage(
-        stage
-    ):
-        raise LifecycleError(
-            f"Unknown stage: {stage}"
-        )
+    if not valid_stage(stage):
+        raise LifecycleError(f"Unknown stage: {stage}")
 
-    existing = run.stage(
-        stage
-    )
+    existing = run.stage(stage)
 
     if existing is not None:
         return LifecycleDecision(
             allowed=False,
             stage=stage,
             stop=False,
-            stop_reason=(
-                StopReason.NONE.value
-            ),
-            reason=(
-                f"Stage {stage} already "
-                "exists with status "
-                f"{existing.status}."
-            ),
+            stop_reason=(StopReason.NONE.value),
+            reason=(f"Stage {stage} already exists with status {existing.status}."),
         )
 
-    missing = (
-        missing_dependencies(
-            run,
-            stage,
-        )
+    missing = missing_dependencies(
+        run,
+        stage,
     )
 
     if missing:
@@ -325,36 +265,24 @@ def can_enter_stage(
             allowed=False,
             stage=stage,
             stop=False,
-            stop_reason=(
-                StopReason.NONE.value
-            ),
-            reason=(
-                "Required lifecycle "
-                "dependencies are not "
-                "satisfied."
-            ),
-            missing_dependencies=(
-                tuple(missing)
-            ),
+            stop_reason=(StopReason.NONE.value),
+            reason=("Required lifecycle dependencies are not satisfied."),
+            missing_dependencies=(tuple(missing)),
         )
 
     return LifecycleDecision(
         allowed=True,
         stage=stage,
         stop=False,
-        stop_reason=(
-            StopReason.NONE.value
-        ),
-        reason=(
-            "Lifecycle dependencies "
-            "are satisfied."
-        ),
+        stop_reason=(StopReason.NONE.value),
+        reason=("Lifecycle dependencies are satisfied."),
     )
 
 
 # ---------------------------------------------------------------
 # Decision -> remediation gate
 # ---------------------------------------------------------------
+
 
 def decision_gate(
     *,
@@ -373,45 +301,25 @@ def decision_gate(
     if approval_required:
         return LifecycleDecision(
             allowed=False,
-            stage=(
-                StageName.
-                REMEDIATION.value
-            ),
+            stage=(StageName.REMEDIATION.value),
             stop=True,
-            stop_reason=(
-                StopReason.
-                APPROVAL_REQUIRED.value
-            ),
-            reason=(
-                "Decision requires approval "
-                "before remediation can "
-                "proceed."
-            ),
+            stop_reason=(StopReason.APPROVAL_REQUIRED.value),
+            reason=("Decision requires approval before remediation can proceed."),
         )
 
     if not action_available:
         return LifecycleDecision(
             allowed=False,
-            stage=(
-                StageName.
-                REMEDIATION.value
-            ),
+            stage=(StageName.REMEDIATION.value),
             stop=False,
-            stop_reason=(
-                StopReason.NONE.value
-            ),
+            stop_reason=(StopReason.NONE.value),
             reason=(
-                "No remediation action is "
-                "available; remediation "
-                "should be skipped."
+                "No remediation action is available; remediation should be skipped."
             ),
         )
 
     if mutating_action:
-        reason = (
-            "Decision permits remediation "
-            "evaluation."
-        )
+        reason = "Decision permits remediation evaluation."
 
     else:
         reason = (
@@ -423,14 +331,9 @@ def decision_gate(
 
     return LifecycleDecision(
         allowed=True,
-        stage=(
-            StageName.
-            REMEDIATION.value
-        ),
+        stage=(StageName.REMEDIATION.value),
         stop=False,
-        stop_reason=(
-            StopReason.NONE.value
-        ),
+        stop_reason=(StopReason.NONE.value),
         reason=reason,
     )
 
@@ -438,6 +341,7 @@ def decision_gate(
 # ---------------------------------------------------------------
 # Remediation -> self-healing gate
 # ---------------------------------------------------------------
+
 
 def remediation_gate(
     *,
@@ -454,33 +358,18 @@ def remediation_gate(
     if blocked:
         return LifecycleDecision(
             allowed=False,
-            stage=(
-                StageName.
-                SELF_HEALING.value
-            ),
+            stage=(StageName.SELF_HEALING.value),
             stop=True,
-            stop_reason=(
-                StopReason.
-                SAFETY_GUARDRAIL.value
-            ),
-            reason=(
-                "Remediation was blocked by "
-                "the controlled remediation "
-                "layer."
-            ),
+            stop_reason=(StopReason.SAFETY_GUARDRAIL.value),
+            reason=("Remediation was blocked by the controlled remediation layer."),
         )
 
     if failed:
         return LifecycleDecision(
             allowed=False,
-            stage=(
-                StageName.
-                SELF_HEALING.value
-            ),
+            stage=(StageName.SELF_HEALING.value),
             stop=True,
-            stop_reason=(
-                StopReason.FAILURE.value
-            ),
+            stop_reason=(StopReason.FAILURE.value),
             reason=(
                 "Remediation failed before "
                 "a normal healing-feedback "
@@ -488,20 +377,12 @@ def remediation_gate(
             ),
         )
 
-    if (
-        dry_run
-        or not changed
-    ):
+    if dry_run or not changed:
         return LifecycleDecision(
             allowed=True,
-            stage=(
-                StageName.
-                SELF_HEALING.value
-            ),
+            stage=(StageName.SELF_HEALING.value),
             stop=False,
-            stop_reason=(
-                StopReason.NONE.value
-            ),
+            stop_reason=(StopReason.NONE.value),
             reason=(
                 "Self-healing may evaluate "
                 "the lifecycle, but recovery "
@@ -513,14 +394,9 @@ def remediation_gate(
 
     return LifecycleDecision(
         allowed=True,
-        stage=(
-            StageName.
-            SELF_HEALING.value
-        ),
+        stage=(StageName.SELF_HEALING.value),
         stop=False,
-        stop_reason=(
-            StopReason.NONE.value
-        ),
+        stop_reason=(StopReason.NONE.value),
         reason=(
             "Remediation changed "
             "infrastructure; recovery and "
@@ -533,6 +409,7 @@ def remediation_gate(
 # ---------------------------------------------------------------
 # Self-healing -> outcome gate
 # ---------------------------------------------------------------
+
 
 def healing_gate(
     *,
@@ -547,15 +424,9 @@ def healing_gate(
     if escalation_required:
         return LifecycleDecision(
             allowed=False,
-            stage=(
-                StageName.
-                OUTCOME.value
-            ),
+            stage=(StageName.OUTCOME.value),
             stop=True,
-            stop_reason=(
-                StopReason.
-                ESCALATION_REQUIRED.value
-            ),
+            stop_reason=(StopReason.ESCALATION_REQUIRED.value),
             reason=(
                 "Self-healing requires "
                 "human escalation; automated "
@@ -566,40 +437,25 @@ def healing_gate(
     if not outcome_available:
         return LifecycleDecision(
             allowed=False,
-            stage=(
-                StageName.
-                OUTCOME.value
-            ),
+            stage=(StageName.OUTCOME.value),
             stop=False,
-            stop_reason=(
-                StopReason.NONE.value
-            ),
-            reason=(
-                "Self-healing has not "
-                "produced a final outcome "
-                "yet."
-            ),
+            stop_reason=(StopReason.NONE.value),
+            reason=("Self-healing has not produced a final outcome yet."),
         )
 
     return LifecycleDecision(
         allowed=True,
-        stage=(
-            StageName.OUTCOME.value
-        ),
+        stage=(StageName.OUTCOME.value),
         stop=False,
-        stop_reason=(
-            StopReason.NONE.value
-        ),
-        reason=(
-            "Self-healing produced an "
-            "outcome that may be recorded."
-        ),
+        stop_reason=(StopReason.NONE.value),
+        reason=("Self-healing produced an outcome that may be recorded."),
     )
 
 
 # ---------------------------------------------------------------
 # Next stage
 # ---------------------------------------------------------------
+
 
 def next_stage(
     run: OrchestrationRun,
@@ -613,58 +469,33 @@ def next_stage(
 
     run.finalize()
 
-    if (
-        run.stop_reason
-        != StopReason.NONE.value
-    ):
+    if run.stop_reason != StopReason.NONE.value:
         return LifecycleDecision(
             allowed=False,
             stage=None,
             stop=True,
-            stop_reason=(
-                run.stop_reason
-            ),
-            reason=(
-                "Run already carries "
-                "stop reason "
-                f"{run.stop_reason}."
-            ),
+            stop_reason=(run.stop_reason),
+            reason=(f"Run already carries stop reason {run.stop_reason}."),
         )
 
-    if (
-        run.current_stage
-        is not None
-    ):
+    if run.current_stage is not None:
         return LifecycleDecision(
             allowed=False,
-            stage=(
-                run.current_stage
-            ),
+            stage=(run.current_stage),
             stop=False,
-            stop_reason=(
-                StopReason.NONE.value
-            ),
+            stop_reason=(StopReason.NONE.value),
             reason=(
-                "The current orchestration "
-                "stage must finish before "
-                "another begins."
+                "The current orchestration stage must finish before another begins."
             ),
         )
 
-    for stage in (
-        DEFAULT_STAGE_ORDER
-    ):
-        if (
-            run.stage(stage)
-            is not None
-        ):
+    for stage in DEFAULT_STAGE_ORDER:
+        if run.stage(stage) is not None:
             continue
 
-        decision = (
-            can_enter_stage(
-                run,
-                stage,
-            )
+        decision = can_enter_stage(
+            run,
+            stage,
         )
 
         if decision.allowed:
@@ -674,20 +505,15 @@ def next_stage(
         allowed=False,
         stage=None,
         stop=False,
-        stop_reason=(
-            StopReason.
-            COMPLETED.value
-        ),
-        reason=(
-            "No remaining lifecycle stage "
-            "is ready to run."
-        ),
+        stop_reason=(StopReason.COMPLETED.value),
+        reason=("No remaining lifecycle stage is ready to run."),
     )
 
 
 # ---------------------------------------------------------------
 # Lifecycle facade
 # ---------------------------------------------------------------
+
 
 class OrchestrationLifecycle:
     """
@@ -711,9 +537,7 @@ class OrchestrationLifecycle:
         self,
         run: OrchestrationRun,
     ) -> LifecycleDecision:
-        return next_stage(
-            run
-        )
+        return next_stage(run)
 
     def decision_gate(
         self,
@@ -723,15 +547,9 @@ class OrchestrationLifecycle:
         mutating_action: bool,
     ) -> LifecycleDecision:
         return decision_gate(
-            approval_required=(
-                approval_required
-            ),
-            action_available=(
-                action_available
-            ),
-            mutating_action=(
-                mutating_action
-            ),
+            approval_required=(approval_required),
+            action_available=(action_available),
+            mutating_action=(mutating_action),
         )
 
     def remediation_gate(
@@ -756,10 +574,6 @@ class OrchestrationLifecycle:
         outcome_available: bool,
     ) -> LifecycleDecision:
         return healing_gate(
-            escalation_required=(
-                escalation_required
-            ),
-            outcome_available=(
-                outcome_available
-            ),
+            escalation_required=(escalation_required),
+            outcome_available=(outcome_available),
         )

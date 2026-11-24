@@ -91,30 +91,20 @@ from src.api.errors import (
 # Logging
 # ------------------------------------------------------------------
 
-logger = logging.getLogger(
-    __name__
-)
+logger = logging.getLogger(__name__)
 
 
 # ------------------------------------------------------------------
 # Public header names
 # ------------------------------------------------------------------
 
-DEFAULT_REQUEST_ID_HEADER = (
-    "X-Request-ID"
-)
+DEFAULT_REQUEST_ID_HEADER = "X-Request-ID"
 
-PROCESS_TIME_HEADER = (
-    "X-Process-Time"
-)
+PROCESS_TIME_HEADER = "X-Process-Time"
 
-SERVER_TIMING_HEADER = (
-    "Server-Timing"
-)
+SERVER_TIMING_HEADER = "Server-Timing"
 
-RETRY_AFTER_HEADER = (
-    "Retry-After"
-)
+RETRY_AFTER_HEADER = "Retry-After"
 
 
 # ------------------------------------------------------------------
@@ -133,16 +123,12 @@ HeaderList = List[
 # Request context variables
 # ------------------------------------------------------------------
 
-_request_id_context: ContextVar[
-    Optional[str]
-] = ContextVar(
+_request_id_context: ContextVar[Optional[str]] = ContextVar(
     "osha_api_request_id",
     default=None,
 )
 
-_request_started_context: ContextVar[
-    Optional[float]
-] = ContextVar(
+_request_started_context: ContextVar[Optional[float]] = ContextVar(
     "osha_api_request_started",
     default=None,
 )
@@ -152,14 +138,13 @@ _request_started_context: ContextVar[
 # Request ID validation
 # ------------------------------------------------------------------
 
-_REQUEST_ID_PATTERN = re.compile(
-    r"^[A-Za-z0-9._:/-]{1,128}$"
-)
+_REQUEST_ID_PATTERN = re.compile(r"^[A-Za-z0-9._:/-]{1,128}$")
 
 
 # ------------------------------------------------------------------
 # Request context
 # ------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class RequestContext:
@@ -179,17 +164,14 @@ class RequestContext:
     ) -> float:
         return max(
             0.0,
-            (
-                time.perf_counter()
-                - self.started_monotonic
-            )
-            * 1000.0,
+            (time.perf_counter() - self.started_monotonic) * 1000.0,
         )
 
 
 # ------------------------------------------------------------------
 # Current-request helpers
 # ------------------------------------------------------------------
+
 
 def current_request_id() -> Optional[str]:
     return _request_id_context.get()
@@ -207,11 +189,7 @@ def current_request_duration_ms() -> Optional[float]:
 
     return max(
         0.0,
-        (
-            time.perf_counter()
-            - started
-        )
-        * 1000.0,
+        (time.perf_counter() - started) * 1000.0,
     )
 
 
@@ -219,15 +197,11 @@ def current_request_duration_ms() -> Optional[float]:
 # HTTP helpers
 # ------------------------------------------------------------------
 
+
 def is_http_scope(
     scope: Scope,
 ) -> bool:
-    return (
-        scope.get(
-            "type"
-        )
-        == "http"
-    )
+    return scope.get("type") == "http"
 
 
 def request_method(
@@ -255,17 +229,13 @@ def request_path(
 def client_host(
     scope: Scope,
 ) -> Optional[str]:
-    value = scope.get(
-        "client"
-    )
+    value = scope.get("client")
 
     if not value:
         return None
 
     try:
-        return str(
-            value[0]
-        )
+        return str(value[0])
 
     except (
         IndexError,
@@ -297,9 +267,7 @@ def decode_header_value(
 def encode_header_value(
     value: str,
 ) -> bytes:
-    return str(
-        value
-    ).encode(
+    return str(value).encode(
         "latin-1",
         errors="ignore",
     )
@@ -308,28 +276,18 @@ def encode_header_value(
 def normalized_header_name(
     value: str,
 ) -> bytes:
-    return str(
-        value
-    ).strip().lower().encode(
-        "latin-1"
-    )
+    return str(value).strip().lower().encode("latin-1")
 
 
 def get_header(
     scope: Scope,
     name: str,
 ) -> Optional[str]:
-    target = normalized_header_name(
-        name
-    )
+    target = normalized_header_name(name)
 
-    for key, value in scope_headers(
-        scope
-    ):
+    for key, value in scope_headers(scope):
         if key.lower() == target:
-            return decode_header_value(
-                value
-            )
+            return decode_header_value(value)
 
     return None
 
@@ -339,26 +297,21 @@ def set_response_header(
     name: str,
     value: str,
 ) -> HeaderList:
-    target = normalized_header_name(
-        name
-    )
+    target = normalized_header_name(name)
 
     result = [
         (
             key,
             current_value,
         )
-        for key, current_value
-        in headers
+        for key, current_value in headers
         if key.lower() != target
     ]
 
     result.append(
         (
             target,
-            encode_header_value(
-                value
-            ),
+            encode_header_value(value),
         )
     )
 
@@ -369,17 +322,14 @@ def remove_response_header(
     headers: HeaderList,
     name: str,
 ) -> HeaderList:
-    target = normalized_header_name(
-        name
-    )
+    target = normalized_header_name(name)
 
     return [
         (
             key,
             value,
         )
-        for key, value
-        in headers
+        for key, value in headers
         if key.lower() != target
     ]
 
@@ -393,15 +343,11 @@ def response_header_value(
     ],
     name: str,
 ) -> Optional[str]:
-    target = normalized_header_name(
-        name
-    )
+    target = normalized_header_name(name)
 
     for key, value in headers:
         if key.lower() == target:
-            return decode_header_value(
-                value
-            )
+            return decode_header_value(value)
 
     return None
 
@@ -411,19 +357,15 @@ def set_scope_state(
     name: str,
     value: Any,
 ) -> None:
-    state = scope.setdefault(
-        "state",
-        {}
-    )
+    state = scope.setdefault("state", {})
 
-    state[
-        name
-    ] = value
+    state[name] = value
 
 
 # ------------------------------------------------------------------
 # Request ID
 # ------------------------------------------------------------------
+
 
 def valid_request_id(
     value: Optional[str],
@@ -431,15 +373,9 @@ def valid_request_id(
     if value is None:
         return False
 
-    text = str(
-        value
-    ).strip()
+    text = str(value).strip()
 
-    return bool(
-        _REQUEST_ID_PATTERN.fullmatch(
-            text
-        )
-    )
+    return bool(_REQUEST_ID_PATTERN.fullmatch(text))
 
 
 def resolve_request_id(
@@ -452,21 +388,16 @@ def resolve_request_id(
         header_name,
     )
 
-    if valid_request_id(
-        supplied
-    ):
-        return str(
-            supplied
-        ).strip()
+    if valid_request_id(supplied):
+        return str(supplied).strip()
 
-    return str(
-        uuid4()
-    )
+    return str(uuid4())
 
 
 # ------------------------------------------------------------------
 # Scope context helpers
 # ------------------------------------------------------------------
+
 
 def get_scope_request_id(
     scope: Scope,
@@ -476,14 +407,10 @@ def get_scope_request_id(
         {},
     )
 
-    value = state.get(
-        "request_id"
-    )
+    value = state.get("request_id")
 
     if value is not None:
-        return str(
-            value
-        )
+        return str(value)
 
     return current_request_id()
 
@@ -496,17 +423,13 @@ def get_scope_duration_ms(
         {},
     )
 
-    started = state.get(
-        "request_started_monotonic"
-    )
+    started = state.get("request_started_monotonic")
 
     if started is None:
         return current_request_duration_ms()
 
     try:
-        started_float = float(
-            started
-        )
+        started_float = float(started)
 
     except (
         TypeError,
@@ -516,11 +439,7 @@ def get_scope_duration_ms(
 
     return max(
         0.0,
-        (
-            time.perf_counter()
-            - started_float
-        )
-        * 1000.0,
+        (time.perf_counter() - started_float) * 1000.0,
     )
 
 
@@ -528,18 +447,15 @@ def get_scope_duration_ms(
 # API exception response
 # ------------------------------------------------------------------
 
+
 async def send_api_exception(
     *,
     error: BaseException,
     scope: Scope,
     send: Send,
     request_id: Optional[str],
-    request_id_header: str = (
-        DEFAULT_REQUEST_ID_HEADER
-    ),
-    duration_ms: Optional[
-        float
-    ] = None,
+    request_id_header: str = (DEFAULT_REQUEST_ID_HEADER),
+    duration_ms: Optional[float] = None,
 ) -> None:
     """
     Send one standardized JSON API error directly
@@ -558,9 +474,7 @@ async def send_api_exception(
 
     body = response.model_dump_json(
         exclude_none=True,
-    ).encode(
-        "utf-8"
-    )
+    ).encode("utf-8")
 
     headers: HeaderList = [
         (
@@ -569,13 +483,7 @@ async def send_api_exception(
         ),
         (
             b"content-length",
-            str(
-                len(
-                    body
-                )
-            ).encode(
-                "ascii"
-            ),
+            str(len(body)).encode("ascii"),
         ),
         (
             b"cache-control",
@@ -583,9 +491,7 @@ async def send_api_exception(
         ),
     ]
 
-    for name, value in (
-        extra_headers.items()
-    ):
+    for name, value in extra_headers.items():
         headers = set_response_header(
             headers,
             name,
@@ -601,26 +507,16 @@ async def send_api_exception(
 
     await send(
         {
-            "type": (
-                "http.response.start"
-            ),
-
-            "status": (
-                status_code
-            ),
-
+            "type": ("http.response.start"),
+            "status": (status_code),
             "headers": headers,
         }
     )
 
     await send(
         {
-            "type": (
-                "http.response.body"
-            ),
-
+            "type": ("http.response.body"),
             "body": body,
-
             "more_body": False,
         }
     )
@@ -629,6 +525,7 @@ async def send_api_exception(
 # ------------------------------------------------------------------
 # Request context middleware
 # ------------------------------------------------------------------
+
 
 class RequestContextMiddleware:
     """
@@ -645,23 +542,14 @@ class RequestContextMiddleware:
         self,
         app: ASGIApp,
         *,
-        header_name: str = (
-            DEFAULT_REQUEST_ID_HEADER
-        ),
+        header_name: str = (DEFAULT_REQUEST_ID_HEADER),
         server_timing_enabled: bool = False,
     ) -> None:
         self.app = app
 
-        self.header_name = (
-            str(
-                header_name
-            ).strip()
-            or DEFAULT_REQUEST_ID_HEADER
-        )
+        self.header_name = str(header_name).strip() or DEFAULT_REQUEST_ID_HEADER
 
-        self.server_timing_enabled = bool(
-            server_timing_enabled
-        )
+        self.server_timing_enabled = bool(server_timing_enabled)
 
     async def __call__(
         self,
@@ -669,9 +557,7 @@ class RequestContextMiddleware:
         receive: Receive,
         send: Send,
     ) -> None:
-        if not is_http_scope(
-            scope
-        ):
+        if not is_http_scope(scope):
             await self.app(
                 scope,
                 receive,
@@ -684,27 +570,15 @@ class RequestContextMiddleware:
 
         request_id = resolve_request_id(
             scope,
-            header_name=(
-                self.header_name
-            ),
+            header_name=(self.header_name),
         )
 
         context = RequestContext(
             request_id=request_id,
-
             started_monotonic=started,
-
-            method=request_method(
-                scope
-            ),
-
-            path=request_path(
-                scope
-            ),
-
-            client_host=client_host(
-                scope
-            ),
+            method=request_method(scope),
+            path=request_path(scope),
+            client_host=client_host(scope),
         )
 
         set_scope_state(
@@ -725,27 +599,14 @@ class RequestContextMiddleware:
             context,
         )
 
-        request_id_token = (
-            _request_id_context.set(
-                request_id
-            )
-        )
+        request_id_token = _request_id_context.set(request_id)
 
-        started_token = (
-            _request_started_context.set(
-                started
-            )
-        )
+        started_token = _request_started_context.set(started)
 
         async def send_with_context(
             message: Message,
         ) -> None:
-            if (
-                message.get(
-                    "type"
-                )
-                == "http.response.start"
-            ):
+            if message.get("type") == "http.response.start":
                 headers = list(
                     message.get(
                         "headers",
@@ -755,11 +616,7 @@ class RequestContextMiddleware:
 
                 duration_ms = max(
                     0.0,
-                    (
-                        time.perf_counter()
-                        - started
-                    )
-                    * 1000.0,
+                    (time.perf_counter() - started) * 1000.0,
                 )
 
                 headers = set_response_header(
@@ -771,19 +628,14 @@ class RequestContextMiddleware:
                 headers = set_response_header(
                     headers,
                     PROCESS_TIME_HEADER,
-                    (
-                        f"{duration_ms / 1000.0:.6f}"
-                    ),
+                    (f"{duration_ms / 1000.0:.6f}"),
                 )
 
                 if self.server_timing_enabled:
                     headers = set_response_header(
                         headers,
                         SERVER_TIMING_HEADER,
-                        (
-                            "app;dur="
-                            f"{duration_ms:.3f}"
-                        ),
+                        (f"app;dur={duration_ms:.3f}"),
                     )
 
                 message = {
@@ -791,9 +643,7 @@ class RequestContextMiddleware:
                     "headers": headers,
                 }
 
-            await send(
-                message
-            )
+            await send(message)
 
         try:
             await self.app(
@@ -803,18 +653,15 @@ class RequestContextMiddleware:
             )
 
         finally:
-            _request_id_context.reset(
-                request_id_token
-            )
+            _request_id_context.reset(request_id_token)
 
-            _request_started_context.reset(
-                started_token
-            )
+            _request_started_context.reset(started_token)
 
 
 # ------------------------------------------------------------------
 # Request limits middleware
 # ------------------------------------------------------------------
+
 
 class RequestLimitsMiddleware:
     """
@@ -836,35 +683,21 @@ class RequestLimitsMiddleware:
         maximum_header_count: int,
         maximum_header_bytes: int,
         maximum_path_length: int,
-        request_id_header: str = (
-            DEFAULT_REQUEST_ID_HEADER
-        ),
+        request_id_header: str = (DEFAULT_REQUEST_ID_HEADER),
     ) -> None:
         self.app = app
 
-        self.maximum_body_bytes = int(
-            maximum_body_bytes
-        )
+        self.maximum_body_bytes = int(maximum_body_bytes)
 
-        self.maximum_query_parameters = int(
-            maximum_query_parameters
-        )
+        self.maximum_query_parameters = int(maximum_query_parameters)
 
-        self.maximum_header_count = int(
-            maximum_header_count
-        )
+        self.maximum_header_count = int(maximum_header_count)
 
-        self.maximum_header_bytes = int(
-            maximum_header_bytes
-        )
+        self.maximum_header_bytes = int(maximum_header_bytes)
 
-        self.maximum_path_length = int(
-            maximum_path_length
-        )
+        self.maximum_path_length = int(maximum_path_length)
 
-        self.request_id_header = (
-            request_id_header
-        )
+        self.request_id_header = request_id_header
 
         for name, value in (
             (
@@ -873,8 +706,7 @@ class RequestLimitsMiddleware:
             ),
             (
                 "maximum_query_parameters",
-                self.
-                maximum_query_parameters,
+                self.maximum_query_parameters,
             ),
             (
                 "maximum_header_count",
@@ -890,94 +722,46 @@ class RequestLimitsMiddleware:
             ),
         ):
             if value < 1:
-                raise ValueError(
-                    f"{name} must be >= 1"
-                )
+                raise ValueError(f"{name} must be >= 1")
 
     def _validate_envelope(
         self,
         scope: Scope,
     ) -> None:
-        path = request_path(
-            scope
-        )
+        path = request_path(scope)
 
-        path_bytes = len(
-            path.encode(
-                "utf-8"
-            )
-        )
+        path_bytes = len(path.encode("utf-8"))
 
-        if (
-            path_bytes
-            > self.maximum_path_length
-        ):
+        if path_bytes > self.maximum_path_length:
             raise RequestTooLargeError(
                 "The request path is too long.",
                 details={
-                    "limit": (
-                        self.maximum_path_length
-                    ),
-
-                    "current": (
-                        path_bytes
-                    ),
+                    "limit": (self.maximum_path_length),
+                    "current": (path_bytes),
                 },
             )
 
-        headers = scope_headers(
-            scope
-        )
+        headers = scope_headers(scope)
 
-        header_count = len(
-            headers
-        )
+        header_count = len(headers)
 
-        if (
-            header_count
-            > self.maximum_header_count
-        ):
+        if header_count > self.maximum_header_count:
             raise RequestTooLargeError(
-                "The request contains too "
-                "many headers.",
+                "The request contains too many headers.",
                 details={
-                    "limit": (
-                        self.maximum_header_count
-                    ),
-
-                    "current": (
-                        header_count
-                    ),
+                    "limit": (self.maximum_header_count),
+                    "current": (header_count),
                 },
             )
 
-        header_bytes = sum(
-            len(
-                key
-            )
-            + len(
-                value
-            )
-            + 4
-            for key, value
-            in headers
-        )
+        header_bytes = sum(len(key) + len(value) + 4 for key, value in headers)
 
-        if (
-            header_bytes
-            > self.maximum_header_bytes
-        ):
+        if header_bytes > self.maximum_header_bytes:
             raise RequestTooLargeError(
-                "The request headers are "
-                "too large.",
+                "The request headers are too large.",
                 details={
-                    "limit": (
-                        self.maximum_header_bytes
-                    ),
-
-                    "current": (
-                        header_bytes
-                    ),
+                    "limit": (self.maximum_header_bytes),
+                    "current": (header_bytes),
                 },
             )
 
@@ -987,32 +771,17 @@ class RequestLimitsMiddleware:
         )
 
         if query_string:
-            query_count = (
-                query_string.count(
-                    b"&"
-                )
-                + 1
-            )
+            query_count = query_string.count(b"&") + 1
 
         else:
             query_count = 0
 
-        if (
-            query_count
-            > self.maximum_query_parameters
-        ):
+        if query_count > self.maximum_query_parameters:
             raise RequestTooLargeError(
-                "The request contains too "
-                "many query parameters.",
+                "The request contains too many query parameters.",
                 details={
-                    "limit": (
-                        self.
-                        maximum_query_parameters
-                    ),
-
-                    "current": (
-                        query_count
-                    ),
+                    "limit": (self.maximum_query_parameters),
+                    "current": (query_count),
                 },
             )
 
@@ -1025,35 +794,19 @@ class RequestLimitsMiddleware:
             return
 
         try:
-            content_length_value = int(
-                content_length
-            )
+            content_length_value = int(content_length)
 
         except ValueError as exc:
-            raise RequestTooLargeError(
-                "The Content-Length header "
-                "is invalid."
-            ) from exc
+            raise RequestTooLargeError("The Content-Length header is invalid.") from exc
 
         if content_length_value < 0:
-            raise RequestTooLargeError(
-                "The Content-Length header "
-                "is invalid."
-            )
+            raise RequestTooLargeError("The Content-Length header is invalid.")
 
-        if (
-            content_length_value
-            > self.maximum_body_bytes
-        ):
+        if content_length_value > self.maximum_body_bytes:
             raise RequestTooLargeError(
                 details={
-                    "limit": (
-                        self.maximum_body_bytes
-                    ),
-
-                    "current": (
-                        content_length_value
-                    ),
+                    "limit": (self.maximum_body_bytes),
+                    "current": (content_length_value),
                 },
             )
 
@@ -1063,9 +816,7 @@ class RequestLimitsMiddleware:
         receive: Receive,
         send: Send,
     ) -> None:
-        if not is_http_scope(
-            scope
-        ):
+        if not is_http_scope(scope):
             await self.app(
                 scope,
                 receive,
@@ -1075,33 +826,16 @@ class RequestLimitsMiddleware:
             return
 
         try:
-            self._validate_envelope(
-                scope
-            )
+            self._validate_envelope(scope)
 
         except APIException as exc:
             await send_api_exception(
                 error=exc,
-
                 scope=scope,
-
                 send=send,
-
-                request_id=(
-                    get_scope_request_id(
-                        scope
-                    )
-                ),
-
-                request_id_header=(
-                    self.request_id_header
-                ),
-
-                duration_ms=(
-                    get_scope_duration_ms(
-                        scope
-                    )
-                ),
+                request_id=(get_scope_request_id(scope)),
+                request_id_header=(self.request_id_header),
+                duration_ms=(get_scope_duration_ms(scope)),
             )
 
             return
@@ -1113,34 +847,19 @@ class RequestLimitsMiddleware:
 
             message = await receive()
 
-            if (
-                message.get(
-                    "type"
-                )
-                == "http.request"
-            ):
+            if message.get("type") == "http.request":
                 body = message.get(
                     "body",
                     b"",
                 )
 
-                received_bytes += len(
-                    body
-                )
+                received_bytes += len(body)
 
-                if (
-                    received_bytes
-                    > self.maximum_body_bytes
-                ):
+                if received_bytes > self.maximum_body_bytes:
                     raise RequestTooLargeError(
                         details={
-                            "limit": (
-                                self.maximum_body_bytes
-                            ),
-
-                            "current": (
-                                received_bytes
-                            ),
+                            "limit": (self.maximum_body_bytes),
+                            "current": (received_bytes),
                         },
                     )
 
@@ -1156,32 +875,18 @@ class RequestLimitsMiddleware:
         except RequestTooLargeError as exc:
             await send_api_exception(
                 error=exc,
-
                 scope=scope,
-
                 send=send,
-
-                request_id=(
-                    get_scope_request_id(
-                        scope
-                    )
-                ),
-
-                request_id_header=(
-                    self.request_id_header
-                ),
-
-                duration_ms=(
-                    get_scope_duration_ms(
-                        scope
-                    )
-                ),
+                request_id=(get_scope_request_id(scope)),
+                request_id_header=(self.request_id_header),
+                duration_ms=(get_scope_duration_ms(scope)),
             )
 
 
 # ------------------------------------------------------------------
 # Concurrency limit
 # ------------------------------------------------------------------
+
 
 class ConcurrencyLimitMiddleware:
     """
@@ -1200,32 +905,21 @@ class ConcurrencyLimitMiddleware:
         *,
         maximum_concurrent_requests: int,
         retry_after_seconds: int = 1,
-        request_id_header: str = (
-            DEFAULT_REQUEST_ID_HEADER
-        ),
+        request_id_header: str = (DEFAULT_REQUEST_ID_HEADER),
     ) -> None:
         self.app = app
 
-        self.maximum = int(
-            maximum_concurrent_requests
-        )
+        self.maximum = int(maximum_concurrent_requests)
 
         if self.maximum < 1:
-            raise ValueError(
-                "maximum_concurrent_requests "
-                "must be >= 1"
-            )
+            raise ValueError("maximum_concurrent_requests must be >= 1")
 
         self.retry_after_seconds = max(
             1,
-            int(
-                retry_after_seconds
-            ),
+            int(retry_after_seconds),
         )
 
-        self.request_id_header = (
-            request_id_header
-        )
+        self.request_id_header = request_id_header
 
         self._active = 0
 
@@ -1235,10 +929,7 @@ class ConcurrencyLimitMiddleware:
         self,
     ) -> bool:
         async with self._lock:
-            if (
-                self._active
-                >= self.maximum
-            ):
+            if self._active >= self.maximum:
                 return False
 
             self._active += 1
@@ -1260,9 +951,7 @@ class ConcurrencyLimitMiddleware:
         receive: Receive,
         send: Send,
     ) -> None:
-        if not is_http_scope(
-            scope
-        ):
+        if not is_http_scope(scope):
             await self.app(
                 scope,
                 receive,
@@ -1277,43 +966,20 @@ class ConcurrencyLimitMiddleware:
             error = ConcurrencyLimitError(
                 details={
                     "limit": self.maximum,
-
-                    "retry_after_seconds": (
-                        self.
-                        retry_after_seconds
-                    ),
+                    "retry_after_seconds": (self.retry_after_seconds),
                 },
-
                 headers={
-                    RETRY_AFTER_HEADER: str(
-                        self.
-                        retry_after_seconds
-                    ),
+                    RETRY_AFTER_HEADER: str(self.retry_after_seconds),
                 },
             )
 
             await send_api_exception(
                 error=error,
-
                 scope=scope,
-
                 send=send,
-
-                request_id=(
-                    get_scope_request_id(
-                        scope
-                    )
-                ),
-
-                request_id_header=(
-                    self.request_id_header
-                ),
-
-                duration_ms=(
-                    get_scope_duration_ms(
-                        scope
-                    )
-                ),
+                request_id=(get_scope_request_id(scope)),
+                request_id_header=(self.request_id_header),
+                duration_ms=(get_scope_duration_ms(scope)),
             )
 
             return
@@ -1333,6 +999,7 @@ class ConcurrencyLimitMiddleware:
 # Timeout middleware
 # ------------------------------------------------------------------
 
+
 class RequestTimeoutMiddleware:
     """
     Enforce a global request timeout.
@@ -1346,24 +1013,16 @@ class RequestTimeoutMiddleware:
         app: ASGIApp,
         *,
         timeout_seconds: float,
-        request_id_header: str = (
-            DEFAULT_REQUEST_ID_HEADER
-        ),
+        request_id_header: str = (DEFAULT_REQUEST_ID_HEADER),
     ) -> None:
         self.app = app
 
-        self.timeout_seconds = float(
-            timeout_seconds
-        )
+        self.timeout_seconds = float(timeout_seconds)
 
         if self.timeout_seconds <= 0:
-            raise ValueError(
-                "timeout_seconds must be > 0"
-            )
+            raise ValueError("timeout_seconds must be > 0")
 
-        self.request_id_header = (
-            request_id_header
-        )
+        self.request_id_header = request_id_header
 
     async def __call__(
         self,
@@ -1371,9 +1030,7 @@ class RequestTimeoutMiddleware:
         receive: Receive,
         send: Send,
     ) -> None:
-        if not is_http_scope(
-            scope
-        ):
+        if not is_http_scope(scope):
             await self.app(
                 scope,
                 receive,
@@ -1389,22 +1046,13 @@ class RequestTimeoutMiddleware:
         ) -> None:
             nonlocal response_started
 
-            if (
-                message.get(
-                    "type"
-                )
-                == "http.response.start"
-            ):
+            if message.get("type") == "http.response.start":
                 response_started = True
 
-            await send(
-                message
-            )
+            await send(message)
 
         try:
-            async with asyncio.timeout(
-                self.timeout_seconds
-            ):
+            async with asyncio.timeout(self.timeout_seconds):
                 await self.app(
                     scope,
                     receive,
@@ -1417,40 +1065,24 @@ class RequestTimeoutMiddleware:
 
             error = RequestTimeoutAPIError(
                 details={
-                    "operation": (
-                        "http_request"
-                    ),
+                    "operation": ("http_request"),
                 },
             )
 
             await send_api_exception(
                 error=error,
-
                 scope=scope,
-
                 send=send,
-
-                request_id=(
-                    get_scope_request_id(
-                        scope
-                    )
-                ),
-
-                request_id_header=(
-                    self.request_id_header
-                ),
-
-                duration_ms=(
-                    get_scope_duration_ms(
-                        scope
-                    )
-                ),
+                request_id=(get_scope_request_id(scope)),
+                request_id_header=(self.request_id_header),
+                duration_ms=(get_scope_duration_ms(scope)),
             )
 
 
 # ------------------------------------------------------------------
 # Security headers
 # ------------------------------------------------------------------
+
 
 class SecurityHeadersMiddleware:
     """
@@ -1471,54 +1103,29 @@ class SecurityHeadersMiddleware:
     ) -> None:
         self.app = app
 
-        self.hsts_enabled = bool(
-            hsts_enabled
-        )
+        self.hsts_enabled = bool(hsts_enabled)
 
-        self.hsts_max_age_seconds = int(
-            hsts_max_age_seconds
-        )
+        self.hsts_max_age_seconds = int(hsts_max_age_seconds)
 
         if self.hsts_max_age_seconds < 0:
-            raise ValueError(
-                "hsts_max_age_seconds "
-                "must be >= 0"
-            )
+            raise ValueError("hsts_max_age_seconds must be >= 0")
 
-        self.hsts_include_subdomains = bool(
-            hsts_include_subdomains
-        )
+        self.hsts_include_subdomains = bool(hsts_include_subdomains)
 
-        self.hsts_preload = bool(
-            hsts_preload
-        )
+        self.hsts_preload = bool(hsts_preload)
 
     def _hsts_value(
         self,
     ) -> str:
-        values = [
-            (
-                "max-age="
-                + str(
-                    self.
-                    hsts_max_age_seconds
-                )
-            )
-        ]
+        values = [("max-age=" + str(self.hsts_max_age_seconds))]
 
         if self.hsts_include_subdomains:
-            values.append(
-                "includeSubDomains"
-            )
+            values.append("includeSubDomains")
 
         if self.hsts_preload:
-            values.append(
-                "preload"
-            )
+            values.append("preload")
 
-        return "; ".join(
-            values
-        )
+        return "; ".join(values)
 
     async def __call__(
         self,
@@ -1526,9 +1133,7 @@ class SecurityHeadersMiddleware:
         receive: Receive,
         send: Send,
     ) -> None:
-        if not is_http_scope(
-            scope
-        ):
+        if not is_http_scope(scope):
             await self.app(
                 scope,
                 receive,
@@ -1540,12 +1145,7 @@ class SecurityHeadersMiddleware:
         async def secure_send(
             message: Message,
         ) -> None:
-            if (
-                message.get(
-                    "type"
-                )
-                == "http.response.start"
-            ):
+            if message.get("type") == "http.response.start":
                 headers = list(
                     message.get(
                         "headers",
@@ -1555,46 +1155,23 @@ class SecurityHeadersMiddleware:
 
                 # Do not advertise application
                 # server implementation.
-                headers = (
-                    remove_response_header(
-                        headers,
-                        "server",
-                    )
+                headers = remove_response_header(
+                    headers,
+                    "server",
                 )
 
                 security_headers = {
-                    "X-Content-Type-Options": (
-                        "nosniff"
-                    ),
-
-                    "X-Frame-Options": (
-                        "DENY"
-                    ),
-
-                    "Referrer-Policy": (
-                        "no-referrer"
-                    ),
-
+                    "X-Content-Type-Options": ("nosniff"),
+                    "X-Frame-Options": ("DENY"),
+                    "Referrer-Policy": ("no-referrer"),
                     "Permissions-Policy": (
-                        "camera=(), "
-                        "microphone=(), "
-                        "geolocation=(), "
-                        "payment=(), "
-                        "usb=()"
+                        "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
                     ),
-
-                    "Cross-Origin-Opener-Policy": (
-                        "same-origin"
-                    ),
-
-                    "Cross-Origin-Resource-Policy": (
-                        "same-origin"
-                    ),
+                    "Cross-Origin-Opener-Policy": ("same-origin"),
+                    "Cross-Origin-Resource-Policy": ("same-origin"),
                 }
 
-                for name, value in (
-                    security_headers.items()
-                ):
+                for name, value in security_headers.items():
                     if (
                         response_header_value(
                             headers,
@@ -1602,17 +1179,13 @@ class SecurityHeadersMiddleware:
                         )
                         is None
                     ):
-                        headers = (
-                            set_response_header(
-                                headers,
-                                name,
-                                value,
-                            )
+                        headers = set_response_header(
+                            headers,
+                            name,
+                            value,
                         )
 
-                path = request_path(
-                    scope
-                )
+                path = request_path(scope)
 
                 status_code = int(
                     message.get(
@@ -1623,36 +1196,18 @@ class SecurityHeadersMiddleware:
 
                 # Health and failure responses
                 # should not be cached.
-                if (
-                    path.startswith(
-                        "/health"
-                    )
-                    or status_code >= 400
-                ):
-                    headers = (
-                        set_response_header(
-                            headers,
-                            "Cache-Control",
-                            "no-store",
-                        )
+                if path.startswith("/health") or status_code >= 400:
+                    headers = set_response_header(
+                        headers,
+                        "Cache-Control",
+                        "no-store",
                     )
 
-                if (
-                    self.hsts_enabled
-                    and scope.get(
-                        "scheme"
-                    )
-                    == "https"
-                ):
-                    headers = (
-                        set_response_header(
-                            headers,
-                            (
-                                "Strict-Transport-"
-                                "Security"
-                            ),
-                            self._hsts_value(),
-                        )
+                if self.hsts_enabled and scope.get("scheme") == "https":
+                    headers = set_response_header(
+                        headers,
+                        ("Strict-Transport-Security"),
+                        self._hsts_value(),
                     )
 
                 message = {
@@ -1660,9 +1215,7 @@ class SecurityHeadersMiddleware:
                     "headers": headers,
                 }
 
-            await send(
-                message
-            )
+            await send(message)
 
         await self.app(
             scope,
@@ -1674,6 +1227,7 @@ class SecurityHeadersMiddleware:
 # ------------------------------------------------------------------
 # Access logging
 # ------------------------------------------------------------------
+
 
 class AccessLogMiddleware:
     """
@@ -1697,13 +1251,9 @@ class AccessLogMiddleware:
     ) -> None:
         self.app = app
 
-        self.enabled = bool(
-            enabled
-        )
+        self.enabled = bool(enabled)
 
-        self.include_health_requests = bool(
-            include_health_requests
-        )
+        self.include_health_requests = bool(include_health_requests)
 
     async def __call__(
         self,
@@ -1711,12 +1261,7 @@ class AccessLogMiddleware:
         receive: Receive,
         send: Send,
     ) -> None:
-        if (
-            not is_http_scope(
-                scope
-            )
-            or not self.enabled
-        ):
+        if not is_http_scope(scope) or not self.enabled:
             await self.app(
                 scope,
                 receive,
@@ -1737,12 +1282,7 @@ class AccessLogMiddleware:
             nonlocal status_code
             nonlocal response_bytes
 
-            if (
-                message.get(
-                    "type"
-                )
-                == "http.response.start"
-            ):
+            if message.get("type") == "http.response.start":
                 status_code = int(
                     message.get(
                         "status",
@@ -1750,12 +1290,7 @@ class AccessLogMiddleware:
                     )
                 )
 
-            elif (
-                message.get(
-                    "type"
-                )
-                == "http.response.body"
-            ):
+            elif message.get("type") == "http.response.body":
                 response_bytes += len(
                     message.get(
                         "body",
@@ -1763,9 +1298,7 @@ class AccessLogMiddleware:
                     )
                 )
 
-            await send(
-                message
-            )
+            await send(message)
 
         try:
             await self.app(
@@ -1775,84 +1308,37 @@ class AccessLogMiddleware:
             )
 
         except Exception as exc:
-            error_type = type(
-                exc
-            ).__name__
+            error_type = type(exc).__name__
 
             raise
 
         finally:
-            path = request_path(
-                scope
-            )
+            path = request_path(scope)
 
-            health_request = (
-                path == "/health"
-                or path.startswith(
-                    "/health/"
-                )
-            )
+            health_request = path == "/health" or path.startswith("/health/")
 
-            if (
-                not health_request
-                or self.
-                include_health_requests
-            ):
+            if not health_request or self.include_health_requests:
                 duration_ms = max(
                     0.0,
-                    (
-                        time.perf_counter()
-                        - started
-                    )
-                    * 1000.0,
+                    (time.perf_counter() - started) * 1000.0,
                 )
 
                 fields: Dict[
                     str,
                     Any,
                 ] = {
-                    "request_id": (
-                        get_scope_request_id(
-                            scope
-                        )
-                    ),
-
-                    "method": (
-                        request_method(
-                            scope
-                        )
-                    ),
-
+                    "request_id": (get_scope_request_id(scope)),
+                    "method": (request_method(scope)),
                     "path": path,
-
-                    "status_code": (
-                        status_code
-                    ),
-
+                    "status_code": (status_code),
                     "duration_ms": round(
                         duration_ms,
                         3,
                     ),
-
-                    "response_bytes": (
-                        response_bytes
-                    ),
-
-                    "client_host": (
-                        client_host(
-                            scope
-                        )
-                    ),
-
-                    "http_version": (
-                        scope.get(
-                            "http_version"
-                        )
-                    ),
-
-                    "error_type": (
-                        error_type
-                    ),
+                    "response_bytes": (response_bytes),
+                    "client_host": (client_host(scope)),
+                    "http_version": (scope.get("http_version")),
+                    "error_type": (error_type),
                 }
 
                 if status_code >= 500:
@@ -1868,9 +1354,7 @@ class AccessLogMiddleware:
                     level,
                     "API request completed",
                     extra={
-                        "http_request": (
-                            fields
-                        ),
+                        "http_request": (fields),
                     },
                 )
 
@@ -1878,6 +1362,7 @@ class AccessLogMiddleware:
 # ------------------------------------------------------------------
 # Middleware installation
 # ------------------------------------------------------------------
+
 
 def install_middleware(
     app: FastAPI,
@@ -1894,11 +1379,7 @@ def install_middleware(
 
     config.validate()
 
-    request_id_header = (
-        config.
-        observability.
-        request_id_header
-    )
+    request_id_header = config.observability.request_id_header
 
     # ------------------------------------------------------
     # Request timeout
@@ -1906,16 +1387,8 @@ def install_middleware(
 
     app.add_middleware(
         RequestTimeoutMiddleware,
-
-        timeout_seconds=(
-            config.
-            timeouts.
-            request_seconds
-        ),
-
-        request_id_header=(
-            request_id_header
-        ),
+        timeout_seconds=(config.timeouts.request_seconds),
+        request_id_header=(request_id_header),
     )
 
     # ------------------------------------------------------
@@ -1924,18 +1397,9 @@ def install_middleware(
 
     app.add_middleware(
         ConcurrencyLimitMiddleware,
-
-        maximum_concurrent_requests=(
-            config.
-            limits.
-            maximum_concurrent_requests
-        ),
-
+        maximum_concurrent_requests=(config.limits.maximum_concurrent_requests),
         retry_after_seconds=1,
-
-        request_id_header=(
-            request_id_header
-        ),
+        request_id_header=(request_id_header),
     )
 
     # ------------------------------------------------------
@@ -1944,40 +1408,12 @@ def install_middleware(
 
     app.add_middleware(
         RequestLimitsMiddleware,
-
-        maximum_body_bytes=(
-            config.
-            limits.
-            maximum_body_bytes
-        ),
-
-        maximum_query_parameters=(
-            config.
-            limits.
-            maximum_query_parameters
-        ),
-
-        maximum_header_count=(
-            config.
-            limits.
-            maximum_header_count
-        ),
-
-        maximum_header_bytes=(
-            config.
-            limits.
-            maximum_header_bytes
-        ),
-
-        maximum_path_length=(
-            config.
-            limits.
-            maximum_path_length
-        ),
-
-        request_id_header=(
-            request_id_header
-        ),
+        maximum_body_bytes=(config.limits.maximum_body_bytes),
+        maximum_query_parameters=(config.limits.maximum_query_parameters),
+        maximum_header_count=(config.limits.maximum_header_count),
+        maximum_header_bytes=(config.limits.maximum_header_bytes),
+        maximum_path_length=(config.limits.maximum_path_length),
+        request_id_header=(request_id_header),
     )
 
     # ------------------------------------------------------
@@ -1986,30 +1422,10 @@ def install_middleware(
 
     app.add_middleware(
         SecurityHeadersMiddleware,
-
-        hsts_enabled=(
-            config.
-            transport_security.
-            hsts_enabled
-        ),
-
-        hsts_max_age_seconds=(
-            config.
-            transport_security.
-            hsts_max_age_seconds
-        ),
-
-        hsts_include_subdomains=(
-            config.
-            transport_security.
-            hsts_include_subdomains
-        ),
-
-        hsts_preload=(
-            config.
-            transport_security.
-            hsts_preload
-        ),
+        hsts_enabled=(config.transport_security.hsts_enabled),
+        hsts_max_age_seconds=(config.transport_security.hsts_max_age_seconds),
+        hsts_include_subdomains=(config.transport_security.hsts_include_subdomains),
+        hsts_preload=(config.transport_security.hsts_preload),
     )
 
     # ------------------------------------------------------
@@ -2018,18 +1434,8 @@ def install_middleware(
 
     app.add_middleware(
         AccessLogMiddleware,
-
-        enabled=(
-            config.
-            observability.
-            access_log_enabled
-        ),
-
-        include_health_requests=(
-            config.
-            observability.
-            include_health_access_logs
-        ),
+        enabled=(config.observability.access_log_enabled),
+        include_health_requests=(config.observability.include_health_access_logs),
     )
 
     # ------------------------------------------------------
@@ -2038,16 +1444,8 @@ def install_middleware(
 
     app.add_middleware(
         RequestContextMiddleware,
-
-        header_name=(
-            request_id_header
-        ),
-
-        server_timing_enabled=(
-            config.
-            observability.
-            server_timing_enabled
-        ),
+        header_name=(request_id_header),
+        server_timing_enabled=(config.observability.server_timing_enabled),
     )
 
     # ------------------------------------------------------
@@ -2057,56 +1455,20 @@ def install_middleware(
     if config.cors.enabled:
         app.add_middleware(
             CORSMiddleware,
-
-            allow_origins=list(
-                config.
-                cors.
-                allowed_origins
-            ),
-
-            allow_credentials=(
-                config.
-                cors.
-                allow_credentials
-            ),
-
-            allow_methods=list(
-                config.
-                cors.
-                allowed_methods
-            ),
-
-            allow_headers=list(
-                config.
-                cors.
-                allowed_headers
-            ),
-
-            expose_headers=list(
-                config.
-                cors.
-                exposed_headers
-            ),
-
-            max_age=(
-                config.
-                cors.
-                max_age_seconds
-            ),
+            allow_origins=list(config.cors.allowed_origins),
+            allow_credentials=(config.cors.allow_credentials),
+            allow_methods=list(config.cors.allowed_methods),
+            allow_headers=list(config.cors.allowed_headers),
+            expose_headers=list(config.cors.exposed_headers),
+            max_age=(config.cors.max_age_seconds),
         )
 
     # ------------------------------------------------------
     # HTTPS
     # ------------------------------------------------------
 
-    if (
-        config.
-        transport_security.
-        enforce_https
-    ):
-        app.add_middleware(
-            HTTPSRedirectMiddleware
-        )
+    if config.transport_security.enforce_https:
+        app.add_middleware(HTTPSRedirectMiddleware)
 
     # ------------------------------------------------------
     # Trusted host validation
@@ -2114,12 +1476,7 @@ def install_middleware(
 
     app.add_middleware(
         TrustedHostMiddleware,
-
-        allowed_hosts=list(
-            config.
-            transport_security.
-            trusted_hosts
-        ),
+        allowed_hosts=list(config.transport_security.trusted_hosts),
     )
 
 
@@ -2132,40 +1489,29 @@ __all__ = [
     "PROCESS_TIME_HEADER",
     "SERVER_TIMING_HEADER",
     "RETRY_AFTER_HEADER",
-
     "RequestContext",
-
     "current_request_id",
     "current_request_started",
     "current_request_duration_ms",
-
     "is_http_scope",
-
     "request_method",
     "request_path",
     "client_host",
-
     "scope_headers",
     "get_header",
-
     "set_response_header",
     "remove_response_header",
     "response_header_value",
-
     "valid_request_id",
     "resolve_request_id",
-
     "get_scope_request_id",
     "get_scope_duration_ms",
-
     "send_api_exception",
-
     "RequestContextMiddleware",
     "RequestLimitsMiddleware",
     "ConcurrencyLimitMiddleware",
     "RequestTimeoutMiddleware",
     "SecurityHeadersMiddleware",
     "AccessLogMiddleware",
-
     "install_middleware",
 ]

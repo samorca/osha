@@ -50,29 +50,17 @@ from src.security.secrets import (
 # Capability names
 # ---------------------------------------------------------------
 
-CAPABILITY_WORKLOAD_READ = (
-    "workload.read"
-)
+CAPABILITY_WORKLOAD_READ = "workload.read"
 
-CAPABILITY_NODE_READ = (
-    "node.read"
-)
+CAPABILITY_NODE_READ = "node.read"
 
-CAPABILITY_NAMESPACE_READ = (
-    "namespace.read"
-)
+CAPABILITY_NAMESPACE_READ = "namespace.read"
 
-CAPABILITY_SERVICE_READ = (
-    "service.read"
-)
+CAPABILITY_SERVICE_READ = "service.read"
 
-CAPABILITY_DEPLOYMENT_READ = (
-    "deployment.read"
-)
+CAPABILITY_DEPLOYMENT_READ = "deployment.read"
 
-CAPABILITY_NETWORKING_READ = (
-    "networking.read"
-)
+CAPABILITY_NETWORKING_READ = "networking.read"
 
 
 # ---------------------------------------------------------------
@@ -88,9 +76,8 @@ ACTION_GET = "get"
 # Kubernetes adapter
 # ---------------------------------------------------------------
 
-class KubernetesAdapter(
-    IntegrationAdapter
-):
+
+class KubernetesAdapter(IntegrationAdapter):
     """
     Translate OSHA IntegrationOperation objects
     into KubernetesClient read operations.
@@ -109,26 +96,15 @@ class KubernetesAdapter(
         self,
         *,
         kubernetes_config: KubernetesConfig,
-        config: Optional[
-            IntegrationsConfig
-        ] = None,
+        config: Optional[IntegrationsConfig] = None,
     ) -> None:
-        self.kubernetes_config = (
-            kubernetes_config
-        )
+        self.kubernetes_config = kubernetes_config
 
         self.kubernetes_config.validate()
 
         super().__init__(
-            target=(
-                self.kubernetes_config.
-                target()
-            ),
-
-            config=(
-                config
-                or IntegrationsConfig()
-            ),
+            target=(self.kubernetes_config.target()),
+            config=(config or IntegrationsConfig()),
         )
 
     # ---------------------------------------------------------
@@ -137,112 +113,64 @@ class KubernetesAdapter(
 
     def define_capabilities(
         self,
-    ) -> Iterable[
-        IntegrationCapability
-    ]:
+    ) -> Iterable[IntegrationCapability]:
         capabilities = []
 
         # -----------------------------------------------------
         # CoreV1Api-backed resources
         # -----------------------------------------------------
 
-        if (
-            self.kubernetes_config.
-            enable_core
-        ):
+        if self.kubernetes_config.enable_core:
             capabilities.extend(
                 [
                     IntegrationCapability(
-                        name=(
-                            CAPABILITY_WORKLOAD_READ
-                        ),
-
+                        name=(CAPABILITY_WORKLOAD_READ),
                         resource="pod",
-
                         actions=[
                             ACTION_LIST,
                             ACTION_GET,
                         ],
-
                         read_only=True,
-
                         attributes={
-                            "provider": (
-                                "kubernetes"
-                            ),
-                            "api_group": (
-                                "core/v1"
-                            ),
+                            "provider": ("kubernetes"),
+                            "api_group": ("core/v1"),
                         },
                     ),
-
                     IntegrationCapability(
-                        name=(
-                            CAPABILITY_NODE_READ
-                        ),
-
+                        name=(CAPABILITY_NODE_READ),
                         resource="node",
-
                         actions=[
                             ACTION_LIST,
                             ACTION_GET,
                         ],
-
                         read_only=True,
-
                         attributes={
-                            "provider": (
-                                "kubernetes"
-                            ),
-                            "api_group": (
-                                "core/v1"
-                            ),
+                            "provider": ("kubernetes"),
+                            "api_group": ("core/v1"),
                         },
                     ),
-
                     IntegrationCapability(
-                        name=(
-                            CAPABILITY_NAMESPACE_READ
-                        ),
-
+                        name=(CAPABILITY_NAMESPACE_READ),
                         resource="namespace",
-
                         actions=[
                             ACTION_LIST,
                         ],
-
                         read_only=True,
-
                         attributes={
-                            "provider": (
-                                "kubernetes"
-                            ),
-                            "api_group": (
-                                "core/v1"
-                            ),
+                            "provider": ("kubernetes"),
+                            "api_group": ("core/v1"),
                         },
                     ),
-
                     IntegrationCapability(
-                        name=(
-                            CAPABILITY_SERVICE_READ
-                        ),
-
+                        name=(CAPABILITY_SERVICE_READ),
                         resource="service",
-
                         actions=[
                             ACTION_LIST,
                         ],
-
                         read_only=True,
-
                         attributes={
-                            "provider": (
-                                "kubernetes"
-                            ),
-                            "api_group": (
-                                "core/v1"
-                            ),
+                            "provider": ("kubernetes"),
+                            "api_group": ("core/v1"),
                         },
                     ),
                 ]
@@ -252,32 +180,19 @@ class KubernetesAdapter(
         # AppsV1Api
         # -----------------------------------------------------
 
-        if (
-            self.kubernetes_config.
-            enable_apps
-        ):
+        if self.kubernetes_config.enable_apps:
             capabilities.append(
                 IntegrationCapability(
-                    name=(
-                        CAPABILITY_DEPLOYMENT_READ
-                    ),
-
+                    name=(CAPABILITY_DEPLOYMENT_READ),
                     resource="deployment",
-
                     actions=[
                         ACTION_LIST,
                         ACTION_GET,
                     ],
-
                     read_only=True,
-
                     attributes={
-                        "provider": (
-                            "kubernetes"
-                        ),
-                        "api_group": (
-                            "apps/v1"
-                        ),
+                        "provider": ("kubernetes"),
+                        "api_group": ("apps/v1"),
                     },
                 )
             )
@@ -286,31 +201,18 @@ class KubernetesAdapter(
         # NetworkingV1Api
         # -----------------------------------------------------
 
-        if (
-            self.kubernetes_config.
-            enable_networking
-        ):
+        if self.kubernetes_config.enable_networking:
             capabilities.append(
                 IntegrationCapability(
-                    name=(
-                        CAPABILITY_NETWORKING_READ
-                    ),
-
+                    name=(CAPABILITY_NETWORKING_READ),
                     resource="ingress",
-
                     actions=[
                         ACTION_LIST,
                     ],
-
                     read_only=True,
-
                     attributes={
-                        "provider": (
-                            "kubernetes"
-                        ),
-                        "api_group": (
-                            "networking.k8s.io/v1"
-                        ),
+                        "provider": ("kubernetes"),
+                        "api_group": ("networking.k8s.io/v1"),
                     },
                 )
             )
@@ -323,15 +225,10 @@ class KubernetesAdapter(
 
     def connect_client(
         self,
-        credential: Optional[
-            SecretValue
-        ],
+        credential: Optional[SecretValue],
     ) -> KubernetesClient:
         client = KubernetesClient(
-            config=(
-                self.kubernetes_config
-            ),
-
+            config=(self.kubernetes_config),
             credential=credential,
         )
 
@@ -383,28 +280,18 @@ class KubernetesAdapter(
 
         operation.finalize()
 
-        capability = (
-            operation.capability
-        )
+        capability = operation.capability
 
-        action = (
-            operation.action
-        )
+        action = operation.action
 
         # Namespace can be supplied as a bounded
         # operation parameter. If omitted,
         # resource get calls fall back to the
         # configured default namespace.
-        namespace = (
-            operation.parameters.get(
-                "namespace"
-            )
-        )
+        namespace = operation.parameters.get("namespace")
 
         if namespace is not None:
-            namespace = str(
-                namespace
-            ).strip()
+            namespace = str(namespace).strip()
 
             if not namespace:
                 namespace = None
@@ -413,39 +300,22 @@ class KubernetesAdapter(
         # Pods / workloads
         # -----------------------------------------------------
 
-        if (
-            capability
-            == CAPABILITY_WORKLOAD_READ
-        ):
+        if capability == CAPABILITY_WORKLOAD_READ:
             if action == ACTION_LIST:
-                return {
-                    "pods": (
-                        client.list_pods(
-                            namespace=(
-                                namespace
-                            )
-                        )
-                    )
-                }
+                return {"pods": (client.list_pods(namespace=(namespace)))}
 
             if action == ACTION_GET:
-                resource_id = (
-                    self._require_resource_id(
-                        operation,
-                        capability=(
-                            capability
-                        ),
-                        action=action,
-                    )
+                resource_id = self._require_resource_id(
+                    operation,
+                    capability=(capability),
+                    action=action,
                 )
 
                 return {
                     "pod": (
                         client.get_pod(
                             name=resource_id,
-                            namespace=(
-                                namespace
-                            ),
+                            namespace=(namespace),
                         )
                     )
                 }
@@ -454,111 +324,55 @@ class KubernetesAdapter(
         # Nodes
         # -----------------------------------------------------
 
-        elif (
-            capability
-            == CAPABILITY_NODE_READ
-        ):
+        elif capability == CAPABILITY_NODE_READ:
             if action == ACTION_LIST:
-                return {
-                    "nodes": (
-                        client.list_nodes()
-                    )
-                }
+                return {"nodes": (client.list_nodes())}
 
             if action == ACTION_GET:
-                resource_id = (
-                    self._require_resource_id(
-                        operation,
-                        capability=(
-                            capability
-                        ),
-                        action=action,
-                    )
+                resource_id = self._require_resource_id(
+                    operation,
+                    capability=(capability),
+                    action=action,
                 )
 
-                return {
-                    "node": (
-                        client.get_node(
-                            name=resource_id
-                        )
-                    )
-                }
+                return {"node": (client.get_node(name=resource_id))}
 
         # -----------------------------------------------------
         # Namespaces
         # -----------------------------------------------------
 
-        elif (
-            capability
-            == CAPABILITY_NAMESPACE_READ
-        ):
+        elif capability == CAPABILITY_NAMESPACE_READ:
             if action == ACTION_LIST:
-                return {
-                    "namespaces": (
-                        client.
-                        list_namespaces()
-                    )
-                }
+                return {"namespaces": (client.list_namespaces())}
 
         # -----------------------------------------------------
         # Services
         # -----------------------------------------------------
 
-        elif (
-            capability
-            == CAPABILITY_SERVICE_READ
-        ):
+        elif capability == CAPABILITY_SERVICE_READ:
             if action == ACTION_LIST:
-                return {
-                    "services": (
-                        client.
-                        list_services(
-                            namespace=(
-                                namespace
-                            )
-                        )
-                    )
-                }
+                return {"services": (client.list_services(namespace=(namespace)))}
 
         # -----------------------------------------------------
         # Deployments
         # -----------------------------------------------------
 
-        elif (
-            capability
-            == CAPABILITY_DEPLOYMENT_READ
-        ):
+        elif capability == CAPABILITY_DEPLOYMENT_READ:
             if action == ACTION_LIST:
-                return {
-                    "deployments": (
-                        client.
-                        list_deployments(
-                            namespace=(
-                                namespace
-                            )
-                        )
-                    )
-                }
+                return {"deployments": (client.list_deployments(namespace=(namespace)))}
 
             if action == ACTION_GET:
-                resource_id = (
-                    self._require_resource_id(
-                        operation,
-                        capability=(
-                            capability
-                        ),
-                        action=action,
-                    )
+                resource_id = self._require_resource_id(
+                    operation,
+                    capability=(capability),
+                    action=action,
                 )
 
                 return {
                     "deployment": (
-                        client.
-                        get_deployment(
+                        client.get_deployment(
                             name=resource_id,
-                            namespace=(
-                                namespace
-                            ),
+                            namespace=(namespace),
                         )
                     )
                 }
@@ -567,21 +381,9 @@ class KubernetesAdapter(
         # Networking / ingress
         # -----------------------------------------------------
 
-        elif (
-            capability
-            == CAPABILITY_NETWORKING_READ
-        ):
+        elif capability == CAPABILITY_NETWORKING_READ:
             if action == ACTION_LIST:
-                return {
-                    "ingresses": (
-                        client.
-                        list_ingresses(
-                            namespace=(
-                                namespace
-                            )
-                        )
-                    )
-                }
+                return {"ingresses": (client.list_ingresses(namespace=(namespace)))}
 
         # -----------------------------------------------------
         # Unsupported
@@ -589,9 +391,7 @@ class KubernetesAdapter(
 
         raise (
             IntegrationCapabilityError(
-                "Unsupported Kubernetes "
-                "integration operation: "
-                f"{capability}/{action}"
+                f"Unsupported Kubernetes integration operation: {capability}/{action}"
             )
         )
 
@@ -609,14 +409,11 @@ class KubernetesAdapter(
         if not operation.resource_id:
             raise (
                 IntegrationOperationError(
-                    f"{capability}/{action} "
-                    "requires resource_id."
+                    f"{capability}/{action} requires resource_id."
                 )
             )
 
-        return (
-            operation.resource_id
-        )
+        return operation.resource_id
 
     # ---------------------------------------------------------
     # Provider summary
@@ -634,53 +431,19 @@ class KubernetesAdapter(
                 client,
                 KubernetesClient,
             ):
-                client_summary = (
-                    client.summary()
-                )
+                client_summary = client.summary()
 
         return {
-            "provider": (
-                "kubernetes"
-            ),
-
-            "environment_id": (
-                self.target.
-                environment_id
-            ),
-
-            "target_id": (
-                self.target.target_id
-            ),
-
-            "configuration_mode": (
-                self.kubernetes_config.
-                auth.mode
-            ),
-
-            "default_namespace": (
-                self.kubernetes_config.
-                default_namespace
-            ),
-
+            "provider": ("kubernetes"),
+            "environment_id": (self.target.environment_id),
+            "target_id": (self.target.target_id),
+            "configuration_mode": (self.kubernetes_config.auth.mode),
+            "default_namespace": (self.kubernetes_config.default_namespace),
             "ready": self.ready,
-
-            "client": (
-                client_summary
-            ),
-
-            "capabilities": [
-                capability.name
-                for capability
-                in self.capabilities()
-            ],
-
-            "mutating_capabilities_advertised": (
-                False
-            ),
-
-            "credential_value_exposed": (
-                False
-            ),
+            "client": (client_summary),
+            "capabilities": [capability.name for capability in self.capabilities()],
+            "mutating_capabilities_advertised": (False),
+            "credential_value_exposed": (False),
         }
 
 
@@ -695,9 +458,7 @@ __all__ = [
     "CAPABILITY_SERVICE_READ",
     "CAPABILITY_DEPLOYMENT_READ",
     "CAPABILITY_NETWORKING_READ",
-
     "ACTION_LIST",
     "ACTION_GET",
-
     "KubernetesAdapter",
 ]

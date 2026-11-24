@@ -68,9 +68,7 @@ class VerificationStatus(str, Enum):
 
     UNVERIFIED = "unverified"
 
-    PARTIALLY_VERIFIED = (
-        "partially_verified"
-    )
+    PARTIALLY_VERIFIED = "partially_verified"
 
     VERIFIED = "verified"
 
@@ -97,9 +95,7 @@ class OutcomeType(str, Enum):
 
 
 def utc_now() -> str:
-    return datetime.now(
-        timezone.utc
-    ).isoformat()
+    return datetime.now(timezone.utc).isoformat()
 
 
 def normalize_string(
@@ -132,9 +128,7 @@ def checked_score(
     ):
         return 0.0
 
-    if not math.isfinite(
-        number
-    ):
+    if not math.isfinite(number):
         return 0.0
 
     return min(
@@ -161,9 +155,7 @@ def json_safe(
     """
 
     if depth > maximum_depth:
-        return (
-            "[MAX_DEPTH_REACHED]"
-        )
+        return "[MAX_DEPTH_REACHED]"
 
     if value is None:
         return None
@@ -182,9 +174,7 @@ def json_safe(
         value,
         float,
     ):
-        if math.isfinite(
-            value
-        ):
+        if math.isfinite(value):
             return value
 
         return None
@@ -194,9 +184,7 @@ def json_safe(
         datetime,
     ):
         if value.tzinfo is None:
-            value = value.replace(
-                tzinfo=timezone.utc
-            )
+            value = value.replace(tzinfo=timezone.utc)
 
         return value.isoformat()
 
@@ -217,12 +205,9 @@ def json_safe(
             str(key): json_safe(
                 item,
                 depth=depth + 1,
-                maximum_depth=(
-                    maximum_depth
-                ),
+                maximum_depth=(maximum_depth),
             )
-            for key, item
-            in value.items()
+            for key, item in value.items()
         }
 
     if isinstance(
@@ -238,9 +223,7 @@ def json_safe(
             json_safe(
                 item,
                 depth=depth + 1,
-                maximum_depth=(
-                    maximum_depth
-                ),
+                maximum_depth=(maximum_depth),
             )
             for item in value
         ]
@@ -252,9 +235,7 @@ def json_safe(
         return json_safe(
             asdict(value),
             depth=depth + 1,
-            maximum_depth=(
-                maximum_depth
-            ),
+            maximum_depth=(maximum_depth),
         )
 
     return str(value)
@@ -272,13 +253,9 @@ def stable_hash(
             ":",
         ),
         default=str,
-    ).encode(
-        "utf-8"
-    )
+    ).encode("utf-8")
 
-    return hashlib.sha256(
-        encoded
-    ).hexdigest()
+    return hashlib.sha256(encoded).hexdigest()
 
 
 @dataclass
@@ -301,49 +278,28 @@ class MemoryRecord:
 
     memory_id: Optional[str] = None
 
-    status: str = (
-        MemoryStatus.ACTIVE.value
-    )
+    status: str = MemoryStatus.ACTIVE.value
 
-    verification_status: str = (
-        VerificationStatus.
-        UNVERIFIED.value
-    )
+    verification_status: str = VerificationStatus.UNVERIFIED.value
 
-    created_at: str = field(
-        default_factory=utc_now
-    )
+    created_at: str = field(default_factory=utc_now)
 
-    updated_at: str = field(
-        default_factory=utc_now
-    )
+    updated_at: str = field(default_factory=utc_now)
 
-    last_accessed_at: Optional[
-        str
-    ] = None
+    last_accessed_at: Optional[str] = None
 
-    source_ids: List[str] = field(
-        default_factory=list
-    )
+    source_ids: List[str] = field(default_factory=list)
 
-    resource_ids: List[str] = field(
-        default_factory=list
-    )
+    resource_ids: List[str] = field(default_factory=list)
 
-    tags: List[str] = field(
-        default_factory=list
-    )
+    tags: List[str] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    schema_version: str = (
-        MEMORY_SCHEMA_VERSION
-    )
+    schema_version: str = MEMORY_SCHEMA_VERSION
 
     def identity_payload(
         self,
@@ -356,60 +312,28 @@ class MemoryRecord:
         """
 
         return {
-            "memory_type": (
-                self.memory_type
-            ),
-            "environment_id": (
-                self.environment_id
-            ),
-            "source_ids": sorted(
-                set(
-                    self.source_ids
-                )
-            ),
-            "resource_ids": sorted(
-                set(
-                    self.resource_ids
-                )
-            ),
+            "memory_type": (self.memory_type),
+            "environment_id": (self.environment_id),
+            "source_ids": sorted(set(self.source_ids)),
+            "resource_ids": sorted(set(self.resource_ids)),
         }
 
     def build_memory_id(
         self,
     ) -> str:
-        return (
-            "memory:"
-            f"{self.memory_type}:"
-            + stable_hash(
-                self.identity_payload()
-            )
-        )
+        return f"memory:{self.memory_type}:" + stable_hash(self.identity_payload())
 
     def finalize(
         self,
     ) -> "MemoryRecord":
-        self.source_ids = sorted(
-            set(
-                self.source_ids
-            )
-        )
+        self.source_ids = sorted(set(self.source_ids))
 
-        self.resource_ids = sorted(
-            set(
-                self.resource_ids
-            )
-        )
+        self.resource_ids = sorted(set(self.resource_ids))
 
-        self.tags = sorted(
-            set(
-                self.tags
-            )
-        )
+        self.tags = sorted(set(self.tags))
 
         if not self.memory_id:
-            self.memory_id = (
-                self.build_memory_id()
-            )
+            self.memory_id = self.build_memory_id()
 
         return self
 
@@ -423,9 +347,7 @@ class MemoryRecord:
     def mark_accessed(
         self,
     ) -> "MemoryRecord":
-        self.last_accessed_at = (
-            utc_now()
-        )
+        self.last_accessed_at = utc_now()
 
         return self
 
@@ -434,9 +356,7 @@ class MemoryRecord:
     ) -> Dict[str, Any]:
         self.finalize()
 
-        return json_safe(
-            asdict(self)
-        )
+        return json_safe(asdict(self))
 
     def to_json(
         self,
@@ -453,9 +373,7 @@ class MemoryRecord:
 
 
 @dataclass
-class EpisodeMemory(
-    MemoryRecord
-):
+class EpisodeMemory(MemoryRecord):
     """
     Historical memory of one correlated
     operational episode.
@@ -464,39 +382,25 @@ class EpisodeMemory(
     """
 
     memory_type: str = field(
-        default=(
-            MemoryType.EPISODE.value
-        ),
+        default=(MemoryType.EPISODE.value),
         init=False,
     )
 
-    correlation_group_id: Optional[
-        str
-    ] = None
+    correlation_group_id: Optional[str] = None
 
-    record_ids: List[str] = field(
-        default_factory=list
-    )
+    record_ids: List[str] = field(default_factory=list)
 
-    providers: List[str] = field(
-        default_factory=list
-    )
+    providers: List[str] = field(default_factory=list)
 
-    signal_types: List[str] = field(
-        default_factory=list
-    )
+    signal_types: List[str] = field(default_factory=list)
 
     started_at: Optional[str] = None
 
     ended_at: Optional[str] = None
 
-    strongest_correlation_score: float = (
-        0.0
-    )
+    strongest_correlation_score: float = 0.0
 
-    average_correlation_score: float = (
-        0.0
-    )
+    average_correlation_score: float = 0.0
 
     incident_id: Optional[str] = None
 
@@ -506,56 +410,26 @@ class EpisodeMemory(
         self,
     ) -> Dict[str, Any]:
         return {
-            "memory_type": (
-                self.memory_type
-            ),
-            "environment_id": (
-                self.environment_id
-            ),
-            "correlation_group_id": (
-                self.correlation_group_id
-            ),
-            "record_ids": sorted(
-                set(
-                    self.record_ids
-                )
-            ),
+            "memory_type": (self.memory_type),
+            "environment_id": (self.environment_id),
+            "correlation_group_id": (self.correlation_group_id),
+            "record_ids": sorted(set(self.record_ids)),
         }
 
     def finalize(
         self,
     ) -> "EpisodeMemory":
-        self.record_ids = sorted(
-            set(
-                self.record_ids
-            )
+        self.record_ids = sorted(set(self.record_ids))
+
+        self.providers = sorted(set(self.providers))
+
+        self.signal_types = sorted(set(self.signal_types))
+
+        self.strongest_correlation_score = checked_score(
+            self.strongest_correlation_score
         )
 
-        self.providers = sorted(
-            set(
-                self.providers
-            )
-        )
-
-        self.signal_types = sorted(
-            set(
-                self.signal_types
-            )
-        )
-
-        self.strongest_correlation_score = (
-            checked_score(
-                self.
-                strongest_correlation_score
-            )
-        )
-
-        self.average_correlation_score = (
-            checked_score(
-                self.
-                average_correlation_score
-            )
-        )
+        self.average_correlation_score = checked_score(self.average_correlation_score)
 
         super().finalize()
 
@@ -563,18 +437,14 @@ class EpisodeMemory(
 
 
 @dataclass
-class PatternMemory(
-    MemoryRecord
-):
+class PatternMemory(MemoryRecord):
     """
     Long-term history for a stable operational
     pattern fingerprint.
     """
 
     memory_type: str = field(
-        default=(
-            MemoryType.PATTERN.value
-        ),
+        default=(MemoryType.PATTERN.value),
         init=False,
     )
 
@@ -592,42 +462,26 @@ class PatternMemory(
 
     last_seen: Optional[str] = None
 
-    providers: List[str] = field(
-        default_factory=list
-    )
+    providers: List[str] = field(default_factory=list)
 
-    signal_types: List[str] = field(
-        default_factory=list
-    )
+    signal_types: List[str] = field(default_factory=list)
 
-    incident_ids: List[str] = field(
-        default_factory=list
-    )
+    incident_ids: List[str] = field(default_factory=list)
 
     verified_incident_count: int = 0
 
     verified_normal_count: int = 0
 
-    latest_novelty_score: float = (
-        0.0
-    )
+    latest_novelty_score: float = 0.0
 
     def identity_payload(
         self,
     ) -> Dict[str, Any]:
         return {
-            "memory_type": (
-                self.memory_type
-            ),
-            "environment_id": (
-                self.environment_id
-            ),
-            "fingerprint": (
-                self.fingerprint
-            ),
-            "pattern_type": (
-                self.pattern_type
-            ),
+            "memory_type": (self.memory_type),
+            "environment_id": (self.environment_id),
+            "fingerprint": (self.fingerprint),
+            "pattern_type": (self.pattern_type),
         }
 
     def finalize(
@@ -635,54 +489,26 @@ class PatternMemory(
     ) -> "PatternMemory":
         self.occurrence_count = max(
             0,
-            int(
-                self.occurrence_count
-            ),
+            int(self.occurrence_count),
         )
 
-        self.verified_incident_count = (
-            max(
-                0,
-                int(
-                    self.
-                    verified_incident_count
-                ),
-            )
+        self.verified_incident_count = max(
+            0,
+            int(self.verified_incident_count),
         )
 
-        self.verified_normal_count = (
-            max(
-                0,
-                int(
-                    self.
-                    verified_normal_count
-                ),
-            )
+        self.verified_normal_count = max(
+            0,
+            int(self.verified_normal_count),
         )
 
-        self.latest_novelty_score = (
-            checked_score(
-                self.latest_novelty_score
-            )
-        )
+        self.latest_novelty_score = checked_score(self.latest_novelty_score)
 
-        self.providers = sorted(
-            set(
-                self.providers
-            )
-        )
+        self.providers = sorted(set(self.providers))
 
-        self.signal_types = sorted(
-            set(
-                self.signal_types
-            )
-        )
+        self.signal_types = sorted(set(self.signal_types))
 
-        self.incident_ids = sorted(
-            set(
-                self.incident_ids
-            )
-        )
+        self.incident_ids = sorted(set(self.incident_ids))
 
         super().finalize()
 
@@ -690,9 +516,7 @@ class PatternMemory(
 
 
 @dataclass
-class BaselineMemory(
-    MemoryRecord
-):
+class BaselineMemory(MemoryRecord):
     """
     Historical baseline for a resource/signal.
 
@@ -709,9 +533,7 @@ class BaselineMemory(
     """
 
     memory_type: str = field(
-        default=(
-            MemoryType.BASELINE.value
-        ),
+        default=(MemoryType.BASELINE.value),
         init=False,
     )
 
@@ -733,9 +555,7 @@ class BaselineMemory(
 
     variance: Optional[float] = None
 
-    standard_deviation: Optional[
-        float
-    ] = None
+    standard_deviation: Optional[float] = None
 
     first_sample_at: Optional[str] = None
 
@@ -747,21 +567,11 @@ class BaselineMemory(
         self,
     ) -> Dict[str, Any]:
         return {
-            "memory_type": (
-                self.memory_type
-            ),
-            "environment_id": (
-                self.environment_id
-            ),
-            "baseline_key": (
-                self.baseline_key
-            ),
-            "resource_id": (
-                self.resource_id
-            ),
-            "signal_name": (
-                self.signal_name
-            ),
+            "memory_type": (self.memory_type),
+            "environment_id": (self.environment_id),
+            "baseline_key": (self.baseline_key),
+            "resource_id": (self.resource_id),
+            "signal_name": (self.signal_name),
         }
 
     def finalize(
@@ -769,9 +579,7 @@ class BaselineMemory(
     ) -> "BaselineMemory":
         self.sample_count = max(
             0,
-            int(
-                self.sample_count
-            ),
+            int(self.sample_count),
         )
 
         super().finalize()
@@ -780,9 +588,7 @@ class BaselineMemory(
 
 
 @dataclass
-class RootCauseMemory(
-    MemoryRecord
-):
+class RootCauseMemory(MemoryRecord):
     """
     Historical root-cause hypothesis or verified
     root-cause outcome.
@@ -793,9 +599,7 @@ class RootCauseMemory(
     """
 
     memory_type: str = field(
-        default=(
-            MemoryType.ROOT_CAUSE.value
-        ),
+        default=(MemoryType.ROOT_CAUSE.value),
         init=False,
     )
 
@@ -803,25 +607,17 @@ class RootCauseMemory(
 
     candidate_id: Optional[str] = None
 
-    root_resource_id: Optional[
-        str
-    ] = None
+    root_resource_id: Optional[str] = None
 
     title: Optional[str] = None
 
     hypothesis_score: float = 0.0
 
-    evidence_types: List[str] = field(
-        default_factory=list
-    )
+    evidence_types: List[str] = field(default_factory=list)
 
-    causal_path: List[str] = field(
-        default_factory=list
-    )
+    causal_path: List[str] = field(default_factory=list)
 
-    verification_source: Optional[
-        str
-    ] = None
+    verification_source: Optional[str] = None
 
     verified_at: Optional[str] = None
 
@@ -829,37 +625,19 @@ class RootCauseMemory(
         self,
     ) -> Dict[str, Any]:
         return {
-            "memory_type": (
-                self.memory_type
-            ),
-            "environment_id": (
-                self.environment_id
-            ),
-            "incident_id": (
-                self.incident_id
-            ),
-            "candidate_id": (
-                self.candidate_id
-            ),
-            "root_resource_id": (
-                self.root_resource_id
-            ),
+            "memory_type": (self.memory_type),
+            "environment_id": (self.environment_id),
+            "incident_id": (self.incident_id),
+            "candidate_id": (self.candidate_id),
+            "root_resource_id": (self.root_resource_id),
         }
 
     def finalize(
         self,
     ) -> "RootCauseMemory":
-        self.hypothesis_score = (
-            checked_score(
-                self.hypothesis_score
-            )
-        )
+        self.hypothesis_score = checked_score(self.hypothesis_score)
 
-        self.evidence_types = sorted(
-            set(
-                self.evidence_types
-            )
-        )
+        self.evidence_types = sorted(set(self.evidence_types))
 
         super().finalize()
 
@@ -867,9 +645,7 @@ class RootCauseMemory(
 
 
 @dataclass
-class IncidentMemory(
-    MemoryRecord
-):
+class IncidentMemory(MemoryRecord):
     """
     Historical incident candidate or verified
     incident.
@@ -879,9 +655,7 @@ class IncidentMemory(
     """
 
     memory_type: str = field(
-        default=(
-            MemoryType.INCIDENT.value
-        ),
+        default=(MemoryType.INCIDENT.value),
         init=False,
     )
 
@@ -897,35 +671,17 @@ class IncidentMemory(
 
     ended_at: Optional[str] = None
 
-    anomaly_ids: List[str] = field(
-        default_factory=list
-    )
+    anomaly_ids: List[str] = field(default_factory=list)
 
-    pattern_ids: List[str] = field(
-        default_factory=list
-    )
+    pattern_ids: List[str] = field(default_factory=list)
 
-    correlation_group_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    correlation_group_ids: List[str] = field(default_factory=list)
 
-    root_cause_memory_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    root_cause_memory_ids: List[str] = field(default_factory=list)
 
-    affected_resource_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    affected_resource_ids: List[str] = field(default_factory=list)
 
-    affected_services: List[str] = field(
-        default_factory=list
-    )
+    affected_services: List[str] = field(default_factory=list)
 
     impact_level: str = "unknown"
 
@@ -933,82 +689,35 @@ class IncidentMemory(
 
     confidence_level: str = "none"
 
-    explanation_summary: Optional[
-        str
-    ] = None
+    explanation_summary: Optional[str] = None
 
-    outcome_memory_id: Optional[
-        str
-    ] = None
+    outcome_memory_id: Optional[str] = None
 
     def identity_payload(
         self,
     ) -> Dict[str, Any]:
         return {
-            "memory_type": (
-                self.memory_type
-            ),
-            "environment_id": (
-                self.environment_id
-            ),
-            "incident_id": (
-                self.incident_id
-            ),
+            "memory_type": (self.memory_type),
+            "environment_id": (self.environment_id),
+            "incident_id": (self.incident_id),
         }
 
     def finalize(
         self,
     ) -> "IncidentMemory":
-        self.anomaly_ids = sorted(
-            set(
-                self.anomaly_ids
-            )
-        )
+        self.anomaly_ids = sorted(set(self.anomaly_ids))
 
-        self.pattern_ids = sorted(
-            set(
-                self.pattern_ids
-            )
-        )
+        self.pattern_ids = sorted(set(self.pattern_ids))
 
-        self.correlation_group_ids = (
-            sorted(
-                set(
-                    self.
-                    correlation_group_ids
-                )
-            )
-        )
+        self.correlation_group_ids = sorted(set(self.correlation_group_ids))
 
-        self.root_cause_memory_ids = (
-            sorted(
-                set(
-                    self.
-                    root_cause_memory_ids
-                )
-            )
-        )
+        self.root_cause_memory_ids = sorted(set(self.root_cause_memory_ids))
 
-        self.affected_resource_ids = (
-            sorted(
-                set(
-                    self.
-                    affected_resource_ids
-                )
-            )
-        )
+        self.affected_resource_ids = sorted(set(self.affected_resource_ids))
 
-        self.affected_services = sorted(
-            set(
-                self.affected_services
-            )
-        )
+        self.affected_services = sorted(set(self.affected_services))
 
-        self.confidence_score = (
-            checked_score(
-                self.confidence_score
-            )
-        )
+        self.confidence_score = checked_score(self.confidence_score)
 
         super().finalize()
 
@@ -1016,9 +725,7 @@ class IncidentMemory(
 
 
 @dataclass
-class OutcomeMemory(
-    MemoryRecord
-):
+class OutcomeMemory(MemoryRecord):
     """
     Verified or observed outcome after an
     incident investigation or remediation.
@@ -1028,98 +735,49 @@ class OutcomeMemory(
     """
 
     memory_type: str = field(
-        default=(
-            MemoryType.OUTCOME.value
-        ),
+        default=(MemoryType.OUTCOME.value),
         init=False,
     )
 
     incident_id: str = ""
 
-    outcome_type: str = (
-        OutcomeType.UNKNOWN.value
-    )
+    outcome_type: str = OutcomeType.UNKNOWN.value
 
     summary: Optional[str] = None
 
-    remediation_action_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    remediation_action_ids: List[str] = field(default_factory=list)
 
-    before_health_score: Optional[
-        float
-    ] = None
+    before_health_score: Optional[float] = None
 
-    after_health_score: Optional[
-        float
-    ] = None
+    after_health_score: Optional[float] = None
 
     recovery_verified: bool = False
 
-    verification_source: Optional[
-        str
-    ] = None
+    verification_source: Optional[str] = None
 
-    observed_at: str = field(
-        default_factory=utc_now
-    )
+    observed_at: str = field(default_factory=utc_now)
 
     def identity_payload(
         self,
     ) -> Dict[str, Any]:
         return {
-            "memory_type": (
-                self.memory_type
-            ),
-            "environment_id": (
-                self.environment_id
-            ),
-            "incident_id": (
-                self.incident_id
-            ),
-            "outcome_type": (
-                self.outcome_type
-            ),
-            "observed_at": (
-                self.observed_at
-            ),
+            "memory_type": (self.memory_type),
+            "environment_id": (self.environment_id),
+            "incident_id": (self.incident_id),
+            "outcome_type": (self.outcome_type),
+            "observed_at": (self.observed_at),
         }
 
     def finalize(
         self,
     ) -> "OutcomeMemory":
-        self.remediation_action_ids = (
-            sorted(
-                set(
-                    self.
-                    remediation_action_ids
-                )
-            )
-        )
+        self.remediation_action_ids = sorted(set(self.remediation_action_ids))
 
-        if (
-            self.before_health_score
-            is not None
-        ):
-            self.before_health_score = (
-                checked_score(
-                    self.
-                    before_health_score
-                )
-            )
+        if self.before_health_score is not None:
+            self.before_health_score = checked_score(self.before_health_score)
 
-        if (
-            self.after_health_score
-            is not None
-        ):
-            self.after_health_score = (
-                checked_score(
-                    self.
-                    after_health_score
-                )
-            )
+        if self.after_health_score is not None:
+            self.after_health_score = checked_score(self.after_health_score)
 
         super().finalize()
 
@@ -1145,26 +803,17 @@ def memory_type(
 def memory_is_verified(
     memory: MemoryObject,
 ) -> bool:
-    return (
-        memory.verification_status
-        == VerificationStatus.
-        VERIFIED.value
-    )
+    return memory.verification_status == VerificationStatus.VERIFIED.value
 
 
 def memory_is_active(
     memory: MemoryObject,
 ) -> bool:
-    return (
-        memory.status
-        == MemoryStatus.ACTIVE.value
-    )
+    return memory.status == MemoryStatus.ACTIVE.value
 
 
 def memory_summary(
-    memories: List[
-        MemoryObject
-    ],
+    memories: List[MemoryObject],
 ) -> Dict[str, Any]:
     by_type: Dict[
         str,
@@ -1188,9 +837,7 @@ def memory_summary(
     for memory in memories:
         memory.finalize()
 
-        by_type[
-            memory.memory_type
-        ] = (
+        by_type[memory.memory_type] = (
             by_type.get(
                 memory.memory_type,
                 0,
@@ -1198,20 +845,15 @@ def memory_summary(
             + 1
         )
 
-        by_verification[
-            memory.verification_status
-        ] = (
+        by_verification[memory.verification_status] = (
             by_verification.get(
-                memory.
-                verification_status,
+                memory.verification_status,
                 0,
             )
             + 1
         )
 
-        by_status[
-            memory.status
-        ] = (
+        by_status[memory.status] = (
             by_status.get(
                 memory.status,
                 0,
@@ -1219,27 +861,15 @@ def memory_summary(
             + 1
         )
 
-        environments.add(
-            memory.environment_id
-        )
+        environments.add(memory.environment_id)
 
-        resources.update(
-            memory.resource_ids
-        )
+        resources.update(memory.resource_ids)
 
     return {
-        "memory_count": len(
-            memories
-        ),
+        "memory_count": len(memories),
         "memory_types": by_type,
-        "verification_statuses": (
-            by_verification
-        ),
+        "verification_statuses": (by_verification),
         "statuses": by_status,
-        "environment_count": len(
-            environments
-        ),
-        "resource_count": len(
-            resources
-        ),
+        "environment_count": len(environments),
+        "resource_count": len(resources),
     }

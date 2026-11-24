@@ -60,25 +60,15 @@ class EligibilityConfig:
     execution authority.
     """
 
-    minimum_investigation_confidence: float = (
-        0.20
-    )
+    minimum_investigation_confidence: float = 0.20
 
-    minimum_recommendation_confidence: float = (
-        0.40
-    )
+    minimum_recommendation_confidence: float = 0.40
 
-    minimum_mutation_confidence: float = (
-        0.70
-    )
+    minimum_mutation_confidence: float = 0.70
 
-    maximum_automatic_risk: float = (
-        0.20
-    )
+    maximum_automatic_risk: float = 0.20
 
-    maximum_eligible_risk: float = (
-        0.85
-    )
+    maximum_eligible_risk: float = 0.85
 
     require_target_for_mutation: bool = True
 
@@ -88,42 +78,25 @@ class EligibilityConfig:
 
     block_unverified_critical_risk: bool = True
 
-    allow_read_only_without_root_cause: bool = (
-        True
-    )
+    allow_read_only_without_root_cause: bool = True
 
     def validate(
         self,
     ) -> None:
         scores = (
-            self.
-            minimum_investigation_confidence,
-            self.
-            minimum_recommendation_confidence,
-            self.
-            minimum_mutation_confidence,
+            self.minimum_investigation_confidence,
+            self.minimum_recommendation_confidence,
+            self.minimum_mutation_confidence,
             self.maximum_automatic_risk,
             self.maximum_eligible_risk,
         )
 
-        if any(
-            value < 0.0
-            or value > 1.0
-            for value in scores
-        ):
-            raise ValueError(
-                "Eligibility scores must "
-                "be between 0 and 1"
-            )
+        if any(value < 0.0 or value > 1.0 for value in scores):
+            raise ValueError("Eligibility scores must be between 0 and 1")
 
-        if (
-            self.maximum_automatic_risk
-            > self.maximum_eligible_risk
-        ):
+        if self.maximum_automatic_risk > self.maximum_eligible_risk:
             raise ValueError(
-                "maximum_automatic_risk "
-                "must not exceed "
-                "maximum_eligible_risk"
+                "maximum_automatic_risk must not exceed maximum_eligible_risk"
             )
 
 
@@ -131,27 +104,23 @@ class EligibilityConfig:
 # Category helpers
 # ---------------------------------------------------------------
 
+
 def action_is_mutating(
     action: ActionCandidate,
 ) -> bool:
-    return (
-        action.category
-        in MUTATING_CATEGORIES
-    )
+    return action.category in MUTATING_CATEGORIES
 
 
 def action_is_read_only(
     action: ActionCandidate,
 ) -> bool:
-    return (
-        action.category
-        in READ_ONLY_CATEGORIES
-    )
+    return action.category in READ_ONLY_CATEGORIES
 
 
 # ---------------------------------------------------------------
 # Hard blockers
 # ---------------------------------------------------------------
+
 
 def policy_blockers(
     evaluation: PolicyEvaluation,
@@ -159,15 +128,9 @@ def policy_blockers(
     if evaluation.allowed:
         return []
 
-    return (
-        list(
-            evaluation.blocking_reasons
-        )
-        or [
-            "Configured policy does not "
-            "permit this action."
-        ]
-    )
+    return list(evaluation.blocking_reasons) or [
+        "Configured policy does not permit this action."
+    ]
 
 
 def target_blockers(
@@ -178,20 +141,11 @@ def target_blockers(
     blockers = []
 
     if (
-        action_is_mutating(
-            action
-        )
-        and config.
-        require_target_for_mutation
-        and not (
-            action.target_resource_ids
-            or action.target_service_ids
-        )
+        action_is_mutating(action)
+        and config.require_target_for_mutation
+        and not (action.target_resource_ids or action.target_service_ids)
     ):
-        blockers.append(
-            "Mutating action has no explicit "
-            "target resource or service."
-        )
+        blockers.append("Mutating action has no explicit target resource or service.")
 
     return blockers
 
@@ -204,18 +158,10 @@ def confidence_blockers(
 ) -> List[str]:
     blockers = []
 
-    confidence = checked_score(
-        context.incident_confidence
-    )
+    confidence = checked_score(context.incident_confidence)
 
-    if action_is_mutating(
-        action
-    ):
-        if (
-            confidence
-            < config.
-            minimum_mutation_confidence
-        ):
+    if action_is_mutating(action):
+        if confidence < config.minimum_mutation_confidence:
             blockers.append(
                 "Incident confidence "
                 f"{confidence:.2f} is below "
@@ -224,30 +170,16 @@ def confidence_blockers(
                 f"{config.minimum_mutation_confidence:.2f}."
             )
 
-    elif (
-        action.category
-        == ActionCategory.
-        NOTIFICATION.value
-    ):
-        if (
-            confidence
-            < config.
-            minimum_recommendation_confidence
-        ):
+    elif action.category == ActionCategory.NOTIFICATION.value:
+        if confidence < config.minimum_recommendation_confidence:
             blockers.append(
                 "Incident confidence is too "
                 "low for the configured "
                 "recommendation threshold."
             )
 
-    elif action_is_read_only(
-        action
-    ):
-        if (
-            confidence
-            < config.
-            minimum_investigation_confidence
-        ):
+    elif action_is_read_only(action):
+        if confidence < config.minimum_investigation_confidence:
             blockers.append(
                 "Incident confidence is below "
                 "the minimum configured for "
@@ -265,36 +197,19 @@ def root_cause_blockers(
 ) -> List[str]:
     blockers = []
 
-    if not action_is_mutating(
-        action
-    ):
+    if not action_is_mutating(action):
         return blockers
 
-    if not (
-        config.
-        require_root_cause_for_mutation
-    ):
+    if not (config.require_root_cause_for_mutation):
         return blockers
 
-    if not (
-        context.
-        root_cause_resource_id
-    ):
-        blockers.append(
-            "Mutating action requires a "
-            "root-cause hypothesis."
-        )
+    if not (context.root_cause_resource_id):
+        blockers.append("Mutating action requires a root-cause hypothesis.")
 
         return blockers
 
-    if (
-        context.root_cause_score
-        <= 0
-    ):
-        blockers.append(
-            "Root-cause hypothesis has no "
-            "usable evidence score."
-        )
+    if context.root_cause_score <= 0:
+        blockers.append("Root-cause hypothesis has no usable evidence score.")
 
     return blockers
 
@@ -306,53 +221,31 @@ def reversibility_blockers(
 ) -> List[str]:
     blockers = []
 
-    if not action_is_mutating(
-        action
-    ):
+    if not action_is_mutating(action):
         return blockers
 
-    if not (
-        config.
-        require_rollback_for_mutation
-    ):
+    if not (config.require_rollback_for_mutation):
         return blockers
 
-    if (
-        action.reversibility
-        == Reversibility.NONE.value
-    ):
+    if action.reversibility == Reversibility.NONE.value:
+        blockers.append("Irreversible infrastructure action is not eligible.")
+
+        return blockers
+
+    if action.reversibility in {
+        Reversibility.PARTIAL.value,
+        Reversibility.UNKNOWN.value,
+    }:
         blockers.append(
-            "Irreversible infrastructure "
-            "action is not eligible."
-        )
-
-        return blockers
-
-    if (
-        action.reversibility
-        in {
-            Reversibility.
-            PARTIAL.value,
-            Reversibility.
-            UNKNOWN.value,
-        }
-    ):
-        blockers.append(
-            "Mutating action must have "
-            "full reversibility before it "
-            "becomes eligible."
+            "Mutating action must have full reversibility before it becomes eligible."
         )
 
     if (
-        action.reversibility
-        == Reversibility.FULL.value
-        and not action.
-        rollback_action_type
+        action.reversibility == Reversibility.FULL.value
+        and not action.rollback_action_type
     ):
         blockers.append(
-            "Action claims full "
-            "reversibility but has no "
-            "rollback action type."
+            "Action claims full reversibility but has no rollback action type."
         )
 
     return blockers
@@ -366,32 +259,17 @@ def risk_blockers(
 ) -> List[str]:
     blockers = []
 
-    risk = checked_score(
-        action.risk.score
-    )
+    risk = checked_score(action.risk.score)
+
+    if risk > config.maximum_eligible_risk:
+        blockers.append("Action risk exceeds the maximum eligibility threshold.")
 
     if (
-        risk
-        > config.
-        maximum_eligible_risk
+        config.block_unverified_critical_risk
+        and action.risk.level == RiskLevel.CRITICAL.value
+        and not context.root_cause_verified
     ):
-        blockers.append(
-            "Action risk exceeds the "
-            "maximum eligibility threshold."
-        )
-
-    if (
-        config.
-        block_unverified_critical_risk
-        and action.risk.level
-        == RiskLevel.CRITICAL.value
-        and not context.
-        root_cause_verified
-    ):
-        blockers.append(
-            "Critical-risk action requires "
-            "verified root-cause evidence."
-        )
+        blockers.append("Critical-risk action requires verified root-cause evidence.")
 
     return blockers
 
@@ -399,17 +277,8 @@ def risk_blockers(
 def approval_blockers(
     action: ActionCandidate,
 ) -> List[str]:
-    if (
-        action.approval.mode
-        == ApprovalMode.
-        FORBIDDEN.value
-    ):
-        return [
-            (
-                "Action is forbidden by its "
-                "approval/policy state."
-            )
-        ]
+    if action.approval.mode == ApprovalMode.FORBIDDEN.value:
+        return [("Action is forbidden by its approval/policy state.")]
 
     return []
 
@@ -417,6 +286,7 @@ def approval_blockers(
 # ---------------------------------------------------------------
 # Conditional requirements
 # ---------------------------------------------------------------
+
 
 def eligibility_conditions(
     action: ActionCandidate,
@@ -432,60 +302,24 @@ def eligibility_conditions(
 
     conditions = []
 
-    if (
-        policy.effect
-        == PolicyEffect.
-        ALLOW_WITH_APPROVAL
-    ):
+    if policy.effect == PolicyEffect.ALLOW_WITH_APPROVAL:
+        conditions.append("Explicit approval is required before execution.")
+
+    if action.approval.required:
         conditions.append(
-            "Explicit approval is required "
-            "before execution."
+            "Approval requirement must be resolved before remediation handoff."
         )
 
-    if (
-        action.approval.required
-    ):
-        conditions.append(
-            "Approval requirement must be "
-            "resolved before remediation "
-            "handoff."
-        )
+    if action_is_mutating(action) and not context.root_cause_verified:
+        conditions.append("Root-cause evidence remains unverified.")
 
-    if (
-        action_is_mutating(
-            action
-        )
-        and not context.
-        root_cause_verified
-    ):
-        conditions.append(
-            "Root-cause evidence remains "
-            "unverified."
-        )
+    if action.risk.score > config.maximum_automatic_risk:
+        conditions.append("Action risk exceeds the automatic-action threshold.")
 
-    if (
-        action.risk.score
-        > config.
-        maximum_automatic_risk
-    ):
-        conditions.append(
-            "Action risk exceeds the "
-            "automatic-action threshold."
-        )
+    if not (context.user_impact_known):
+        conditions.append("User/business impact remains unverified.")
 
-    if not (
-        context.user_impact_known
-    ):
-        conditions.append(
-            "User/business impact remains "
-            "unverified."
-        )
-
-    return list(
-        dict.fromkeys(
-            conditions
-        )
-    )
+    return list(dict.fromkeys(conditions))
 
 
 def satisfied_requirements(
@@ -498,58 +332,25 @@ def satisfied_requirements(
     output = []
 
     if policy.allowed:
-        output.append(
-            "policy_allows_action"
-        )
+        output.append("policy_allows_action")
 
-    if (
-        action.target_resource_ids
-        or action.target_service_ids
-    ):
-        output.append(
-            "explicit_target_present"
-        )
+    if action.target_resource_ids or action.target_service_ids:
+        output.append("explicit_target_present")
 
-    if (
-        context.incident_confidence
-        >= config.
-        minimum_mutation_confidence
-    ):
-        output.append(
-            "strong_incident_confidence"
-        )
+    if context.incident_confidence >= config.minimum_mutation_confidence:
+        output.append("strong_incident_confidence")
 
-    if (
-        context.
-        root_cause_resource_id
-    ):
-        output.append(
-            "root_cause_hypothesis_present"
-        )
+    if context.root_cause_resource_id:
+        output.append("root_cause_hypothesis_present")
 
     if context.root_cause_verified:
-        output.append(
-            "root_cause_verified"
-        )
+        output.append("root_cause_verified")
 
-    if (
-        action.reversibility
-        == Reversibility.FULL.value
-        and action.
-        rollback_action_type
-    ):
-        output.append(
-            "rollback_defined"
-        )
+    if action.reversibility == Reversibility.FULL.value and action.rollback_action_type:
+        output.append("rollback_defined")
 
-    if (
-        action.risk.score
-        <= config.
-        maximum_eligible_risk
-    ):
-        output.append(
-            "risk_within_eligibility_limit"
-        )
+    if action.risk.score <= config.maximum_eligible_risk:
+        output.append("risk_within_eligibility_limit")
 
     return output
 
@@ -557,6 +358,7 @@ def satisfied_requirements(
 # ---------------------------------------------------------------
 # Eligibility score
 # ---------------------------------------------------------------
+
 
 def eligibility_score(
     action: ActionCandidate,
@@ -572,110 +374,42 @@ def eligibility_score(
     Hard blockers still override this score.
     """
 
-    policy_score = (
-        1.0
-        if policy.allowed
-        else 0.0
-    )
+    policy_score = 1.0 if policy.allowed else 0.0
 
-    confidence_score = (
-        checked_score(
-            context.
-            incident_confidence
-        )
-    )
+    confidence_score = checked_score(context.incident_confidence)
 
-    root_cause_score = (
-        checked_score(
-            context.
-            root_cause_score
-        )
-    )
+    root_cause_score = checked_score(context.root_cause_score)
 
     verification_score = (
         1.0
-        if context.
-        root_cause_verified
-        else (
-            0.50
-            if context.
-            root_cause_resource_id
-            else 0.0
-        )
+        if context.root_cause_verified
+        else (0.50 if context.root_cause_resource_id else 0.0)
     )
 
     reversibility_score = {
-        Reversibility.FULL.value: (
-            1.0
-            if action.
-            rollback_action_type
-            else 0.70
-        ),
-        Reversibility.PARTIAL.value: (
-            0.40
-        ),
-        Reversibility.NONE.value: (
-            0.0
-        ),
-        
-        Reversibility.UNKNOWN.value: (
-            0.20
-        ),
+        Reversibility.FULL.value: (1.0 if action.rollback_action_type else 0.70),
+        Reversibility.PARTIAL.value: (0.40),
+        Reversibility.NONE.value: (0.0),
+        Reversibility.UNKNOWN.value: (0.20),
     }.get(
         action.reversibility,
         0.20,
     )
 
-    risk_score = (
-        1.0
-        - checked_score(
-            action.risk.score
-        )
-    )
+    risk_score = 1.0 - checked_score(action.risk.score)
 
-    if action_is_read_only(
-        action
-    ):
+    if action_is_read_only(action):
         return checked_score(
-            (
-                policy_score
-                * 0.35
-            )
-            + (
-                confidence_score
-                * 0.35
-            )
-            + (
-                risk_score
-                * 0.30
-            )
+            (policy_score * 0.35) + (confidence_score * 0.35) + (risk_score * 0.30)
         )
 
     return checked_score(
-        (
-            policy_score
-            * 0.25
-        )
-        + (
-            confidence_score
-            * 0.20
-        )
-        + (
-            root_cause_score
-            * 0.15
-        )
-        + (
-            verification_score
-            * 0.15
-        )
-        + (
-            reversibility_score
-            * 0.10
-        )
-        + (
-            risk_score
-            * 0.15
-        )
+        (policy_score * 0.25)
+        + (confidence_score * 0.20)
+        + (root_cause_score * 0.15)
+        + (verification_score * 0.15)
+        + (reversibility_score * 0.10)
+        + (risk_score * 0.15)
     )
 
 
@@ -683,16 +417,13 @@ def eligibility_score(
 # Main evaluator
 # ---------------------------------------------------------------
 
+
 def assess_eligibility(
     action: ActionCandidate,
     context: DecisionContext,
     *,
-    policy_engine: Optional[
-        PolicyEngine
-    ] = None,
-    config: Optional[
-        EligibilityConfig
-    ] = None,
+    policy_engine: Optional[PolicyEngine] = None,
+    config: Optional[EligibilityConfig] = None,
 ) -> EligibilityAssessment:
     """
     Evaluate one action's planning eligibility.
@@ -701,10 +432,7 @@ def assess_eligibility(
     action.
     """
 
-    configuration = (
-        config
-        or EligibilityConfig()
-    )
+    configuration = config or EligibilityConfig()
 
     configuration.validate()
 
@@ -712,10 +440,7 @@ def assess_eligibility(
 
     context.finalize()
 
-    policies = (
-        policy_engine
-        or PolicyEngine()
-    )
+    policies = policy_engine or PolicyEngine()
 
     policy = policies.evaluate(
         action,
@@ -724,11 +449,7 @@ def assess_eligibility(
 
     blockers = []
 
-    blockers.extend(
-        policy_blockers(
-            policy
-        )
-    )
+    blockers.extend(policy_blockers(policy))
 
     blockers.extend(
         target_blockers(
@@ -768,17 +489,9 @@ def assess_eligibility(
         )
     )
 
-    blockers.extend(
-        approval_blockers(
-            action
-        )
-    )
+    blockers.extend(approval_blockers(action))
 
-    blockers = list(
-        dict.fromkeys(
-            blockers
-        )
-    )
+    blockers = list(dict.fromkeys(blockers))
 
     conditions = eligibility_conditions(
         action,
@@ -802,18 +515,12 @@ def assess_eligibility(
     )
 
     if blockers:
-        status = (
-            EligibilityStatus.
-            INELIGIBLE.value
-        )
+        status = EligibilityStatus.INELIGIBLE.value
 
         eligible = False
 
     elif conditions:
-        status = (
-            EligibilityStatus.
-            CONDITIONAL.value
-        )
+        status = EligibilityStatus.CONDITIONAL.value
 
         # Conditional means eligible for further
         # decision/approval planning, not
@@ -821,18 +528,13 @@ def assess_eligibility(
         eligible = True
 
     else:
-        status = (
-            EligibilityStatus.
-            ELIGIBLE.value
-        )
+        status = EligibilityStatus.ELIGIBLE.value
 
         eligible = True
 
     evidence = [
         DecisionEvidence(
-            evidence_type=(
-                "eligibility"
-            ),
+            evidence_type=("eligibility"),
             description=(
                 "Action eligibility was "
                 "evaluated against policy, "
@@ -841,24 +543,13 @@ def assess_eligibility(
                 "and reversibility."
             ),
             score=score,
-            incident_id=(
-                context.incident_id
-            ),
-            resource_ids=list(
-                action.
-                target_resource_ids
-            ),
+            incident_id=(context.incident_id),
+            resource_ids=list(action.target_resource_ids),
             attributes={
-                "policy": (
-                    policy.to_dict()
-                ),
-                "conditions": (
-                    conditions
-                ),
+                "policy": (policy.to_dict()),
+                "conditions": (conditions),
                 "blockers": blockers,
-                "satisfied": (
-                    satisfied
-                ),
+                "satisfied": (satisfied),
             },
         )
     ]
@@ -868,27 +559,13 @@ def assess_eligibility(
         score=score,
         eligible=eligible,
         conditions=conditions,
-        blocking_reasons=(
-            blockers
-        ),
-        satisfied_requirements=(
-            satisfied
-        ),
+        blocking_reasons=(blockers),
+        satisfied_requirements=(satisfied),
         evidence=evidence,
         attributes={
-            "policy_evaluation": (
-                policy.to_dict()
-            ),
-            "mutating_action": (
-                action_is_mutating(
-                    action
-                )
-            ),
-            "read_only_action": (
-                action_is_read_only(
-                    action
-                )
-            ),
+            "policy_evaluation": (policy.to_dict()),
+            "mutating_action": (action_is_mutating(action)),
+            "read_only_action": (action_is_read_only(action)),
         },
     ).finalize()
 
@@ -897,25 +574,19 @@ def assess_eligibility(
 # Attach eligibility to ActionCandidate
 # ---------------------------------------------------------------
 
+
 def apply_eligibility(
     action: ActionCandidate,
     context: DecisionContext,
     *,
-    policy_engine: Optional[
-        PolicyEngine
-    ] = None,
-    config: Optional[
-        EligibilityConfig
-    ] = None,
+    policy_engine: Optional[PolicyEngine] = None,
+    config: Optional[EligibilityConfig] = None,
 ) -> ActionCandidate:
     """
     Evaluate and attach eligibility metadata.
     """
 
-    policy_engine = (
-        policy_engine
-        or PolicyEngine()
-    )
+    policy_engine = policy_engine or PolicyEngine()
 
     # Apply policy first so the ActionCandidate's
     # approval mode/policy IDs are synchronized.
@@ -924,67 +595,37 @@ def apply_eligibility(
         context,
     )
 
-    assessment = (
-        assess_eligibility(
-            action,
-            context,
-            policy_engine=(
-                policy_engine
-            ),
-            config=config,
-        )
+    assessment = assess_eligibility(
+        action,
+        context,
+        policy_engine=(policy_engine),
+        config=config,
     )
 
-    action.eligibility = (
-        assessment
-    )
+    action.eligibility = assessment
 
-    action.evidence.extend(
-        assessment.evidence
-    )
+    action.evidence.extend(assessment.evidence)
 
     if not assessment.eligible:
-        action.state = (
-            ActionState.
-            INELIGIBLE.value
-        )
+        action.state = ActionState.INELIGIBLE.value
 
-    elif (
-        action.approval.required
-    ):
-        action.state = (
-            ActionState.
-            REQUIRES_APPROVAL.value
-        )
+    elif action.approval.required:
+        action.state = ActionState.REQUIRES_APPROVAL.value
 
     else:
-        action.state = (
-            ActionState.
-            ELIGIBLE.value
-        )
+        action.state = ActionState.ELIGIBLE.value
 
     return action.finalize()
 
 
 def evaluate_actions(
-    actions: Iterable[
-        ActionCandidate
-    ],
+    actions: Iterable[ActionCandidate],
     context: DecisionContext,
     *,
-    policy_engine: Optional[
-        PolicyEngine
-    ] = None,
-    config: Optional[
-        EligibilityConfig
-    ] = None,
-) -> List[
-    ActionCandidate
-]:
-    engine = (
-        policy_engine
-        or PolicyEngine()
-    )
+    policy_engine: Optional[PolicyEngine] = None,
+    config: Optional[EligibilityConfig] = None,
+) -> List[ActionCandidate]:
+    engine = policy_engine or PolicyEngine()
 
     return [
         apply_eligibility(
@@ -993,8 +634,7 @@ def evaluate_actions(
             policy_engine=engine,
             config=config,
         )
-        for action
-        in actions
+        for action in actions
     ]
 
 
@@ -1002,14 +642,11 @@ def evaluate_actions(
 # Summary
 # ---------------------------------------------------------------
 
+
 def eligibility_summary(
-    actions: Iterable[
-        ActionCandidate
-    ],
+    actions: Iterable[ActionCandidate],
 ) -> Dict[str, Any]:
-    action_list = list(
-        actions
-    )
+    action_list = list(actions)
 
     statuses: Dict[
         str,
@@ -1022,26 +659,16 @@ def eligibility_summary(
     ] = {}
 
     for action in action_list:
-        statuses[
-            action.
-            eligibility.status
-        ] = (
+        statuses[action.eligibility.status] = (
             statuses.get(
-                action.
-                eligibility.status,
+                action.eligibility.status,
                 0,
             )
             + 1
         )
 
-        for blocker in (
-            action.
-            eligibility.
-            blocking_reasons
-        ):
-            blockers[
-                blocker
-            ] = (
+        for blocker in action.eligibility.blocking_reasons:
+            blockers[blocker] = (
                 blockers.get(
                     blocker,
                     0,
@@ -1050,33 +677,15 @@ def eligibility_summary(
             )
 
     return {
-        "action_count": (
-            len(action_list)
-        ),
+        "action_count": (len(action_list)),
         "eligible_count": (
-            sum(
-                1
-                for action
-                in action_list
-                if action.
-                eligibility.
-                eligible
-            )
+            sum(1 for action in action_list if action.eligibility.eligible)
         ),
         "ineligible_count": (
-            sum(
-                1
-                for action
-                in action_list
-                if not action.
-                eligibility.
-                eligible
-            )
+            sum(1 for action in action_list if not action.eligibility.eligible)
         ),
         "statuses": statuses,
-        "blocking_reasons": (
-            blockers
-        ),
+        "blocking_reasons": (blockers),
     }
 
 
@@ -1091,22 +700,12 @@ class EligibilityEngine:
     def __init__(
         self,
         *,
-        policy_engine: Optional[
-            PolicyEngine
-        ] = None,
-        config: Optional[
-            EligibilityConfig
-        ] = None,
+        policy_engine: Optional[PolicyEngine] = None,
+        config: Optional[EligibilityConfig] = None,
     ) -> None:
-        self.policy_engine = (
-            policy_engine
-            or PolicyEngine()
-        )
+        self.policy_engine = policy_engine or PolicyEngine()
 
-        self.config = (
-            config
-            or EligibilityConfig()
-        )
+        self.config = config or EligibilityConfig()
 
         self.config.validate()
 
@@ -1118,9 +717,7 @@ class EligibilityEngine:
         return assess_eligibility(
             action,
             context,
-            policy_engine=(
-                self.policy_engine
-            ),
+            policy_engine=(self.policy_engine),
             config=self.config,
         )
 
@@ -1132,26 +729,18 @@ class EligibilityEngine:
         return apply_eligibility(
             action,
             context,
-            policy_engine=(
-                self.policy_engine
-            ),
+            policy_engine=(self.policy_engine),
             config=self.config,
         )
 
     def apply_many(
         self,
-        actions: Iterable[
-            ActionCandidate
-        ],
+        actions: Iterable[ActionCandidate],
         context: DecisionContext,
-    ) -> List[
-        ActionCandidate
-    ]:
+    ) -> List[ActionCandidate]:
         return evaluate_actions(
             actions,
             context,
-            policy_engine=(
-                self.policy_engine
-            ),
+            policy_engine=(self.policy_engine),
             config=self.config,
         )

@@ -1,0 +1,786 @@
+# =============================================================================
+# OSHA - Infrastructure Configuration
+# =============================================================================
+#
+# Defines infrastructure providers and their runtime connection/discovery policy.
+#
+# Supported provider families:
+#   - Linux
+#   - Kubernetes
+#   - OpenStack
+#   - Ceph
+#   - MinIO
+#
+# IMPORTANT:
+#   Never store passwords, tokens, kubeconfigs, private keys, OpenStack
+#   application credentials, Ceph keys, or MinIO secret keys in this file.
+#
+# Provider credentials must come from an approved external source.
+# =============================================================================
+
+
+infrastructure:
+
+  # ---------------------------------------------------------------------------
+  # Global
+  # ---------------------------------------------------------------------------
+
+  enabled: true
+
+  environment: "production"
+
+  default_access: "read_only"
+
+  fail_closed: true
+
+  validate_on_startup: true
+
+  discovery_enabled: true
+
+  concurrent_discovery: true
+
+  max_concurrent_operations: 8
+
+
+  # ---------------------------------------------------------------------------
+  # Connection Defaults
+  # ---------------------------------------------------------------------------
+
+  connection:
+
+    timeout_seconds: 30
+
+    connect_timeout_seconds: 10
+
+    read_timeout_seconds: 30
+
+    verify_tls: true
+
+    allow_insecure_tls: false
+
+    retry:
+      enabled: true
+
+      max_attempts: 3
+
+      initial_delay_seconds: 1
+
+      maximum_delay_seconds: 30
+
+      exponential_backoff: true
+
+
+  # ---------------------------------------------------------------------------
+  # Provider Discovery
+  # ---------------------------------------------------------------------------
+
+  discovery:
+
+    enabled: true
+
+    discover_on_startup: true
+
+    refresh_interval_seconds: 300
+
+    timeout_seconds: 30
+
+    cache_results: true
+
+    cache_ttl_seconds: 300
+
+    continue_on_provider_failure: true
+
+
+  # ---------------------------------------------------------------------------
+  # Linux
+  # ---------------------------------------------------------------------------
+
+  providers:
+
+    linux:
+
+      enabled: true
+
+      type: "linux"
+
+      access: "read_only"
+
+      local:
+
+        enabled: true
+
+      remote:
+
+        enabled: false
+
+      discovery:
+
+        enabled: true
+
+        system_information: true
+
+        filesystems: true
+
+        network_interfaces: true
+
+        processes: true
+
+        services: true
+
+      capabilities:
+
+        telemetry: true
+
+        health: true
+
+        discovery: true
+
+        mutation: false
+
+        remediation: false
+
+        privileged_operations: false
+
+      security:
+
+        allow_shell: false
+
+        allow_remote_execution: false
+
+        allow_privilege_escalation: false
+
+
+    # -------------------------------------------------------------------------
+    # Kubernetes
+    # -------------------------------------------------------------------------
+
+    kubernetes:
+
+      enabled: true
+
+      type: "kubernetes"
+
+      access: "read_only"
+
+      connection:
+
+        mode: "auto"
+
+        prefer_in_cluster: true
+
+        kubeconfig_path: null
+
+        context: null
+
+        namespace: null
+
+        request_timeout_seconds: 30
+
+        verify_tls: true
+
+      discovery:
+
+        enabled: true
+
+        cluster: true
+
+        nodes: true
+
+        namespaces: true
+
+        pods: true
+
+        deployments: true
+
+        statefulsets: true
+
+        daemonsets: true
+
+        services: true
+
+        jobs: true
+
+        persistent_volumes: true
+
+        persistent_volume_claims: true
+
+      capabilities:
+
+        telemetry: true
+
+        events: true
+
+        metrics: true
+
+        topology: true
+
+        health: true
+
+        discovery: true
+
+        mutation: false
+
+        remediation: false
+
+      security:
+
+        read_only: true
+
+        allow_exec: false
+
+        allow_resource_creation: false
+
+        allow_resource_patch: false
+
+        allow_resource_delete: false
+
+
+    # -------------------------------------------------------------------------
+    # OpenStack
+    # -------------------------------------------------------------------------
+
+    openstack:
+
+      enabled: true
+
+      type: "openstack"
+
+      access: "read_only"
+
+      connection:
+
+        cloud: null
+
+        region: null
+
+        interface: "public"
+
+        verify_tls: true
+
+        request_timeout_seconds: 30
+
+      discovery:
+
+        enabled: true
+
+        services: true
+
+        regions: true
+
+      services:
+
+        compute:
+          enabled: true
+
+        networking:
+          enabled: true
+
+        block_storage:
+          enabled: true
+
+        identity:
+          enabled: true
+
+        image:
+          enabled: true
+
+        orchestration:
+          enabled: false
+
+        object_storage:
+          enabled: false
+
+      resources:
+
+        servers: true
+
+        hypervisors: true
+
+        flavors: true
+
+        networks: true
+
+        subnets: true
+
+        routers: true
+
+        ports: true
+
+        floating_ips: true
+
+        security_groups: true
+
+        volumes: true
+
+        snapshots: true
+
+        images: true
+
+      capabilities:
+
+        telemetry: true
+
+        topology: true
+
+        health: true
+
+        discovery: true
+
+        compute: true
+
+        networking: true
+
+        storage: true
+
+        mutation: false
+
+        remediation: false
+
+      security:
+
+        read_only: true
+
+        allow_server_mutation: false
+
+        allow_network_mutation: false
+
+        allow_volume_mutation: false
+
+        allow_identity_mutation: false
+
+        allow_resource_delete: false
+
+
+    # -------------------------------------------------------------------------
+    # Ceph
+    # -------------------------------------------------------------------------
+
+    ceph:
+
+      enabled: false
+
+      type: "ceph"
+
+      access: "read_only"
+
+      connection:
+
+        cluster: "ceph"
+
+        config_path: null
+
+        keyring_path: null
+
+        timeout_seconds: 30
+
+      discovery:
+
+        enabled: true
+
+        monitors: true
+
+        managers: true
+
+        osds: true
+
+        pools: true
+
+        placement_groups: true
+
+      capabilities:
+
+        telemetry: true
+
+        capacity: true
+
+        topology: true
+
+        health: true
+
+        discovery: true
+
+        mutation: false
+
+        remediation: false
+
+      security:
+
+        read_only: true
+
+        allow_pool_mutation: false
+
+        allow_osd_mutation: false
+
+        allow_cluster_mutation: false
+
+
+    # -------------------------------------------------------------------------
+    # MinIO
+    # -------------------------------------------------------------------------
+
+    minio:
+
+      enabled: false
+
+      type: "minio"
+
+      access: "read_only"
+
+      connection:
+
+        endpoint: null
+
+        secure: true
+
+        verify_tls: true
+
+        timeout_seconds: 30
+
+      discovery:
+
+        enabled: true
+
+        buckets: true
+
+        server_health: true
+
+      capabilities:
+
+        telemetry: true
+
+        capacity: true
+
+        health: true
+
+        discovery: true
+
+        object_metadata: true
+
+        mutation: false
+
+        remediation: false
+
+      security:
+
+        read_only: true
+
+        allow_bucket_creation: false
+
+        allow_bucket_deletion: false
+
+        allow_object_deletion: false
+
+        allow_policy_changes: false
+
+
+  # ---------------------------------------------------------------------------
+  # Topology
+  # ---------------------------------------------------------------------------
+
+  topology:
+
+    enabled: true
+
+    build_on_startup: true
+
+    refresh_interval_seconds: 300
+
+    preserve_previous_state: true
+
+    relate_cross_provider_resources: true
+
+    relationships:
+
+      linux_host: true
+
+      kubernetes_node_host: true
+
+      kubernetes_pod_node: true
+
+      kubernetes_workload_pod: true
+
+      openstack_instance_hypervisor: true
+
+      openstack_instance_network: true
+
+      openstack_instance_volume: true
+
+      ceph_osd_host: true
+
+      minio_node_host: true
+
+
+  # ---------------------------------------------------------------------------
+  # Resource Identity
+  # ---------------------------------------------------------------------------
+
+  identity:
+
+    enabled: true
+
+    require_provider: true
+
+    require_resource_id: true
+
+    require_resource_type: true
+
+    preserve_native_id: true
+
+    generate_internal_id: true
+
+    normalize_names: true
+
+
+  # ---------------------------------------------------------------------------
+  # Provider State
+  # ---------------------------------------------------------------------------
+
+  state:
+
+    enabled: true
+
+    persist: true
+
+    directory: "./artifacts/infrastructure"
+
+    restore_on_startup: true
+
+    persist_topology: true
+
+    persist_provider_health: true
+
+    persist_discovery_state: true
+
+
+  # ---------------------------------------------------------------------------
+  # Health
+  # ---------------------------------------------------------------------------
+
+  health:
+
+    enabled: true
+
+    interval_seconds: 30
+
+    provider_timeout_seconds: 10
+
+    unhealthy_after_failures: 3
+
+    record_last_success: true
+
+    record_last_failure: true
+
+    isolate_unhealthy_provider: true
+
+
+  # ---------------------------------------------------------------------------
+  # Rate Limiting
+  # ---------------------------------------------------------------------------
+
+  rate_limiting:
+
+    enabled: true
+
+    default_requests_per_second: 20
+
+    providers:
+
+      linux:
+        requests_per_second: 20
+
+      kubernetes:
+        requests_per_second: 20
+
+      openstack:
+        requests_per_second: 10
+
+      ceph:
+        requests_per_second: 10
+
+      minio:
+        requests_per_second: 10
+
+
+  # ---------------------------------------------------------------------------
+  # Circuit Breaker
+  # ---------------------------------------------------------------------------
+
+  circuit_breaker:
+
+    enabled: true
+
+    failure_threshold: 5
+
+    recovery_timeout_seconds: 60
+
+    half_open_attempts: 1
+
+    isolate_provider: true
+
+
+  # ---------------------------------------------------------------------------
+  # Credentials
+  # ---------------------------------------------------------------------------
+
+  credentials:
+
+    persist: false
+
+    expose_to_logs: false
+
+    expose_to_metrics: false
+
+    expose_to_ai: false
+
+    expose_to_artifacts: false
+
+    allow_inline_credentials: false
+
+    sources:
+
+      environment:
+        enabled: true
+
+      secret_manager:
+        enabled: true
+
+      orchestrator_secret:
+        enabled: true
+
+
+  # ---------------------------------------------------------------------------
+  # Transport Security
+  # ---------------------------------------------------------------------------
+
+  transport:
+
+    require_tls_for_remote_connections: true
+
+    verify_certificates: true
+
+    allow_insecure_transport: false
+
+    allow_plaintext_credentials: false
+
+
+  # ---------------------------------------------------------------------------
+  # Mutation Boundary
+  # ---------------------------------------------------------------------------
+
+  mutation:
+
+    enabled: false
+
+    require_remediation_layer: true
+
+    require_authorization: true
+
+    require_approval: true
+
+    require_preflight_validation: true
+
+    require_resource_lock: true
+
+    require_post_action_verification: true
+
+    direct_mutation_from_collectors: false
+
+    direct_mutation_from_ai: false
+
+    direct_mutation_from_correlation: false
+
+
+  # ---------------------------------------------------------------------------
+  # Safety
+  # ---------------------------------------------------------------------------
+
+  safety:
+
+    fail_closed: true
+
+    read_only_by_default: true
+
+    block_unknown_providers: true
+
+    block_unknown_resources: true
+
+    block_unknown_operations: true
+
+    block_destructive_operations: true
+
+    block_unvalidated_mutations: true
+
+    block_direct_ai_mutation: true
+
+    block_direct_collector_mutation: true
+
+
+  # ---------------------------------------------------------------------------
+  # Observability
+  # ---------------------------------------------------------------------------
+
+  observability:
+
+    metrics:
+
+      enabled: true
+
+      provider_requests: true
+
+      provider_failures: true
+
+      provider_latency: true
+
+      discovered_resources: true
+
+      provider_health: true
+
+      topology_refreshes: true
+
+    logging:
+
+      enabled: true
+
+      log_provider_connection: true
+
+      log_discovery_failure: true
+
+      log_health_changes: true
+
+      log_topology_changes: false
+
+      log_credentials: false
+
+
+  # ---------------------------------------------------------------------------
+  # Failure Handling
+  # ---------------------------------------------------------------------------
+
+  failure:
+
+    continue_on_provider_failure: true
+
+    isolate_failed_provider: true
+
+    preserve_last_known_state: true
+
+    emit_provider_failure_event: true
+
+    fail_application_if_all_providers_unavailable: false
+
+
+  # ---------------------------------------------------------------------------
+  # Experimental
+  # ---------------------------------------------------------------------------
+
+  experimental:
+
+    enabled: false
+
+    automatic_provider_registration: false
+
+    automatic_write_access: false
+
+    ai_managed_credentials: false
+
+    ai_managed_provider_configuration: false

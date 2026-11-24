@@ -41,16 +41,12 @@ def image_identifier(
     image.
     """
 
-    image_id = optional_string(
-        payload.get("image_id")
-    )
+    image_id = optional_string(payload.get("image_id"))
 
     if image_id:
         return image_id
 
-    name = optional_string(
-        payload.get("name")
-    )
+    name = optional_string(payload.get("name"))
 
     if name:
         return name
@@ -74,9 +70,7 @@ def normalize_properties(
     ):
         return {}
 
-    sanitized = sanitize(
-        dict(value)
-    )
+    sanitized = sanitize(dict(value))
 
     return (
         sanitized
@@ -101,27 +95,15 @@ def normalize_image(
 
     raw = as_dict(image)
 
-    image_id = (
-        raw.get("id")
-    )
+    image_id = raw.get("id")
 
-    name = (
-        raw.get("name")
-    )
+    name = raw.get("name")
 
-    status = optional_string(
-        raw.get("status")
-    )
+    status = optional_string(raw.get("status"))
 
-    normalized_status = (
-        status.lower()
-        if status
-        else None
-    )
+    normalized_status = status.lower() if status else None
 
-    healthy: Optional[bool] = (
-        None
-    )
+    healthy: Optional[bool] = None
 
     if normalized_status in {
         "active",
@@ -139,18 +121,9 @@ def normalize_image(
     }:
         healthy = False
 
-    properties = (
-        normalize_properties(
-            raw.get(
-                "properties"
-            )
-            or {}
-        )
-    )
+    properties = normalize_properties(raw.get("properties") or {})
 
-    tags = raw.get(
-        "tags"
-    )
+    tags = raw.get("tags")
 
     if not isinstance(
         tags,
@@ -158,40 +131,21 @@ def normalize_image(
     ):
         tags = []
 
-    owner = (
-        raw.get("owner")
-        or raw.get(
-            "owner_id"
-        )
-    )
+    owner = raw.get("owner") or raw.get("owner_id")
 
-    image_size = (
-        raw.get("size")
-    )
+    image_size = raw.get("size")
 
-    virtual_size = (
-        raw.get(
-            "virtual_size"
-        )
-    )
+    virtual_size = raw.get("virtual_size")
 
-    hidden = raw.get(
-        "is_hidden"
-    )
+    hidden = raw.get("is_hidden")
 
     if hidden is None:
-        hidden = raw.get(
-            "hidden"
-        )
+        hidden = raw.get("hidden")
 
-    protected = raw.get(
-        "is_protected"
-    )
+    protected = raw.get("is_protected")
 
     if protected is None:
-        protected = raw.get(
-            "protected"
-        )
+        protected = raw.get("protected")
 
     # We intentionally do not include:
     #
@@ -204,99 +158,27 @@ def normalize_image(
     # for normal OSHA resource understanding.
 
     payload = {
-        "image_id": (
-            optional_string(
-                image_id
-            )
-        ),
-        "name": (
-            optional_string(name)
-        ),
+        "image_id": (optional_string(image_id)),
+        "name": (optional_string(name)),
         "status": status,
         "healthy": healthy,
-        "visibility": (
-            optional_string(
-                raw.get(
-                    "visibility"
-                )
-            )
-        ),
-        "owner_id": (
-            optional_string(
-                owner
-            )
-        ),
-        "disk_format": (
-            optional_string(
-                raw.get(
-                    "disk_format"
-                )
-            )
-        ),
-        "container_format": (
-            optional_string(
-                raw.get(
-                    "container_format"
-                )
-            )
-        ),
-        "size_bytes": (
-            image_size
-        ),
-        "virtual_size_bytes": (
-            virtual_size
-        ),
-        "minimum_disk_gb": (
-            raw.get(
-                "min_disk"
-            )
-        ),
-        "minimum_ram_mb": (
-            raw.get(
-                "min_ram"
-            )
-        ),
-        "checksum": (
-            optional_string(
-                raw.get(
-                    "checksum"
-                )
-            )
-        ),
-        "hash_algorithm": (
-            optional_string(
-                raw.get(
-                    "hash_algo"
-                )
-            )
-        ),
-        "hash_value": (
-            optionalstring(
-                raw.get(
-                    "hash_value"
-                )
-            )
-        ),
+        "visibility": (optional_string(raw.get("visibility"))),
+        "owner_id": (optional_string(owner)),
+        "disk_format": (optional_string(raw.get("disk_format"))),
+        "container_format": (optional_string(raw.get("container_format"))),
+        "size_bytes": (image_size),
+        "virtual_size_bytes": (virtual_size),
+        "minimum_disk_gb": (raw.get("min_disk")),
+        "minimum_ram_mb": (raw.get("min_ram")),
+        "checksum": (optional_string(raw.get("checksum"))),
+        "hash_algorithm": (optional_string(raw.get("hash_algo"))),
+        "hash_value": (optionalstring(raw.get("hash_value"))),
         "hidden": hidden,
-        "protected": (
-            protected
-        ),
-        "tags": sanitize(
-            tags
-        ),
-        "properties": (
-            properties
-        ),
-        "created_at": (
-            raw.get(
-                "created_at"
-            )
-        ),
-        "updated_at": (
-            raw.get(
-                "updated_at"
-            )
-        ),
+        "protected": (protected),
+        "tags": sanitize(tags),
+        "properties": (properties),
+        "created_at": (raw.get("created_at")),
+        "updated_at": (raw.get("updated_at")),
     }
 
     return sanitize(payload)
@@ -315,43 +197,22 @@ def collect_images(
     records: List[dict] = []
 
     try:
-        for image in (
-            ctx.conn.image.images()
-        ):
-            payload = normalize_image(
-                image
-            )
+        for image in ctx.conn.image.images():
+            payload = normalize_image(image)
 
-            resource_id = (
-                image_identifier(
-                    payload
-                )
-            )
+            resource_id = image_identifier(payload)
 
-            timestamp = (
-                payload.get(
-                    "updated_at"
-                )
-                or payload.get(
-                    "created_at"
-                )
-            )
+            timestamp = payload.get("updated_at") or payload.get("created_at")
 
             records.append(
                 record(
                     "image",
                     "image",
                     payload,
-                    cloud_id=(
-                        ctx.cloud_id
-                    ),
+                    cloud_id=(ctx.cloud_id),
                     region=ctx.region,
-                    environment_id=(
-                        ctx.environment_id
-                    ),
-                    resource_id=(
-                        resource_id
-                    ),
+                    environment_id=(ctx.environment_id),
+                    resource_id=(resource_id),
                     timestamp=timestamp,
                     source="glance",
                 )
@@ -362,16 +223,10 @@ def collect_images(
             error(
                 "image",
                 exc,
-                cloud_id=(
-                    ctx.cloud_id
-                ),
+                cloud_id=(ctx.cloud_id),
                 region=ctx.region,
-                environment_id=(
-                    ctx.environment_id
-                ),
-                operation=(
-                    "list_images"
-                ),
+                environment_id=(ctx.environment_id),
+                operation=("list_images"),
             )
         )
 
@@ -399,57 +254,27 @@ def image_summary(
     valid_images = 0
 
     for item in records:
-        if (
-            item.get("signal_type")
-            != "image"
-        ):
+        if item.get("signal_type") != "image":
             continue
 
         valid_images += 1
 
-        payload = (
-            item.get("payload")
-            or {}
-        )
+        payload = item.get("payload") or {}
 
-        status = (
-            payload.get("status")
-            or "unknown"
-        )
+        status = payload.get("status") or "unknown"
 
-        visibility = (
-            payload.get(
-                "visibility"
-            )
-            or "unknown"
-        )
+        visibility = payload.get("visibility") or "unknown"
 
-        disk_format = (
-            payload.get(
-                "disk_format"
-            )
-            or "unknown"
-        )
+        disk_format = payload.get("disk_format") or "unknown"
 
-        statuses[
-            str(status)
-        ] += 1
+        statuses[str(status)] += 1
 
-        visibilities[
-            str(visibility)
-        ] += 1
+        visibilities[str(visibility)] += 1
 
-        disk_formats[
-            str(disk_format)
-        ] += 1
+        disk_formats[str(disk_format)] += 1
 
         try:
-            total_size_bytes += int(
-                payload.get(
-                    "size_bytes"
-                )
-                or 0
-            )
+            total_size_bytes += int(payload.get("size_bytes") or 0)
         except (
             TypeError,
             ValueError,
@@ -457,76 +282,32 @@ def image_summary(
             pass
 
         try:
-            total_virtual_size_bytes += (
-                int(
-                    payload.get(
-                        "virtual_size_bytes"
-                    )
-                    or 0
-                )
-            )
+            total_virtual_size_bytes += int(payload.get("virtual_size_bytes") or 0)
         except (
             TypeError,
             ValueError,
         ):
             pass
 
-        if (
-            payload.get(
-                "protected"
-            )
-            is True
-        ):
+        if payload.get("protected") is True:
             protected_count += 1
 
-        if (
-            payload.get(
-                "hidden"
-            )
-            is True
-        ):
+        if payload.get("hidden") is True:
             hidden_count += 1
 
-        if (
-            payload.get(
-                "healthy"
-            )
-            is False
-        ):
+        if payload.get("healthy") is False:
             unhealthy_count += 1
 
     return {
-        "image_count": (
-            valid_images
-        ),
-        "statuses": (
-            dict(statuses)
-        ),
-        "visibility": (
-            dict(
-                visibilities
-            )
-        ),
-        "disk_formats": (
-            dict(
-                disk_formats
-            )
-        ),
-        "total_size_bytes": (
-            total_size_bytes
-        ),
-        "total_virtual_size_bytes": (
-            total_virtual_size_bytes
-        ),
-        "protected_image_count": (
-            protected_count
-        ),
-        "hidden_image_count": (
-            hidden_count
-        ),
-        "unhealthy_image_count": (
-            unhealthy_count
-        ),
+        "image_count": (valid_images),
+        "statuses": (dict(statuses)),
+        "visibility": (dict(visibilities)),
+        "disk_formats": (dict(disk_formats)),
+        "total_size_bytes": (total_size_bytes),
+        "total_virtual_size_bytes": (total_virtual_size_bytes),
+        "protected_image_count": (protected_count),
+        "hidden_image_count": (hidden_count),
+        "unhealthy_image_count": (unhealthy_count),
     }
 
 
@@ -555,41 +336,24 @@ def collect(
         return [
             unavailable(
                 "image",
-                (
-                    "Image service endpoint "
-                    "is unavailable"
-                ),
-                cloud_id=(
-                    ctx.cloud_id
-                ),
+                ("Image service endpoint is unavailable"),
+                cloud_id=(ctx.cloud_id),
                 region=ctx.region,
-                environment_id=(
-                    ctx.environment_id
-                ),
+                environment_id=(ctx.environment_id),
             )
         ]
 
-    records = collect_images(
-        ctx
-    )
+    records = collect_images(ctx)
 
     records.append(
         record(
             "image",
             "image_summary",
-            image_summary(
-                records
-            ),
-            cloud_id=(
-                ctx.cloud_id
-            ),
+            image_summary(records),
+            cloud_id=(ctx.cloud_id),
             region=ctx.region,
-            environment_id=(
-                ctx.environment_id
-            ),
-            resource_id=(
-                ctx.cloud_id
-            ),
+            environment_id=(ctx.environment_id),
+            resource_id=(ctx.cloud_id),
             source="osha",
         )
     )

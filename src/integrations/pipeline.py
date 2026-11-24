@@ -57,6 +57,7 @@ from src.security.secrets import (
 # Integration pipeline
 # ---------------------------------------------------------------
 
+
 class IntegrationPipeline:
     """
     Unified facade for OSHA infrastructure
@@ -78,20 +79,11 @@ class IntegrationPipeline:
     def __init__(
         self,
         *,
-        config: Optional[
-            IntegrationsConfig
-        ] = None,
-        secrets: Optional[
-            SecretManager
-        ] = None,
-        registry: Optional[
-            IntegrationRegistry
-        ] = None,
+        config: Optional[IntegrationsConfig] = None,
+        secrets: Optional[SecretManager] = None,
+        registry: Optional[IntegrationRegistry] = None,
     ) -> None:
-        self.config = (
-            config
-            or IntegrationsConfig()
-        )
+        self.config = config or IntegrationsConfig()
 
         self.config.validate()
 
@@ -99,34 +91,21 @@ class IntegrationPipeline:
         # Adapter registry
         # -----------------------------------------------------
 
-        self.registry = (
-            registry
-            or IntegrationRegistry()
-        )
+        self.registry = registry or IntegrationRegistry()
 
         # -----------------------------------------------------
         # Credential resolution
         # -----------------------------------------------------
 
-        self.credentials = (
-            IntegrationCredentialResolver(
-                secrets=secrets
-            )
-        )
+        self.credentials = IntegrationCredentialResolver(secrets=secrets)
 
         # -----------------------------------------------------
         # Health
         # -----------------------------------------------------
 
-        self.health = (
-            IntegrationHealthChecker(
-                registry=(
-                    self.registry
-                ),
-                config=(
-                    self.config.health
-                ),
-            )
+        self.health = IntegrationHealthChecker(
+            registry=(self.registry),
+            config=(self.config.health),
         )
 
     # ---------------------------------------------------------
@@ -151,43 +130,25 @@ class IntegrationPipeline:
 
         # Keep pipeline-wide integration policy
         # authoritative.
-        if (
-            adapter.config
-            != self.config
-        ):
-            adapter.config = (
-                self.config
-            )
+        if adapter.config != self.config:
+            adapter.config = self.config
 
             adapter.config.validate()
 
-        self.registry.register(
-            adapter
-        )
+        self.registry.register(adapter)
 
         if connect:
             try:
                 self.connect_adapter(
                     adapter,
-                    credential_required=(
-                        credential_required
-                    ),
+                    credential_required=(credential_required),
                 )
 
             except Exception:
                 self.registry.remove(
-                    environment=(
-                        adapter.target.
-                        environment_id
-                    ),
-                    provider=(
-                        adapter.target.
-                        provider
-                    ),
-                    target_id=(
-                        adapter.target.
-                        target_id
-                    ),
+                    environment=(adapter.target.environment_id),
+                    provider=(adapter.target.provider),
+                    target_id=(adapter.target.target_id),
                     close=False,
                 )
 
@@ -213,18 +174,12 @@ class IntegrationPipeline:
         credential resolver into adapter.connect.
         """
 
-        credential = (
-            self.credentials.resolve(
-                adapter.target,
-                required=(
-                    credential_required
-                ),
-            )
+        credential = self.credentials.resolve(
+            adapter.target,
+            required=(credential_required),
         )
 
-        return adapter.connect(
-            credential=credential
-        )
+        return adapter.connect(credential=credential)
 
     # ---------------------------------------------------------
     # Connect target
@@ -238,19 +193,15 @@ class IntegrationPipeline:
         target_id: str,
         credential_required: bool = False,
     ) -> IntegrationStatus:
-        adapter = (
-            self.registry.require(
-                environment=environment,
-                provider=provider,
-                target_id=target_id,
-            )
+        adapter = self.registry.require(
+            environment=environment,
+            provider=provider,
+            target_id=target_id,
         )
 
         return self.connect_adapter(
             adapter,
-            credential_required=(
-                credential_required
-            ),
+            credential_required=(credential_required),
         )
 
     # ---------------------------------------------------------
@@ -278,45 +229,27 @@ class IntegrationPipeline:
             str,
         ] = {}
 
-        for adapter in (
-            self.registry.list()
-        ):
+        for adapter in self.registry.list():
             key = "/".join(
                 (
-                    adapter.target.
-                    environment_id,
-
-                    adapter.target.
-                    provider,
-
-                    adapter.target.
-                    target_id,
+                    adapter.target.environment_id,
+                    adapter.target.provider,
+                    adapter.target.target_id,
                 )
             )
 
             try:
-                status = (
-                    self.connect_adapter(
-                        adapter,
-                        credential_required=(
-                            credential_required
-                        ),
-                    )
+                status = self.connect_adapter(
+                    adapter,
+                    credential_required=(credential_required),
                 )
 
-                results[
-                    key
-                ] = status.state
+                results[key] = status.state
 
             except Exception as exc:
                 # Do not expose provider error
                 # messages here.
-                results[
-                    key
-                ] = (
-                    "error:"
-                    + type(exc).__name__
-                )
+                results[key] = "error:" + type(exc).__name__
 
         return results
 
@@ -331,12 +264,10 @@ class IntegrationPipeline:
         provider: str,
         target_id: str,
     ) -> IntegrationStatus:
-        adapter = (
-            self.registry.require(
-                environment=environment,
-                provider=provider,
-                target_id=target_id,
-            )
+        adapter = self.registry.require(
+            environment=environment,
+            provider=provider,
+            target_id=target_id,
         )
 
         return adapter.close()
@@ -349,9 +280,7 @@ class IntegrationPipeline:
         self,
         operation: IntegrationOperation,
         *,
-        security_context: Optional[
-            SecurityContext
-        ] = None,
+        security_context: Optional[SecurityContext] = None,
     ) -> IntegrationResult:
         """
         Locate the exact registered adapter and
@@ -364,34 +293,19 @@ class IntegrationPipeline:
         if not self.config.enabled:
             raise (
                 IntegrationOperationBlockedError(
-                    "Infrastructure "
-                    "integrations are "
-                    "disabled."
+                    "Infrastructure integrations are disabled."
                 )
             )
 
-        adapter = (
-            self.registry.require(
-                environment=(
-                    operation.target.
-                    environment_id
-                ),
-                provider=(
-                    operation.target.
-                    provider
-                ),
-                target_id=(
-                    operation.target.
-                    target_id
-                ),
-            )
+        adapter = self.registry.require(
+            environment=(operation.target.environment_id),
+            provider=(operation.target.provider),
+            target_id=(operation.target.target_id),
         )
 
         return adapter.dispatch(
             operation,
-            security_context=(
-                security_context
-            ),
+            security_context=(security_context),
         )
 
     # ---------------------------------------------------------
@@ -401,15 +315,9 @@ class IntegrationPipeline:
     def health_check(
         self,
         *,
-        environment: Optional[
-            str
-        ] = None,
-        provider: Optional[
-            str
-        ] = None,
-    ) -> List[
-        IntegrationHealth
-    ]:
+        environment: Optional[str] = None,
+        provider: Optional[str] = None,
+    ) -> List[IntegrationHealth]:
         return self.health.check_all(
             environment=environment,
             provider=provider,
@@ -442,39 +350,17 @@ class IntegrationPipeline:
         ] = {}
 
         if connect_registered:
-            connections = (
-                self.connect_all(
-                    credential_required=(
-                        credential_required
-                    ),
-                )
+            connections = self.connect_all(
+                credential_required=(credential_required),
             )
 
-        health = (
-            self.health_check()
-            if self.config.
-            health.enabled
-            else []
-        )
+        health = self.health_check() if self.config.health.enabled else []
 
         return {
-            "enabled": (
-                self.config.enabled
-            ),
-
-            "connections": (
-                connections
-            ),
-
-            "health": [
-                item.to_dict()
-                for item
-                in health
-            ],
-
-            "registry": (
-                self.registry.summary()
-            ),
+            "enabled": (self.config.enabled),
+            "connections": (connections),
+            "health": [item.to_dict() for item in health],
+            "registry": (self.registry.summary()),
         }
 
     # ---------------------------------------------------------
@@ -489,14 +375,8 @@ class IntegrationPipeline:
         """
 
         return {
-            "closed": (
-                self.registry.
-                close_all()
-            ),
-
-            "registry": (
-                self.registry.summary()
-            ),
+            "closed": (self.registry.close_all()),
+            "registry": (self.registry.summary()),
         }
 
     # ---------------------------------------------------------
@@ -508,9 +388,7 @@ class IntegrationPipeline:
     ) -> "IntegrationPipeline":
         # Do not create external connections
         # automatically.
-        self.start(
-            connect_registered=False
-        )
+        self.start(connect_registered=False)
 
         return self
 
@@ -532,37 +410,13 @@ class IntegrationPipeline:
         self,
     ) -> Dict[str, Any]:
         return {
-            "config": (
-                safe_config_summary(
-                    self.config
-                )
-            ),
-
-            "registry": (
-                self.registry.summary()
-            ),
-
-            "credentials": (
-                self.credentials.
-                summary()
-            ),
-
-            "health": (
-                self.health.summary()
-            ),
-
-            "capabilities": (
-                self.registry.
-                capabilities()
-            ),
-
-            "credential_values_exposed": (
-                False
-            ),
-
-            "infrastructure_health_claimed": (
-                False
-            ),
+            "config": (safe_config_summary(self.config)),
+            "registry": (self.registry.summary()),
+            "credentials": (self.credentials.summary()),
+            "health": (self.health.summary()),
+            "capabilities": (self.registry.capabilities()),
+            "credential_values_exposed": (False),
+            "infrastructure_health_claimed": (False),
         }
 
 

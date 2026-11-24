@@ -80,6 +80,7 @@ from src.accelerators.schema import (
 # Backend discovery result
 # ---------------------------------------------------------------
 
+
 class BackendDiscoveryResult:
     """
     Result of discovering devices from one
@@ -98,9 +99,7 @@ class BackendDiscoveryResult:
             ...,
         ] = (),
         available: bool = False,
-        error_type: Optional[
-            str
-        ] = None,
+        error_type: Optional[str] = None,
         attributes: Optional[
             Dict[
                 str,
@@ -108,49 +107,28 @@ class BackendDiscoveryResult:
             ]
         ] = None,
     ) -> None:
-        self.backend = str(
-            backend
-        ).strip().lower()
+        self.backend = str(backend).strip().lower()
 
-        self.devices = tuple(
-            devices
-        )
+        self.devices = tuple(devices)
 
-        self.available = bool(
-            available
-        )
+        self.available = bool(available)
 
-        self.error_type = (
-            error_type
-        )
+        self.error_type = error_type
 
-        self.attributes = dict(
-            attributes
-            or {}
-        )
+        self.attributes = dict(attributes or {})
 
         self.validate()
 
     def validate(
         self,
     ) -> None:
-        if (
-            self.backend
-            not in {
-                AcceleratorKind.
-                CPU.value,
-
-                AcceleratorKind.
-                CUDA.value,
-
-                AcceleratorKind.
-                ROCM.value,
-            }
-        ):
+        if self.backend not in {
+            AcceleratorKind.CPU.value,
+            AcceleratorKind.CUDA.value,
+            AcceleratorKind.ROCM.value,
+        }:
             raise ValueError(
-                "Backend discovery result "
-                "contains an unsupported "
-                "backend."
+                "Backend discovery result contains an unsupported backend."
             )
 
         seen = set()
@@ -158,33 +136,19 @@ class BackendDiscoveryResult:
         for device in self.devices:
             device.validate()
 
-            if (
-                device.kind
-                != self.backend
-            ):
-                raise ValueError(
-                    "Discovered device kind "
-                    "does not match backend."
-                )
+            if device.kind != self.backend:
+                raise ValueError("Discovered device kind does not match backend.")
 
             if device.device_id in seen:
-                raise ValueError(
-                    "Backend discovery "
-                    "returned duplicate "
-                    "device IDs."
-                )
+                raise ValueError("Backend discovery returned duplicate device IDs.")
 
-            seen.add(
-                device.device_id
-            )
+            seen.add(device.device_id)
 
     @property
     def device_count(
         self,
     ) -> int:
-        return len(
-            self.devices
-        )
+        return len(self.devices)
 
     @property
     def available_devices(
@@ -193,12 +157,7 @@ class BackendDiscoveryResult:
         AcceleratorDevice,
         ...,
     ]:
-        return tuple(
-            device
-            for device
-            in self.devices
-            if device.available
-        )
+        return tuple(device for device in self.devices if device.available)
 
     def to_dict(
         self,
@@ -206,35 +165,13 @@ class BackendDiscoveryResult:
         self.validate()
 
         return {
-            "backend": (
-                self.backend
-            ),
-
-            "available": (
-                self.available
-            ),
-
-            "device_count": (
-                self.device_count
-            ),
-
-            "available_device_count": len(
-                self.available_devices
-            ),
-
-            "devices": [
-                device.to_dict()
-                for device
-                in self.devices
-            ],
-
-            "error_type": (
-                self.error_type
-            ),
-
-            "attributes": dict(
-                self.attributes
-            ),
+            "backend": (self.backend),
+            "available": (self.available),
+            "device_count": (self.device_count),
+            "available_device_count": len(self.available_devices),
+            "devices": [device.to_dict() for device in self.devices],
+            "error_type": (self.error_type),
+            "attributes": dict(self.attributes),
         }
 
 
@@ -242,9 +179,8 @@ class BackendDiscoveryResult:
 # Accelerator backend
 # ---------------------------------------------------------------
 
-class AcceleratorBackend(
-    ABC
-):
+
+class AcceleratorBackend(ABC):
     """
     Abstract contract for one accelerator backend.
 
@@ -261,37 +197,20 @@ class AcceleratorBackend(
     def __init__(
         self,
         *,
-        config: Optional[
-            AcceleratorConfig
-        ] = None,
+        config: Optional[AcceleratorConfig] = None,
     ) -> None:
-        self.config = (
-            config
-            or AcceleratorConfig()
-        )
+        self.config = config or AcceleratorConfig()
 
         self.config.validate()
 
         self._lock = RLock()
 
-        if (
-            self.kind
-            not in {
-                AcceleratorKind.
-                CPU.value,
-
-                AcceleratorKind.
-                CUDA.value,
-
-                AcceleratorKind.
-                ROCM.value,
-            }
-        ):
-            raise ValueError(
-                "AcceleratorBackend.kind "
-                "must be cpu, cuda, or "
-                "rocm."
-            )
+        if self.kind not in {
+            AcceleratorKind.CPU.value,
+            AcceleratorKind.CUDA.value,
+            AcceleratorKind.ROCM.value,
+        }:
+            raise ValueError("AcceleratorBackend.kind must be cpu, cuda, or rocm.")
 
     # ---------------------------------------------------------
     # Backend identity
@@ -372,30 +291,18 @@ class AcceleratorBackend(
 
         with self._lock:
             try:
-                backend_available = (
-                    self.available()
-                )
+                backend_available = self.available()
 
             except Exception as exc:
-                if (
-                    self.config.
-                    discovery.
-                    fail_on_backend_error
-                ):
+                if self.config.discovery.fail_on_backend_error:
                     raise (
                         AcceleratorBackendUnavailableError(
-                            "Accelerator backend "
-                            "availability check "
-                            "failed.",
+                            "Accelerator backend availability check failed.",
                             details=(
                                 safe_accelerator_error_details(
                                     exc,
-                                    operation=(
-                                        "availability"
-                                    ),
-                                    backend=(
-                                        self.kind
-                                    ),
+                                    operation=("availability"),
+                                    backend=(self.kind),
                                 )
                             ),
                         )
@@ -405,13 +312,9 @@ class AcceleratorBackend(
                     backend=self.kind,
                     devices=(),
                     available=False,
-                    error_type=(
-                        type(exc).__name__
-                    ),
+                    error_type=(type(exc).__name__),
                     attributes={
-                        "availability_check_failed": (
-                            True
-                        ),
+                        "availability_check_failed": (True),
                     },
                 )
 
@@ -421,28 +324,19 @@ class AcceleratorBackend(
                     devices=(),
                     available=False,
                     attributes={
-                        "backend_unavailable": (
-                            True
-                        ),
+                        "backend_unavailable": (True),
                     },
                 )
 
             try:
-                devices = tuple(
-                    self._discover()
-                )
+                devices = tuple(self._discover())
 
                 for device in devices:
                     device.validate()
 
-                    if (
-                        device.kind
-                        != self.kind
-                    ):
+                    if device.kind != self.kind:
                         raise ValueError(
-                            "Backend returned a "
-                            "device from another "
-                            "accelerator kind."
+                            "Backend returned a device from another accelerator kind."
                         )
 
                 return BackendDiscoveryResult(
@@ -452,11 +346,7 @@ class AcceleratorBackend(
                 )
 
             except Exception as exc:
-                if (
-                    self.config.
-                    discovery.
-                    fail_on_backend_error
-                ):
+                if self.config.discovery.fail_on_backend_error:
                     if isinstance(
                         exc,
                         AcceleratorBackendOperationError,
@@ -465,18 +355,12 @@ class AcceleratorBackend(
 
                     raise (
                         AcceleratorBackendOperationError(
-                            "Accelerator backend "
-                            "device discovery "
-                            "failed.",
+                            "Accelerator backend device discovery failed.",
                             details=(
                                 safe_accelerator_error_details(
                                     exc,
-                                    operation=(
-                                        "discover"
-                                    ),
-                                    backend=(
-                                        self.kind
-                                    ),
+                                    operation=("discover"),
+                                    backend=(self.kind),
                                 )
                             ),
                         )
@@ -486,13 +370,9 @@ class AcceleratorBackend(
                     backend=self.kind,
                     devices=(),
                     available=True,
-                    error_type=(
-                        type(exc).__name__
-                    ),
+                    error_type=(type(exc).__name__),
                     attributes={
-                        "discovery_failed": (
-                            True
-                        ),
+                        "discovery_failed": (True),
                     },
                 )
 
@@ -509,22 +389,16 @@ class AcceleratorBackend(
         discovery snapshot.
         """
 
-        expected = str(
-            device_id
-        ).strip()
+        expected = str(device_id).strip()
 
         result = self.discover()
 
         for device in result.devices:
-            if (
-                device.device_id
-                == expected
-            ):
+            if device.device_id == expected:
                 return device
 
         raise AcceleratorDeviceNotFoundError(
-            "Accelerator device was not "
-            "found in this backend.",
+            "Accelerator device was not found in this backend.",
             details={
                 "backend": self.kind,
                 "device_id": expected,
@@ -541,37 +415,23 @@ class AcceleratorBackend(
     ) -> None:
         device.validate()
 
-        if (
-            device.kind
-            != self.kind
-        ):
+        if device.kind != self.kind:
             raise AcceleratorDeviceUnavailableError(
-                "Accelerator device does "
-                "not belong to this "
-                "backend.",
+                "Accelerator device does not belong to this backend.",
                 details={
                     "backend": self.kind,
-                    "device_id": (
-                        device.device_id
-                    ),
-                    "device_kind": (
-                        device.kind
-                    ),
+                    "device_id": (device.device_id),
+                    "device_kind": (device.kind),
                 },
             )
 
         if not device.available:
             raise AcceleratorDeviceUnavailableError(
-                "Accelerator device is "
-                "not available.",
+                "Accelerator device is not available.",
                 details={
                     "backend": self.kind,
-                    "device_id": (
-                        device.device_id
-                    ),
-                    "state": (
-                        device.state
-                    ),
+                    "device_id": (device.device_id),
+                    "state": (device.state),
                 },
             )
 
@@ -598,33 +458,19 @@ class AcceleratorBackend(
         self,
         device: AcceleratorDevice,
     ) -> AcceleratorMemory:
-        self.require_available_device(
-            device
-        )
+        self.require_available_device(device)
 
-        if (
-            self.config.
-            runtime.
-            synchronize_before_memory_query
-        ):
-            self.synchronize(
-                device
-            )
+        if self.config.runtime.synchronize_before_memory_query:
+            self.synchronize(device)
 
         try:
-            memory = self._memory(
-                device
-            )
+            memory = self._memory(device)
 
             if not isinstance(
                 memory,
                 AcceleratorMemory,
             ):
-                raise TypeError(
-                    "Backend memory query "
-                    "must return "
-                    "AcceleratorMemory."
-                )
+                raise TypeError("Backend memory query must return AcceleratorMemory.")
 
             memory.validate()
 
@@ -635,20 +481,14 @@ class AcceleratorBackend(
 
         except Exception as exc:
             raise AcceleratorMemoryQueryError(
-                "Accelerator memory query "
-                "failed.",
+                "Accelerator memory query failed.",
                 details=(
                     safe_accelerator_error_details(
                         exc,
                         operation="memory",
                         backend=self.kind,
-                        device_id=(
-                            device.device_id
-                        ),
-                        runtime_device=(
-                            device.
-                            runtime_device
-                        ),
+                        device_id=(device.device_id),
+                        runtime_device=(device.runtime_device),
                     )
                 ),
             ) from exc
@@ -669,74 +509,28 @@ class AcceleratorBackend(
         identity and capabilities.
         """
 
-        self.require_available_device(
-            device
-        )
+        self.require_available_device(device)
 
-        memory = self.memory(
-            device
-        )
+        memory = self.memory(device)
 
         return AcceleratorDevice(
-            device_id=(
-                device.device_id
-            ),
-
+            device_id=(device.device_id),
             kind=device.kind,
-
-            runtime_device=(
-                device.runtime_device
-            ),
-
+            runtime_device=(device.runtime_device),
             index=device.index,
-
             name=device.name,
-
             state=device.state,
-
             memory=memory,
-
-            capabilities=(
-                device.capabilities
-            ),
-
-            supported_precisions=(
-                device.
-                supported_precisions
-            ),
-
-            compute_capability=(
-                device.
-                compute_capability
-            ),
-
+            capabilities=(device.capabilities),
+            supported_precisions=(device.supported_precisions),
+            compute_capability=(device.compute_capability),
             vendor=device.vendor,
-
-            architecture=(
-                device.architecture
-            ),
-
-            driver_version=(
-                device.driver_version
-            ),
-
-            runtime_version=(
-                device.runtime_version
-            ),
-
-            logical_processor_count=(
-                device.
-                logical_processor_count
-            ),
-
-            multiprocessor_count=(
-                device.
-                multiprocessor_count
-            ),
-
-            attributes=dict(
-                device.attributes
-            ),
+            architecture=(device.architecture),
+            driver_version=(device.driver_version),
+            runtime_version=(device.runtime_version),
+            logical_processor_count=(device.logical_processor_count),
+            multiprocessor_count=(device.multiprocessor_count),
+            attributes=dict(device.attributes),
         )
 
     # ---------------------------------------------------------
@@ -768,37 +562,24 @@ class AcceleratorBackend(
         self,
         device: AcceleratorDevice,
     ) -> Any:
-        self.require_available_device(
-            device
-        )
+        self.require_available_device(device)
 
         try:
-            return self._runtime_device(
-                device
-            )
+            return self._runtime_device(device)
 
         except AcceleratorRuntimeDeviceError:
             raise
 
         except Exception as exc:
             raise AcceleratorRuntimeDeviceError(
-                "Accelerator runtime "
-                "device could not be "
-                "constructed.",
+                "Accelerator runtime device could not be constructed.",
                 details=(
                     safe_accelerator_error_details(
                         exc,
-                        operation=(
-                            "runtime_device"
-                        ),
+                        operation=("runtime_device"),
                         backend=self.kind,
-                        device_id=(
-                            device.device_id
-                        ),
-                        runtime_device=(
-                            device.
-                            runtime_device
-                        ),
+                        device_id=(device.device_id),
+                        runtime_device=(device.runtime_device),
                     )
                 ),
             ) from exc
@@ -821,36 +602,24 @@ class AcceleratorBackend(
         self,
         device: AcceleratorDevice,
     ) -> None:
-        self.require_available_device(
-            device
-        )
+        self.require_available_device(device)
 
         try:
-            self._synchronize(
-                device
-            )
+            self._synchronize(device)
 
         except AcceleratorSynchronizationError:
             raise
 
         except Exception as exc:
             raise AcceleratorSynchronizationError(
-                "Accelerator "
-                "synchronization failed.",
+                "Accelerator synchronization failed.",
                 details=(
                     safe_accelerator_error_details(
                         exc,
-                        operation=(
-                            "synchronize"
-                        ),
+                        operation=("synchronize"),
                         backend=self.kind,
-                        device_id=(
-                            device.device_id
-                        ),
-                        runtime_device=(
-                            device.
-                            runtime_device
-                        ),
+                        device_id=(device.device_id),
+                        runtime_device=(device.runtime_device),
                     )
                 ),
             ) from exc
@@ -873,36 +642,24 @@ class AcceleratorBackend(
         self,
         device: AcceleratorDevice,
     ) -> None:
-        self.require_available_device(
-            device
-        )
+        self.require_available_device(device)
 
         try:
-            self._clear_cache(
-                device
-            )
+            self._clear_cache(device)
 
         except AcceleratorCacheClearError:
             raise
 
         except Exception as exc:
             raise AcceleratorCacheClearError(
-                "Accelerator cache could "
-                "not be cleared.",
+                "Accelerator cache could not be cleared.",
                 details=(
                     safe_accelerator_error_details(
                         exc,
-                        operation=(
-                            "clear_cache"
-                        ),
+                        operation=("clear_cache"),
                         backend=self.kind,
-                        device_id=(
-                            device.device_id
-                        ),
-                        runtime_device=(
-                            device.
-                            runtime_device
-                        ),
+                        device_id=(device.device_id),
+                        runtime_device=(device.runtime_device),
                     )
                 ),
             ) from exc
@@ -922,18 +679,10 @@ class AcceleratorBackend(
         delete model objects owned by callers.
         """
 
-        self.require_available_device(
-            device
-        )
+        self.require_available_device(device)
 
-        if (
-            self.config.
-            runtime.
-            clear_cache_on_release
-        ):
-            self.clear_cache(
-                device
-            )
+        if self.config.runtime.clear_cache_on_release:
+            self.clear_cache(device)
 
     # ---------------------------------------------------------
     # Allocation failure handling
@@ -952,18 +701,10 @@ class AcceleratorBackend(
         fall back.
         """
 
-        self.require_available_device(
-            device
-        )
+        self.require_available_device(device)
 
-        if (
-            self.config.
-            runtime.
-            clear_cache_on_allocation_failure
-        ):
-            self.clear_cache(
-                device
-            )
+        if self.config.runtime.clear_cache_on_allocation_failure:
+            self.clear_cache(device)
 
     # ---------------------------------------------------------
     # Health implementation
@@ -985,35 +726,20 @@ class AcceleratorBackend(
         available = self.available()
 
         return AcceleratorHealth(
-            component=(
-                "accelerator_backend:"
-                + self.kind
-            ),
-
+            component=("accelerator_backend:" + self.kind),
             status=(
-                AcceleratorHealthStatus.
-                HEALTHY.value
+                AcceleratorHealthStatus.HEALTHY.value
                 if available
-                else AcceleratorHealthStatus.
-                UNAVAILABLE.value
+                else AcceleratorHealthStatus.UNAVAILABLE.value
             ),
-
             message=(
-                "Accelerator backend is "
-                "available."
+                "Accelerator backend is available."
                 if available
-                else (
-                    "Accelerator backend "
-                    "is unavailable."
-                )
+                else ("Accelerator backend is unavailable.")
             ),
-
             kind=self.kind,
-
             attributes={
-                "deep_check": (
-                    deep
-                ),
+                "deep_check": (deep),
             },
         )
 
@@ -1024,9 +750,7 @@ class AcceleratorBackend(
     def health(
         self,
         *,
-        deep: Optional[
-            bool
-        ] = None,
+        deep: Optional[bool] = None,
     ) -> AcceleratorHealth:
         """
         Check backend health.
@@ -1036,29 +760,16 @@ class AcceleratorBackend(
         exposing arbitrary framework exceptions.
         """
 
-        deep_check = (
-            self.config.
-            health.deep_check
-            if deep is None
-            else bool(
-                deep
-            )
-        )
+        deep_check = self.config.health.deep_check if deep is None else bool(deep)
 
         try:
-            health = self._health(
-                deep=deep_check
-            )
+            health = self._health(deep=deep_check)
 
             if not isinstance(
                 health,
                 AcceleratorHealth,
             ):
-                raise TypeError(
-                    "Backend health check "
-                    "must return "
-                    "AcceleratorHealth."
-                )
+                raise TypeError("Backend health check must return AcceleratorHealth.")
 
             health.validate()
 
@@ -1071,14 +782,9 @@ class AcceleratorBackend(
             ):
                 raise
 
-            if (
-                self.config.
-                discovery.
-                fail_on_backend_error
-            ):
+            if self.config.discovery.fail_on_backend_error:
                 raise AcceleratorHealthCheckError(
-                    "Accelerator backend "
-                    "health check failed.",
+                    "Accelerator backend health check failed.",
                     details=(
                         safe_accelerator_error_details(
                             exc,
@@ -1089,33 +795,14 @@ class AcceleratorBackend(
                 ) from exc
 
             return AcceleratorHealth(
-                component=(
-                    "accelerator_backend:"
-                    + self.kind
-                ),
-
-                status=(
-                    AcceleratorHealthStatus.
-                    UNHEALTHY.value
-                ),
-
-                message=(
-                    "Accelerator backend "
-                    "health check failed."
-                ),
-
+                component=("accelerator_backend:" + self.kind),
+                status=(AcceleratorHealthStatus.UNHEALTHY.value),
+                message=("Accelerator backend health check failed."),
                 kind=self.kind,
-
                 retryable=True,
-
-                error_type=(
-                    type(exc).__name__
-                ),
-
+                error_type=(type(exc).__name__),
                 attributes={
-                    "deep_check": (
-                        deep_check
-                    ),
+                    "deep_check": (deep_check),
                 },
             )
 
@@ -1137,45 +824,18 @@ class AcceleratorBackend(
 
         return {
             "kind": self.kind,
-
-            "available": (
-                discovery.available
-            ),
-
-            "device_count": (
-                discovery.device_count
-            ),
-
-            "available_device_count": len(
-                discovery.
-                available_devices
-            ),
-
-            "error_type": (
-                discovery.error_type
-            ),
-
+            "available": (discovery.available),
+            "device_count": (discovery.device_count),
+            "available_device_count": len(discovery.available_devices),
+            "error_type": (discovery.error_type),
             "devices": [
                 {
-                    "device_id": (
-                        device.device_id
-                    ),
-
-                    "runtime_device": (
-                        device.
-                        runtime_device
-                    ),
-
-                    "state": (
-                        device.state
-                    ),
-
-                    "name": (
-                        device.name
-                    ),
+                    "device_id": (device.device_id),
+                    "runtime_device": (device.runtime_device),
+                    "state": (device.state),
+                    "name": (device.name),
                 }
-                for device
-                in discovery.devices
+                for device in discovery.devices
             ],
         }
 
@@ -1184,48 +844,39 @@ class AcceleratorBackend(
 # CPU backend base marker
 # ---------------------------------------------------------------
 
-class CPUAcceleratorBackend(
-    AcceleratorBackend
-):
+
+class CPUAcceleratorBackend(AcceleratorBackend):
     """
     Base marker for CPU implementations.
     """
 
-    kind = (
-        AcceleratorKind.CPU.value
-    )
+    kind = AcceleratorKind.CPU.value
 
 
 # ---------------------------------------------------------------
 # CUDA backend base marker
 # ---------------------------------------------------------------
 
-class CUDAAcceleratorBackend(
-    AcceleratorBackend
-):
+
+class CUDAAcceleratorBackend(AcceleratorBackend):
     """
     Base marker for NVIDIA CUDA implementations.
     """
 
-    kind = (
-        AcceleratorKind.CUDA.value
-    )
+    kind = AcceleratorKind.CUDA.value
 
 
 # ---------------------------------------------------------------
 # ROCm backend base marker
 # ---------------------------------------------------------------
 
-class ROCmAcceleratorBackend(
-    AcceleratorBackend
-):
+
+class ROCmAcceleratorBackend(AcceleratorBackend):
     """
     Base marker for AMD ROCm implementations.
     """
 
-    kind = (
-        AcceleratorKind.ROCM.value
-    )
+    kind = AcceleratorKind.ROCM.value
 
 
 # ---------------------------------------------------------------
@@ -1234,9 +885,7 @@ class ROCmAcceleratorBackend(
 
 __all__ = [
     "BackendDiscoveryResult",
-
     "AcceleratorBackend",
-
     "CPUAcceleratorBackend",
     "CUDAAcceleratorBackend",
     "ROCmAcceleratorBackend",

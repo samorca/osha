@@ -21,9 +21,8 @@ from typing import (
 # Base error
 # ---------------------------------------------------------------
 
-class OshaError(
-    Exception
-):
+
+class OshaError(Exception):
     """
     Base class for expected OSHA application
     errors.
@@ -37,13 +36,9 @@ class OshaError(
 
     def __init__(
         self,
-        message: str = (
-            "OSHA operation failed."
-        ),
+        message: str = ("OSHA operation failed."),
         *,
-        code: Optional[
-            str
-        ] = None,
+        code: Optional[str] = None,
         retryable: bool = False,
         details: Optional[
             Mapping[
@@ -52,34 +47,18 @@ class OshaError(
             ]
         ] = None,
     ) -> None:
-        self.message = (
-            str(message).strip()
-            or "OSHA operation failed."
-        )
+        self.message = str(message).strip() or "OSHA operation failed."
 
-        self.code = (
-            str(
-                code
-                or self.default_code
-            ).strip()
-            or self.default_code
-        )
+        self.code = str(code or self.default_code).strip() or self.default_code
 
-        self.retryable = bool(
-            retryable
-        )
+        self.retryable = bool(retryable)
 
         self.details: Dict[
             str,
             Any,
-        ] = dict(
-            details
-            or {}
-        )
+        ] = dict(details or {})
 
-        super().__init__(
-            self.message
-        )
+        super().__init__(self.message)
 
     def to_dict(
         self,
@@ -98,25 +77,14 @@ class OshaError(
             str,
             Any,
         ] = {
-            "type": (
-                type(self).__name__
-            ),
+            "type": (type(self).__name__),
             "code": self.code,
             "message": self.message,
-            "retryable": (
-                self.retryable
-            ),
+            "retryable": (self.retryable),
         }
 
-        if (
-            include_details
-            and self.details
-        ):
-            value[
-                "details"
-            ] = dict(
-                self.details
-            )
+        if include_details and self.details:
+            value["details"] = dict(self.details)
 
         return value
 
@@ -125,112 +93,72 @@ class OshaError(
 # Configuration / validation
 # ---------------------------------------------------------------
 
-class ConfigurationError(
-    OshaError
-):
-    default_code = (
-        "configuration_error"
-    )
+
+class ConfigurationError(OshaError):
+    default_code = "configuration_error"
 
 
-class ValidationError(
-    OshaError
-):
-    default_code = (
-        "validation_error"
-    )
+class ValidationError(OshaError):
+    default_code = "validation_error"
 
 
-class IdentifierError(
-    ValidationError
-):
-    default_code = (
-        "identifier_error"
-    )
+class IdentifierError(ValidationError):
+    default_code = "identifier_error"
 
 
-class SerializationError(
-    OshaError
-):
-    default_code = (
-        "serialization_error"
-    )
+class SerializationError(OshaError):
+    default_code = "serialization_error"
 
 
 # ---------------------------------------------------------------
 # Lifecycle
 # ---------------------------------------------------------------
 
-class LifecycleError(
-    OshaError
-):
-    default_code = (
-        "lifecycle_error"
-    )
+
+class LifecycleError(OshaError):
+    default_code = "lifecycle_error"
 
 
-class StateTransitionError(
-    LifecycleError
-):
-    default_code = (
-        "state_transition_error"
-    )
+class StateTransitionError(LifecycleError):
+    default_code = "state_transition_error"
 
 
 # ---------------------------------------------------------------
 # Dependencies
 # ---------------------------------------------------------------
 
-class DependencyError(
-    OshaError
-):
-    default_code = (
-        "dependency_error"
-    )
+
+class DependencyError(OshaError):
+    default_code = "dependency_error"
 
 
-class DependencyUnavailableError(
-    DependencyError
-):
-    default_code = (
-        "dependency_unavailable"
-    )
+class DependencyUnavailableError(DependencyError):
+    default_code = "dependency_unavailable"
 
 
 # ---------------------------------------------------------------
 # Policy
 # ---------------------------------------------------------------
 
-class PolicyError(
-    OshaError
-):
-    default_code = (
-        "policy_error"
-    )
+
+class PolicyError(OshaError):
+    default_code = "policy_error"
 
 
-class PolicyBlockedError(
-    PolicyError
-):
+class PolicyBlockedError(PolicyError):
     """
     A controlled policy block.
 
     Policy blocks are non-retryable by default.
     """
 
-    default_code = (
-        "policy_blocked"
-    )
+    default_code = "policy_blocked"
 
     def __init__(
         self,
-        message: str = (
-            "Operation blocked by policy."
-        ),
+        message: str = ("Operation blocked by policy."),
         *,
-        code: Optional[
-            str
-        ] = None,
+        code: Optional[str] = None,
         details: Optional[
             Mapping[
                 str,
@@ -240,106 +168,69 @@ class PolicyBlockedError(
     ) -> None:
         super().__init__(
             message,
-            code=(
-                code
-                or self.default_code
-            ),
+            code=(code or self.default_code),
             retryable=False,
             details=details,
         )
 
 
-class ApprovalRequiredError(
-    PolicyBlockedError
-):
-    default_code = (
-        "approval_required"
-    )
+class ApprovalRequiredError(PolicyBlockedError):
+    default_code = "approval_required"
 
 
-class SafetyGuardrailError(
-    PolicyBlockedError
-):
-    default_code = (
-        "safety_guardrail"
-    )
+class SafetyGuardrailError(PolicyBlockedError):
+    default_code = "safety_guardrail"
 
 
 # ---------------------------------------------------------------
 # Queue / lease
 # ---------------------------------------------------------------
 
-class QueueError(
-    OshaError
-):
-    default_code = (
-        "queue_error"
-    )
+
+class QueueError(OshaError):
+    default_code = "queue_error"
 
 
-class JobNotFoundError(
-    QueueError
-):
-    default_code = (
-        "job_not_found"
-    )
+class JobNotFoundError(QueueError):
+    default_code = "job_not_found"
 
 
-class LeaseError(
-    QueueError
-):
-    default_code = (
-        "lease_error"
-    )
+class LeaseError(QueueError):
+    default_code = "lease_error"
 
 
-class LeaseOwnershipError(
-    LeaseError
-):
-    default_code = (
-        "lease_ownership_error"
-    )
+class LeaseOwnershipError(LeaseError):
+    default_code = "lease_ownership_error"
 
 
-class LeaseExpiredError(
-    LeaseError
-):
-    default_code = (
-        "lease_expired"
-    )
+class LeaseExpiredError(LeaseError):
+    default_code = "lease_expired"
 
 
 # ---------------------------------------------------------------
 # Workers
 # ---------------------------------------------------------------
 
-class WorkerError(
-    OshaError
-):
-    default_code = (
-        "worker_error"
-    )
+
+class WorkerError(OshaError):
+    default_code = "worker_error"
 
 
 # ---------------------------------------------------------------
 # Orchestration
 # ---------------------------------------------------------------
 
-class OrchestrationError(
-    OshaError
-):
-    default_code = (
-        "orchestration_error"
-    )
+
+class OrchestrationError(OshaError):
+    default_code = "orchestration_error"
 
 
 # ---------------------------------------------------------------
 # Runtime
 # ---------------------------------------------------------------
 
-class RuntimeErrorBase(
-    OshaError
-):
+
+class RuntimeErrorBase(OshaError):
     """
     OSHA runtime-layer error.
 
@@ -347,102 +238,66 @@ class RuntimeErrorBase(
     with Python's built-in RuntimeError.
     """
 
-    default_code = (
-        "runtime_error"
-    )
+    default_code = "runtime_error"
 
 
 # ---------------------------------------------------------------
 # Integration
 # ---------------------------------------------------------------
 
-class IntegrationError(
-    OshaError
-):
-    default_code = (
-        "integration_error"
-    )
+
+class IntegrationError(OshaError):
+    default_code = "integration_error"
 
 
-class ExternalServiceError(
-    IntegrationError
-):
-    default_code = (
-        "external_service_error"
-    )
+class ExternalServiceError(IntegrationError):
+    default_code = "external_service_error"
 
 
 # ---------------------------------------------------------------
 # Persistence
 # ---------------------------------------------------------------
 
-class PersistenceError(
-    OshaError
-):
-    default_code = (
-        "persistence_error"
-    )
+
+class PersistenceError(OshaError):
+    default_code = "persistence_error"
 
 
 # ---------------------------------------------------------------
 # Security
 # ---------------------------------------------------------------
 
-class SecurityError(
-    OshaError
-):
-    default_code = (
-        "security_error"
-    )
+
+class SecurityError(OshaError):
+    default_code = "security_error"
 
 
-class AuthorizationError(
-    SecurityError
-):
-    default_code = (
-        "authorization_error"
-    )
+class AuthorizationError(SecurityError):
+    default_code = "authorization_error"
 
 
-class AuthenticationError(
-    SecurityError
-):
-    default_code = (
-        "authentication_error"
-    )
+class AuthenticationError(SecurityError):
+    default_code = "authentication_error"
 
 
 # ---------------------------------------------------------------
 # Generic resource errors
 # ---------------------------------------------------------------
 
-class NotFoundError(
-    OshaError
-):
-    default_code = (
-        "not_found"
-    )
+
+class NotFoundError(OshaError):
+    default_code = "not_found"
 
 
-class ConflictError(
-    OshaError
-):
-    default_code = (
-        "conflict"
-    )
+class ConflictError(OshaError):
+    default_code = "conflict"
 
 
-class CapacityError(
-    OshaError
-):
-    default_code = (
-        "capacity_error"
-    )
+class CapacityError(OshaError):
+    default_code = "capacity_error"
 
 
-class TimeoutErrorBase(
-    OshaError
-):
+class TimeoutErrorBase(OshaError):
     """
     OSHA timeout error.
 
@@ -459,42 +314,32 @@ class TimeoutErrorBase(
 
 __all__ = [
     "OshaError",
-
     "ConfigurationError",
     "ValidationError",
     "IdentifierError",
     "SerializationError",
-
     "LifecycleError",
     "StateTransitionError",
-
     "DependencyError",
     "DependencyUnavailableError",
-
     "PolicyError",
     "PolicyBlockedError",
     "ApprovalRequiredError",
     "SafetyGuardrailError",
-
     "QueueError",
     "JobNotFoundError",
     "LeaseError",
     "LeaseOwnershipError",
     "LeaseExpiredError",
-
     "WorkerError",
     "OrchestrationError",
     "RuntimeErrorBase",
-
     "IntegrationError",
     "ExternalServiceError",
-
     "PersistenceError",
-
     "SecurityError",
     "AuthorizationError",
     "AuthenticationError",
-
     "NotFoundError",
     "ConflictError",
     "CapacityError",

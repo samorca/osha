@@ -43,6 +43,7 @@ from src.orchestrator.state import (
 # Configuration
 # ---------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class PipelineConfig:
     """
@@ -62,23 +63,12 @@ class PipelineConfig:
         str,
         ...,
     ] = (
-        StageName.
-        CORRELATION.value,
-
-        StageName.
-        INTELLIGENCE.value,
-
-        StageName.
-        DECISION.value,
-
-        StageName.
-        REMEDIATION.value,
-
-        StageName.
-        SELF_HEALING.value,
-
-        StageName.
-        OUTCOME.value,
+        StageName.CORRELATION.value,
+        StageName.INTELLIGENCE.value,
+        StageName.DECISION.value,
+        StageName.REMEDIATION.value,
+        StageName.SELF_HEALING.value,
+        StageName.OUTCOME.value,
     )
 
     stage_order: tuple[
@@ -97,56 +87,26 @@ class PipelineConfig:
     def validate(
         self,
     ) -> None:
-        valid = {
-            item.value
-            for item in StageName
-        }
+        valid = {item.value for item in StageName}
 
-        unknown_required = sorted(
-            set(
-                self.required_handlers
-            )
-            - valid
-        )
+        unknown_required = sorted(set(self.required_handlers) - valid)
 
-        unknown_order = sorted(
-            set(
-                self.stage_order
-            )
-            - valid
-        )
+        unknown_order = sorted(set(self.stage_order) - valid)
 
         if unknown_required:
-            raise ValueError(
-                "Unknown required handlers: "
-                f"{unknown_required}"
-            )
+            raise ValueError(f"Unknown required handlers: {unknown_required}")
 
         if unknown_order:
-            raise ValueError(
-                "Unknown stages in "
-                f"stage_order: {unknown_order}"
-            )
+            raise ValueError(f"Unknown stages in stage_order: {unknown_order}")
 
-        if (
-            len(
-                set(
-                    self.stage_order
-                )
-            )
-            != len(
-                self.stage_order
-            )
-        ):
-            raise ValueError(
-                "stage_order contains "
-                "duplicate stages"
-            )
+        if len(set(self.stage_order)) != len(self.stage_order):
+            raise ValueError("stage_order contains duplicate stages")
 
 
 # ---------------------------------------------------------------
 # Pipeline input
 # ---------------------------------------------------------------
+
 
 @dataclass
 class PipelineInput:
@@ -171,39 +131,24 @@ class PipelineInput:
     initial_artifacts: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     metadata: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
     ) -> "PipelineInput":
         self.context.finalize()
 
-        valid = {
-            item.value
-            for item in StageName
-        }
+        valid = {item.value for item in StageName}
 
-        unknown = sorted(
-            set(
-                self.initial_artifacts
-            )
-            - valid
-        )
+        unknown = sorted(set(self.initial_artifacts) - valid)
 
         if unknown:
-            raise ValueError(
-                "Unknown initial artifact "
-                f"stages: {unknown}"
-            )
+            raise ValueError(f"Unknown initial artifact stages: {unknown}")
 
         return self
 
@@ -212,6 +157,7 @@ class PipelineInput:
 # Pipeline output
 # ---------------------------------------------------------------
 
+
 @dataclass
 class PipelineResult:
     coordination: CoordinationResult
@@ -219,9 +165,7 @@ class PipelineResult:
     metadata: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     @property
     def run(
@@ -233,26 +177,21 @@ class PipelineResult:
     def artifacts(
         self,
     ) -> Dict[str, Any]:
-        return (
-            self.coordination.artifacts
-        )
+        return self.coordination.artifacts
 
     def to_dict(
         self,
     ) -> Dict[str, Any]:
         return {
-            "coordination": (
-                self.coordination.to_dict()
-            ),
-            "metadata": dict(
-                self.metadata
-            ),
+            "coordination": (self.coordination.to_dict()),
+            "metadata": dict(self.metadata),
         }
 
 
 # ---------------------------------------------------------------
 # Generic object access
 # ---------------------------------------------------------------
+
 
 def read_value(
     value: Any,
@@ -291,6 +230,7 @@ def read_value(
 # Decision interpretation
 # ---------------------------------------------------------------
 
+
 def selected_action(
     decision_output: Any,
 ) -> Any:
@@ -328,9 +268,7 @@ def selected_action(
     )
 
     if actions:
-        return list(
-            actions
-        )[0]
+        return list(actions)[0]
 
     return None
 
@@ -345,9 +283,7 @@ def approval_required(
     )
 
     if direct is not None:
-        return bool(
-            direct
-        )
+        return bool(direct)
 
     approval = read_value(
         action,
@@ -360,9 +296,7 @@ def approval_required(
     )
 
     if required is not None:
-        return bool(
-            required
-        )
+        return bool(required)
 
     status = str(
         read_value(
@@ -398,9 +332,7 @@ def mutating_action(
     )
 
     if explicit is not None:
-        return bool(
-            explicit
-        )
+        return bool(explicit)
 
     action_type = str(
         read_value(
@@ -421,6 +353,7 @@ def mutating_action(
 # ---------------------------------------------------------------
 # Remediation interpretation
 # ---------------------------------------------------------------
+
 
 def remediation_signals(
     output: Any,
@@ -460,11 +393,7 @@ def remediation_signals(
     ).lower()
 
     return {
-        "blocked": (
-            status == "blocked"
-            or execution_status
-            == "blocked"
-        ),
+        "blocked": (status == "blocked" or execution_status == "blocked"),
         "failed": (
             status == "failed"
             or execution_status
@@ -481,17 +410,14 @@ def remediation_signals(
                 False,
             )
         ),
-        "dry_run": (
-            mode == "dry_run"
-            or execution_status
-            == "dry_run"
-        ),
+        "dry_run": (mode == "dry_run" or execution_status == "dry_run"),
     }
 
 
 # ---------------------------------------------------------------
 # Healing interpretation
 # ---------------------------------------------------------------
+
 
 def healing_signals(
     output: Any,
@@ -520,15 +446,14 @@ def healing_signals(
                 False,
             )
         ),
-        "outcome_available": (
-            outcome is not None
-        ),
+        "outcome_available": (outcome is not None),
     }
 
 
 # ---------------------------------------------------------------
 # Orchestrator pipeline
 # ---------------------------------------------------------------
+
 
 class OrchestratorPipeline:
     """
@@ -554,76 +479,34 @@ class OrchestratorPipeline:
             str,
             StageHandler,
         ],
-        config: Optional[
-            PipelineConfig
-        ] = None,
-        lifecycle: Optional[
-            OrchestrationLifecycle
-        ] = None,
-        state: Optional[
-            OrchestrationStateManager
-        ] = None,
+        config: Optional[PipelineConfig] = None,
+        lifecycle: Optional[OrchestrationLifecycle] = None,
+        state: Optional[OrchestrationStateManager] = None,
     ) -> None:
-        self.config = (
-            config
-            or PipelineConfig()
-        )
+        self.config = config or PipelineConfig()
 
         self.config.validate()
 
-        self.handlers = dict(
-            handlers
-        )
+        self.handlers = dict(handlers)
 
-        missing = sorted(
-            set(
-                self.config.
-                required_handlers
-            )
-            - set(
-                self.handlers
-            )
-        )
+        missing = sorted(set(self.config.required_handlers) - set(self.handlers))
 
         if missing:
-            raise ValueError(
-                "Missing required "
-                "orchestrator handlers: "
-                f"{missing}"
-            )
+            raise ValueError(f"Missing required orchestrator handlers: {missing}")
 
-        self.lifecycle = (
-            lifecycle
-            or OrchestrationLifecycle()
-        )
+        self.lifecycle = lifecycle or OrchestrationLifecycle()
 
-        self.state = (
-            state
-            or OrchestrationStateManager()
-        )
+        self.state = state or OrchestrationStateManager()
 
-        self.coordinator = (
-            OrchestrationCoordinator(
-                handlers=(
-                    self._wrapped_handlers()
-                ),
-                lifecycle=self.lifecycle,
-                state=self.state,
-                config=CoordinatorConfig(
-                    fail_fast=(
-                        self.config.
-                        fail_fast
-                    ),
-                    stop_on_blocked_stage=(
-                        self.config.
-                        stop_on_blocked_stage
-                    ),
-                    redact_exception_messages=(
-                        self.config.
-                        redact_exception_messages
-                    ),
-                ),
-            )
+        self.coordinator = OrchestrationCoordinator(
+            handlers=(self._wrapped_handlers()),
+            lifecycle=self.lifecycle,
+            state=self.state,
+            config=CoordinatorConfig(
+                fail_fast=(self.config.fail_fast),
+                stop_on_blocked_stage=(self.config.stop_on_blocked_stage),
+                redact_exception_messages=(self.config.redact_exception_messages),
+            ),
         )
 
     # ---------------------------------------------------------
@@ -641,55 +524,18 @@ class OrchestratorPipeline:
             StageHandler,
         ] = {}
 
-        for stage, handler in (
-            self.handlers.items()
-        ):
-            if (
-                stage
-                == StageName.
-                REMEDIATION.value
-            ):
-                wrapped[
-                    stage
-                ] = (
-                    self.
-                    _remediation_handler(
-                        handler
-                    )
-                )
+        for stage, handler in self.handlers.items():
+            if stage == StageName.REMEDIATION.value:
+                wrapped[stage] = self._remediation_handler(handler)
 
-            elif (
-                stage
-                == StageName.
-                SELF_HEALING.value
-            ):
-                wrapped[
-                    stage
-                ] = (
-                    self.
-                    _healing_handler(
-                        handler
-                    )
-                )
+            elif stage == StageName.SELF_HEALING.value:
+                wrapped[stage] = self._healing_handler(handler)
 
-            elif (
-                stage
-                == StageName.
-                OUTCOME.value
-            ):
-                wrapped[
-                    stage
-                ] = (
-                    self.
-                    _outcome_handler(
-                        handler
-                    )
-                )
+            elif stage == StageName.OUTCOME.value:
+                wrapped[stage] = self._outcome_handler(handler)
 
             else:
-                wrapped[
-                    stage
-                ] = handler
+                wrapped[stage] = handler
 
         return wrapped
 
@@ -700,48 +546,28 @@ class OrchestratorPipeline:
         def wrapped(
             context: CoordinatorContext,
         ) -> StageExecution:
-            decision_output = (
-                context.get(
-                    StageName.
-                    DECISION.value
-                )
-            )
+            decision_output = context.get(StageName.DECISION.value)
 
-            action = selected_action(
-                decision_output
-            )
+            action = selected_action(decision_output)
 
-            gate = (
-                self.lifecycle.
-                decision_gate(
-                    approval_required=(
-                        approval_required(
-                            decision_output,
-                            action,
-                        )
-                    ),
-                    action_available=(
-                        action is not None
-                    ),
-                    mutating_action=(
-                        mutating_action(
-                            action
-                        )
-                    ),
-                )
+            gate = self.lifecycle.decision_gate(
+                approval_required=(
+                    approval_required(
+                        decision_output,
+                        action,
+                    )
+                ),
+                action_available=(action is not None),
+                mutating_action=(mutating_action(action)),
             )
 
             if gate.stop:
                 return StageExecution(
                     blocked=True,
-                    stop_reason=(
-                        gate.stop_reason
-                    ),
+                    stop_reason=(gate.stop_reason),
                     reason=gate.reason,
                     attributes={
-                        "gate": (
-                            gate.to_dict()
-                        ),
+                        "gate": (gate.to_dict()),
                     },
                 )
 
@@ -750,15 +576,11 @@ class OrchestratorPipeline:
                     skip=True,
                     reason=gate.reason,
                     attributes={
-                        "gate": (
-                            gate.to_dict()
-                        ),
+                        "gate": (gate.to_dict()),
                     },
                 )
 
-            result = handler(
-                context
-            )
+            result = handler(context)
 
             if isinstance(
                 result,
@@ -766,9 +588,7 @@ class OrchestratorPipeline:
             ):
                 return result
 
-            return StageExecution(
-                output=result
-            )
+            return StageExecution(output=result)
 
         return wrapped
 
@@ -779,40 +599,22 @@ class OrchestratorPipeline:
         def wrapped(
             context: CoordinatorContext,
         ) -> StageExecution:
-            signals = (
-                remediation_signals(
-                    context.get(
-                        StageName.
-                        REMEDIATION.value
-                    )
-                )
-            )
+            signals = remediation_signals(context.get(StageName.REMEDIATION.value))
 
-            gate = (
-                self.lifecycle.
-                remediation_gate(
-                    **signals
-                )
-            )
+            gate = self.lifecycle.remediation_gate(**signals)
 
             if gate.stop:
                 return StageExecution(
                     blocked=True,
-                    stop_reason=(
-                        gate.stop_reason
-                    ),
+                    stop_reason=(gate.stop_reason),
                     reason=gate.reason,
                     attributes={
-                        "gate": (
-                            gate.to_dict()
-                        ),
+                        "gate": (gate.to_dict()),
                         **signals,
                     },
                 )
 
-            result = handler(
-                context
-            )
+            result = handler(context)
 
             execution = (
                 result
@@ -820,9 +622,7 @@ class OrchestratorPipeline:
                     result,
                     StageExecution,
                 )
-                else StageExecution(
-                    output=result
-                )
+                else StageExecution(output=result)
             )
 
             execution.attributes.setdefault(
@@ -841,31 +641,17 @@ class OrchestratorPipeline:
         def wrapped(
             context: CoordinatorContext,
         ) -> StageExecution:
-            signals = healing_signals(
-                context.get(
-                    StageName.
-                    SELF_HEALING.value
-                )
-            )
+            signals = healing_signals(context.get(StageName.SELF_HEALING.value))
 
-            gate = (
-                self.lifecycle.
-                healing_gate(
-                    **signals
-                )
-            )
+            gate = self.lifecycle.healing_gate(**signals)
 
             if gate.stop:
                 return StageExecution(
                     blocked=True,
-                    stop_reason=(
-                        gate.stop_reason
-                    ),
+                    stop_reason=(gate.stop_reason),
                     reason=gate.reason,
                     attributes={
-                        "gate": (
-                            gate.to_dict()
-                        ),
+                        "gate": (gate.to_dict()),
                         **signals,
                     },
                 )
@@ -875,16 +661,12 @@ class OrchestratorPipeline:
                     skip=True,
                     reason=gate.reason,
                     attributes={
-                        "gate": (
-                            gate.to_dict()
-                        ),
+                        "gate": (gate.to_dict()),
                         **signals,
                     },
                 )
 
-            result = handler(
-                context
-            )
+            result = handler(context)
 
             if isinstance(
                 result,
@@ -892,9 +674,7 @@ class OrchestratorPipeline:
             ):
                 return result
 
-            return StageExecution(
-                output=result
-            )
+            return StageExecution(output=result)
 
         return wrapped
 
@@ -908,46 +688,21 @@ class OrchestratorPipeline:
     ) -> PipelineResult:
         pipeline_input.finalize()
 
-        if (
-            self.config.require_dry_run
-            and not pipeline_input.
-            context.dry_run
-        ):
-            raise ValueError(
-                "Orchestrator pipeline "
-                "currently requires "
-                "dry_run context"
-            )
+        if self.config.require_dry_run and not pipeline_input.context.dry_run:
+            raise ValueError("Orchestrator pipeline currently requires dry_run context")
 
-        run = (
-            self.coordinator.
-            create_run(
-                pipeline_input.context
-            )
-        )
+        run = self.coordinator.create_run(pipeline_input.context)
 
         context = CoordinatorContext(
             run=run,
-            artifacts=dict(
-                pipeline_input.
-                initial_artifacts
-            ),
-            metadata=dict(
-                pipeline_input.metadata
-            ),
+            artifacts=dict(pipeline_input.initial_artifacts),
+            metadata=dict(pipeline_input.metadata),
         )
 
-        self.state.start(
-            run
-        )
+        self.state.start(run)
 
-        for stage in (
-            self.config.stage_order
-        ):
-            if (
-                run.stop_reason
-                != StopReason.NONE.value
-            ):
+        for stage in self.config.stage_order:
+            if run.stop_reason != StopReason.NONE.value:
                 break
 
             # An initial artifact means the stage
@@ -959,23 +714,15 @@ class OrchestratorPipeline:
                 skip_stage(
                     run,
                     stage,
-                    reason=(
-                        "Stage output was "
-                        "supplied as an "
-                        "initial artifact."
-                    ),
+                    reason=("Stage output was supplied as an initial artifact."),
                 )
 
-                stage_result = (
-                    run.stage(stage)
-                )
+                stage_result = run.stage(stage)
 
                 if stage_result is not None:
                     stage_result.output_count = 1
 
-                    stage_result.attributes[
-                        "initial_artifact"
-                    ] = True
+                    stage_result.attributes["initial_artifact"] = True
 
                 continue
 
@@ -984,30 +731,18 @@ class OrchestratorPipeline:
                 stage,
             )
 
-        self.state.finish(
-            run
-        )
+        self.state.finish(run)
 
         return PipelineResult(
             coordination=(
                 CoordinationResult(
                     run=run,
-                    artifacts=(
-                        context.artifacts
-                    ),
+                    artifacts=(context.artifacts),
                 )
             ),
             metadata={
-                "dry_run": (
-                    pipeline_input.
-                    context.dry_run
-                ),
-                "configured_stage_order": (
-                    list(
-                        self.config.
-                        stage_order
-                    )
-                ),
+                "dry_run": (pipeline_input.context.dry_run),
+                "configured_stage_order": (list(self.config.stage_order)),
             },
         )
 
@@ -1017,29 +752,14 @@ class OrchestratorPipeline:
 
     def run_many(
         self,
-        inputs: Iterable[
-            PipelineInput
-        ],
+        inputs: Iterable[PipelineInput],
     ) -> OrchestrationResult:
-        results = [
-            self.run(
-                item
-            )
-            for item in inputs
-        ]
+        results = [self.run(item) for item in inputs]
 
         return OrchestrationResult(
-            runs=[
-                item.run
-                for item in results
-            ],
+            runs=[item.run for item in results],
             metadata={
-                "dry_run_required": (
-                    self.config.
-                    require_dry_run
-                ),
-                "run_count": len(
-                    results
-                ),
+                "dry_run_required": (self.config.require_dry_run),
+                "run_count": len(results),
             },
         ).finalize()

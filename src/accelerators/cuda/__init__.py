@@ -1,4 +1,4 @@
-from .backend import CUDAAccelerator
+from .backend import CUDAAccelerator, CUDABackend
 from .devices import (
     get_device,
     get_device_count,
@@ -10,6 +10,7 @@ from .metrics import get_all_memory_metrics, get_memory_metrics
 
 __all__ = [
     "CUDAAccelerator",
+    "CUDABackend",
     "get_device",
     "get_device_count",
     "get_device_info",

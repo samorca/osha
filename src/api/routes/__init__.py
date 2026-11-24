@@ -12,7 +12,7 @@ Routes remain responsible only for:
     response-model declaration
 """
 
-from typing import Any, Optional, TypeVar, cast
+from typing import Any, Optional
 
 from fastapi import Request
 
@@ -26,9 +26,6 @@ from src.api.errors import (
 )
 
 
-T = TypeVar("T")
-
-
 def request_id(request: Request) -> Optional[str]:
     value = getattr(
         request.state,
@@ -36,11 +33,7 @@ def request_id(request: Request) -> Optional[str]:
         None,
     )
 
-    return (
-        str(value)
-        if value is not None
-        else None
-    )
+    return str(value) if value is not None else None
 
 
 def optional_header(
@@ -150,9 +143,7 @@ def service_from_request(
     request: Request,
     name: str,
 ) -> Any:
-    dependencies = get_api_dependencies(
-        request
-    )
+    dependencies = get_api_dependencies(request)
 
     return dependencies.service(name)
 
@@ -160,20 +151,16 @@ def service_from_request(
 def typed_service(
     request: Request,
     name: str,
-) -> T:
-    return cast(
-        T,
-        service_from_request(
-            request,
-            name,
-        ),
+) -> Any:
+    return service_from_request(
+        request,
+        name,
     )
 
 
 __all__ = [
     "APIDependencies",
     "get_api_dependencies",
-
     "request_id",
     "optional_header",
     "actor_id",
@@ -181,7 +168,6 @@ __all__ = [
     "correlation_id",
     "idempotency_key",
     "approval_identity",
-
     "service_from_request",
     "typed_service",
 ]

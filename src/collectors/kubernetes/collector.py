@@ -25,10 +25,7 @@ from src.collectors.kubernetes.schema import (
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description=(
-            "Collect correlated Kubernetes "
-            "telemetry for OSHA."
-        )
+        description=("Collect correlated Kubernetes telemetry for OSHA.")
     )
 
     parser.add_argument(
@@ -91,59 +88,28 @@ def write_records(
 def main():
     args = parse_args()
 
-    settings = (
-        KubernetesCollectorConfig
-        .auto()
-    )
+    settings = KubernetesCollectorConfig.auto()
 
-    namespace = (
-        args.namespace
-        if args.namespace is not None
-        else settings.namespace
-    )
+    namespace = args.namespace if args.namespace is not None else settings.namespace
 
-    output_path = Path(
-        args.output
-        if args.output
-        else settings.output_path
-    )
+    output_path = Path(args.output if args.output else settings.output_path)
 
-    tail_lines = (
-        args.tail_lines
-        if args.tail_lines is not None
-        else settings.tail_lines
-    )
+    tail_lines = args.tail_lines if args.tail_lines is not None else settings.tail_lines
 
-    print(
-        "Connecting to Kubernetes..."
-    )
+    print("Connecting to Kubernetes...")
 
-    core_api = load_kubernetes_client(
-        settings
-    )
+    core_api = load_kubernetes_client(settings)
 
     print("Connected.")
 
     if namespace:
-        pods = (
-            core_api
-            .list_namespaced_pod(
-                namespace=namespace,
-            )
-            .items
-        )
+        pods = core_api.list_namespaced_pod(
+            namespace=namespace,
+        ).items
     else:
-        pods = (
-            core_api
-            .list_pod_for_all_namespaces(
-                watch=False
-            )
-            .items
-        )
+        pods = core_api.list_pod_for_all_namespaces(watch=False).items
 
-    print(
-        f"Pods discovered: {len(pods)}"
-    )
+    print(f"Pods discovered: {len(pods)}")
 
     records = []
 
@@ -156,19 +122,12 @@ def main():
 
         records.append(
             make_record(
-                signal_type=(
-                    "resource_state"
-                ),
+                signal_type=("resource_state"),
                 timestamp=utc_now(),
                 identity=identity,
                 payload={
                     "containers": [
-                        container.name
-                        for container
-                        in (
-                            pod.spec.containers
-                            or []
-                        )
+                        container.name for container in (pod.spec.containers or [])
                     ],
                 },
             )
@@ -189,12 +148,8 @@ def main():
         records.extend(
             collect_events(
                 core_api,
-                cluster_id=(
-                    settings.cluster_id
-                ),
-                environment_id=(
-                    settings.environment_id
-                ),
+                cluster_id=(settings.cluster_id),
+                environment_id=(settings.environment_id),
                 namespace=namespace,
             )
         )
@@ -204,13 +159,9 @@ def main():
         records,
     )
 
-    print(
-        f"Records written: {written}"
-    )
+    print(f"Records written: {written}")
 
-    print(
-        f"Output: {output_path}"
-    )
+    print(f"Output: {output_path}")
 
 
 if __name__ == "__main__":

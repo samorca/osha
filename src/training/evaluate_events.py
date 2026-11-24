@@ -69,40 +69,28 @@ from src.training.schema import (
 # CLI
 # ---------------------------------------------------------------
 
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description=(
-            "Evaluate an OSHA infrastructure "
-            "event model checkpoint."
-        )
+        description=("Evaluate an OSHA infrastructure event model checkpoint.")
     )
 
     parser.add_argument(
         "--checkpoint",
         required=True,
-        help=(
-            "Path to best.pt, last.pt, or a "
-            "managed checkpoint.pt file."
-        ),
+        help=("Path to best.pt, last.pt, or a managed checkpoint.pt file."),
     )
 
     parser.add_argument(
         "--data",
         required=True,
-        help=(
-            "JSONL event data to evaluate."
-        ),
+        help=("JSONL event data to evaluate."),
     )
 
     parser.add_argument(
         "--output",
-        default=(
-            "artifacts/evaluations/"
-            "event-evaluation.json"
-        ),
-        help=(
-            "Destination JSON evaluation report."
-        ),
+        default=("artifacts/evaluations/event-evaluation.json"),
+        help=("Destination JSON evaluation report."),
     )
 
     parser.add_argument(
@@ -165,127 +153,87 @@ def parse_args() -> argparse.Namespace:
 # Argument validation
 # ---------------------------------------------------------------
 
+
 def validate_args(
     args: argparse.Namespace,
 ) -> None:
     if args.batch_size < 1:
-        raise ValueError(
-            "--batch-size must be >= 1"
-        )
+        raise ValueError("--batch-size must be >= 1")
 
     if args.num_workers < 0:
-        raise ValueError(
-            "--num-workers must be >= 0"
-        )
+        raise ValueError("--num-workers must be >= 0")
 
-    if (
-        args.max_records is not None
-        and args.max_records < 1
-    ):
-        raise ValueError(
-            "--max-records must be >= 1"
-        )
+    if args.max_records is not None and args.max_records < 1:
+        raise ValueError("--max-records must be >= 1")
 
     if args.device_index < 0:
-        raise ValueError(
-            "--device-index must be >= 0"
-        )
+        raise ValueError("--device-index must be >= 0")
 
 
 # ---------------------------------------------------------------
 # Device
 # ---------------------------------------------------------------
 
+
 def select_device(
     requested: str,
     *,
     device_index: int = 0,
 ) -> torch.device:
-    requested = (
-        requested.strip().lower()
-    )
+    requested = requested.strip().lower()
 
     if requested == "cpu":
-        return torch.device(
-            "cpu"
-        )
+        return torch.device("cpu")
 
     if requested == "cuda":
         if not torch.cuda.is_available():
-            raise EvaluationError(
-                "CUDA was requested but "
-                "is unavailable."
-            )
+            raise EvaluationError("CUDA was requested but is unavailable.")
 
-        if (
-            device_index
-            >= torch.cuda.device_count()
-        ):
+        if device_index >= torch.cuda.device_count():
             raise EvaluationError(
-                "Requested CUDA device "
-                "index is unavailable.",
+                "Requested CUDA device index is unavailable.",
                 details={
-                    "device_index": (
-                        device_index
-                    ),
-                    "visible_devices": (
-                        torch.cuda.
-                        device_count()
-                    ),
+                    "device_index": (device_index),
+                    "visible_devices": (torch.cuda.device_count()),
                 },
             )
 
-        return torch.device(
-            f"cuda:{device_index}"
-        )
+        return torch.device(f"cuda:{device_index}")
 
     if torch.cuda.is_available():
-        return torch.device(
-            f"cuda:{device_index}"
-        )
+        return torch.device(f"cuda:{device_index}")
 
-    return torch.device(
-        "cpu"
-    )
+    return torch.device("cpu")
 
 
 # ---------------------------------------------------------------
 # Load checkpoint
 # ---------------------------------------------------------------
 
+
 def load_checkpoint(
     path: str | Path,
     *,
     map_location: Any,
 ) -> Dict[str, Any]:
-    source = Path(
-        path
-    ).expanduser().resolve()
+    source = Path(path).expanduser().resolve()
 
     if not source.exists():
         raise TrainingSourceNotFoundError(
             "Event checkpoint was not found.",
             details={
-                "path": str(
-                    source
-                ),
+                "path": str(source),
             },
         )
 
     if source.is_dir():
-        source = (
-            source
-            / "checkpoint.pt"
-        )
+        source = source / "checkpoint.pt"
 
     if not source.is_file():
         raise CheckpointLoadError(
-            "Event checkpoint path is not "
-            "a regular file.",
+            "Event checkpoint path is not a regular file.",
             details={
-                "path": str(
-                    source
-                ),
+                "path": str(source),
             },
         )
 
@@ -305,18 +253,11 @@ def load_checkpoint(
 
     except Exception as exc:
         raise CheckpointLoadError(
-            "Event checkpoint could not "
-            "be loaded.",
+            "Event checkpoint could not be loaded.",
             details={
-                "path": str(
-                    source
-                ),
-                "error_type": (
-                    type(exc).__name__
-                ),
-                "error_module": (
-                    type(exc).__module__
-                ),
+                "path": str(source),
+                "error_type": (type(exc).__name__),
+                "error_module": (type(exc).__module__),
             },
         ) from exc
 
@@ -324,14 +265,9 @@ def load_checkpoint(
         value,
         Mapping,
     ):
-        raise CheckpointLoadError(
-            "Event checkpoint root must "
-            "be an object."
-        )
+        raise CheckpointLoadError("Event checkpoint root must be an object.")
 
-    payload = dict(
-        value
-    )
+    payload = dict(value)
 
     required = (
         "model_state_dict",
@@ -340,16 +276,11 @@ def load_checkpoint(
         "labels",
     )
 
-    missing = [
-        key
-        for key in required
-        if key not in payload
-    ]
+    missing = [key for key in required if key not in payload]
 
     if missing:
         raise CheckpointLoadError(
-            "Event checkpoint is missing "
-            "required fields.",
+            "Event checkpoint is missing required fields.",
             details={
                 "missing": missing,
             },
@@ -362,32 +293,28 @@ def load_checkpoint(
 # Reconstruct vocabulary
 # ---------------------------------------------------------------
 
+
 def load_vocabulary(
     payload: Mapping[
         str,
         Any,
     ],
 ) -> Vocabulary:
-    value = payload.get(
-        "vocabulary"
-    )
+    value = payload.get("vocabulary")
 
     if not isinstance(
         value,
         Mapping,
     ):
-        raise CheckpointLoadError(
-            "Checkpoint vocabulary is invalid."
-        )
+        raise CheckpointLoadError("Checkpoint vocabulary is invalid.")
 
-    return Vocabulary.from_dict(
-        value
-    )
+    return Vocabulary.from_dict(value)
 
 
 # ---------------------------------------------------------------
 # Reconstruct labels
 # ---------------------------------------------------------------
+
 
 def load_labels(
     payload: Mapping[
@@ -395,26 +322,21 @@ def load_labels(
         Any,
     ],
 ) -> LabelMaps:
-    value = payload.get(
-        "labels"
-    )
+    value = payload.get("labels")
 
     if not isinstance(
         value,
         Mapping,
     ):
-        raise CheckpointLoadError(
-            "Checkpoint label maps are invalid."
-        )
+        raise CheckpointLoadError("Checkpoint label maps are invalid.")
 
-    return LabelMaps.from_dict(
-        value
-    )
+    return LabelMaps.from_dict(value)
 
 
 # ---------------------------------------------------------------
 # Reconstruct model
 # ---------------------------------------------------------------
+
 
 def load_model(
     payload: Mapping[
@@ -424,18 +346,13 @@ def load_model(
     *,
     device: torch.device,
 ) -> InfrastructureEventModel:
-    config = payload.get(
-        "model_config"
-    )
+    config = payload.get("model_config")
 
     if not isinstance(
         config,
         Mapping,
     ):
-        raise CheckpointLoadError(
-            "Checkpoint model_config "
-            "is invalid."
-        )
+        raise CheckpointLoadError("Checkpoint model_config is invalid.")
 
     required = (
         "vocab_size",
@@ -444,60 +361,33 @@ def load_model(
         "num_events",
     )
 
-    missing = [
-        name
-        for name in required
-        if name not in config
-    ]
+    missing = [name for name in required if name not in config]
 
     if missing:
         raise CheckpointLoadError(
-            "Checkpoint model configuration "
-            "is incomplete.",
+            "Checkpoint model configuration is incomplete.",
             details={
                 "missing": missing,
             },
         )
 
     model = InfrastructureEventModel(
-        vocab_size=int(
-            config[
-                "vocab_size"
-            ]
-        ),
-
-        num_sources=int(
-            config[
-                "num_sources"
-            ]
-        ),
-
-        num_components=int(
-            config[
-                "num_components"
-            ]
-        ),
-
-        num_events=int(
-            config[
-                "num_events"
-            ]
-        ),
-
+        vocab_size=int(config["vocab_size"]),
+        num_sources=int(config["num_sources"]),
+        num_components=int(config["num_components"]),
+        num_events=int(config["num_events"]),
         embedding_dim=int(
             config.get(
                 "embedding_dim",
                 192,
             )
         ),
-
         hidden_dim=int(
             config.get(
                 "hidden_dim",
                 256,
             )
         ),
-
         dropout=float(
             config.get(
                 "dropout",
@@ -506,18 +396,13 @@ def load_model(
         ),
     )
 
-    state = payload.get(
-        "model_state_dict"
-    )
+    state = payload.get("model_state_dict")
 
     if not isinstance(
         state,
         Mapping,
     ):
-        raise CheckpointLoadError(
-            "Checkpoint contains no valid "
-            "model_state_dict."
-        )
+        raise CheckpointLoadError("Checkpoint contains no valid model_state_dict.")
 
     try:
         model.load_state_dict(
@@ -527,19 +412,13 @@ def load_model(
 
     except Exception as exc:
         raise CheckpointLoadError(
-            "Event model state is not "
-            "compatible with the model "
-            "configuration.",
+            "Event model state is not compatible with the model configuration.",
             details={
-                "error_type": (
-                    type(exc).__name__
-                ),
+                "error_type": (type(exc).__name__),
             },
         ) from exc
 
-    model.to(
-        device
-    )
+    model.to(device)
 
     model.eval()
 
@@ -550,6 +429,7 @@ def load_model(
 # Accuracy
 # ---------------------------------------------------------------
 
+
 def accuracy(
     logits: torch.Tensor,
     targets: torch.Tensor,
@@ -557,18 +437,11 @@ def accuracy(
     int,
     int,
 ]:
-    predictions = logits.argmax(
-        dim=1
-    )
+    predictions = logits.argmax(dim=1)
 
-    valid = (
-        targets
-        != IGNORE_INDEX
-    )
+    valid = targets != IGNORE_INDEX
 
-    count = int(
-        valid.sum().item()
-    )
+    count = int(valid.sum().item())
 
     if count == 0:
         return (
@@ -576,16 +449,7 @@ def accuracy(
             0,
         )
 
-    correct = int(
-        (
-            predictions[
-                valid
-            ]
-            == targets[
-                valid
-            ]
-        ).sum().item()
-    )
+    correct = int((predictions[valid] == targets[valid]).sum().item())
 
     return (
         correct,
@@ -597,6 +461,7 @@ def accuracy(
 # Safe loss
 # ---------------------------------------------------------------
 
+
 def safe_loss(
     logits: torch.Tensor,
     targets: torch.Tensor,
@@ -605,19 +470,13 @@ def safe_loss(
     torch.Tensor,
     int,
 ]:
-    valid = (
-        targets
-        != IGNORE_INDEX
-    )
+    valid = targets != IGNORE_INDEX
 
-    count = int(
-        valid.sum().item()
-    )
+    count = int(valid.sum().item())
 
     if count == 0:
         return (
-            logits.sum()
-            * 0.0,
+            logits.sum() * 0.0,
             0,
         )
 
@@ -626,13 +485,8 @@ def safe_loss(
         targets,
     )
 
-    if not torch.isfinite(
-        value
-    ):
-        raise EvaluationMetricError(
-            "Evaluation produced "
-            "non-finite loss."
-        )
+    if not torch.isfinite(value):
+        raise EvaluationMetricError("Evaluation produced non-finite loss.")
 
     return (
         value,
@@ -644,17 +498,14 @@ def safe_loss(
 # Evaluate loader
 # ---------------------------------------------------------------
 
+
 def evaluate_loader(
     model: InfrastructureEventModel,
     loader: DataLoader,
     *,
     device: torch.device,
 ) -> Dict[str, Any]:
-    criterion = nn.CrossEntropyLoss(
-        ignore_index=(
-            IGNORE_INDEX
-        )
-    )
+    criterion = nn.CrossEntropyLoss(ignore_index=(IGNORE_INDEX))
 
     total_loss = 0.0
     batches = 0
@@ -673,55 +524,41 @@ def evaluate_loader(
 
     with torch.no_grad():
         for batch in loader:
-            input_ids = batch[
-                "input_ids"
-            ].to(
+            input_ids = batch["input_ids"].to(
                 device,
                 non_blocking=True,
             )
 
-            attention_mask = batch[
-                "attention_mask"
-            ].to(
+            attention_mask = batch["attention_mask"].to(
                 device,
                 non_blocking=True,
             )
 
-            source_target = batch[
-                "source_target"
-            ].to(
+            source_target = batch["source_target"].to(
                 device,
                 non_blocking=True,
             )
 
-            component_target = batch[
-                "component_target"
-            ].to(
+            component_target = batch["component_target"].to(
                 device,
                 non_blocking=True,
             )
 
-            event_target = batch[
-                "event_target"
-            ].to(
+            event_target = batch["event_target"].to(
                 device,
                 non_blocking=True,
             )
 
             output = model(
                 input_ids=input_ids,
-                attention_mask=(
-                    attention_mask
-                ),
+                attention_mask=(attention_mask),
             )
 
             (
                 source_loss,
                 source_valid,
             ) = safe_loss(
-                output[
-                    "source_logits"
-                ],
+                output["source_logits"],
                 source_target,
                 criterion,
             )
@@ -730,9 +567,7 @@ def evaluate_loader(
                 component_loss,
                 component_valid,
             ) = safe_loss(
-                output[
-                    "component_logits"
-                ],
+                output["component_logits"],
                 component_target,
                 criterion,
             )
@@ -741,9 +576,7 @@ def evaluate_loader(
                 event_loss,
                 event_valid,
             ) = safe_loss(
-                output[
-                    "event_logits"
-                ],
+                output["event_logits"],
                 event_target,
                 criterion,
             )
@@ -757,28 +590,16 @@ def evaluate_loader(
             )
 
             if active_heads > 0:
-                loss = (
-                    source_loss
-                    + component_loss
-                    + event_loss
-                ) / active_heads
+                loss = (source_loss + component_loss + event_loss) / active_heads
 
-                total_loss += float(
-                    loss.item()
-                )
+                total_loss += float(loss.item())
 
                 batches += 1
 
-            examples += int(
-                input_ids.shape[
-                    0
-                ]
-            )
+            examples += int(input_ids.shape[0])
 
             correct, count = accuracy(
-                output[
-                    "source_logits"
-                ],
+                output["source_logits"],
                 source_target,
             )
 
@@ -786,87 +607,42 @@ def evaluate_loader(
             source_count += count
 
             correct, count = accuracy(
-                output[
-                    "component_logits"
-                ],
+                output["component_logits"],
                 component_target,
             )
 
-            component_correct += (
-                correct
-            )
+            component_correct += correct
 
-            component_count += (
-                count
-            )
+            component_count += count
 
             correct, count = accuracy(
-                output[
-                    "event_logits"
-                ],
+                output["event_logits"],
                 event_target,
             )
 
-            event_correct += (
-                correct
-            )
+            event_correct += correct
 
             event_count += count
 
     return {
-        "loss": (
-            total_loss
-            / batches
-            if batches
-            else None
-        ),
-
-        "example_count": (
-            examples
-        ),
-
-        "batch_count": (
-            batches
-        ),
-
-        "source_accuracy": (
-            source_correct
-            / source_count
-            if source_count
-            else None
-        ),
-
-        "source_count": (
-            source_count
-        ),
-
+        "loss": (total_loss / batches if batches else None),
+        "example_count": (examples),
+        "batch_count": (batches),
+        "source_accuracy": (source_correct / source_count if source_count else None),
+        "source_count": (source_count),
         "component_accuracy": (
-            component_correct
-            / component_count
-            if component_count
-            else None
+            component_correct / component_count if component_count else None
         ),
-
-        "component_count": (
-            component_count
-        ),
-
-        "event_accuracy": (
-            event_correct
-            / event_count
-            if event_count
-            else None
-        ),
-
-        "event_count": (
-            event_count
-        ),
+        "component_count": (component_count),
+        "event_accuracy": (event_correct / event_count if event_count else None),
+        "event_count": (event_count),
     }
 
 
 # ---------------------------------------------------------------
 # Atomic report
 # ---------------------------------------------------------------
+
 
 def write_report(
     path: str | Path,
@@ -875,28 +651,19 @@ def write_report(
         Any,
     ],
 ) -> Path:
-    destination = Path(
-        path
-    ).expanduser().resolve()
+    destination = Path(path).expanduser().resolve()
 
     destination.parent.mkdir(
         parents=True,
         exist_ok=True,
     )
 
-    temporary = (
-        destination.with_name(
-            destination.name
-            + ".writing"
-        )
-    )
+    temporary = destination.with_name(destination.name + ".writing")
 
     try:
         temporary.write_text(
             json.dumps(
-                dict(
-                    value
-                ),
+                dict(value),
                 indent=2,
                 sort_keys=True,
                 ensure_ascii=False,
@@ -905,15 +672,11 @@ def write_report(
             encoding="utf-8",
         )
 
-        temporary.replace(
-            destination
-        )
+        temporary.replace(destination)
 
     except Exception:
         try:
-            temporary.unlink(
-                missing_ok=True
-            )
+            temporary.unlink(missing_ok=True)
         except OSError:
             pass
 
@@ -925,6 +688,7 @@ def write_report(
 # ---------------------------------------------------------------
 # Register evaluation
 # ---------------------------------------------------------------
+
 
 def register_evaluation(
     pipeline: TrainingPipeline,
@@ -947,9 +711,7 @@ def register_evaluation(
     metadata remain fully evaluable.
     """
 
-    run_value = payload.get(
-        "run"
-    )
+    run_value = payload.get("run")
 
     if not isinstance(
         run_value,
@@ -957,30 +719,19 @@ def register_evaluation(
     ):
         return None
 
-    run_id = run_value.get(
-        "run_id"
-    )
+    run_id = run_value.get("run_id")
 
     if not run_id:
         return None
 
-    run = pipeline.runs.get(
-        str(
-            run_id
-        )
-    )
+    run = pipeline.runs.get(str(run_id))
 
     if run is None:
         return None
 
     numeric = {
-        str(
-            name
-        ): float(
-            value
-        )
-        for name, value
-        in metrics.items()
+        str(name): float(value)
+        for name, value in metrics.items()
         if (
             value is not None
             and isinstance(
@@ -990,21 +741,13 @@ def register_evaluation(
                     float,
                 ),
             )
-            and not str(
-                name
-            ).endswith(
-                "_count"
-            )
+            and not str(name).endswith("_count")
             and name
             not in {
                 "batch_count",
                 "example_count",
             }
-            and math.isfinite(
-                float(
-                    value
-                )
-            )
+            and math.isfinite(float(value))
         )
     }
 
@@ -1022,38 +765,27 @@ def register_evaluation(
 # Main
 # ---------------------------------------------------------------
 
+
 def main() -> None:
     args = parse_args()
 
-    validate_args(
-        args
-    )
+    validate_args(args)
 
     device = select_device(
         args.device,
-        device_index=(
-            args.device_index
-        ),
+        device_index=(args.device_index),
     )
 
-    print(
-        f"Device: {device}"
-    )
+    print(f"Device: {device}")
 
     payload = load_checkpoint(
         args.checkpoint,
-        map_location=(
-            device
-        ),
+        map_location=(device),
     )
 
-    vocabulary = load_vocabulary(
-        payload
-    )
+    vocabulary = load_vocabulary(payload)
 
-    labels = load_labels(
-        payload
-    )
+    labels = load_labels(payload)
 
     model = load_model(
         payload,
@@ -1062,16 +794,10 @@ def main() -> None:
 
     records = load_event_records(
         args.data,
-        max_records=(
-            args.max_records
-        ),
+        max_records=(args.max_records),
     )
 
-    model_config = dict(
-        payload[
-            "model_config"
-        ]
-    )
+    model_config = dict(payload["model_config"])
 
     max_length = int(
         model_config.get(
@@ -1089,20 +815,11 @@ def main() -> None:
 
     loader = DataLoader(
         dataset,
-        batch_size=(
-            args.batch_size
-        ),
+        batch_size=(args.batch_size),
         shuffle=False,
-        num_workers=(
-            args.num_workers
-        ),
-        pin_memory=(
-            device.type
-            == "cuda"
-        ),
-        persistent_workers=(
-            args.num_workers > 0
-        ),
+        num_workers=(args.num_workers),
+        pin_memory=(device.type == "cuda"),
+        persistent_workers=(args.num_workers > 0),
     )
 
     metrics = evaluate_loader(
@@ -1111,117 +828,50 @@ def main() -> None:
         device=device,
     )
 
-    print(
-        "\nEvent evaluation:"
-    )
+    print("\nEvent evaluation:")
 
-    for name, value in (
-        metrics.items()
-    ):
+    for name, value in metrics.items():
         if isinstance(
             value,
             float,
         ):
-            print(
-                f"  {name}: "
-                f"{value:.4f}"
-            )
+            print(f"  {name}: {value:.4f}")
 
         else:
-            print(
-                f"  {name}: {value}"
-            )
+            print(f"  {name}: {value}")
 
     evaluation = None
 
     if args.register:
-        pipeline = TrainingPipeline(
-            config=TrainingConfig()
-        )
+        pipeline = TrainingPipeline(config=TrainingConfig())
 
-        pipeline.start(
-            discover_existing=True
-        )
+        pipeline.start(discover_existing=True)
 
-        evaluation = (
-            register_evaluation(
-                pipeline,
-                payload,
-                split=args.split,
-                metrics=metrics,
-            )
+        evaluation = register_evaluation(
+            pipeline,
+            payload,
+            split=args.split,
+            metrics=metrics,
         )
 
     report = {
         "schema_version": "1",
-
-        "checkpoint": str(
-            Path(
-                args.checkpoint
-            ).expanduser().
-            resolve()
-        ),
-
-        "data": str(
-            Path(
-                args.data
-            ).expanduser().
-            resolve()
-        ),
-
-        "split": (
-            args.split
-        ),
-
-        "device": str(
-            device
-        ),
-
-        "record_count": len(
-            records
-        ),
-
-        "vocabulary_size": len(
-            vocabulary
-        ),
-
+        "checkpoint": str(Path(args.checkpoint).expanduser().resolve()),
+        "data": str(Path(args.data).expanduser().resolve()),
+        "split": (args.split),
+        "device": str(device),
+        "record_count": len(records),
+        "vocabulary_size": len(vocabulary),
         "classes": {
-            "source": len(
-                labels.source_to_id
-            ),
-
-            "component": len(
-                labels.
-                component_to_id
-            ),
-
-            "event": len(
-                labels.event_to_id
-            ),
+            "source": len(labels.source_to_id),
+            "component": len(labels.component_to_id),
+            "event": len(labels.event_to_id),
         },
-
-        "model_config": (
-            model_config
-        ),
-
-        "metrics": (
-            metrics
-        ),
-
-        "evaluation": (
-            evaluation.to_dict()
-            if evaluation
-            is not None
-            else None
-        ),
-
-        "unknown_targets_ignored": (
-            True
-        ),
-
-        "ignore_index": (
-            IGNORE_INDEX
-        ),
+        "model_config": (model_config),
+        "metrics": (metrics),
+        "evaluation": (evaluation.to_dict() if evaluation is not None else None),
+        "unknown_targets_ignored": (True),
+        "ignore_index": (IGNORE_INDEX),
     }
 
     report_path = write_report(
@@ -1229,10 +879,7 @@ def main() -> None:
         report,
     )
 
-    print(
-        f"\nReport: "
-        f"{report_path}"
-    )
+    print(f"\nReport: {report_path}")
 
 
 # ---------------------------------------------------------------

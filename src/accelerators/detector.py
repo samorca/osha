@@ -85,6 +85,7 @@ from src.accelerators.schema import (
 # Detection result
 # ---------------------------------------------------------------
 
+
 class AcceleratorDetectionResult:
     """
     Full detector result.
@@ -115,20 +116,10 @@ class AcceleratorDetectionResult:
         self.inventory = inventory
 
         self.backend_results = {
-            str(
-                name
-            ): result
-            for name, result
-            in backend_results.items()
+            str(name): result for name, result in backend_results.items()
         }
 
-        self.failures = tuple(
-            dict(
-                failure
-            )
-            for failure
-            in failures
-        )
+        self.failures = tuple(dict(failure) for failure in failures)
 
         self.validate()
 
@@ -137,21 +128,15 @@ class AcceleratorDetectionResult:
     ) -> None:
         self.inventory.validate()
 
-        for name, result in (
-            self.backend_results.items()
-        ):
+        for name, result in self.backend_results.items():
             result.validate()
 
             if name != result.backend:
                 raise AcceleratorInventoryError(
-                    "Backend discovery result "
-                    "key does not match its "
-                    "backend identity.",
+                    "Backend discovery result key does not match its backend identity.",
                     details={
                         "key": name,
-                        "backend": (
-                            result.backend
-                        ),
+                        "backend": (result.backend),
                     },
                 )
 
@@ -165,9 +150,7 @@ class AcceleratorDetectionResult:
     def failure_count(
         self,
     ) -> int:
-        return len(
-            self.failures
-        )
+        return len(self.failures)
 
     def to_dict(
         self,
@@ -175,38 +158,20 @@ class AcceleratorDetectionResult:
         self.validate()
 
         return {
-            "successful": (
-                self.successful
-            ),
-
-            "failure_count": (
-                self.failure_count
-            ),
-
-            "inventory": (
-                self.inventory.to_dict()
-            ),
-
+            "successful": (self.successful),
+            "failure_count": (self.failure_count),
+            "inventory": (self.inventory.to_dict()),
             "backends": {
-                name: result.to_dict()
-                for name, result
-                in self.backend_results.
-                items()
+                name: result.to_dict() for name, result in self.backend_results.items()
             },
-
-            "failures": [
-                dict(
-                    failure
-                )
-                for failure
-                in self.failures
-            ],
+            "failures": [dict(failure) for failure in self.failures],
         }
 
 
 # ---------------------------------------------------------------
 # Detector
 # ---------------------------------------------------------------
+
 
 class AcceleratorDetector:
     """
@@ -226,19 +191,10 @@ class AcceleratorDetector:
     def __init__(
         self,
         *,
-        config: Optional[
-            AcceleratorConfig
-        ] = None,
-        backends: Optional[
-            Iterable[
-                AcceleratorBackend
-            ]
-        ] = None,
+        config: Optional[AcceleratorConfig] = None,
+        backends: Optional[Iterable[AcceleratorBackend]] = None,
     ) -> None:
-        self.config = (
-            config
-            or AcceleratorConfig()
-        )
+        self.config = config or AcceleratorConfig()
 
         self.config.validate()
 
@@ -249,18 +205,14 @@ class AcceleratorDetector:
             AcceleratorBackend,
         ] = {}
 
-        self._last_result: Optional[
-            AcceleratorDetectionResult
-        ] = None
+        self._last_result: Optional[AcceleratorDetectionResult] = None
 
         if backends is None:
             self._register_defaults()
 
         else:
             for backend in backends:
-                self.register_backend(
-                    backend
-                )
+                self.register_backend(backend)
 
     # ---------------------------------------------------------
     # Default backends
@@ -269,30 +221,16 @@ class AcceleratorDetector:
     def _register_defaults(
         self,
     ) -> None:
-        discovery = (
-            self.config.discovery
-        )
+        discovery = self.config.discovery
 
         if discovery.discover_cpu:
-            self.register_backend(
-                CPUBackend(
-                    config=self.config
-                )
-            )
+            self.register_backend(CPUBackend(config=self.config))
 
         if discovery.discover_cuda:
-            self.register_backend(
-                CUDABackend(
-                    config=self.config
-                )
-            )
+            self.register_backend(CUDABackend(config=self.config))
 
         if discovery.discover_rocm:
-            self.register_backend(
-                ROCmBackend(
-                    config=self.config
-                )
-            )
+            self.register_backend(ROCmBackend(config=self.config))
 
     # ---------------------------------------------------------
     # Register backend
@@ -308,29 +246,20 @@ class AcceleratorDetector:
             backend,
             AcceleratorBackend,
         ):
-            raise TypeError(
-                "backend must implement "
-                "AcceleratorBackend"
-            )
+            raise TypeError("backend must implement AcceleratorBackend")
 
         kind = backend.kind
 
         with self._lock:
-            if (
-                kind in self._backends
-                and not replace
-            ):
+            if kind in self._backends and not replace:
                 raise AcceleratorDiscoveryError(
-                    "Accelerator backend is "
-                    "already registered.",
+                    "Accelerator backend is already registered.",
                     details={
                         "backend": kind,
                     },
                 )
 
-            self._backends[
-                kind
-            ] = backend
+            self._backends[kind] = backend
 
     # ---------------------------------------------------------
     # Remove backend
@@ -340,9 +269,7 @@ class AcceleratorDetector:
         self,
         kind: str,
     ) -> AcceleratorBackend:
-        normalized = str(
-            kind
-        ).strip().lower()
+        normalized = str(kind).strip().lower()
 
         with self._lock:
             backend = self._backends.pop(
@@ -352,12 +279,9 @@ class AcceleratorDetector:
 
         if backend is None:
             raise AcceleratorDiscoveryError(
-                "Accelerator backend is "
-                "not registered.",
+                "Accelerator backend is not registered.",
                 details={
-                    "backend": (
-                        normalized
-                    ),
+                    "backend": (normalized),
                 },
             )
 
@@ -370,17 +294,11 @@ class AcceleratorDetector:
     def backend(
         self,
         kind: str,
-    ) -> Optional[
-        AcceleratorBackend
-    ]:
-        normalized = str(
-            kind
-        ).strip().lower()
+    ) -> Optional[AcceleratorBackend]:
+        normalized = str(kind).strip().lower()
 
         with self._lock:
-            return self._backends.get(
-                normalized
-            )
+            return self._backends.get(normalized)
 
     # ---------------------------------------------------------
     # Required backend
@@ -390,15 +308,11 @@ class AcceleratorDetector:
         self,
         kind: str,
     ) -> AcceleratorBackend:
-        backend = self.backend(
-            kind
-        )
+        backend = self.backend(kind)
 
         if backend is None:
             raise AcceleratorDiscoveryError(
-                "Requested accelerator "
-                "backend is not "
-                "registered.",
+                "Requested accelerator backend is not registered.",
                 details={
                     "backend": kind,
                 },
@@ -417,53 +331,31 @@ class AcceleratorDetector:
         ...,
     ]:
         with self._lock:
-            values = dict(
-                self._backends
-            )
+            values = dict(self._backends)
 
-        output: List[
-            AcceleratorBackend
-        ] = []
+        output: List[AcceleratorBackend] = []
 
         seen = set()
 
-        for kind in (
-            self.config.
-            discovery.
-            backend_priority
-        ):
-            backend = values.get(
-                kind
-            )
+        for kind in self.config.discovery.backend_priority:
+            backend = values.get(kind)
 
             if backend is None:
                 continue
 
-            output.append(
-                backend
-            )
+            output.append(backend)
 
-            seen.add(
-                kind
-            )
+            seen.add(kind)
 
         # Custom/replaced backends not represented in
         # backend_priority are appended deterministically.
-        for kind in sorted(
-            values
-        ):
+        for kind in sorted(values):
             if kind in seen:
                 continue
 
-            output.append(
-                values[
-                    kind
-                ]
-            )
+            output.append(values[kind])
 
-        return tuple(
-            output
-        )
+        return tuple(output)
 
     # ---------------------------------------------------------
     # Device identity check
@@ -471,16 +363,12 @@ class AcceleratorDetector:
 
     @staticmethod
     def _validate_unique_devices(
-        devices: Iterable[
-            AcceleratorDevice
-        ],
+        devices: Iterable[AcceleratorDevice],
     ) -> Tuple[
         AcceleratorDevice,
         ...,
     ]:
-        output: List[
-            AcceleratorDevice
-        ] = []
+        output: List[AcceleratorDevice] = []
 
         seen_ids: Dict[
             str,
@@ -499,98 +387,56 @@ class AcceleratorDetector:
         for device in devices:
             device.validate()
 
-            existing = seen_ids.get(
-                device.device_id
-            )
+            existing = seen_ids.get(device.device_id)
 
             if existing is not None:
                 raise (
                     AcceleratorDuplicateDeviceError(
-                        "Accelerator inventory "
-                        "contains duplicate "
-                        "device identity.",
+                        "Accelerator inventory contains duplicate device identity.",
                         details={
-                            "device_id": (
-                                device.device_id
-                            ),
-                            "first_kind": (
-                                existing.kind
-                            ),
-                            "second_kind": (
-                                device.kind
-                            ),
+                            "device_id": (device.device_id),
+                            "first_kind": (existing.kind),
+                            "second_kind": (device.kind),
                         },
                     )
                 )
 
-            seen_ids[
-                device.device_id
-            ] = device
+            seen_ids[device.device_id] = device
 
-            runtime_key = (
-                device.runtime_device
-            )
+            runtime_key = device.runtime_device
 
-            existing_runtime = (
-                seen_runtime_devices.get(
-                    runtime_key
-                )
-            )
+            existing_runtime = seen_runtime_devices.get(runtime_key)
 
             if (
-                existing_runtime
-                is not None
-                and existing_runtime.kind
-                != device.kind
+                existing_runtime is not None
+                and existing_runtime.kind != device.kind
                 and {
                     existing_runtime.kind,
                     device.kind,
                 }
                 <= {
-                    AcceleratorKind.
-                    CUDA.value,
-                    AcceleratorKind.
-                    ROCM.value,
+                    AcceleratorKind.CUDA.value,
+                    AcceleratorKind.ROCM.value,
                 }
             ):
                 raise (
                     AcceleratorDuplicateDeviceError(
-                        "CUDA and ROCm "
-                        "backends claimed the "
-                        "same runtime device.",
+                        "CUDA and ROCm backends claimed the same runtime device.",
                         details={
-                            "runtime_device": (
-                                runtime_key
-                            ),
-                            "first_device_id": (
-                                existing_runtime.
-                                device_id
-                            ),
-                            "first_kind": (
-                                existing_runtime.
-                                kind
-                            ),
-                            "second_device_id": (
-                                device.device_id
-                            ),
-                            "second_kind": (
-                                device.kind
-                            ),
+                            "runtime_device": (runtime_key),
+                            "first_device_id": (existing_runtime.device_id),
+                            "first_kind": (existing_runtime.kind),
+                            "second_device_id": (device.device_id),
+                            "second_kind": (device.kind),
                         },
                     )
                 )
 
-            seen_runtime_devices[
-                runtime_key
-            ] = device
+            seen_runtime_devices[runtime_key] = device
 
-            output.append(
-                device
-            )
+            output.append(device)
 
-        return tuple(
-            output
-        )
+        return tuple(output)
 
     # ---------------------------------------------------------
     # Detect
@@ -599,9 +445,7 @@ class AcceleratorDetector:
     def detect(
         self,
         *,
-        fail_fast: Optional[
-            bool
-        ] = None,
+        fail_fast: Optional[bool] = None,
     ) -> AcceleratorDetectionResult:
         """
         Query all registered backends and build
@@ -612,23 +456,17 @@ class AcceleratorDetector:
         """
 
         if not self.config.enabled:
-            inventory = (
-                AcceleratorInventory(
-                    devices=(),
-                    attributes={
-                        "accelerators_enabled": (
-                            False
-                        ),
-                    },
-                )
+            inventory = AcceleratorInventory(
+                devices=(),
+                attributes={
+                    "accelerators_enabled": (False),
+                },
             )
 
-            result = (
-                AcceleratorDetectionResult(
-                    inventory=inventory,
-                    backend_results={},
-                    failures=(),
-                )
+            result = AcceleratorDetectionResult(
+                inventory=inventory,
+                backend_results={},
+                failures=(),
             )
 
             with self._lock:
@@ -637,18 +475,12 @@ class AcceleratorDetector:
             return result
 
         should_fail_fast = (
-            self.config.
-            discovery.
-            fail_on_backend_error
+            self.config.discovery.fail_on_backend_error
             if fail_fast is None
-            else bool(
-                fail_fast
-            )
+            else bool(fail_fast)
         )
 
-        devices: List[
-            AcceleratorDevice
-        ] = []
+        devices: List[AcceleratorDevice] = []
 
         backend_results: Dict[
             str,
@@ -666,33 +498,16 @@ class AcceleratorDetector:
             try:
                 result = backend.discover()
 
-                backend_results[
-                    backend.kind
-                ] = result
+                backend_results[backend.kind] = result
 
-                devices.extend(
-                    result.devices
-                )
+                devices.extend(result.devices)
 
-                if (
-                    result.error_type
-                    is not None
-                ):
+                if result.error_type is not None:
                     failures.append(
                         {
-                            "backend": (
-                                backend.kind
-                            ),
-
-                            "error_type": (
-                                result.
-                                error_type
-                            ),
-
-                            "code": (
-                                "backend_discovery_"
-                                "degraded"
-                            ),
+                            "backend": (backend.kind),
+                            "error_type": (result.error_type),
+                            "code": ("backend_discovery_degraded"),
                         }
                     )
 
@@ -702,75 +517,38 @@ class AcceleratorDetector:
 
                 failures.append(
                     {
-                        "backend": (
-                            backend.kind
-                        ),
-
-                        "error_type": (
-                            type(exc).__name__
-                        ),
-
+                        "backend": (backend.kind),
+                        "error_type": (type(exc).__name__),
                         "code": getattr(
                             exc,
                             "code",
-                            (
-                                "accelerator_"
-                                "discovery_error"
-                            ),
+                            ("accelerator_discovery_error"),
                         ),
                     }
                 )
 
-                backend_results[
-                    backend.kind
-                ] = BackendDiscoveryResult(
+                backend_results[backend.kind] = BackendDiscoveryResult(
                     backend=backend.kind,
                     devices=(),
                     available=False,
-                    error_type=(
-                        type(exc).__name__
-                    ),
+                    error_type=(type(exc).__name__),
                     attributes={
-                        "detector_caught_error": (
-                            True
-                        ),
+                        "detector_caught_error": (True),
                     },
                 )
 
         try:
-            normalized_devices = (
-                self.
-                _validate_unique_devices(
-                    devices
-                )
-            )
+            normalized_devices = self._validate_unique_devices(devices)
 
-            inventory = (
-                AcceleratorInventory(
-                    devices=(
-                        normalized_devices
-                    ),
-
-                    attributes={
-                        "backend_priority": list(
-                            self.config.
-                            discovery.
-                            backend_priority
-                        ),
-
-                        "registered_backends": [
-                            backend.kind
-                            for backend
-                            in self.backends()
-                        ],
-
-                        "backend_failure_count": (
-                            len(
-                                failures
-                            )
-                        ),
-                    },
-                )
+            inventory = AcceleratorInventory(
+                devices=(normalized_devices),
+                attributes={
+                    "backend_priority": list(self.config.discovery.backend_priority),
+                    "registered_backends": [
+                        backend.kind for backend in self.backends()
+                    ],
+                    "backend_failure_count": (len(failures)),
+                },
             )
 
             inventory.validate()
@@ -783,26 +561,19 @@ class AcceleratorDetector:
                 raise
 
             raise AcceleratorInventoryError(
-                "Accelerator inventory "
-                "could not be constructed.",
+                "Accelerator inventory could not be constructed.",
                 details=(
                     safe_accelerator_error_details(
                         exc,
-                        operation=(
-                            "construct_inventory"
-                        ),
+                        operation=("construct_inventory"),
                     )
                 ),
             ) from exc
 
-        result = (
-            AcceleratorDetectionResult(
-                inventory=inventory,
-                backend_results=(
-                    backend_results
-                ),
-                failures=failures,
-            )
+        result = AcceleratorDetectionResult(
+            inventory=inventory,
+            backend_results=(backend_results),
+            failures=failures,
         )
 
         with self._lock:
@@ -844,9 +615,7 @@ class AcceleratorDetector:
     @property
     def last_result(
         self,
-    ) -> Optional[
-        AcceleratorDetectionResult
-    ]:
+    ) -> Optional[AcceleratorDetectionResult]:
         with self._lock:
             return self._last_result
 
@@ -857,9 +626,7 @@ class AcceleratorDetector:
     def health(
         self,
         *,
-        deep: Optional[
-            bool
-        ] = None,
+        deep: Optional[bool] = None,
         refresh_inventory: bool = True,
     ) -> AcceleratorHealthReport:
         """
@@ -874,153 +641,76 @@ class AcceleratorDetector:
             return AcceleratorHealthReport(
                 components=(
                     AcceleratorHealth(
-                        component=(
-                            "accelerators"
-                        ),
-
-                        status=(
-                            AcceleratorHealthStatus.
-                            UNAVAILABLE.value
-                        ),
-
-                        message=(
-                            "Accelerator "
-                            "subsystem is "
-                            "disabled."
-                        ),
-
+                        component=("accelerators"),
+                        status=(AcceleratorHealthStatus.UNAVAILABLE.value),
+                        message=("Accelerator subsystem is disabled."),
                         retryable=False,
                     ),
                 ),
-
                 inventory=(
                     AcceleratorInventory(
                         devices=(),
                         attributes={
-                            "accelerators_enabled": (
-                                False
-                            ),
+                            "accelerators_enabled": (False),
                         },
                     )
                 ),
-
                 attributes={
                     "enabled": False,
                 },
             )
 
-        deep_check = (
-            self.config.
-            health.deep_check
-            if deep is None
-            else bool(
-                deep
-            )
-        )
+        deep_check = self.config.health.deep_check if deep is None else bool(deep)
 
-        components: List[
-            AcceleratorHealth
-        ] = []
+        components: List[AcceleratorHealth] = []
 
         for backend in self.backends():
             try:
-                components.append(
-                    backend.health(
-                        deep=deep_check
-                    )
-                )
+                components.append(backend.health(deep=deep_check))
 
             except Exception as exc:
                 components.append(
                     AcceleratorHealth(
-                        component=(
-                            "accelerator_backend:"
-                            + backend.kind
-                        ),
-
-                        status=(
-                            AcceleratorHealthStatus.
-                            UNHEALTHY.value
-                        ),
-
-                        message=(
-                            "Accelerator "
-                            "backend health "
-                            "check failed."
-                        ),
-
+                        component=("accelerator_backend:" + backend.kind),
+                        status=(AcceleratorHealthStatus.UNHEALTHY.value),
+                        message=("Accelerator backend health check failed."),
                         kind=backend.kind,
-
                         retryable=True,
-
-                        error_type=(
-                            type(exc).__name__
-                        ),
-
+                        error_type=(type(exc).__name__),
                         attributes={
-                            "deep_check": (
-                                deep_check
-                            ),
+                            "deep_check": (deep_check),
                         },
                     )
                 )
 
-        inventory = self.inventory(
-            refresh=(
-                refresh_inventory
-            )
-        )
+        inventory = self.inventory(refresh=(refresh_inventory))
 
         # CPU can be an explicit baseline health
         # requirement.
-        if (
-            self.config.
-            health.require_cpu
-            and not inventory.by_kind(
-                AcceleratorKind.CPU.value,
-                available_only=True,
-            )
+        if self.config.health.require_cpu and not inventory.by_kind(
+            AcceleratorKind.CPU.value,
+            available_only=True,
         ):
             components.append(
                 AcceleratorHealth(
-                    component=(
-                        "accelerator_policy:cpu"
-                    ),
-
-                    status=(
-                        AcceleratorHealthStatus.
-                        UNHEALTHY.value
-                    ),
-
+                    component=("accelerator_policy:cpu"),
+                    status=(AcceleratorHealthStatus.UNHEALTHY.value),
                     message=(
                         "CPU availability is "
                         "required but no "
                         "usable CPU backend "
                         "was detected."
                     ),
-
-                    kind=(
-                        AcceleratorKind.
-                        CPU.value
-                    ),
-
+                    kind=(AcceleratorKind.CPU.value),
                     retryable=False,
                 )
             )
 
-        preferred = (
-            self.config.
-            selection.
-            preferred_kind
-        )
+        preferred = self.config.selection.preferred_kind
 
         if (
-            self.config.
-            health.
-            require_preferred_backend
-            and preferred
-            != AcceleratorKind.
-            AUTO.value
+            self.config.health.require_preferred_backend
+            and preferred != AcceleratorKind.AUTO.value
             and not inventory.by_kind(
                 preferred,
                 available_only=True,
@@ -1028,16 +718,8 @@ class AcceleratorDetector:
         ):
             components.append(
                 AcceleratorHealth(
-                    component=(
-                        "accelerator_policy:"
-                        + preferred
-                    ),
-
-                    status=(
-                        AcceleratorHealthStatus.
-                        UNHEALTHY.value
-                    ),
-
+                    component=("accelerator_policy:" + preferred),
+                    status=(AcceleratorHealthStatus.UNHEALTHY.value),
                     message=(
                         "The configured "
                         "preferred "
@@ -1045,32 +727,18 @@ class AcceleratorDetector:
                         "is required but "
                         "unavailable."
                     ),
-
                     kind=preferred,
-
                     retryable=True,
                 )
             )
 
         return AcceleratorHealthReport(
-            components=tuple(
-                components
-            ),
-
+            components=tuple(components),
             inventory=inventory,
-
             attributes={
                 "enabled": True,
-
-                "deep_check": (
-                    deep_check
-                ),
-
-                "registered_backends": [
-                    backend.kind
-                    for backend
-                    in self.backends()
-                ],
+                "deep_check": (deep_check),
+                "registered_backends": [backend.kind for backend in self.backends()],
             },
         )
 
@@ -1083,34 +751,14 @@ class AcceleratorDetector:
         *,
         refresh: bool = True,
     ) -> Dict[str, Any]:
-        inventory = self.inventory(
-            refresh=refresh
-        )
+        inventory = self.inventory(refresh=refresh)
 
         return {
-            "enabled": (
-                self.config.enabled
-            ),
-
-            "registered_backends": [
-                backend.kind
-                for backend
-                in self.backends()
-            ],
-
-            "backend_priority": list(
-                self.config.
-                discovery.
-                backend_priority
-            ),
-
-            "inventory": (
-                inventory.to_dict()
-            ),
-
-            "selection_performed": (
-                False
-            ),
+            "enabled": (self.config.enabled),
+            "registered_backends": [backend.kind for backend in self.backends()],
+            "backend_priority": list(self.config.discovery.backend_priority),
+            "inventory": (inventory.to_dict()),
+            "selection_performed": (False),
         }
 
 
@@ -1118,15 +766,12 @@ class AcceleratorDetector:
 # Default detector
 # ---------------------------------------------------------------
 
+
 def create_accelerator_detector(
     *,
-    config: Optional[
-        AcceleratorConfig
-    ] = None,
+    config: Optional[AcceleratorConfig] = None,
 ) -> AcceleratorDetector:
-    return AcceleratorDetector(
-        config=config
-    )
+    return AcceleratorDetector(config=config)
 
 
 # ---------------------------------------------------------------
@@ -1135,8 +780,6 @@ def create_accelerator_detector(
 
 __all__ = [
     "AcceleratorDetectionResult",
-
     "AcceleratorDetector",
-
     "create_accelerator_detector",
 ]

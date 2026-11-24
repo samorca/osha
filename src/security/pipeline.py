@@ -63,6 +63,7 @@ from src.security.secrets import (
 # Security check result
 # ---------------------------------------------------------------
 
+
 @dataclass
 class SecurityCheckResult:
     """
@@ -78,33 +79,22 @@ class SecurityCheckResult:
     def allowed(
         self,
     ) -> bool:
-        return (
-            self.authorization.
-            allowed
-        )
+        return self.authorization.allowed
 
     def to_dict(
         self,
     ) -> Dict[str, Any]:
         return {
-            "allowed": (
-                self.allowed
-            ),
-
-            "context": (
-                self.context.to_dict()
-            ),
-
-            "authorization": (
-                self.authorization.
-                to_dict()
-            ),
+            "allowed": (self.allowed),
+            "context": (self.context.to_dict()),
+            "authorization": (self.authorization.to_dict()),
         }
 
 
 # ---------------------------------------------------------------
 # Security pipeline
 # ---------------------------------------------------------------
+
 
 class SecurityPipeline:
     """
@@ -128,14 +118,9 @@ class SecurityPipeline:
     def __init__(
         self,
         *,
-        config: Optional[
-            SecurityConfig
-        ] = None,
+        config: Optional[SecurityConfig] = None,
     ) -> None:
-        self.config = (
-            config
-            or SecurityConfig()
-        )
+        self.config = config or SecurityConfig()
 
         self.config.validate()
 
@@ -143,88 +128,51 @@ class SecurityPipeline:
         # Identity
         # -----------------------------------------------------
 
-        self.identities = (
-            IdentityRegistry()
-        )
+        self.identities = IdentityRegistry()
 
         # -----------------------------------------------------
         # Permissions
         # -----------------------------------------------------
 
-        self.permissions = (
-            PermissionCatalog()
-        )
+        self.permissions = PermissionCatalog()
 
         # -----------------------------------------------------
         # Policies
         # -----------------------------------------------------
 
-        self.policies = (
-            PolicySet()
-        )
+        self.policies = PolicySet()
 
         # -----------------------------------------------------
         # Authentication
         # -----------------------------------------------------
 
-        self.authentication = (
-            AuthenticationService(
-                config=(
-                    self.config.
-                    authentication
-                ),
-                redact_sensitive=(
-                    self.config.
-                    redact_sensitive
-                ),
-            )
+        self.authentication = AuthenticationService(
+            config=(self.config.authentication),
+            redact_sensitive=(self.config.redact_sensitive),
         )
 
         # -----------------------------------------------------
         # Authorization
         # -----------------------------------------------------
 
-        self.authorization = (
-            AuthorizationService(
-                permissions=(
-                    self.permissions
-                ),
-                config=(
-                    self.config.
-                    authorization
-                ),
-                approval=(
-                    self.config.approval
-                ),
-                policy_evaluator=(
-                    self.policies.evaluate
-                ),
-            )
+        self.authorization = AuthorizationService(
+            permissions=(self.permissions),
+            config=(self.config.authorization),
+            approval=(self.config.approval),
+            policy_evaluator=(self.policies.evaluate),
         )
 
         # -----------------------------------------------------
         # Secrets
         # -----------------------------------------------------
 
-        self.secrets = (
-            SecretManager(
-                config=(
-                    self.config.secrets
-                )
-            )
-        )
+        self.secrets = SecretManager(config=(self.config.secrets))
 
         # -----------------------------------------------------
         # Audit
         # -----------------------------------------------------
 
-        self.audit = (
-            SecurityAuditLog(
-                config=(
-                    self.config.audit
-                )
-            )
-        )
+        self.audit = SecurityAuditLog(config=(self.config.audit))
 
     # ---------------------------------------------------------
     # Authenticate
@@ -246,29 +194,20 @@ class SecurityPipeline:
         """
 
         try:
-            context = (
-                self.authentication.
-                authenticate(
-                    method=method,
-                    credential=credential,
-                )
+            context = self.authentication.authenticate(
+                method=method,
+                credential=credential,
             )
 
             principal_id = (
-                context.principal.
-                principal_id
-                if (
-                    context.principal
-                    is not None
-                )
+                context.principal.principal_id
+                if (context.principal is not None)
                 else None
             )
 
             self.audit.authentication(
                 success=True,
-                principal_id=(
-                    principal_id
-                ),
+                principal_id=(principal_id),
                 method=method,
             )
 
@@ -293,13 +232,9 @@ class SecurityPipeline:
         authentication: AuthenticationContext,
         environment_id: str,
         permission: Permission,
-        resource_id: Optional[
-            str
-        ] = None,
+        resource_id: Optional[str] = None,
         mutating: bool = False,
-        correlation_id: Optional[
-            str
-        ] = None,
+        correlation_id: Optional[str] = None,
     ) -> SecurityCheckResult:
         """
         Evaluate one protected OSHA operation.
@@ -313,108 +248,44 @@ class SecurityPipeline:
 
         authentication.finalize()
 
-        if (
-            authentication.principal
-            is None
-        ):
-            raise ValueError(
-                "Authorization requires "
-                "an authenticated "
-                "principal."
-            )
+        if authentication.principal is None:
+            raise ValueError("Authorization requires an authenticated principal.")
 
-        request = (
-            AuthorizationRequest(
-                principal=(
-                    authentication.
-                    principal
-                ),
-                permission=(
-                    permission
-                ),
-                resource_id=(
-                    resource_id
-                ),
-                attributes={
-                    "mutating": (
-                        mutating
-                    ),
-                    "correlation_id": (
-                        correlation_id
-                    ),
-                },
-            ).finalize()
+        request = AuthorizationRequest(
+            principal=(authentication.principal),
+            permission=(permission),
+            resource_id=(resource_id),
+            attributes={
+                "mutating": (mutating),
+                "correlation_id": (correlation_id),
+            },
+        ).finalize()
+
+        result = self.authorization.authorize(
+            request,
+            mutating=mutating,
         )
 
-        result = (
-            self.authorization.
-            authorize(
-                request,
-                mutating=mutating,
-            )
-        )
-
-        context = (
-            SecurityContext(
-                environment_id=(
-                    environment_id
-                ),
-                authentication=(
-                    authentication
-                ),
-                authorization=(
-                    result
-                ),
-                correlation_id=(
-                    correlation_id
-                ),
-                attributes={
-                    "authorization_request_id": (
-                        request.request_id
-                    ),
-                },
-            ).finalize()
-        )
+        context = SecurityContext(
+            environment_id=(environment_id),
+            authentication=(authentication),
+            authorization=(result),
+            correlation_id=(correlation_id),
+            attributes={
+                "authorization_request_id": (request.request_id),
+            },
+        ).finalize()
 
         self.audit.authorization(
-            decision=(
-                result.decision
-            ),
-
-            principal_id=(
-                authentication.
-                principal.
-                principal_id
-            ),
-
-            environment_id=(
-                environment_id
-            ),
-
-            resource=(
-                permission.resource
-            ),
-
-            action=(
-                permission.action
-            ),
-
-            reference_ids=(
-                [
-                    result.decision_id
-                ]
-                if result.decision_id
-                else []
-            ),
-
+            decision=(result.decision),
+            principal_id=(authentication.principal.principal_id),
+            environment_id=(environment_id),
+            resource=(permission.resource),
+            action=(permission.action),
+            reference_ids=([result.decision_id] if result.decision_id else []),
             attributes={
-                "mutating": (
-                    mutating
-                ),
-
-                "request_id": (
-                    request.request_id
-                ),
+                "mutating": (mutating),
+                "request_id": (request.request_id),
             },
         )
 
@@ -431,9 +302,7 @@ class SecurityPipeline:
         self,
         reference: SecretReference,
         *,
-        principal: Optional[
-            SecurityPrincipal
-        ] = None,
+        principal: Optional[SecurityPrincipal] = None,
     ) -> SecretValue:
         """
         Resolve one secret reference and record
@@ -445,27 +314,12 @@ class SecurityPipeline:
         """
 
         try:
-            value = (
-                self.secrets.resolve(
-                    reference
-                )
-            )
+            value = self.secrets.resolve(reference)
 
             self.audit.secret_access(
-                principal_id=(
-                    principal.principal_id
-                    if principal
-                    else None
-                ),
-
-                provider=(
-                    reference.provider
-                ),
-
-                reference_id=(
-                    reference.reference_id
-                ),
-
+                principal_id=(principal.principal_id if principal else None),
+                provider=(reference.provider),
+                reference_id=(reference.reference_id),
                 success=True,
             )
 
@@ -473,20 +327,9 @@ class SecurityPipeline:
 
         except Exception:
             self.audit.secret_access(
-                principal_id=(
-                    principal.principal_id
-                    if principal
-                    else None
-                ),
-
-                provider=(
-                    reference.provider
-                ),
-
-                reference_id=(
-                    reference.reference_id
-                ),
-
+                principal_id=(principal.principal_id if principal else None),
+                provider=(reference.provider),
+                reference_id=(reference.reference_id),
                 success=False,
             )
 
@@ -505,43 +348,14 @@ class SecurityPipeline:
         """
 
         return {
-            "config": (
-                safe_config_summary(
-                    self.config
-                )
-            ),
-
-            "identities": (
-                self.identities.
-                summary()
-            ),
-
-            "permissions": (
-                self.permissions.
-                summary()
-            ),
-
-            "policies": (
-                self.policies.summary()
-            ),
-
-            "authentication": (
-                self.authentication.
-                summary()
-            ),
-
-            "authorization": (
-                self.authorization.
-                summary()
-            ),
-
-            "secrets": (
-                self.secrets.summary()
-            ),
-
-            "audit": (
-                self.audit.summary()
-            ),
+            "config": (safe_config_summary(self.config)),
+            "identities": (self.identities.summary()),
+            "permissions": (self.permissions.summary()),
+            "policies": (self.policies.summary()),
+            "authentication": (self.authentication.summary()),
+            "authorization": (self.authorization.summary()),
+            "secrets": (self.secrets.summary()),
+            "audit": (self.audit.summary()),
         }
 
 
@@ -551,6 +365,5 @@ class SecurityPipeline:
 
 __all__ = [
     "SecurityCheckResult",
-
     "SecurityPipeline",
 ]

@@ -91,6 +91,7 @@ from src.accelerators.schema import (
 # Candidate evaluation
 # ---------------------------------------------------------------
 
+
 class AcceleratorCandidate:
     """
     One evaluated selection candidate.
@@ -104,9 +105,7 @@ class AcceleratorCandidate:
         *,
         device: AcceleratorDevice,
         eligible: bool,
-        rejection_reasons: Iterable[
-            str
-        ] = (),
+        rejection_reasons: Iterable[str] = (),
         score: Tuple[Any, ...] = (),
         fallback_candidate: bool = False,
     ) -> None:
@@ -114,85 +113,48 @@ class AcceleratorCandidate:
 
         self.device = device
 
-        self.eligible = bool(
-            eligible
-        )
+        self.eligible = bool(eligible)
 
         self.rejection_reasons = tuple(
             dict.fromkeys(
-                str(
-                    reason
-                ).strip()
-                for reason
-                in rejection_reasons
-                if str(
-                    reason
-                ).strip()
+                str(reason).strip()
+                for reason in rejection_reasons
+                if str(reason).strip()
             )
         )
 
-        self.score = tuple(
-            score
-        )
+        self.score = tuple(score)
 
-        self.fallback_candidate = bool(
-            fallback_candidate
-        )
+        self.fallback_candidate = bool(fallback_candidate)
 
-        if (
-            self.eligible
-            and self.rejection_reasons
-        ):
+        if self.eligible and self.rejection_reasons:
             raise ValueError(
-                "Eligible accelerator "
-                "candidate cannot contain "
-                "rejection reasons."
+                "Eligible accelerator candidate cannot contain rejection reasons."
             )
 
-        if (
-            not self.eligible
-            and not self.
-            rejection_reasons
-        ):
+        if not self.eligible and not self.rejection_reasons:
             raise ValueError(
-                "Rejected accelerator "
-                "candidate requires at "
-                "least one reason."
+                "Rejected accelerator candidate requires at least one reason."
             )
 
     def to_dict(
         self,
     ) -> Dict[str, Any]:
         return {
-            "device_id": (
-                self.device.device_id
-            ),
-
+            "device_id": (self.device.device_id),
             "kind": self.device.kind,
-
-            "runtime_device": (
-                self.device.runtime_device
-            ),
-
+            "runtime_device": (self.device.runtime_device),
             "eligible": self.eligible,
-
-            "rejection_reasons": list(
-                self.rejection_reasons
-            ),
-
-            "score": list(
-                self.score
-            ),
-
-            "fallback_candidate": (
-                self.fallback_candidate
-            ),
+            "rejection_reasons": list(self.rejection_reasons),
+            "score": list(self.score),
+            "fallback_candidate": (self.fallback_candidate),
         }
 
 
 # ---------------------------------------------------------------
 # Selection attempt
 # ---------------------------------------------------------------
+
 
 class AcceleratorSelectionAttempt:
     """
@@ -204,18 +166,14 @@ class AcceleratorSelectionAttempt:
         *,
         requirements: AcceleratorRequirements,
         inventory: AcceleratorInventory,
-        candidates: Iterable[
-            AcceleratorCandidate
-        ],
+        candidates: Iterable[AcceleratorCandidate],
     ) -> None:
         requirements.validate()
         inventory.validate()
 
         self.requirements = requirements
         self.inventory = inventory
-        self.candidates = tuple(
-            candidates
-        )
+        self.candidates = tuple(candidates)
 
     @property
     def eligible_candidates(
@@ -224,12 +182,7 @@ class AcceleratorSelectionAttempt:
         AcceleratorCandidate,
         ...,
     ]:
-        return tuple(
-            candidate
-            for candidate
-            in self.candidates
-            if candidate.eligible
-        )
+        return tuple(candidate for candidate in self.candidates if candidate.eligible)
 
     @property
     def rejected_candidates(
@@ -239,10 +192,7 @@ class AcceleratorSelectionAttempt:
         ...,
     ]:
         return tuple(
-            candidate
-            for candidate
-            in self.candidates
-            if not candidate.eligible
+            candidate for candidate in self.candidates if not candidate.eligible
         )
 
     def rejection_map(
@@ -252,49 +202,27 @@ class AcceleratorSelectionAttempt:
         Tuple[str, ...],
     ]:
         return {
-            candidate.device.device_id: (
-                candidate.
-                rejection_reasons
-            )
-            for candidate
-            in self.rejected_candidates
+            candidate.device.device_id: (candidate.rejection_reasons)
+            for candidate in self.rejected_candidates
         }
 
     def to_dict(
         self,
     ) -> Dict[str, Any]:
         return {
-            "requirements": (
-                self.requirements.to_dict()
-            ),
-
-            "inventory": (
-                self.inventory.to_dict()
-            ),
-
-            "candidate_count": len(
-                self.candidates
-            ),
-
-            "eligible_count": len(
-                self.eligible_candidates
-            ),
-
-            "rejected_count": len(
-                self.rejected_candidates
-            ),
-
-            "candidates": [
-                candidate.to_dict()
-                for candidate
-                in self.candidates
-            ],
+            "requirements": (self.requirements.to_dict()),
+            "inventory": (self.inventory.to_dict()),
+            "candidate_count": len(self.candidates),
+            "eligible_count": len(self.eligible_candidates),
+            "rejected_count": len(self.rejected_candidates),
+            "candidates": [candidate.to_dict() for candidate in self.candidates],
         }
 
 
 # ---------------------------------------------------------------
 # Backend-priority utilities
 # ---------------------------------------------------------------
+
 
 def backend_priority_index(
     kind: str,
@@ -311,19 +239,16 @@ def backend_priority_index(
     """
 
     try:
-        return priority.index(
-            kind
-        )
+        return priority.index(kind)
 
     except ValueError:
-        return len(
-            priority
-        )
+        return len(priority)
 
 
 # ---------------------------------------------------------------
 # Memory ranking utilities
 # ---------------------------------------------------------------
+
 
 def known_memory_rank(
     value: Optional[int],
@@ -344,15 +269,14 @@ def known_memory_rank(
 
     return (
         0,
-        -int(
-            value
-        ),
+        -int(value),
     )
 
 
 # ---------------------------------------------------------------
 # Accelerator manager
 # ---------------------------------------------------------------
+
 
 class AcceleratorManager:
     """
@@ -373,41 +297,32 @@ class AcceleratorManager:
 
     def __init__(
         self,
+        backend: Optional[str] = None,
         *,
-        config: Optional[
-            AcceleratorConfig
-        ] = None,
-        detector: Optional[
-            AcceleratorDetector
-        ] = None,
+        config: Optional[AcceleratorConfig] = None,
+        detector: Optional[AcceleratorDetector] = None,
     ) -> None:
-        self.config = (
-            config
-            or AcceleratorConfig()
-        )
+        if backend is not None and backend not in {
+            "cpu",
+            "cuda",
+            "rocm",
+        }:
+            raise ValueError(f"Unknown accelerator backend: {backend}")
+
+        self._compat_backend = backend
+        self.config = config or AcceleratorConfig()
 
         self.config.validate()
 
-        self.detector = (
-            detector
-            or AcceleratorDetector(
-                config=self.config
-            )
-        )
+        self.detector = detector or AcceleratorDetector(config=self.config)
 
         self._lock = RLock()
 
-        self._last_detection: Optional[
-            AcceleratorDetectionResult
-        ] = None
+        self._last_detection: Optional[AcceleratorDetectionResult] = None
 
-        self._last_attempt: Optional[
-            AcceleratorSelectionAttempt
-        ] = None
+        self._last_attempt: Optional[AcceleratorSelectionAttempt] = None
 
-        self._last_selection: Optional[
-            AcceleratorSelection
-        ] = None
+        self._last_selection: Optional[AcceleratorSelection] = None
 
         self._active_selections: Dict[
             str,
@@ -422,10 +337,7 @@ class AcceleratorManager:
         self,
     ) -> None:
         if not self.config.enabled:
-            raise AcceleratorConfigurationError(
-                "Accelerator subsystem is "
-                "disabled."
-            )
+            raise AcceleratorConfigurationError("Accelerator subsystem is disabled.")
 
     # ---------------------------------------------------------
     # Detection
@@ -435,9 +347,7 @@ class AcceleratorManager:
         self,
         *,
         refresh: bool = True,
-        fail_fast: Optional[
-            bool
-        ] = None,
+        fail_fast: Optional[bool] = None,
     ) -> AcceleratorDetectionResult:
         self._require_enabled()
 
@@ -448,14 +358,10 @@ class AcceleratorManager:
             if cached is not None:
                 return cached
 
-        result = self.detector.detect(
-            fail_fast=fail_fast
-        )
+        result = self.detector.detect(fail_fast=fail_fast)
 
         with self._lock:
-            self._last_detection = (
-                result
-            )
+            self._last_detection = result
 
         return result
 
@@ -468,9 +374,7 @@ class AcceleratorManager:
         *,
         refresh: bool = True,
     ) -> AcceleratorInventory:
-        return self.detect(
-            refresh=refresh
-        ).inventory
+        return self.detect(refresh=refresh).inventory
 
     # ---------------------------------------------------------
     # Backend lookup
@@ -480,12 +384,22 @@ class AcceleratorManager:
         self,
         kind: str,
     ) -> AcceleratorBackend:
-        return (
-            self.detector.
-            require_backend(
-                kind
-            )
-        )
+        return self.detector.require_backend(kind)
+
+    def get_backend(self):
+        if self._compat_backend is None:
+            raise ValueError("get_backend() requires a backend override.")
+        if self._compat_backend == "cpu":
+            from src.accelerators.cpu.backend import CPUAccelerator
+
+            return CPUAccelerator()
+        if self._compat_backend == "cuda":
+            from src.accelerators.cuda.backend import CUDAAccelerator
+
+            return CUDAAccelerator()
+        from src.accelerators.rocm.backend import ROCmAccelerator
+
+        return ROCmAccelerator()
 
     # ---------------------------------------------------------
     # Requirements
@@ -496,30 +410,14 @@ class AcceleratorManager:
         *,
         training: bool = False,
         inference: bool = False,
-        minimum_total_memory_bytes: Optional[
-            int
-        ] = None,
-        minimum_free_memory_bytes: Optional[
-            int
-        ] = None,
-        preferred_kind: Optional[
-            str
-        ] = None,
-        device_index: Optional[
-            int
-        ] = None,
-        device_id: Optional[
-            str
-        ] = None,
-        require_accelerator: Optional[
-            bool
-        ] = None,
-        allow_cpu_fallback: Optional[
-            bool
-        ] = None,
-        mixed_precision: Optional[
-            bool
-        ] = None,
+        minimum_total_memory_bytes: Optional[int] = None,
+        minimum_free_memory_bytes: Optional[int] = None,
+        preferred_kind: Optional[str] = None,
+        device_index: Optional[int] = None,
+        device_id: Optional[str] = None,
+        require_accelerator: Optional[bool] = None,
+        allow_cpu_fallback: Optional[bool] = None,
+        mixed_precision: Optional[bool] = None,
         required_capabilities: Tuple[
             str,
             ...,
@@ -532,32 +430,16 @@ class AcceleratorManager:
         return self.config.requirements(
             training=training,
             inference=inference,
-            minimum_total_memory_bytes=(
-                minimum_total_memory_bytes
-            ),
-            minimum_free_memory_bytes=(
-                minimum_free_memory_bytes
-            ),
-            preferred_kind=(
-                preferred_kind
-            ),
+            minimum_total_memory_bytes=(minimum_total_memory_bytes),
+            minimum_free_memory_bytes=(minimum_free_memory_bytes),
+            preferred_kind=(preferred_kind),
             device_index=device_index,
             device_id=device_id,
-            require_accelerator=(
-                require_accelerator
-            ),
-            allow_cpu_fallback=(
-                allow_cpu_fallback
-            ),
-            mixed_precision=(
-                mixed_precision
-            ),
-            required_capabilities=(
-                required_capabilities
-            ),
-            required_precisions=(
-                required_precisions
-            ),
+            require_accelerator=(require_accelerator),
+            allow_cpu_fallback=(allow_cpu_fallback),
+            mixed_precision=(mixed_precision),
+            required_capabilities=(required_capabilities),
+            required_precisions=(required_precisions),
         )
 
     # ---------------------------------------------------------
@@ -572,24 +454,16 @@ class AcceleratorManager:
         reasons: List[str] = []
 
         if (
-            requirements.device_id
-            is not None
-            and device.device_id
-            != requirements.device_id
+            requirements.device_id is not None
+            and device.device_id != requirements.device_id
         ):
-            reasons.append(
-                "device_id_mismatch"
-            )
+            reasons.append("device_id_mismatch")
 
         if (
-            requirements.device_index
-            is not None
-            and device.index
-            != requirements.device_index
+            requirements.device_index is not None
+            and device.index != requirements.device_index
         ):
-            reasons.append(
-                "device_index_mismatch"
-            )
+            reasons.append("device_index_mismatch")
 
         return reasons
 
@@ -615,154 +489,64 @@ class AcceleratorManager:
         reasons: List[str] = []
 
         if not device.available:
-            reasons.append(
-                "device_unavailable"
-            )
+            reasons.append("device_unavailable")
 
-        if (
-            device.degraded
-            and not requirements.
-            allow_degraded
-        ):
-            reasons.append(
-                "degraded_device_not_allowed"
-            )
+        if device.degraded and not requirements.allow_degraded:
+            reasons.append("degraded_device_not_allowed")
 
         if (
             not ignore_kind
-            and requirements.
-            preferred_kind
-            != AcceleratorKind.AUTO.value
-            and device.kind
-            != requirements.
-            preferred_kind
+            and requirements.preferred_kind != AcceleratorKind.AUTO.value
+            and device.kind != requirements.preferred_kind
         ):
-            reasons.append(
-                "backend_kind_mismatch"
-            )
+            reasons.append("backend_kind_mismatch")
 
         reasons.extend(
-            AcceleratorManager.
-            _explicit_identity_reasons(
+            AcceleratorManager._explicit_identity_reasons(
                 device,
                 requirements,
             )
         )
 
-        if (
-            requirements.
-            require_accelerator
-            and not device.accelerator
+        if requirements.require_accelerator and not device.accelerator:
+            reasons.append("hardware_accelerator_required")
+
+        if requirements.minimum_total_memory_bytes is not None:
+            total = device.memory.total_bytes
+
+            if total is None or total < requirements.minimum_total_memory_bytes:
+                reasons.append("insufficient_total_memory")
+
+        if requirements.minimum_free_memory_bytes is not None:
+            free = device.memory.free_bytes
+
+            if free is None or free < requirements.minimum_free_memory_bytes:
+                reasons.append("insufficient_free_memory")
+
+        for capability in requirements.required_capabilities:
+            if not device.supports_capability(capability):
+                reasons.append("missing_capability:" + capability)
+
+        for precision in requirements.required_precisions:
+            if not device.supports_precision(precision):
+                reasons.append("missing_precision:" + precision)
+
+        if requirements.training and not device.supports_capability(
+            AcceleratorCapability.TRAINING.value
         ):
-            reasons.append(
-                "hardware_accelerator_required"
-            )
+            reasons.append("training_capability_missing")
 
-        if (
-            requirements.
-            minimum_total_memory_bytes
-            is not None
+        if requirements.inference and not device.supports_capability(
+            AcceleratorCapability.INFERENCE.value
         ):
-            total = (
-                device.memory.
-                total_bytes
-            )
+            reasons.append("inference_capability_missing")
 
-            if (
-                total is None
-                or total
-                < requirements.
-                minimum_total_memory_bytes
-            ):
-                reasons.append(
-                    "insufficient_total_memory"
-                )
-
-        if (
-            requirements.
-            minimum_free_memory_bytes
-            is not None
+        if requirements.mixed_precision and not device.supports_capability(
+            AcceleratorCapability.MIXED_PRECISION.value
         ):
-            free = (
-                device.memory.
-                free_bytes
-            )
+            reasons.append("mixed_precision_capability_missing")
 
-            if (
-                free is None
-                or free
-                < requirements.
-                minimum_free_memory_bytes
-            ):
-                reasons.append(
-                    "insufficient_free_memory"
-                )
-
-        for capability in (
-            requirements.
-            required_capabilities
-        ):
-            if not device.supports_capability(
-                capability
-            ):
-                reasons.append(
-                    "missing_capability:"
-                    + capability
-                )
-
-        for precision in (
-            requirements.
-            required_precisions
-        ):
-            if not device.supports_precision(
-                precision
-            ):
-                reasons.append(
-                    "missing_precision:"
-                    + precision
-                )
-
-        if (
-            requirements.training
-            and not device.
-            supports_capability(
-                AcceleratorCapability.
-                TRAINING.value
-            )
-        ):
-            reasons.append(
-                "training_capability_missing"
-            )
-
-        if (
-            requirements.inference
-            and not device.
-            supports_capability(
-                AcceleratorCapability.
-                INFERENCE.value
-            )
-        ):
-            reasons.append(
-                "inference_capability_missing"
-            )
-
-        if (
-            requirements.mixed_precision
-            and not device.
-            supports_capability(
-                AcceleratorCapability.
-                MIXED_PRECISION.value
-            )
-        ):
-            reasons.append(
-                "mixed_precision_capability_missing"
-            )
-
-        return list(
-            dict.fromkeys(
-                reasons
-            )
-        )
+        return list(dict.fromkeys(reasons))
 
     # ---------------------------------------------------------
     # Candidate score
@@ -794,84 +578,41 @@ class AcceleratorManager:
         explicit_id_penalty = (
             0
             if (
-                requirements.device_id
-                is not None
-                and device.device_id
-                == requirements.device_id
+                requirements.device_id is not None
+                and device.device_id == requirements.device_id
             )
-            else (
-                1
-                   device_id is not None
-                else 0
-            )
+            else (1 if requirements.device_id is not None else 0)
         )
 
         explicit_index_penalty = (
             0
             if (
-                requirements.device_index
-                is not None
-                and device.index
-                == requirements.device_index
+                requirements.device_index is not None
+                and device.index == requirements.device_index
             )
-            else (
-                1
-                if requirements.
-                device_index
-                is not None
-                else 0
-            )
+            else (1 if requirements.device_index is not None else 0)
         )
 
         preferred_kind_penalty = (
             0
             if (
-                requirements.
-                preferred_kind
-                == AcceleratorKind.
-                AUTO.value
-                or device.kind
-                == requirements.
-                preferred_kind
+                requirements.preferred_kind == AcceleratorKind.AUTO.value
+                or device.kind == requirements.preferred_kind
             )
             else 1
         )
 
-        backend_priority = (
-            backend_priority_index(
-                device.kind,
-                self.config.
-                discovery.
-                backend_priority,
-            )
+        backend_priority = backend_priority_index(
+            device.kind,
+            self.config.discovery.backend_priority,
         )
 
-        degraded_penalty = (
-            1
-            if device.state
-            == AcceleratorState.
-            DEGRADED.value
-            else 0
-        )
+        degraded_penalty = 1 if device.state == AcceleratorState.DEGRADED.value else 0
 
-        if (
-            self.config.
-            selection.
-            prefer_highest_free_memory
-        ):
-            free_memory_rank = (
-                known_memory_rank(
-                    device.memory.
-                    free_bytes
-                )
-            )
+        if self.config.selection.prefer_highest_free_memory:
+            free_memory_rank = known_memory_rank(device.memory.free_bytes)
 
-            total_memory_rank = (
-                known_memory_rank(
-                    device.memory.
-                    total_bytes
-                )
-            )
+            total_memory_rank = known_memory_rank(device.memory.total_bytes)
 
         else:
             free_memory_rank = (
@@ -884,34 +625,18 @@ class AcceleratorManager:
                 0,
             )
 
-        index_rank = (
-            device.index
-            if device.index
-            is not None
-            else -1
-        )
+        index_rank = device.index if device.index is not None else -1
 
         return (
-            1
-            if fallback_candidate
-            else 0,
-
+            1 if fallback_candidate else 0,
             explicit_id_penalty,
-
             explicit_index_penalty,
-
             preferred_kind_penalty,
-
             backend_priority,
-
             degraded_penalty,
-
             *free_memory_rank,
-
             *total_memory_rank,
-
             index_rank,
-
             device.device_id,
         )
 
@@ -923,38 +648,23 @@ class AcceleratorManager:
         self,
         requirements: AcceleratorRequirements,
         *,
-        inventory: Optional[
-            AcceleratorInventory
-        ] = None,
+        inventory: Optional[AcceleratorInventory] = None,
         refresh: bool = True,
     ) -> AcceleratorSelectionAttempt:
         self._require_enabled()
 
         requirements.validate()
 
-        source = (
-            inventory
-            or self.inventory(
-                refresh=refresh
-            )
-        )
+        source = inventory or self.inventory(refresh=refresh)
 
         source.validate()
 
-        candidates: List[
-            AcceleratorCandidate
-        ] = []
+        candidates: List[AcceleratorCandidate] = []
 
-        preferred_kind = (
-            requirements.
-            preferred_kind
-        )
+        preferred_kind = requirements.preferred_kind
 
         fallback_allowed = (
-            requirements.
-            allow_cpu_fallback
-            and not requirements.
-            require_accelerator
+            requirements.allow_cpu_fallback and not requirements.require_accelerator
         )
 
         for device in source.devices:
@@ -962,52 +672,30 @@ class AcceleratorManager:
                 fallback_allowed
                 and preferred_kind
                 not in {
-                    AcceleratorKind.
-                    AUTO.value,
-                    AcceleratorKind.
-                    CPU.value,
+                    AcceleratorKind.AUTO.value,
+                    AcceleratorKind.CPU.value,
                 }
-                and device.kind
-                == AcceleratorKind.
-                CPU.value
+                and device.kind == AcceleratorKind.CPU.value
             )
 
-            ignore_kind = (
-                fallback_candidate
-            )
+            ignore_kind = fallback_candidate
 
-            reasons = (
-                self._workload_reasons(
-                    device,
-                    requirements,
-                    ignore_kind=(
-                        ignore_kind
-                    ),
-                )
+            reasons = self._workload_reasons(
+                device,
+                requirements,
+                ignore_kind=(ignore_kind),
             )
 
             # CPU fallback must not bypass explicit
             # device identity. An explicit cuda:1
             # request should not silently select CPU.
-            if (
-                fallback_candidate
-                and (
-                    requirements.device_id
-                    is not None
-                    or requirements.
-                    device_index
-                    is not None
-                )
+            if fallback_candidate and (
+                requirements.device_id is not None
+                or requirements.device_index is not None
             ):
-                reasons.append(
-                    "explicit_device_does_not_allow_fallback"
-                )
+                reasons.append("explicit_device_does_not_allow_fallback")
 
-            reasons = list(
-                dict.fromkeys(
-                    reasons
-                )
-            )
+            reasons = list(dict.fromkeys(reasons))
 
             eligible = not reasons
 
@@ -1015,33 +703,22 @@ class AcceleratorManager:
                 AcceleratorCandidate(
                     device=device,
                     eligible=eligible,
-                    rejection_reasons=(
-                        ()
-                        if eligible
-                        else reasons
-                    ),
+                    rejection_reasons=(() if eligible else reasons),
                     score=(
-                        self.
-                        _candidate_score(
+                        self._candidate_score(
                             device,
                             requirements,
-                            fallback_candidate=(
-                                fallback_candidate
-                            ),
+                            fallback_candidate=(fallback_candidate),
                         )
                     ),
-                    fallback_candidate=(
-                        fallback_candidate
-                    ),
+                    fallback_candidate=(fallback_candidate),
                 )
             )
 
-        attempt = (
-            AcceleratorSelectionAttempt(
-                requirements=requirements,
-                inventory=source,
-                candidates=candidates,
-            )
+        attempt = AcceleratorSelectionAttempt(
+            requirements=requirements,
+            inventory=source,
+            candidates=candidates,
         )
 
         with self._lock:
@@ -1057,79 +734,42 @@ class AcceleratorManager:
     def _raise_selection_failure(
         attempt: AcceleratorSelectionAttempt,
     ) -> None:
-        requirements = (
-            attempt.requirements
-        )
+        requirements = attempt.requirements
 
-        rejection_map = (
-            attempt.rejection_map()
-        )
+        rejection_map = attempt.rejection_map()
 
         all_reasons = {
-            reason
-            for reasons
-            in rejection_map.values()
-            for reason
-            in reasons
+            reason for reasons in rejection_map.values() for reason in reasons
         }
 
-        details = (
-            selection_failure_details(
-                preferred_kind=(
-                    requirements.
-                    preferred_kind
-                ),
-                device_id=(
-                    requirements.device_id
-                ),
-                device_index=(
-                    requirements.
-                    device_index
-                ),
-                candidates=(
-                    rejection_map
-                ),
-                fallback_allowed=(
-                    requirements.
-                    allow_cpu_fallback
-                ),
-            )
+        details = selection_failure_details(
+            preferred_kind=(requirements.preferred_kind),
+            device_id=(requirements.device_id),
+            device_index=(requirements.device_index),
+            candidates=(rejection_map),
+            fallback_allowed=(requirements.allow_cpu_fallback),
         )
 
         if requirements.device_id:
-            if (
-                attempt.inventory.get(
-                    requirements.device_id
-                )
-                is None
-            ):
+            if attempt.inventory.get(requirements.device_id) is None:
                 raise (
                     AcceleratorDeviceNotFoundError(
-                        "Explicit accelerator "
-                        "device was not found.",
+                        "Explicit accelerator device was not found.",
                         details=details,
                     )
                 )
 
         if (
-            requirements.
-            preferred_kind
+            requirements.preferred_kind
             not in {
-                AcceleratorKind.
-                AUTO.value,
-                AcceleratorKind.
-                CPU.value,
+                AcceleratorKind.AUTO.value,
+                AcceleratorKind.CPU.value,
             }
-            and not requirements.
-            allow_cpu_fallback
+            and not requirements.allow_cpu_fallback
         ):
-            preferred_devices = (
-                attempt.inventory.
-                by_kind(
-                    requirements.
-                    preferred_kind,
-                    available_only=True,
-                )
+            preferred_devices = attempt.inventory.by_kind(
+                requirements.preferred_kind,
+                available_only=True,
             )
 
             if not preferred_devices:
@@ -1147,43 +787,23 @@ class AcceleratorManager:
             "insufficient_free_memory",
         }
 
-        if (
-            all_reasons
-            and all(
-                reason in memory_reasons
-                for reason
-                in all_reasons
-            )
-        ):
+        if all_reasons and all(reason in memory_reasons for reason in all_reasons):
             raise (
                 AcceleratorInsufficientMemoryError(
-                    "No accelerator device "
-                    "satisfies the workload "
-                    "memory requirements.",
+                    "No accelerator device satisfies the workload memory requirements.",
                     details=details,
                 )
             )
 
-        if any(
-            reason.startswith(
-                "missing_precision:"
-            )
-            for reason
-            in all_reasons
-        ):
+        if any(reason.startswith("missing_precision:") for reason in all_reasons):
             raise (
                 AcceleratorPrecisionUnsupportedError(
-                    "No accelerator device "
-                    "supports the requested "
-                    "precision.",
+                    "No accelerator device supports the requested precision.",
                     details=details,
                 )
             )
 
-        if (
-            "mixed_precision_capability_missing"
-            in all_reasons
-        ):
+        if "mixed_precision_capability_missing" in all_reasons:
             raise (
                 AcceleratorMixedPrecisionUnsupportedError(
                     "No accelerator device "
@@ -1194,41 +814,30 @@ class AcceleratorManager:
             )
 
         if any(
-            reason.startswith(
-                "missing_capability:"
-            )
+            reason.startswith("missing_capability:")
             or reason
             in {
                 "training_capability_missing",
                 "inference_capability_missing",
             }
-            for reason
-            in all_reasons
+            for reason in all_reasons
         ):
             raise (
                 AcceleratorCapabilityMissingError(
-                    "No accelerator device "
-                    "supports all required "
-                    "capabilities.",
+                    "No accelerator device supports all required capabilities.",
                     details=details,
                 )
             )
 
         if (
-            requirements.
-            allow_cpu_fallback
-            and requirements.
-            preferred_kind
+            requirements.allow_cpu_fallback
+            and requirements.preferred_kind
             not in {
-                AcceleratorKind.
-                AUTO.value,
-                AcceleratorKind.
-                CPU.value,
+                AcceleratorKind.AUTO.value,
+                AcceleratorKind.CPU.value,
             }
-            and not attempt.inventory.
-            by_kind(
-                AcceleratorKind.
-                CPU.value,
+            and not attempt.inventory.by_kind(
+                AcceleratorKind.CPU.value,
                 available_only=True,
             )
         ):
@@ -1243,9 +852,7 @@ class AcceleratorManager:
             )
 
         raise AcceleratorNoMatchingDeviceError(
-            "No accelerator device "
-            "satisfies the workload "
-            "requirements.",
+            "No accelerator device satisfies the workload requirements.",
             details=details,
         )
 
@@ -1261,25 +868,13 @@ class AcceleratorManager:
         device = candidate.device
 
         if requirements.device_id:
-            return (
-                "Explicit device identity "
-                "satisfies all workload "
-                "requirements."
-            )
+            return "Explicit device identity satisfies all workload requirements."
 
         if (
-            requirements.device_index
-            is not None
-            and requirements.
-            preferred_kind
-            != AcceleratorKind.
-            AUTO.value
+            requirements.device_index is not None
+            and requirements.preferred_kind != AcceleratorKind.AUTO.value
         ):
-            return (
-                "Explicit backend device "
-                "index satisfies all "
-                "workload requirements."
-            )
+            return "Explicit backend device index satisfies all workload requirements."
 
         if candidate.fallback_candidate:
             return (
@@ -1289,12 +884,7 @@ class AcceleratorManager:
                 "was selected."
             )
 
-        if (
-            requirements.
-            preferred_kind
-            == AcceleratorKind.
-            AUTO.value
-        ):
+        if requirements.preferred_kind == AcceleratorKind.AUTO.value:
             return (
                 "Automatic accelerator "
                 "selection chose the "
@@ -1302,11 +892,7 @@ class AcceleratorManager:
                 "device."
             )
 
-        return (
-            "Preferred accelerator "
-            "backend satisfies all "
-            "workload requirements."
-        )
+        return "Preferred accelerator backend satisfies all workload requirements."
 
     # ---------------------------------------------------------
     # Select
@@ -1314,13 +900,9 @@ class AcceleratorManager:
 
     def select(
         self,
-        requirements: Optional[
-            AcceleratorRequirements
-        ] = None,
+        requirements: Optional[AcceleratorRequirements] = None,
         *,
-        inventory: Optional[
-            AcceleratorInventory
-        ] = None,
+        inventory: Optional[AcceleratorInventory] = None,
         refresh: bool = True,
         training: bool = False,
         inference: bool = False,
@@ -1335,12 +917,9 @@ class AcceleratorManager:
 
         self._require_enabled()
 
-        resolved_requirements = (
-            requirements
-            or self.requirements(
-                training=training,
-                inference=inference,
-            )
+        resolved_requirements = requirements or self.requirements(
+            training=training,
+            inference=inference,
         )
 
         resolved_requirements.validate()
@@ -1353,82 +932,43 @@ class AcceleratorManager:
 
         eligible = sorted(
             attempt.eligible_candidates,
-            key=lambda candidate: (
-                candidate.score
-            ),
+            key=lambda candidate: candidate.score,
         )
 
         if not eligible:
-            self._raise_selection_failure(
-                attempt
-            )
+            self._raise_selection_failure(attempt)
 
-        selected = eligible[
-            0
-        ]
+        selected = eligible[0]
 
-        selection = (
-            AcceleratorSelection(
-                device=selected.device,
-
-                requirements=(
-                    resolved_requirements
+        selection = AcceleratorSelection(
+            device=selected.device,
+            requirements=(resolved_requirements),
+            reason=(
+                self._selection_reason(
+                    selected,
+                    resolved_requirements,
+                )
+            ),
+            fallback_used=(selected.fallback_candidate),
+            candidates_considered=tuple(
+                candidate.device.device_id for candidate in attempt.candidates
+            ),
+            rejected_candidates=(attempt.rejection_map()),
+            attributes={
+                "candidate_score": list(selected.score),
+                "backend_priority": list(self.config.discovery.backend_priority),
+                "prefer_highest_free_memory": (
+                    self.config.selection.prefer_highest_free_memory
                 ),
-
-                reason=(
-                    self.
-                    _selection_reason(
-                        selected,
-                        resolved_requirements,
-                    )
-                ),
-
-                fallback_used=(
-                    selected.
-                    fallback_candidate
-                ),
-
-                candidates_considered=tuple(
-                    candidate.
-                    device.device_id
-                    for candidate
-                    in attempt.candidates
-                ),
-
-                rejected_candidates=(
-                    attempt.rejection_map()
-                ),
-
-                attributes={
-                    "candidate_score": list(
-                        selected.score
-                    ),
-
-                    "backend_priority": list(
-                        self.config.
-                        discovery.
-                        backend_priority
-                    ),
-
-                    "prefer_highest_free_memory": (
-                        self.config.
-                        selection.
-                        prefer_highest_free_memory
-                    ),
-                },
-            )
+            },
         )
 
         selection.validate()
 
         with self._lock:
-            self._last_selection = (
-                selection
-            )
+            self._last_selection = selection
 
-            self._active_selections[
-                selection.device_id
-            ] = selection
+            self._active_selections[selection.device_id] = selection
 
         return selection
 
@@ -1439,65 +979,31 @@ class AcceleratorManager:
     def select_for_training(
         self,
         *,
-        minimum_total_memory_bytes: Optional[
-            int
-        ] = None,
-        minimum_free_memory_bytes: Optional[
-            int
-        ] = None,
-        preferred_kind: Optional[
-            str
-        ] = None,
-        device_index: Optional[
-            int
-        ] = None,
-        device_id: Optional[
-            str
-        ] = None,
-        require_accelerator: Optional[
-            bool
-        ] = None,
-        allow_cpu_fallback: Optional[
-            bool
-        ] = None,
-        mixed_precision: Optional[
-            bool
-        ] = None,
+        minimum_total_memory_bytes: Optional[int] = None,
+        minimum_free_memory_bytes: Optional[int] = None,
+        preferred_kind: Optional[str] = None,
+        device_index: Optional[int] = None,
+        device_id: Optional[str] = None,
+        require_accelerator: Optional[bool] = None,
+        allow_cpu_fallback: Optional[bool] = None,
+        mixed_precision: Optional[bool] = None,
         required_precisions: Tuple[
             str,
             ...,
         ] = (),
         refresh: bool = True,
     ) -> AcceleratorSelection:
-        requirements = (
-            self.requirements(
-                training=True,
-                minimum_total_memory_bytes=(
-                    minimum_total_memory_bytes
-                ),
-                minimum_free_memory_bytes=(
-                    minimum_free_memory_bytes
-                ),
-                preferred_kind=(
-                    preferred_kind
-                ),
-                device_index=(
-                    device_index
-                ),
-                device_id=device_id,
-                require_accelerator=(
-                    require_accelerator
-                ),
-                allow_cpu_fallback=(
-                    allow_cpu_fallback
-                ),
-                mixed_precision=(
-                    mixed_precision
-                ),
-                required_precisions=(
-                    required_precisions
-                ),
-            )
+        requirements = self.requirements(
+            training=True,
+            minimum_total_memory_bytes=(minimum_total_memory_bytes),
+            minimum_free_memory_bytes=(minimum_free_memory_bytes),
+            preferred_kind=(preferred_kind),
+            device_index=(device_index),
+            device_id=device_id,
+            require_accelerator=(require_accelerator),
+            allow_cpu_fallback=(allow_cpu_fallback),
+            mixed_precision=(mixed_precision),
+            required_precisions=(required_precisions),
         )
 
         return self.select(
@@ -1512,65 +1018,31 @@ class AcceleratorManager:
     def select_for_inference(
         self,
         *,
-        minimum_total_memory_bytes: Optional[
-            int
-        ] = None,
-        minimum_free_memory_bytes: Optional[
-            int
-        ] = None,
-        preferred_kind: Optional[
-            str
-        ] = None,
-        device_index: Optional[
-            int
-        ] = None,
-        device_id: Optional[
-            str
-        ] = None,
-        require_accelerator: Optional[
-            bool
-        ] = None,
-        allow_cpu_fallback: Optional[
-            bool
-        ] = None,
-        mixed_precision: Optional[
-            bool
-        ] = None,
+        minimum_total_memory_bytes: Optional[int] = None,
+        minimum_free_memory_bytes: Optional[int] = None,
+        preferred_kind: Optional[str] = None,
+        device_index: Optional[int] = None,
+        device_id: Optional[str] = None,
+        require_accelerator: Optional[bool] = None,
+        allow_cpu_fallback: Optional[bool] = None,
+        mixed_precision: Optional[bool] = None,
         required_precisions: Tuple[
             str,
             ...,
         ] = (),
         refresh: bool = True,
     ) -> AcceleratorSelection:
-        requirements = (
-            self.requirements(
-                inference=True,
-                minimum_total_memory_bytes=(
-                    minimum_total_memory_bytes
-                ),
-                minimum_free_memory_bytes=(
-                    minimum_free_memory_bytes
-                ),
-                preferred_kind=(
-                    preferred_kind
-                ),
-                device_index=(
-                    device_index
-                ),
-                device_id=device_id,
-                require_accelerator=(
-                    require_accelerator
-                ),
-                allow_cpu_fallback=(
-                    allow_cpu_fallback
-                ),
-                mixed_precision=(
-                    mixed_precision
-                ),
-                required_precisions=(
-                    required_precisions
-                ),
-            )
+        requirements = self.requirements(
+            inference=True,
+            minimum_total_memory_bytes=(minimum_total_memory_bytes),
+            minimum_free_memory_bytes=(minimum_free_memory_bytes),
+            preferred_kind=(preferred_kind),
+            device_index=(device_index),
+            device_id=device_id,
+            require_accelerator=(require_accelerator),
+            allow_cpu_fallback=(allow_cpu_fallback),
+            mixed_precision=(mixed_precision),
+            required_precisions=(required_precisions),
         )
 
         return self.select(
@@ -1584,20 +1056,12 @@ class AcceleratorManager:
 
     def _selection(
         self,
-        selection: Optional[
-            AcceleratorSelection
-        ],
+        selection: Optional[AcceleratorSelection],
     ) -> AcceleratorSelection:
-        resolved = (
-            selection
-            or self.last_selection
-        )
+        resolved = selection or self.last_selection
 
         if resolved is None:
-            raise AcceleratorSelectionError(
-                "No accelerator device has "
-                "been selected."
-            )
+            raise AcceleratorSelectionError("No accelerator device has been selected.")
 
         resolved.validate()
 
@@ -1609,22 +1073,14 @@ class AcceleratorManager:
 
     def runtime_device(
         self,
-        selection: Optional[
-            AcceleratorSelection
-        ] = None,
+        selection: Optional[AcceleratorSelection] = None,
     ) -> Any:
-        resolved = self._selection(
-            selection
-        )
+        resolved = self._selection(selection)
 
-        backend = self.backend(
-            resolved.kind
-        )
+        backend = self.backend(resolved.kind)
 
         try:
-            return backend.runtime_device(
-                resolved.device
-            )
+            return backend.runtime_device(resolved.device)
 
         except Exception as exc:
             if isinstance(
@@ -1634,19 +1090,11 @@ class AcceleratorManager:
                 raise
 
             raise AcceleratorRuntimeDeviceError(
-                "Selected accelerator "
-                "runtime device could not "
-                "be constructed.",
+                "Selected accelerator runtime device could not be constructed.",
                 details={
-                    "device_id": (
-                        resolved.device_id
-                    ),
-                    "kind": (
-                        resolved.kind
-                    ),
-                    "error_type": (
-                        type(exc).__name__
-                    ),
+                    "device_id": (resolved.device_id),
+                    "kind": (resolved.kind),
+                    "error_type": (type(exc).__name__),
                 },
             ) from exc
 
@@ -1656,21 +1104,13 @@ class AcceleratorManager:
 
     def refresh_device(
         self,
-        selection: Optional[
-            AcceleratorSelection
-        ] = None,
+        selection: Optional[AcceleratorSelection] = None,
     ) -> AcceleratorDevice:
-        resolved = self._selection(
-            selection
-        )
+        resolved = self._selection(selection)
 
-        backend = self.backend(
-            resolved.kind
-        )
+        backend = self.backend(resolved.kind)
 
-        return backend.refresh(
-            resolved.device
-        )
+        return backend.refresh(resolved.device)
 
     # ---------------------------------------------------------
     # Memory
@@ -1678,21 +1118,13 @@ class AcceleratorManager:
 
     def memory(
         self,
-        selection: Optional[
-            AcceleratorSelection
-        ] = None,
+        selection: Optional[AcceleratorSelection] = None,
     ):
-        resolved = self._selection(
-            selection
-        )
+        resolved = self._selection(selection)
 
-        backend = self.backend(
-            resolved.kind
-        )
+        backend = self.backend(resolved.kind)
 
-        return backend.memory(
-            resolved.device
-        )
+        return backend.memory(resolved.device)
 
     # ---------------------------------------------------------
     # Synchronize
@@ -1700,21 +1132,13 @@ class AcceleratorManager:
 
     def synchronize(
         self,
-        selection: Optional[
-            AcceleratorSelection
-        ] = None,
+        selection: Optional[AcceleratorSelection] = None,
     ) -> None:
-        resolved = self._selection(
-            selection
-        )
+        resolved = self._selection(selection)
 
-        backend = self.backend(
-            resolved.kind
-        )
+        backend = self.backend(resolved.kind)
 
-        backend.synchronize(
-            resolved.device
-        )
+        backend.synchronize(resolved.device)
 
     # ---------------------------------------------------------
     # Clear cache
@@ -1722,21 +1146,13 @@ class AcceleratorManager:
 
     def clear_cache(
         self,
-        selection: Optional[
-            AcceleratorSelection
-        ] = None,
+        selection: Optional[AcceleratorSelection] = None,
     ) -> None:
-        resolved = self._selection(
-            selection
-        )
+        resolved = self._selection(selection)
 
-        backend = self.backend(
-            resolved.kind
-        )
+        backend = self.backend(resolved.kind)
 
-        backend.clear_cache(
-            resolved.device
-        )
+        backend.clear_cache(resolved.device)
 
     # ---------------------------------------------------------
     # Allocation failure
@@ -1744,21 +1160,13 @@ class AcceleratorManager:
 
     def allocation_failure(
         self,
-        selection: Optional[
-            AcceleratorSelection
-        ] = None,
+        selection: Optional[AcceleratorSelection] = None,
     ) -> None:
-        resolved = self._selection(
-            selection
-        )
+        resolved = self._selection(selection)
 
-        backend = self.backend(
-            resolved.kind
-        )
+        backend = self.backend(resolved.kind)
 
-        backend.allocation_failure(
-            resolved.device
-        )
+        backend.allocation_failure(resolved.device)
 
     # ---------------------------------------------------------
     # Release
@@ -1766,21 +1174,13 @@ class AcceleratorManager:
 
     def release(
         self,
-        selection: Optional[
-            AcceleratorSelection
-        ] = None,
+        selection: Optional[AcceleratorSelection] = None,
     ) -> None:
-        resolved = self._selection(
-            selection
-        )
+        resolved = self._selection(selection)
 
-        backend = self.backend(
-            resolved.kind
-        )
+        backend = self.backend(resolved.kind)
 
-        backend.release(
-            resolved.device
-        )
+        backend.release(resolved.device)
 
         with self._lock:
             self._active_selections.pop(
@@ -1789,15 +1189,10 @@ class AcceleratorManager:
             )
 
             if (
-                self._last_selection
-                is not None
-                and self._last_selection.
-                device_id
-                == resolved.device_id
+                self._last_selection is not None
+                and self._last_selection.device_id == resolved.device_id
             ):
-                self._last_selection = (
-                    None
-                )
+                self._last_selection = None
 
     # ---------------------------------------------------------
     # Release all
@@ -1807,21 +1202,14 @@ class AcceleratorManager:
         self,
     ) -> List[str]:
         with self._lock:
-            selections = list(
-                self._active_selections.
-                values()
-            )
+            selections = list(self._active_selections.values())
 
         released: List[str] = []
 
         for selection in selections:
-            self.release(
-                selection
-            )
+            self.release(selection)
 
-            released.append(
-                selection.device_id
-            )
+            released.append(selection.device_id)
 
         return released
 
@@ -1832,27 +1220,21 @@ class AcceleratorManager:
     @property
     def last_detection(
         self,
-    ) -> Optional[
-        AcceleratorDetectionResult
-    ]:
+    ) -> Optional[AcceleratorDetectionResult]:
         with self._lock:
             return self._last_detection
 
     @property
     def last_attempt(
         self,
-    ) -> Optional[
-        AcceleratorSelectionAttempt
-    ]:
+    ) -> Optional[AcceleratorSelectionAttempt]:
         with self._lock:
             return self._last_attempt
 
     @property
     def last_selection(
         self,
-    ) -> Optional[
-        AcceleratorSelection
-    ]:
+    ) -> Optional[AcceleratorSelection]:
         with self._lock:
             return self._last_selection
 
@@ -1867,10 +1249,7 @@ class AcceleratorManager:
         ...,
     ]:
         with self._lock:
-            return tuple(
-                self._active_selections.
-                values()
-            )
+            return tuple(self._active_selections.values())
 
     # ---------------------------------------------------------
     # Health
@@ -1879,16 +1258,12 @@ class AcceleratorManager:
     def health(
         self,
         *,
-        deep: Optional[
-            bool
-        ] = None,
+        deep: Optional[bool] = None,
         refresh_inventory: bool = True,
     ) -> AcceleratorHealthReport:
         return self.detector.health(
             deep=deep,
-            refresh_inventory=(
-                refresh_inventory
-            ),
+            refresh_inventory=(refresh_inventory),
         )
 
     # ---------------------------------------------------------
@@ -1903,68 +1278,30 @@ class AcceleratorManager:
         inventory = None
 
         if refresh_inventory:
-            inventory = self.inventory(
-                refresh=True
-            )
+            inventory = self.inventory(refresh=True)
 
         elif self.last_detection is not None:
-            inventory = (
-                self.last_detection.
-                inventory
-            )
+            inventory = self.last_detection.inventory
 
-        last_selection = (
-            self.last_selection
-        )
+        last_selection = self.last_selection
 
-        last_attempt = (
-            self.last_attempt
-        )
+        last_attempt = self.last_attempt
 
         return {
-            "config": (
-                safe_config_summary(
-                    self.config
-                )
-            ),
-
-            "inventory": (
-                inventory.to_dict()
-                if inventory is not None
-                else None
-            ),
-
+            "config": (safe_config_summary(self.config)),
+            "inventory": (inventory.to_dict() if inventory is not None else None),
             "last_selection": (
-                last_selection.to_dict()
-                if last_selection
-                is not None
-                else None
+                last_selection.to_dict() if last_selection is not None else None
             ),
-
             "last_attempt": (
-                last_attempt.to_dict()
-                if last_attempt
-                is not None
-                else None
+                last_attempt.to_dict() if last_attempt is not None else None
             ),
-
-            "active_selection_count": len(
-                self.active_selections()
-            ),
-
+            "active_selection_count": len(self.active_selections()),
             "active_selections": [
-                selection.to_dict()
-                for selection
-                in self.active_selections()
+                selection.to_dict() for selection in self.active_selections()
             ],
-
-            "training_executed": (
-                False
-            ),
-
-            "inference_executed": (
-                False
-            ),
+            "training_executed": (False),
+            "inference_executed": (False),
         }
 
 
@@ -1972,14 +1309,11 @@ class AcceleratorManager:
 # Factory
 # ---------------------------------------------------------------
 
+
 def create_accelerator_manager(
     *,
-    config: Optional[
-        AcceleratorConfig
-    ] = None,
-    detector: Optional[
-        AcceleratorDetector
-    ] = None,
+    config: Optional[AcceleratorConfig] = None,
+    detector: Optional[AcceleratorDetector] = None,
 ) -> AcceleratorManager:
     return AcceleratorManager(
         config=config,
@@ -1994,11 +1328,8 @@ def create_accelerator_manager(
 __all__ = [
     "AcceleratorCandidate",
     "AcceleratorSelectionAttempt",
-
     "backend_priority_index",
     "known_memory_rank",
-
     "AcceleratorManager",
-
     "create_accelerator_manager",
 ]

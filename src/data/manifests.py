@@ -51,28 +51,15 @@ def manifest_key(
     dataset_id: str,
     version: str,
 ) -> ManifestKey:
-    dataset_id = str(
-        dataset_id
-    ).strip()
+    dataset_id = str(dataset_id).strip()
 
-    version = str(
-        version
-    ).strip()
+    version = str(version).strip()
 
     if not dataset_id:
-        raise (
-            ManifestValidationError(
-                "dataset_id is required."
-            )
-        )
+        raise (ManifestValidationError("dataset_id is required."))
 
     if not version:
-        raise (
-            ManifestValidationError(
-                "dataset version is "
-                "required."
-            )
-        )
+        raise (ManifestValidationError("dataset version is required."))
 
     return (
         dataset_id,
@@ -83,6 +70,7 @@ def manifest_key(
 # ---------------------------------------------------------------
 # Manifest filename
 # ---------------------------------------------------------------
+
 
 def manifest_filename(
     manifest: DatasetManifest,
@@ -103,55 +91,34 @@ def manifest_filename(
         output = []
 
         for character in value:
-            if (
-                character.isalnum()
-                or character in {
-                    "-",
-                    "_",
-                    ".",
-                }
-            ):
-                output.append(
-                    character
-                )
+            if character.isalnum() or character in {
+                "-",
+                "_",
+                ".",
+            }:
+                output.append(character)
 
             else:
-                output.append(
-                    "_"
-                )
+                output.append("_")
 
-        normalized = "".join(
-            output
-        ).strip(
-            "._"
-        )
+        normalized = "".join(output).strip("._")
 
         if not normalized:
             raise (
                 ManifestValidationError(
-                    "Manifest identity "
-                    "cannot produce a safe "
-                    "filename."
+                    "Manifest identity cannot produce a safe filename."
                 )
             )
 
         return normalized
 
-    return (
-        safe(
-            manifest.dataset_id
-        )
-        + "-"
-        + safe(
-            manifest.version
-        )
-        + ".json"
-    )
+    return safe(manifest.dataset_id) + "-" + safe(manifest.version) + ".json"
 
 
 # ---------------------------------------------------------------
 # Manifest serialization
 # ---------------------------------------------------------------
+
 
 def manifest_to_json(
     manifest: DatasetManifest,
@@ -174,18 +141,11 @@ def manifest_to_json(
     ) as exc:
         raise (
             ManifestValidationError(
-                "Dataset manifest "
-                "could not be serialized.",
+                "Dataset manifest could not be serialized.",
                 details={
-                    "dataset_id": (
-                        manifest.dataset_id
-                    ),
-                    "version": (
-                        manifest.version
-                    ),
-                    "error_type": (
-                        type(exc).__name__
-                    ),
+                    "dataset_id": (manifest.dataset_id),
+                    "version": (manifest.version),
+                    "error_type": (type(exc).__name__),
                 },
             )
         ) from exc
@@ -194,6 +154,7 @@ def manifest_to_json(
 # ---------------------------------------------------------------
 # Manifest parser
 # ---------------------------------------------------------------
+
 
 def manifest_from_dict(
     value: Mapping[
@@ -210,58 +171,27 @@ def manifest_from_dict(
     """
 
     try:
-        source_value = value.get(
-            "source"
-        )
+        source_value = value.get("source")
 
         if not isinstance(
             source_value,
             Mapping,
         ):
-            raise ValueError(
-                "Manifest source must "
-                "be an object."
-            )
+            raise ValueError("Manifest source must be an object.")
 
         source = DataSource(
-            kind=str(
-                source_value[
-                    "kind"
-                ]
-            ),
-
-            location=str(
-                source_value[
-                    "location"
-                ]
-            ),
-
+            kind=str(source_value["kind"]),
+            location=str(source_value["location"]),
             source_id=(
-                str(
-                    source_value[
-                        "source_id"
-                    ]
-                )
-                if source_value.get(
-                    "source_id"
-                )
-                is not None
+                str(source_value["source_id"])
+                if source_value.get("source_id") is not None
                 else None
             ),
-
             provider=(
-                str(
-                    source_value[
-                        "provider"
-                    ]
-                )
-                if source_value.get(
-                    "provider"
-                )
-                is not None
+                str(source_value["provider"])
+                if source_value.get("provider") is not None
                 else None
             ),
-
             attributes=dict(
                 source_value.get(
                     "attributes",
@@ -279,116 +209,61 @@ def manifest_from_dict(
             files_value,
             list,
         ):
-            raise ValueError(
-                "Manifest files must "
-                "be a list."
-            )
+            raise ValueError("Manifest files must be a list.")
 
-        files: List[
-            DatasetFile
-        ] = []
+        files: List[DatasetFile] = []
 
         for item in files_value:
             if not isinstance(
                 item,
                 Mapping,
             ):
-                raise ValueError(
-                    "Manifest file entry "
-                    "must be an object."
-                )
+                raise ValueError("Manifest file entry must be an object.")
 
             files.append(
                 DatasetFile(
-                    path=str(
-                        item[
-                            "path"
-                        ]
-                    ),
-
+                    path=str(item["path"]),
                     checksum=(
-                        str(
-                            item[
-                                "checksum"
-                            ]
-                        )
-                        if item.get(
-                            "checksum"
-                        )
-                        is not None
+                        str(item["checksum"])
+                        if item.get("checksum") is not None
                         else None
                     ),
-
                     checksum_algorithm=str(
                         item.get(
                             "checksum_algorithm",
                             "sha256",
                         )
                     ),
-
                     size_bytes=(
-                        int(
-                            item[
-                                "size_bytes"
-                            ]
-                        )
-                        if item.get(
-                            "size_bytes"
-                        )
-                        is not None
+                        int(item["size_bytes"])
+                        if item.get("size_bytes") is not None
                         else None
                     ),
-
                     media_type=(
-                        str(
-                            item[
-                                "media_type"
-                            ]
-                        )
-                        if item.get(
-                            "media_type"
-                        )
-                        is not None
+                        str(item["media_type"])
+                        if item.get("media_type") is not None
                         else None
                     ),
-
                     record_count=(
-                        int(
-                            item[
-                                "record_count"
-                            ]
-                        )
-                        if item.get(
-                            "record_count"
-                        )
-                        is not None
+                        int(item["record_count"])
+                        if item.get("record_count") is not None
                         else None
                     ),
-
                     required=bool(
                         item.get(
                             "required",
                             True,
                         )
                     ),
-
                     attributes=dict(
                         item.get(
                             "attributes",
                             {},
                         )
                     ),
-
                     file_id=(
-                        str(
-                            item[
-                                "file_id"
-                            ]
-                        )
-                        if item.get(
-                            "file_id"
-                        )
-                        is not None
+                        str(item["file_id"])
+                        if item.get("file_id") is not None
                         else None
                     ),
                 ).finalize()
@@ -403,80 +278,36 @@ def manifest_from_dict(
             labels_value,
             list,
         ):
-            raise ValueError(
-                "Manifest labels must "
-                "be a list."
-            )
+            raise ValueError("Manifest labels must be a list.")
 
         manifest = DatasetManifest(
-            dataset_id=str(
-                value[
-                    "dataset_id"
-                ]
-            ),
-
-            name=str(
-                value[
-                    "name"
-                ]
-            ),
-
-            version=str(
-                value[
-                    "version"
-                ]
-            ),
-
+            dataset_id=str(value["dataset_id"]),
+            name=str(value["name"]),
+            version=str(value["version"]),
             source=source,
-
-            format=str(
-                value[
-                    "format"
-                ]
-            ),
-
+            format=str(value["format"]),
             purpose=str(
                 value.get(
                     "purpose",
                     "general",
                 )
             ),
-
             files=files,
-
-            labels=[
-                str(
-                    label
-                )
-                for label
-                in labels_value
-            ],
-
+            labels=[str(label) for label in labels_value],
             attributes=dict(
                 value.get(
                     "attributes",
                     {},
                 )
             ),
-
-            created_at=str(
-                value.get(
-                    "created_at",
-                    ""
-                )
-            )
+            created_at=str(value.get("created_at", ""))
             or DatasetManifest(
                 dataset_id="temporary",
                 name="temporary",
                 version="1",
                 source=source,
-                format=str(
-                    value[
-                        "format"
-                    ]
-                ),
+                format=str(value["format"]),
             ).created_at,
-
             schema_version=str(
                 value.get(
                     "schema_version",
@@ -494,12 +325,9 @@ def manifest_from_dict(
     ) as exc:
         raise (
             ManifestValidationError(
-                "Dataset manifest is "
-                "invalid.",
+                "Dataset manifest is invalid.",
                 details={
-                    "error_type": (
-                        type(exc).__name__
-                    ),
+                    "error_type": (type(exc).__name__),
                 },
             )
         ) from exc
@@ -509,22 +337,18 @@ def manifest_from_dict(
 # Load manifest
 # ---------------------------------------------------------------
 
+
 def load_manifest(
     path: str | Path,
 ) -> DatasetManifest:
-    manifest_path = Path(
-        path
-    ).expanduser()
+    manifest_path = Path(path).expanduser()
 
     if not manifest_path.exists():
         raise (
             ManifestNotFoundError(
-                "Dataset manifest was "
-                "not found.",
+                "Dataset manifest was not found.",
                 details={
-                    "path": str(
-                        manifest_path
-                    ),
+                    "path": str(manifest_path),
                 },
             )
         )
@@ -532,24 +356,17 @@ def load_manifest(
     if not manifest_path.is_file():
         raise (
             ManifestValidationError(
-                "Dataset manifest path "
-                "is not a file.",
+                "Dataset manifest path is not a file.",
                 details={
-                    "path": str(
-                        manifest_path
-                    ),
+                    "path": str(manifest_path),
                 },
             )
         )
 
     try:
-        raw = manifest_path.read_text(
-            encoding="utf-8"
-        )
+        raw = manifest_path.read_text(encoding="utf-8")
 
-        value = json.loads(
-            raw
-        )
+        value = json.loads(raw)
 
     except (
         OSError,
@@ -558,15 +375,10 @@ def load_manifest(
     ) as exc:
         raise (
             ManifestValidationError(
-                "Dataset manifest could "
-                "not be read.",
+                "Dataset manifest could not be read.",
                 details={
-                    "path": str(
-                        manifest_path
-                    ),
-                    "error_type": (
-                        type(exc).__name__
-                    ),
+                    "path": str(manifest_path),
+                    "error_type": (type(exc).__name__),
                 },
             )
         ) from exc
@@ -575,21 +387,15 @@ def load_manifest(
         value,
         Mapping,
     ):
-        raise (
-            ManifestValidationError(
-                "Dataset manifest root "
-                "must be an object."
-            )
-        )
+        raise (ManifestValidationError("Dataset manifest root must be an object."))
 
-    return manifest_from_dict(
-        value
-    )
+    return manifest_from_dict(value)
 
 
 # ---------------------------------------------------------------
 # Save manifest
 # ---------------------------------------------------------------
+
 
 def save_manifest(
     manifest: DatasetManifest,
@@ -606,9 +412,7 @@ def save_manifest(
 
     manifest.finalize()
 
-    directory_path = Path(
-        directory
-    ).expanduser()
+    directory_path = Path(directory).expanduser()
 
     try:
         directory_path.mkdir(
@@ -619,78 +423,47 @@ def save_manifest(
     except OSError as exc:
         raise (
             ManifestValidationError(
-                "Manifest directory "
-                "could not be created.",
+                "Manifest directory could not be created.",
                 details={
-                    "error_type": (
-                        type(exc).__name__
-                    ),
+                    "error_type": (type(exc).__name__),
                 },
             )
         ) from exc
 
-    destination = (
-        directory_path
-        / manifest_filename(
-            manifest
-        )
-    )
+    destination = directory_path / manifest_filename(manifest)
 
-    if (
-        destination.exists()
-        and not overwrite
-    ):
+    if destination.exists() and not overwrite:
         raise (
             ManifestConflictError(
-                "Dataset manifest already "
-                "exists.",
+                "Dataset manifest already exists.",
                 details={
-                    "dataset_id": (
-                        manifest.dataset_id
-                    ),
-                    "version": (
-                        manifest.version
-                    ),
+                    "dataset_id": (manifest.dataset_id),
+                    "version": (manifest.version),
                 },
             )
         )
 
-    temporary = (
-        destination.with_suffix(
-            destination.suffix
-            + ".tmp"
-        )
-    )
+    temporary = destination.with_suffix(destination.suffix + ".tmp")
 
     try:
         temporary.write_text(
-            manifest_to_json(
-                manifest
-            )
-            + "\n",
+            manifest_to_json(manifest) + "\n",
             encoding="utf-8",
         )
 
-        temporary.replace(
-            destination
-        )
+        temporary.replace(destination)
 
     except OSError as exc:
         try:
-            temporary.unlink(
-                missing_ok=True
-            )
+            temporary.unlink(missing_ok=True)
         except OSError:
             pass
 
         raise (
             ManifestValidationError(
-                "Dataset manifest "
-                "could not be saved.",
+                "Dataset manifest could not be saved.",
                 details={
-                    "error_type": (
-                        type(exc).__name__
-                    ),
+                    "error_type": (type(exc).__name__),
                 },
             )
         ) from exc
@@ -701,6 +474,7 @@ def save_manifest(
 # ---------------------------------------------------------------
 # Controlled file path resolution
 # ---------------------------------------------------------------
+
 
 def resolve_dataset_file(
     root_directory: str | Path,
@@ -716,41 +490,25 @@ def resolve_dataset_file(
 
     dataset_file.finalize()
 
-    root = Path(
-        root_directory
-    ).expanduser().resolve()
+    root = Path(root_directory).expanduser().resolve()
 
-    declared = Path(
-        dataset_file.path
-    ).expanduser()
+    declared = Path(dataset_file.path).expanduser()
 
     if declared.is_absolute():
-        resolved = (
-            declared.resolve()
-        )
+        resolved = declared.resolve()
 
     else:
-        resolved = (
-            root
-            / declared
-        ).resolve()
+        resolved = (root / declared).resolve()
 
         try:
-            resolved.relative_to(
-                root
-            )
+            resolved.relative_to(root)
 
         except ValueError as exc:
             raise (
                 ManifestValidationError(
-                    "Dataset file path "
-                    "escapes the configured "
-                    "data root.",
+                    "Dataset file path escapes the configured data root.",
                     details={
-                        "file_id": (
-                            dataset_file.
-                            file_id
-                        ),
+                        "file_id": (dataset_file.file_id),
                     },
                 )
             ) from exc
@@ -761,6 +519,7 @@ def resolve_dataset_file(
 # ---------------------------------------------------------------
 # Manifest registry
 # ---------------------------------------------------------------
+
 
 class ManifestRegistry:
     """
@@ -798,30 +557,18 @@ class ManifestRegistry:
         )
 
         with self._lock:
-            if (
-                key
-                in self._manifests
-            ):
+            if key in self._manifests:
                 raise (
                     ManifestConflictError(
-                        "Dataset manifest "
-                        "already registered.",
+                        "Dataset manifest already registered.",
                         details={
-                            "dataset_id": (
-                                manifest.
-                                dataset_id
-                            ),
-                            "version": (
-                                manifest.
-                                version
-                            ),
+                            "dataset_id": (manifest.dataset_id),
+                            "version": (manifest.version),
                         },
                     )
                 )
 
-            self._manifests[
-                key
-            ] = manifest
+            self._manifests[key] = manifest
 
         return manifest
 
@@ -841,9 +588,7 @@ class ManifestRegistry:
         )
 
         with self._lock:
-            self._manifests[
-                key
-            ] = manifest
+            self._manifests[key] = manifest
 
         return manifest
 
@@ -855,18 +600,14 @@ class ManifestRegistry:
         self,
         dataset_id: str,
         version: str,
-    ) -> Optional[
-        DatasetManifest
-    ]:
+    ) -> Optional[DatasetManifest]:
         key = manifest_key(
             dataset_id,
             version,
         )
 
         with self._lock:
-            return self._manifests.get(
-                key
-            )
+            return self._manifests.get(key)
 
     # ---------------------------------------------------------
     # Require
@@ -885,15 +626,10 @@ class ManifestRegistry:
         if manifest is None:
             raise (
                 ManifestNotFoundError(
-                    "Dataset manifest is "
-                    "not registered.",
+                    "Dataset manifest is not registered.",
                     details={
-                        "dataset_id": (
-                            dataset_id
-                        ),
-                        "version": (
-                            version
-                        ),
+                        "dataset_id": (dataset_id),
+                        "version": (version),
                     },
                 )
             )
@@ -915,20 +651,13 @@ class ManifestRegistry:
         )
 
         with self._lock:
-            manifest = (
-                self._manifests.pop(
-                    key,
-                    None,
-                )
+            manifest = self._manifests.pop(
+                key,
+                None,
             )
 
         if manifest is None:
-            raise (
-                ManifestNotFoundError(
-                    "Dataset manifest is "
-                    "not registered."
-                )
-            )
+            raise (ManifestNotFoundError("Dataset manifest is not registered."))
 
         return manifest
 
@@ -939,27 +668,14 @@ class ManifestRegistry:
     def list(
         self,
         *,
-        dataset_id: Optional[
-            str
-        ] = None,
-    ) -> List[
-        DatasetManifest
-    ]:
+        dataset_id: Optional[str] = None,
+    ) -> List[DatasetManifest]:
         with self._lock:
-            values = list(
-                self._manifests.
-                values()
-            )
+            values = list(self._manifests.values())
 
         if dataset_id is not None:
             values = [
-                manifest
-                for manifest
-                in values
-                if (
-                    manifest.dataset_id
-                    == dataset_id
-                )
+                manifest for manifest in values if (manifest.dataset_id == dataset_id)
             ]
 
         return sorted(
@@ -980,18 +696,12 @@ class ManifestRegistry:
         *,
         replace: bool = False,
     ) -> DatasetManifest:
-        manifest = load_manifest(
-            path
-        )
+        manifest = load_manifest(path)
 
         if replace:
-            return self.upsert(
-                manifest
-            )
+            return self.upsert(manifest)
 
-        return self.register(
-            manifest
-        )
+        return self.register(manifest)
 
     # ---------------------------------------------------------
     # Summary
@@ -1002,39 +712,18 @@ class ManifestRegistry:
     ) -> Dict[str, Any]:
         manifests = self.list()
 
-        dataset_ids = {
-            manifest.dataset_id
-            for manifest
-            in manifests
-        }
+        dataset_ids = {manifest.dataset_id for manifest in manifests}
 
         return {
-            "manifest_count": (
-                len(
-                    manifests
-                )
-            ),
-
-            "dataset_count": (
-                len(
-                    dataset_ids
-                )
-            ),
-
+            "manifest_count": (len(manifests)),
+            "dataset_count": (len(dataset_ids)),
             "versions_by_dataset": {
                 dataset_id: [
                     manifest.version
-                    for manifest
-                    in manifests
-                    if (
-                        manifest.dataset_id
-                        == dataset_id
-                    )
+                    for manifest in manifests
+                    if (manifest.dataset_id == dataset_id)
                 ]
-                for dataset_id
-                in sorted(
-                    dataset_ids
-                )
+                for dataset_id in sorted(dataset_ids)
             },
         }
 
@@ -1045,17 +734,12 @@ class ManifestRegistry:
 
 __all__ = [
     "ManifestKey",
-
     "manifest_key",
     "manifest_filename",
-
     "manifest_to_json",
     "manifest_from_dict",
-
     "load_manifest",
     "save_manifest",
-
     "resolve_dataset_file",
-
     "ManifestRegistry",
 ]

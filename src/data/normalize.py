@@ -64,6 +64,7 @@ RecordNormalizer = Callable[
 # Normalization result
 # ---------------------------------------------------------------
 
+
 @dataclass
 class NormalizationResult:
     dataset_id: str
@@ -74,31 +75,17 @@ class NormalizationResult:
 
     rejected_records: int
 
-    records: List[
-        DatasetRecord
-    ]
+    records: List[DatasetRecord]
 
     def to_dict(
         self,
     ) -> Dict[str, Any]:
         return {
-            "dataset_id": (
-                self.dataset_id
-            ),
-            "source_records": (
-                self.source_records
-            ),
-            "normalized_records": (
-                self.normalized_records
-            ),
-            "rejected_records": (
-                self.rejected_records
-            ),
-            "records": [
-                record.to_dict()
-                for record
-                in self.records
-            ],
+            "dataset_id": (self.dataset_id),
+            "source_records": (self.source_records),
+            "normalized_records": (self.normalized_records),
+            "rejected_records": (self.rejected_records),
+            "records": [record.to_dict() for record in self.records],
         }
 
 
@@ -106,38 +93,26 @@ class NormalizationResult:
 # Normalizer registry key
 # ---------------------------------------------------------------
 
+
 def normalizer_key(
     *,
     provider: Optional[str],
     record_type: str,
 ) -> str:
-    provider_value = (
-        str(
-            provider
-        ).strip().lower()
-        if provider
-        else "*"
-    )
+    provider_value = str(provider).strip().lower() if provider else "*"
 
-    record_type_value = str(
-        record_type
-    ).strip().lower()
+    record_type_value = str(record_type).strip().lower()
 
     if not record_type_value:
-        raise DataNormalizationError(
-            "record_type is required."
-        )
+        raise DataNormalizationError("record_type is required.")
 
-    return (
-        provider_value
-        + ":"
-        + record_type_value
-    )
+    return provider_value + ":" + record_type_value
 
 
 # ---------------------------------------------------------------
 # Deterministic record ID
 # ---------------------------------------------------------------
+
 
 def deterministic_record_id(
     *,
@@ -156,9 +131,7 @@ def deterministic_record_id(
     """
 
     try:
-        safe_value = to_json_safe(
-            value
-        )
+        safe_value = to_json_safe(value)
 
         serialized = json.dumps(
             safe_value,
@@ -172,37 +145,25 @@ def deterministic_record_id(
 
     except Exception as exc:
         raise DataNormalizationError(
-            "Dataset record could not be "
-            "canonicalized for identity.",
+            "Dataset record could not be canonicalized for identity.",
             details={
-                "error_type": (
-                    type(exc).__name__
-                ),
+                "error_type": (type(exc).__name__),
             },
         ) from exc
 
-    material = (
-        f"{dataset_id}\n"
-        f"{source_file}\n"
-        f"{record_number}\n"
-        f"{serialized}"
-    ).encode(
+    material = (f"{dataset_id}\n{source_file}\n{record_number}\n{serialized}").encode(
         "utf-8"
     )
 
-    digest = hashlib.sha256(
-        material
-    ).hexdigest()
+    digest = hashlib.sha256(material).hexdigest()
 
-    return (
-        "data-record-"
-        + digest
-    )
+    return "data-record-" + digest
 
 
 # ---------------------------------------------------------------
 # Generic payload conversion
 # ---------------------------------------------------------------
+
 
 def _payload(
     value: Any,
@@ -216,19 +177,14 @@ def _payload(
         value,
         Mapping,
     ):
-        safe = to_json_safe(
-            dict(
-                value
-            )
-        )
+        safe = to_json_safe(dict(value))
 
         if not isinstance(
             safe,
             dict,
         ):
             raise DataNormalizationError(
-                "Record mapping did not "
-                "normalize to an object."
+                "Record mapping did not normalize to an object."
             )
 
         return safe
@@ -258,20 +214,13 @@ def _payload(
         list,
     ):
         return {
-            "value": (
-                to_json_safe(
-                    value
-                )
-            ),
+            "value": (to_json_safe(value)),
         }
 
     raise UnsupportedRecordError(
-        "Raw dataset record type is "
-        "not supported.",
+        "Raw dataset record type is not supported.",
         details={
-            "record_type": (
-                type(value).__name__
-            ),
+            "record_type": (type(value).__name__),
         },
     )
 
@@ -279,6 +228,7 @@ def _payload(
 # ---------------------------------------------------------------
 # Generic field extraction
 # ---------------------------------------------------------------
+
 
 def _field(
     value: Mapping[
@@ -288,16 +238,12 @@ def _field(
     *names: str,
 ) -> Optional[str]:
     for name in names:
-        item = value.get(
-            name
-        )
+        item = value.get(name)
 
         if item is None:
             continue
 
-        text = str(
-            item
-        ).strip()
+        text = str(item).strip()
 
         if text:
             return text
@@ -308,6 +254,7 @@ def _field(
 # ---------------------------------------------------------------
 # Default normalizer
 # ---------------------------------------------------------------
+
 
 def default_normalizer(
     value: Any,
@@ -327,13 +274,9 @@ def default_normalizer(
     manifest.finalize()
     dataset_file.finalize()
 
-    payload = _payload(
-        value
-    )
+    payload = _payload(value)
 
-    provider = (
-        manifest.source.provider
-    )
+    provider = manifest.source.provider
 
     environment = None
     resource_type = None
@@ -395,79 +338,32 @@ def default_normalizer(
             or provider
         )
 
-    record_type = (
-        event_type
-        or "record"
-    )
+    record_type = event_type or "record"
 
-    record_id = (
-        deterministic_record_id(
-            dataset_id=(
-                manifest.dataset_id
-            ),
-            source_file=(
-                dataset_file.path
-            ),
-            record_number=(
-                record_number
-            ),
-            value=value,
-        )
+    record_id = deterministic_record_id(
+        dataset_id=(manifest.dataset_id),
+        source_file=(dataset_file.path),
+        record_number=(record_number),
+        value=value,
     )
 
     return DatasetRecord(
-        dataset_id=(
-            manifest.dataset_id
-        ),
-
-        record_type=(
-            record_type
-        ),
-
+        dataset_id=(manifest.dataset_id),
+        record_type=(record_type),
         payload=payload,
-
         provider=provider,
-
-        environment_id=(
-            environment
-        ),
-
-        resource_type=(
-            resource_type
-        ),
-
-        resource_id=(
-            resource_id
-        ),
-
-        event_type=(
-            event_type
-        ),
-
+        environment_id=(environment),
+        resource_type=(resource_type),
+        resource_id=(resource_id),
+        event_type=(event_type),
         label=label,
-
-        timestamp=(
-            timestamp
-        ),
-
-        source_file=(
-            dataset_file.path
-        ),
-
+        timestamp=(timestamp),
+        source_file=(dataset_file.path),
         attributes={
-            "source_record_number": (
-                record_number
-            ),
-
-            "source_format": (
-                manifest.format
-            ),
-
-            "dataset_version": (
-                manifest.version
-            ),
+            "source_record_number": (record_number),
+            "source_format": (manifest.format),
+            "dataset_version": (manifest.version),
         },
-
         record_id=record_id,
     ).finalize()
 
@@ -475,6 +371,7 @@ def default_normalizer(
 # ---------------------------------------------------------------
 # Normalizer registry
 # ---------------------------------------------------------------
+
 
 class NormalizerRegistry:
     """
@@ -508,43 +405,27 @@ class NormalizerRegistry:
         *,
         record_type: str,
         normalizer: RecordNormalizer,
-        provider: Optional[
-            str
-        ] = None,
+        provider: Optional[str] = None,
         replace: bool = False,
     ) -> None:
-        if not callable(
-            normalizer
-        ):
-            raise DataNormalizationError(
-                "normalizer must be "
-                "callable."
-            )
+        if not callable(normalizer):
+            raise DataNormalizationError("normalizer must be callable.")
 
         key = normalizer_key(
             provider=provider,
-            record_type=(
-                record_type
-            ),
+            record_type=(record_type),
         )
 
         with self._lock:
-            if (
-                key
-                in self._normalizers
-                and not replace
-            ):
+            if key in self._normalizers and not replace:
                 raise DataNormalizationError(
-                    "Dataset normalizer is "
-                    "already registered.",
+                    "Dataset normalizer is already registered.",
                     details={
                         "key": key,
                     },
                 )
 
-            self._normalizers[
-                key
-            ] = normalizer
+            self._normalizers[key] = normalizer
 
     # ---------------------------------------------------------
     # Resolve
@@ -553,26 +434,12 @@ class NormalizerRegistry:
     def resolve(
         self,
         *,
-        provider: Optional[
-            str
-        ],
+        provider: Optional[str],
         record_type: str,
-    ) -> Optional[
-        RecordNormalizer
-    ]:
-        provider_name = (
-            str(
-                provider
-            ).strip().lower()
-            if provider
-            else "*"
-        )
+    ) -> Optional[RecordNormalizer]:
+        provider_name = str(provider).strip().lower() if provider else "*"
 
-        record_name = (
-            str(
-                record_type
-            ).strip().lower()
-        )
+        record_name = str(record_type).strip().lower()
 
         candidates = (
             f"{provider_name}:{record_name}",
@@ -583,11 +450,7 @@ class NormalizerRegistry:
 
         with self._lock:
             for key in candidates:
-                normalizer = (
-                    self._normalizers.get(
-                        key
-                    )
-                )
+                normalizer = self._normalizers.get(key)
 
                 if normalizer is not None:
                     return normalizer
@@ -602,9 +465,7 @@ class NormalizerRegistry:
         self,
     ) -> List[str]:
         with self._lock:
-            return sorted(
-                self._normalizers
-            )
+            return sorted(self._normalizers)
 
     # ---------------------------------------------------------
     # Summary
@@ -616,9 +477,7 @@ class NormalizerRegistry:
         keys = self.keys()
 
         return {
-            "normalizer_count": len(
-                keys
-            ),
+            "normalizer_count": len(keys),
             "registered_keys": keys,
         }
 
@@ -626,6 +485,7 @@ class NormalizerRegistry:
 # ---------------------------------------------------------------
 # Dataset normalizer service
 # ---------------------------------------------------------------
+
 
 class DatasetNormalizer:
     """
@@ -640,19 +500,12 @@ class DatasetNormalizer:
     def __init__(
         self,
         *,
-        registry: Optional[
-            NormalizerRegistry
-        ] = None,
+        registry: Optional[NormalizerRegistry] = None,
         use_default_fallback: bool = True,
     ) -> None:
-        self.registry = (
-            registry
-            or NormalizerRegistry()
-        )
+        self.registry = registry or NormalizerRegistry()
 
-        self.use_default_fallback = bool(
-            use_default_fallback
-        )
+        self.use_default_fallback = bool(use_default_fallback)
 
     # ---------------------------------------------------------
     # Resolve normalizer
@@ -664,13 +517,9 @@ class DatasetNormalizer:
         manifest: DatasetManifest,
         value: Any,
     ) -> RecordNormalizer:
-        provider = (
-            manifest.source.provider
-        )
+        provider = manifest.source.provider
 
-        raw_record_type = (
-            "record"
-        )
+        raw_record_type = "record"
 
         if isinstance(
             value,
@@ -696,13 +545,9 @@ class DatasetNormalizer:
                 or provider
             )
 
-        normalizer = (
-            self.registry.resolve(
-                provider=provider,
-                record_type=(
-                    raw_record_type
-                ),
-            )
+        normalizer = self.registry.resolve(
+            provider=provider,
+            record_type=(raw_record_type),
         )
 
         if normalizer is not None:
@@ -712,13 +557,10 @@ class DatasetNormalizer:
             return default_normalizer
 
         raise UnsupportedRecordError(
-            "No normalizer is registered "
-            "for the dataset record.",
+            "No normalizer is registered for the dataset record.",
             details={
                 "provider": provider,
-                "record_type": (
-                    raw_record_type
-                ),
+                "record_type": (raw_record_type),
             },
         )
 
@@ -735,10 +577,7 @@ class DatasetNormalizer:
         record_number: int,
     ) -> DatasetRecord:
         if record_number < 1:
-            raise DataNormalizationError(
-                "record_number must be "
-                ">= 1."
-            )
+            raise DataNormalizationError("record_number must be >= 1.")
 
         normalizer = self._normalizer(
             manifest=manifest,
@@ -761,24 +600,13 @@ class DatasetNormalizer:
 
         except Exception as exc:
             raise DataNormalizationError(
-                "Dataset normalizer "
-                "failed.",
+                "Dataset normalizer failed.",
                 details={
-                    "dataset_id": (
-                        manifest.dataset_id
-                    ),
-                    "file_id": (
-                        dataset_file.file_id
-                    ),
-                    "record_number": (
-                        record_number
-                    ),
-                    "error_type": (
-                        type(exc).__name__
-                    ),
-                    "error_module": (
-                        type(exc).__module__
-                    ),
+                    "dataset_id": (manifest.dataset_id),
+                    "file_id": (dataset_file.file_id),
+                    "record_number": (record_number),
+                    "error_type": (type(exc).__name__),
+                    "error_module": (type(exc).__module__),
                 },
             ) from exc
 
@@ -787,9 +615,7 @@ class DatasetNormalizer:
             DatasetRecord,
         ):
             raise DataNormalizationError(
-                "Dataset normalizer did "
-                "not return a "
-                "DatasetRecord."
+                "Dataset normalizer did not return a DatasetRecord."
             )
 
         return record.finalize()
@@ -800,9 +626,7 @@ class DatasetNormalizer:
 
     def normalize_many(
         self,
-        values: Iterable[
-            Any
-        ],
+        values: Iterable[Any],
         *,
         manifest: DatasetManifest,
         dataset_file: DatasetFile,
@@ -817,43 +641,27 @@ class DatasetNormalizer:
         """
 
         if start_record_number < 1:
-            raise DataNormalizationError(
-                "start_record_number must "
-                "be >= 1."
-            )
+            raise DataNormalizationError("start_record_number must be >= 1.")
 
-        records: List[
-            DatasetRecord
-        ] = []
+        records: List[DatasetRecord] = []
 
         source_records = 0
         rejected_records = 0
 
-        for offset, value in enumerate(
-            values
-        ):
+        for offset, value in enumerate(values):
             source_records += 1
 
-            record_number = (
-                start_record_number
-                + offset
-            )
+            record_number = start_record_number + offset
 
             try:
                 record = self.normalize_one(
                     value,
                     manifest=manifest,
-                    dataset_file=(
-                        dataset_file
-                    ),
-                    record_number=(
-                        record_number
-                    ),
+                    dataset_file=(dataset_file),
+                    record_number=(record_number),
                 )
 
-                records.append(
-                    record
-                )
+                records.append(record)
 
             except (
                 DataNormalizationError,
@@ -865,18 +673,10 @@ class DatasetNormalizer:
                     raise
 
         return NormalizationResult(
-            dataset_id=(
-                manifest.dataset_id
-            ),
-            source_records=(
-                source_records
-            ),
-            normalized_records=len(
-                records
-            ),
-            rejected_records=(
-                rejected_records
-            ),
+            dataset_id=(manifest.dataset_id),
+            source_records=(source_records),
+            normalized_records=len(records),
+            rejected_records=(rejected_records),
             records=records,
         )
 
@@ -888,15 +688,9 @@ class DatasetNormalizer:
         self,
     ) -> Dict[str, Any]:
         return {
-            "default_fallback_enabled": (
-                self.use_default_fallback
-            ),
-            "registry": (
-                self.registry.summary()
-            ),
-            "canonical_record_type": (
-                "DatasetRecord"
-            ),
+            "default_fallback_enabled": (self.use_default_fallback),
+            "registry": (self.registry.summary()),
+            "canonical_record_type": ("DatasetRecord"),
         }
 
 
@@ -906,14 +700,10 @@ class DatasetNormalizer:
 
 __all__ = [
     "RecordNormalizer",
-
     "NormalizationResult",
-
     "normalizer_key",
     "deterministic_record_id",
-
     "default_normalizer",
-
     "NormalizerRegistry",
     "DatasetNormalizer",
 ]

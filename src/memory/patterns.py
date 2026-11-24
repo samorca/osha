@@ -23,29 +23,16 @@ from src.memory.store import (
 
 
 def unique_strings(
-    values: Iterable[
-        Optional[str]
-    ],
+    values: Iterable[Optional[str]],
 ) -> List[str]:
-    return sorted(
-        {
-            value
-            for value in values
-            if value
-        }
-    )
+    return sorted({value for value in values if value})
 
 
 def pattern_memory_from_pattern(
     pattern: Pattern,
     *,
-    incident_ids: Iterable[
-        str
-    ] = (),
-    verification_status: str = (
-        VerificationStatus.
-        UNVERIFIED.value
-    ),
+    incident_ids: Iterable[str] = (),
+    verification_status: str = (VerificationStatus.UNVERIFIED.value),
 ) -> PatternMemory:
     """
     Convert one intelligence Pattern into
@@ -60,66 +47,28 @@ def pattern_memory_from_pattern(
     source_ids = []
 
     if pattern.pattern_id:
-        source_ids.append(
-            pattern.pattern_id
-        )
+        source_ids.append(pattern.pattern_id)
 
     memory = PatternMemory(
-        environment_id=(
-            pattern.environment_id
-        ),
-        pattern_id=(
-            pattern.pattern_id
-        ),
-        fingerprint=(
-            pattern.fingerprint
-        ),
-        pattern_type=(
-            pattern.pattern_type
-        ),
+        environment_id=(pattern.environment_id),
+        pattern_id=(pattern.pattern_id),
+        fingerprint=(pattern.fingerprint),
+        pattern_type=(pattern.pattern_type),
         name=pattern.name,
-        occurrence_count=(
-            pattern.occurrence_count
-        ),
-        first_seen=(
-            pattern.first_seen
-        ),
-        last_seen=(
-            pattern.last_seen
-        ),
-        providers=list(
-            pattern.providers
-        ),
-        signal_types=list(
-            pattern.signal_types
-        ),
-        incident_ids=(
-            unique_strings(
-                incident_ids
-            )
-        ),
-        latest_novelty_score=(
-            pattern.novelty_score
-        ),
-        resource_ids=list(
-            pattern.resource_ids
-        ),
+        occurrence_count=(pattern.occurrence_count),
+        first_seen=(pattern.first_seen),
+        last_seen=(pattern.last_seen),
+        providers=list(pattern.providers),
+        signal_types=list(pattern.signal_types),
+        incident_ids=(unique_strings(incident_ids)),
+        latest_novelty_score=(pattern.novelty_score),
+        resource_ids=list(pattern.resource_ids),
         source_ids=source_ids,
-        verification_status=(
-            verification_status
-        ),
-        tags=[
-            "operational_pattern"
-        ],
+        verification_status=(verification_status),
+        tags=["operational_pattern"],
         attributes={
-            "latest_record_ids": list(
-                pattern.record_ids
-            ),
-            "latest_pattern_attributes": (
-                dict(
-                    pattern.attributes
-                )
-            ),
+            "latest_record_ids": list(pattern.record_ids),
+            "latest_pattern_attributes": (dict(pattern.attributes)),
         },
     )
 
@@ -131,12 +80,8 @@ def find_pattern_memory(
     *,
     environment_id: str,
     fingerprint: str,
-    pattern_type: Optional[
-        str
-    ] = None,
-) -> Optional[
-    PatternMemory
-]:
+    pattern_type: Optional[str] = None,
+) -> Optional[PatternMemory]:
     """
     Find persistent history for one fingerprint.
 
@@ -145,35 +90,22 @@ def find_pattern_memory(
     """
 
     query = MemoryQuery(
-        memory_types=(
-            "pattern",
-        ),
-        environment_ids=(
-            environment_id,
-        ),
+        memory_types=("pattern",),
+        environment_ids=(environment_id,),
         newest_first=True,
     )
 
-    for memory in store.query(
-        query
-    ):
+    for memory in store.query(query):
         if not isinstance(
             memory,
             PatternMemory,
         ):
             continue
 
-        if (
-            memory.fingerprint
-            != fingerprint
-        ):
+        if memory.fingerprint != fingerprint:
             continue
 
-        if (
-            pattern_type is not None
-            and memory.pattern_type
-            != pattern_type
-        ):
+        if pattern_type is not None and memory.pattern_type != pattern_type:
             continue
 
         return memory
@@ -234,102 +166,51 @@ def merge_pattern_memory(
     changed here.
     """
 
-    existing.occurrence_count = (
-        max(
-            0,
-            existing.occurrence_count,
-        )
-        + max(
-            0,
-            incoming.occurrence_count,
-        )
+    existing.occurrence_count = max(
+        0,
+        existing.occurrence_count,
+    ) + max(
+        0,
+        incoming.occurrence_count,
     )
 
-    existing.first_seen = (
-        earliest_timestamp(
-            existing.first_seen,
-            incoming.first_seen,
-        )
+    existing.first_seen = earliest_timestamp(
+        existing.first_seen,
+        incoming.first_seen,
     )
 
-    existing.last_seen = (
-        latest_timestamp(
-            existing.last_seen,
-            incoming.last_seen,
-        )
+    existing.last_seen = latest_timestamp(
+        existing.last_seen,
+        incoming.last_seen,
     )
 
-    existing.providers = sorted(
-        set(
-            existing.providers
-        )
-        | set(
-            incoming.providers
-        )
-    )
+    existing.providers = sorted(set(existing.providers) | set(incoming.providers))
 
     existing.signal_types = sorted(
-        set(
-            existing.signal_types
-        )
-        | set(
-            incoming.signal_types
-        )
+        set(existing.signal_types) | set(incoming.signal_types)
     )
 
     existing.resource_ids = sorted(
-        set(
-            existing.resource_ids
-        )
-        | set(
-            incoming.resource_ids
-        )
+        set(existing.resource_ids) | set(incoming.resource_ids)
     )
 
-    existing.source_ids = sorted(
-        set(
-            existing.source_ids
-        )
-        | set(
-            incoming.source_ids
-        )
-    )
+    existing.source_ids = sorted(set(existing.source_ids) | set(incoming.source_ids))
 
     existing.incident_ids = sorted(
-        set(
-            existing.incident_ids
-        )
-        | set(
-            incoming.incident_ids
-        )
+        set(existing.incident_ids) | set(incoming.incident_ids)
     )
 
-    existing.tags = sorted(
-        set(
-            existing.tags
-        )
-        | set(
-            incoming.tags
-        )
-    )
+    existing.tags = sorted(set(existing.tags) | set(incoming.tags))
 
-    existing.latest_novelty_score = (
-        incoming.latest_novelty_score
-    )
+    existing.latest_novelty_score = incoming.latest_novelty_score
 
     if incoming.name:
-        existing.name = (
-            incoming.name
-        )
+        existing.name = incoming.name
 
     if incoming.pattern_id:
-        existing.pattern_id = (
-            incoming.pattern_id
-        )
+        existing.pattern_id = incoming.pattern_id
 
-    existing.attributes.update(
-        incoming.attributes
-    )
+    existing.attributes.update(incoming.attributes)
 
     existing.touch()
 
@@ -340,93 +221,62 @@ def remember_pattern(
     store: MemoryStore,
     pattern: Pattern,
     *,
-    incident_ids: Iterable[
-        str
-    ] = (),
+    incident_ids: Iterable[str] = (),
 ) -> PatternMemory:
     """
     Create or update long-term history for one
     pattern.
     """
 
-    incoming = (
-        pattern_memory_from_pattern(
-            pattern,
-            incident_ids=(
-                incident_ids
-            ),
-        )
+    incoming = pattern_memory_from_pattern(
+        pattern,
+        incident_ids=(incident_ids),
     )
 
     existing = find_pattern_memory(
         store,
-        environment_id=(
-            incoming.environment_id
-        ),
-        fingerprint=(
-            incoming.fingerprint
-        ),
-        pattern_type=(
-            incoming.pattern_type
-        ),
+        environment_id=(incoming.environment_id),
+        fingerprint=(incoming.fingerprint),
+        pattern_type=(incoming.pattern_type),
     )
 
     if existing is not None:
-        incoming = (
-            merge_pattern_memory(
-                existing,
-                incoming,
-            )
+        incoming = merge_pattern_memory(
+            existing,
+            incoming,
         )
 
-    stored = store.put(
-        incoming
-    )
+    stored = store.put(incoming)
 
     if not isinstance(
         stored,
         PatternMemory,
     ):
-        raise TypeError(
-            "Memory store returned a "
-            "non-PatternMemory object"
-        )
+        raise TypeError("Memory store returned a non-PatternMemory object")
 
     return stored
 
 
 def remember_patterns(
     store: MemoryStore,
-    patterns: Iterable[
-        Pattern
-    ],
+    patterns: Iterable[Pattern],
     *,
-    incident_ids_by_pattern: Optional[
-        Dict[str, List[str]]
-    ] = None,
-) -> List[
-    PatternMemory
-]:
+    incident_ids_by_pattern: Optional[Dict[str, List[str]]] = None,
+) -> List[PatternMemory]:
     """
     Persist an intelligence pattern batch.
     """
 
-    incident_map = (
-        incident_ids_by_pattern
-        or {}
-    )
+    incident_map = incident_ids_by_pattern or {}
 
     output = []
 
     for pattern in patterns:
         pattern.finalize()
 
-        incidents = (
-            incident_map.get(
-                pattern.pattern_id
-                or "",
-                [],
-            )
+        incidents = incident_map.get(
+            pattern.pattern_id or "",
+            [],
         )
 
         output.append(
@@ -444,6 +294,7 @@ def remember_patterns(
 # Explicit classification / verification
 # ---------------------------------------------------------------
 
+
 def mark_pattern_normal(
     store: MemoryStore,
     memory_id: str,
@@ -459,48 +310,31 @@ def mark_pattern_normal(
     as normal.
     """
 
-    memory = store.require(
-        memory_id
-    )
+    memory = store.require(memory_id)
 
     if not isinstance(
         memory,
         PatternMemory,
     ):
-        raise TypeError(
-            "memory_id does not reference "
-            "PatternMemory"
-        )
+        raise TypeError("memory_id does not reference PatternMemory")
 
     memory.verified_normal_count += 1
 
-    memory.verification_status = (
-        VerificationStatus.
-        VERIFIED.value
-    )
+    memory.verification_status = VerificationStatus.VERIFIED.value
 
-    memory.attributes[
-        "last_verification_source"
-    ] = verification_source
+    memory.attributes["last_verification_source"] = verification_source
 
-    memory.attributes[
-        "last_verified_classification"
-    ] = "normal"
+    memory.attributes["last_verified_classification"] = "normal"
 
     memory.touch()
 
-    stored = store.put(
-        memory
-    )
+    stored = store.put(memory)
 
     if not isinstance(
         stored,
         PatternMemory,
     ):
-        raise TypeError(
-            "Memory store returned a "
-            "non-PatternMemory object"
-        )
+        raise TypeError("Memory store returned a non-PatternMemory object")
 
     return stored
 
@@ -517,57 +351,33 @@ def mark_pattern_incident(
     incident-associated occurrence.
     """
 
-    memory = store.require(
-        memory_id
-    )
+    memory = store.require(memory_id)
 
     if not isinstance(
         memory,
         PatternMemory,
     ):
-        raise TypeError(
-            "memory_id does not reference "
-            "PatternMemory"
-        )
+        raise TypeError("memory_id does not reference PatternMemory")
 
     memory.verified_incident_count += 1
 
-    memory.incident_ids = sorted(
-        set(
-            memory.incident_ids
-        )
-        | {
-            incident_id
-        }
-    )
+    memory.incident_ids = sorted(set(memory.incident_ids) | {incident_id})
 
-    memory.verification_status = (
-        VerificationStatus.
-        VERIFIED.value
-    )
+    memory.verification_status = VerificationStatus.VERIFIED.value
 
-    memory.attributes[
-        "last_verification_source"
-    ] = verification_source
+    memory.attributes["last_verification_source"] = verification_source
 
-    memory.attributes[
-        "last_verified_classification"
-    ] = "incident"
+    memory.attributes["last_verified_classification"] = "incident"
 
     memory.touch()
 
-    stored = store.put(
-        memory
-    )
+    stored = store.put(memory)
 
     if not isinstance(
         stored,
         PatternMemory,
     ):
-        raise TypeError(
-            "Memory store returned a "
-            "non-PatternMemory object"
-        )
+        raise TypeError("Memory store returned a non-PatternMemory object")
 
     return stored
 
@@ -586,42 +396,27 @@ def reject_pattern_classification(
     intact.
     """
 
-    memory = store.require(
-        memory_id
-    )
+    memory = store.require(memory_id)
 
     if not isinstance(
         memory,
         PatternMemory,
     ):
-        raise TypeError(
-            "memory_id does not reference "
-            "PatternMemory"
-        )
+        raise TypeError("memory_id does not reference PatternMemory")
 
-    memory.verification_status = (
-        VerificationStatus.
-        REJECTED.value
-    )
+    memory.verification_status = VerificationStatus.REJECTED.value
 
-    memory.attributes[
-        "last_verification_source"
-    ] = verification_source
+    memory.attributes["last_verification_source"] = verification_source
 
     memory.touch()
 
-    stored = store.put(
-        memory
-    )
+    stored = store.put(memory)
 
     if not isinstance(
         stored,
         PatternMemory,
     ):
-        raise TypeError(
-            "Memory store returned a "
-            "non-PatternMemory object"
-        )
+        raise TypeError("Memory store returned a non-PatternMemory object")
 
     return stored
 
@@ -630,46 +425,22 @@ def reject_pattern_classification(
 # Queries
 # ---------------------------------------------------------------
 
+
 def list_pattern_memory(
     store: MemoryStore,
     *,
-    environment_id: Optional[
-        str
-    ] = None,
-    resource_id: Optional[
-        str
-    ] = None,
+    environment_id: Optional[str] = None,
+    resource_id: Optional[str] = None,
     verified_only: bool = False,
     active_only: bool = False,
     limit: Optional[int] = None,
-) -> List[
-    PatternMemory
-]:
+) -> List[PatternMemory]:
     query = MemoryQuery(
-        memory_types=(
-            "pattern",
-        ),
-        environment_ids=(
-            (
-                environment_id,
-            )
-            if environment_id
-            else ()
-        ),
-        resource_ids=(
-            (
-                resource_id,
-            )
-            if resource_id
-            else ()
-        ),
+        memory_types=("pattern",),
+        environment_ids=((environment_id,) if environment_id else ()),
+        resource_ids=((resource_id,) if resource_id else ()),
         verification_statuses=(
-            (
-                VerificationStatus.
-                VERIFIED.value,
-            )
-            if verified_only
-            else ()
+            (VerificationStatus.VERIFIED.value,) if verified_only else ()
         ),
         active_only=active_only,
         limit=limit,
@@ -677,8 +448,7 @@ def list_pattern_memory(
 
     return [
         memory
-        for memory
-        in store.query(query)
+        for memory in store.query(query)
         if isinstance(
             memory,
             PatternMemory,
@@ -691,21 +461,13 @@ def pattern_history(
     fingerprint: str,
     *,
     environment_id: str,
-    pattern_type: Optional[
-        str
-    ] = None,
-) -> Optional[
-    PatternMemory
-]:
+    pattern_type: Optional[str] = None,
+) -> Optional[PatternMemory]:
     return find_pattern_memory(
         store,
-        environment_id=(
-            environment_id
-        ),
+        environment_id=(environment_id),
         fingerprint=fingerprint,
-        pattern_type=(
-            pattern_type
-        ),
+        pattern_type=(pattern_type),
     )
 
 
@@ -723,121 +485,61 @@ def pattern_incident_rate(
     history yet.
     """
 
-    verified_total = (
-        memory.
-        verified_incident_count
-        + memory.
-        verified_normal_count
-    )
+    verified_total = memory.verified_incident_count + memory.verified_normal_count
 
     if verified_total <= 0:
         return None
 
-    return (
-        memory.
-        verified_incident_count
-        / verified_total
-    )
+    return memory.verified_incident_count / verified_total
 
 
 def pattern_normal_rate(
     memory: PatternMemory,
 ) -> Optional[float]:
-    verified_total = (
-        memory.
-        verified_incident_count
-        + memory.
-        verified_normal_count
-    )
+    verified_total = memory.verified_incident_count + memory.verified_normal_count
 
     if verified_total <= 0:
         return None
 
-    return (
-        memory.
-        verified_normal_count
-        / verified_total
-    )
+    return memory.verified_normal_count / verified_total
 
 
 def pattern_history_summary(
-    memories: Iterable[
-        PatternMemory
-    ],
+    memories: Iterable[PatternMemory],
 ) -> Dict[str, Any]:
     """
     Summarize persistent pattern history.
     """
 
-    memory_list = list(
-        memories
-    )
+    memory_list = list(memories)
 
     verified = [
         memory
         for memory in memory_list
-        if (
-            memory.verification_status
-            == VerificationStatus.
-            VERIFIED.value
-        )
+        if (memory.verification_status == VerificationStatus.VERIFIED.value)
     ]
 
     verified_incident_occurrences = sum(
-        memory.
-        verified_incident_count
-        for memory
-        in memory_list
+        memory.verified_incident_count for memory in memory_list
     )
 
     verified_normal_occurrences = sum(
-        memory.
-        verified_normal_count
-        for memory
-        in memory_list
+        memory.verified_normal_count for memory in memory_list
     )
 
     return {
-        "pattern_memory_count": (
-            len(memory_list)
-        ),
-        "verified_pattern_count": (
-            len(verified)
-        ),
+        "pattern_memory_count": (len(memory_list)),
+        "verified_pattern_count": (len(verified)),
         "total_observed_occurrences": sum(
-            memory.occurrence_count
-            for memory
-            in memory_list
+            memory.occurrence_count for memory in memory_list
         ),
-        "verified_incident_occurrences": (
-            verified_incident_occurrences
-        ),
-        "verified_normal_occurrences": (
-            verified_normal_occurrences
-        ),
+        "verified_incident_occurrences": (verified_incident_occurrences),
+        "verified_normal_occurrences": (verified_normal_occurrences),
         "patterns_with_incident_history": (
-            sum(
-                1
-                for memory
-                in memory_list
-                if (
-                    memory.
-                    verified_incident_count
-                    > 0
-                )
-            )
+            sum(1 for memory in memory_list if (memory.verified_incident_count > 0))
         ),
         "patterns_with_normal_history": (
-            sum(
-                1
-                for memory
-                in memory_list
-                if (
-                    memory.
-                    verified_normal_count
-                    > 0
-                )
-            )
+            sum(1 for memory in memory_list if (memory.verified_normal_count > 0))
         ),
     }
 
@@ -858,36 +560,24 @@ class PatternMemoryManager:
         self,
         pattern: Pattern,
         *,
-        incident_ids: Iterable[
-            str
-        ] = (),
+        incident_ids: Iterable[str] = (),
     ) -> PatternMemory:
         return remember_pattern(
             self.store,
             pattern,
-            incident_ids=(
-                incident_ids
-            ),
+            incident_ids=(incident_ids),
         )
 
     def remember_many(
         self,
-        patterns: Iterable[
-            Pattern
-        ],
+        patterns: Iterable[Pattern],
         *,
-        incident_ids_by_pattern: Optional[
-            Dict[str, List[str]]
-        ] = None,
-    ) -> List[
-        PatternMemory
-    ]:
+        incident_ids_by_pattern: Optional[Dict[str, List[str]]] = None,
+    ) -> List[PatternMemory]:
         return remember_patterns(
             self.store,
             patterns,
-            incident_ids_by_pattern=(
-                incident_ids_by_pattern
-            ),
+            incident_ids_by_pattern=(incident_ids_by_pattern),
         )
 
     def history(
@@ -895,21 +585,13 @@ class PatternMemoryManager:
         fingerprint: str,
         *,
         environment_id: str,
-        pattern_type: Optional[
-            str
-        ] = None,
-    ) -> Optional[
-        PatternMemory
-    ]:
+        pattern_type: Optional[str] = None,
+    ) -> Optional[PatternMemory]:
         return pattern_history(
             self.store,
             fingerprint,
-            environment_id=(
-                environment_id
-            ),
-            pattern_type=(
-                pattern_type
-            ),
+            environment_id=(environment_id),
+            pattern_type=(pattern_type),
         )
 
     def verify_normal(
@@ -921,9 +603,7 @@ class PatternMemoryManager:
         return mark_pattern_normal(
             self.store,
             memory_id,
-            verification_source=(
-                verification_source
-            ),
+            verification_source=(verification_source),
         )
 
     def verify_incident(
@@ -937,7 +617,5 @@ class PatternMemoryManager:
             self.store,
             memory_id,
             incident_id=incident_id,
-            verification_source=(
-                verification_source
-            ),
+            verification_source=(verification_source),
         )

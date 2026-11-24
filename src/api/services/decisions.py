@@ -98,9 +98,7 @@ from src.api.schema import (
 # Logging
 # ------------------------------------------------------------------
 
-logger = logging.getLogger(
-    __name__
-)
+logger = logging.getLogger(__name__)
 
 
 # ------------------------------------------------------------------
@@ -129,23 +127,18 @@ MAX_IDEMPOTENCY_RECORDS = 10_000
 # Time
 # ------------------------------------------------------------------
 
+
 def utc_now() -> datetime:
-    return datetime.now(
-        timezone.utc
-    )
+    return datetime.now(timezone.utc)
 
 
 def normalize_datetime(
     value: datetime,
 ) -> datetime:
     if value.tzinfo is None:
-        return value.replace(
-            tzinfo=timezone.utc
-        )
+        return value.replace(tzinfo=timezone.utc)
 
-    return value.astimezone(
-        timezone.utc
-    )
+    return value.astimezone(timezone.utc)
 
 
 # ------------------------------------------------------------------
@@ -184,25 +177,15 @@ def safe_mapping(
         Any,
     ] = {}
 
-    for raw_key, item in list(
-        value.items()
-    )[
-        :limit
-    ]:
-        key = str(
-            raw_key
-        ).strip()
+    for raw_key, item in list(value.items())[:limit]:
+        key = str(raw_key).strip()
 
         if not key:
             continue
 
         normalized = key.lower()
 
-        if any(
-            fragment in normalized
-            for fragment
-            in _SENSITIVE_KEY_FRAGMENTS
-        ):
+        if any(fragment in normalized for fragment in _SENSITIVE_KEY_FRAGMENTS):
             continue
 
         if isinstance(
@@ -215,9 +198,7 @@ def safe_mapping(
                 type(None),
             ),
         ):
-            output[
-                key
-            ] = item
+            output[key] = item
 
         elif isinstance(
             item,
@@ -226,13 +207,9 @@ def safe_mapping(
                 tuple,
             ),
         ):
-            output[
-                key
-            ] = [
+            output[key] = [
                 child
-                for child in item[
-                    :128
-                ]
+                for child in item[:128]
                 if isinstance(
                     child,
                     (
@@ -249,20 +226,14 @@ def safe_mapping(
             item,
             Mapping,
         ):
-            output[
-                key
-            ] = safe_mapping(
+            output[key] = safe_mapping(
                 item,
                 limit=64,
             )
 
         else:
-            output[
-                key
-            ] = {
-                "type": type(
-                    item
-                ).__name__,
+            output[key] = {
+                "type": type(item).__name__,
             }
 
     return output
@@ -271,6 +242,7 @@ def safe_mapping(
 # ------------------------------------------------------------------
 # Operation context
 # ------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class DecisionOperationContext:
@@ -288,31 +260,18 @@ class DecisionOperationContext:
         self,
     ) -> Dict[str, Any]:
         return {
-            "request_id": (
-                self.request_id
-            ),
-
-            "actor_id": (
-                self.actor_id
-            ),
-
-            "tenant_id": (
-                self.tenant_id
-            ),
-
-            "correlation_id": (
-                self.correlation_id
-            ),
-
-            "idempotency_key_present": bool(
-                self.idempotency_key
-            ),
+            "request_id": (self.request_id),
+            "actor_id": (self.actor_id),
+            "tenant_id": (self.tenant_id),
+            "correlation_id": (self.correlation_id),
+            "idempotency_key_present": bool(self.idempotency_key),
         }
 
 
 # ------------------------------------------------------------------
 # Policy evaluation result
 # ------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class PolicyResult:
@@ -327,9 +286,7 @@ class PolicyResult:
     attributes: Mapping[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def to_dict(
         self,
@@ -339,15 +296,14 @@ class PolicyResult:
             "allowed": self.allowed,
             "reason": self.reason,
             "severity": self.severity,
-            "attributes": safe_mapping(
-                self.attributes
-            ),
+            "attributes": safe_mapping(self.attributes),
         }
 
 
 # ------------------------------------------------------------------
 # Evaluation outcome
 # ------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class DecisionEvaluation:
@@ -374,83 +330,43 @@ class DecisionEvaluation:
         ...,
     ] = ()
 
-    ttl_seconds: int = (
-        DEFAULT_DECISION_TTL_SECONDS
-    )
+    ttl_seconds: int = DEFAULT_DECISION_TTL_SECONDS
 
     attributes: Mapping[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def validate(
         self,
     ) -> None:
-        if (
-            self.status
-            not in {
-                DecisionStatusAPI.
-                ALLOWED.value,
+        if self.status not in {
+            DecisionStatusAPI.ALLOWED.value,
+            DecisionStatusAPI.DENIED.value,
+            DecisionStatusAPI.REQUIRES_APPROVAL.value,
+        }:
+            raise ValueError(f"Unsupported evaluated decision status: {self.status}")
 
-                DecisionStatusAPI.
-                DENIED.value,
-
-                DecisionStatusAPI.
-                REQUIRES_APPROVAL.value,
-            }
-        ):
-            raise ValueError(
-                "Unsupported evaluated "
-                "decision status: "
-                f"{self.status}"
-            )
-
-        if (
-            self.risk
-            not in {
-                value.value
-                for value
-                in RemediationRiskAPI
-            }
-        ):
-            raise ValueError(
-                "Unsupported decision risk: "
-                f"{self.risk}"
-            )
+        if self.risk not in {value.value for value in RemediationRiskAPI}:
+            raise ValueError(f"Unsupported decision risk: {self.risk}")
 
         if self.ttl_seconds < 1:
-            raise ValueError(
-                "Decision TTL must be >= 1"
-            )
+            raise ValueError("Decision TTL must be >= 1")
 
         if (
-            self.status
-            == DecisionStatusAPI.
-            REQUIRES_APPROVAL.value
+            self.status == DecisionStatusAPI.REQUIRES_APPROVAL.value
             and not self.approval_required
         ):
-            raise ValueError(
-                "requires_approval decision "
-                "must require approval"
-            )
+            raise ValueError("requires_approval decision must require approval")
 
-        if (
-            self.status
-            == DecisionStatusAPI.
-            DENIED.value
-            and self.approval_required
-        ):
-            raise ValueError(
-                "Denied decision cannot "
-                "require approval"
-            )
+        if self.status == DecisionStatusAPI.DENIED.value and self.approval_required:
+            raise ValueError("Denied decision cannot require approval")
 
 
 # ------------------------------------------------------------------
 # Persistent decision record
 # ------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class DecisionRecord:
@@ -480,9 +396,7 @@ class DecisionRecord:
 
     created_at: datetime
 
-    expires_at: Optional[
-        datetime
-    ]
+    expires_at: Optional[datetime]
 
     version: int = 1
 
@@ -499,68 +413,31 @@ class DecisionRecord:
     attributes: Mapping[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def validate(
         self,
     ) -> None:
         if not self.decision_id.strip():
-            raise ValueError(
-                "decision_id cannot be empty"
-            )
+            raise ValueError("decision_id cannot be empty")
 
         if not self.incident_id.strip():
-            raise ValueError(
-                "incident_id cannot be empty"
-            )
+            raise ValueError("incident_id cannot be empty")
 
         if not self.candidate_action.strip():
-            raise ValueError(
-                "candidate_action cannot be empty"
-            )
+            raise ValueError("candidate_action cannot be empty")
 
-        if (
-            self.status
-            not in {
-                value.value
-                for value
-                in DecisionStatusAPI
-            }
-        ):
-            raise ValueError(
-                "Unsupported decision status: "
-                f"{self.status}"
-            )
+        if self.status not in {value.value for value in DecisionStatusAPI}:
+            raise ValueError(f"Unsupported decision status: {self.status}")
 
-        if (
-            self.risk
-            not in {
-                value.value
-                for value
-                in RemediationRiskAPI
-            }
-        ):
-            raise ValueError(
-                "Unsupported decision risk: "
-                f"{self.risk}"
-            )
+        if self.risk not in {value.value for value in RemediationRiskAPI}:
+            raise ValueError(f"Unsupported decision risk: {self.risk}")
 
         if self.version < 1:
-            raise ValueError(
-                "decision version must be >= 1"
-            )
+            raise ValueError("decision version must be >= 1")
 
-        if (
-            len(
-                self.policy_results
-            )
-            > MAX_POLICY_RESULTS
-        ):
-            raise ValueError(
-                "Too many decision policy results"
-            )
+        if len(self.policy_results) > MAX_POLICY_RESULTS:
+            raise ValueError("Too many decision policy results")
 
     @property
     def expired(
@@ -569,14 +446,13 @@ class DecisionRecord:
         if self.expires_at is None:
             return False
 
-        return utc_now() >= normalize_datetime(
-            self.expires_at
-        )
+        return utc_now() >= normalize_datetime(self.expires_at)
 
 
 # ------------------------------------------------------------------
 # Repository
 # ------------------------------------------------------------------
+
 
 @runtime_checkable
 class DecisionRepository(
@@ -585,24 +461,18 @@ class DecisionRepository(
     async def create(
         self,
         decision: DecisionRecord,
-    ) -> DecisionRecord:
-        ...
+    ) -> DecisionRecord: ...
 
     async def get(
         self,
         decision_id: str,
-    ) -> Optional[DecisionRecord]:
-        ...
+    ) -> Optional[DecisionRecord]: ...
 
     async def list(
         self,
         *,
-        incident_id: Optional[
-            str
-        ] = None,
-        tenant_id: Optional[
-            str
-        ] = None,
+        incident_id: Optional[str] = None,
+        tenant_id: Optional[str] = None,
         limit: int = 100,
         offset: int = 0,
     ) -> Tuple[
@@ -611,24 +481,22 @@ class DecisionRepository(
             ...,
         ],
         int,
-    ]:
-        ...
+    ]: ...
 
     async def find_by_idempotency_key(
         self,
         key: str,
-    ) -> Optional[DecisionRecord]:
-        ...
+    ) -> Optional[DecisionRecord]: ...
 
     async def close(
         self,
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 # ------------------------------------------------------------------
 # Process-local decision repository
 # ------------------------------------------------------------------
+
 
 class ProcessLocalDecisionRepository:
     def __init__(
@@ -652,9 +520,7 @@ class ProcessLocalDecisionRepository:
         self,
     ) -> None:
         if self._closed:
-            raise RuntimeError(
-                "Decision repository is closed."
-            )
+            raise RuntimeError("Decision repository is closed.")
 
     async def create(
         self,
@@ -665,98 +531,53 @@ class ProcessLocalDecisionRepository:
         async with self._lock:
             self._ensure_open()
 
-            if (
-                decision.decision_id
-                in self._records
-            ):
+            if decision.decision_id in self._records:
                 raise ResourceConflictError(
-                    "A decision with this ID "
-                    "already exists.",
+                    "A decision with this ID already exists.",
                     details={
-                        "decision_id": (
-                            decision.decision_id
-                        ),
+                        "decision_id": (decision.decision_id),
                     },
                 )
 
             if decision.idempotency_key:
-                existing_id = (
-                    self._idempotency.get(
-                        decision.idempotency_key
-                    )
-                )
+                existing_id = self._idempotency.get(decision.idempotency_key)
 
                 if existing_id:
-                    return deepcopy(
-                        self._records[
-                            existing_id
-                        ]
-                    )
+                    return deepcopy(self._records[existing_id])
 
-            self._records[
-                decision.decision_id
-            ] = deepcopy(
-                decision
-            )
+            self._records[decision.decision_id] = deepcopy(decision)
 
             if decision.idempotency_key:
-                if (
-                    len(
-                        self._idempotency
-                    )
-                    >= MAX_IDEMPOTENCY_RECORDS
-                ):
-                    oldest = next(
-                        iter(
-                            self._idempotency
-                        )
-                    )
+                if len(self._idempotency) >= MAX_IDEMPOTENCY_RECORDS:
+                    oldest = next(iter(self._idempotency))
 
                     self._idempotency.pop(
                         oldest,
                         None,
                     )
 
-                self._idempotency[
-                    decision.idempotency_key
-                ] = decision.decision_id
+                self._idempotency[decision.idempotency_key] = decision.decision_id
 
-            return deepcopy(
-                decision
-            )
+            return deepcopy(decision)
 
     async def get(
         self,
         decision_id: str,
     ) -> Optional[DecisionRecord]:
-        normalized = str(
-            decision_id
-        ).strip()
+        normalized = str(decision_id).strip()
 
         async with self._lock:
             self._ensure_open()
 
-            value = self._records.get(
-                normalized
-            )
+            value = self._records.get(normalized)
 
-            return (
-                deepcopy(
-                    value
-                )
-                if value is not None
-                else None
-            )
+            return deepcopy(value) if value is not None else None
 
     async def list(
         self,
         *,
-        incident_id: Optional[
-            str
-        ] = None,
-        tenant_id: Optional[
-            str
-        ] = None,
+        incident_id: Optional[str] = None,
+        tenant_id: Optional[str] = None,
         limit: int = 100,
         offset: int = 0,
     ) -> Tuple[
@@ -766,45 +587,25 @@ class ProcessLocalDecisionRepository:
         ],
         int,
     ]:
-        if (
-            limit < 1
-            or limit > 1000
-        ):
-            raise ValueError(
-                "limit must be between "
-                "1 and 1000"
-            )
+        if limit < 1 or limit > 1000:
+            raise ValueError("limit must be between 1 and 1000")
 
         if offset < 0:
-            raise ValueError(
-                "offset must be >= 0"
-            )
+            raise ValueError("offset must be >= 0")
 
         async with self._lock:
             self._ensure_open()
 
             values = []
 
-            for decision in (
-                self._records.values()
-            ):
-                if (
-                    incident_id is not None
-                    and decision.incident_id
-                    != incident_id
-                ):
+            for decision in self._records.values():
+                if incident_id is not None and decision.incident_id != incident_id:
                     continue
 
-                if (
-                    tenant_id is not None
-                    and decision.tenant_id
-                    != tenant_id
-                ):
+                if tenant_id is not None and decision.tenant_id != tenant_id:
                     continue
 
-                values.append(
-                    decision
-                )
+                values.append(decision)
 
             values.sort(
                 key=lambda decision: (
@@ -814,21 +615,12 @@ class ProcessLocalDecisionRepository:
                 reverse=True,
             )
 
-            total = len(
-                values
-            )
+            total = len(values)
 
-            page = values[
-                offset:
-                offset + limit
-            ]
+            page = values[offset : offset + limit]
 
             return (
-                tuple(
-                    deepcopy(
-                        page
-                    )
-                ),
+                tuple(deepcopy(page)),
                 total,
             )
 
@@ -836,9 +628,7 @@ class ProcessLocalDecisionRepository:
         self,
         key: str,
     ) -> Optional[DecisionRecord]:
-        normalized = str(
-            key
-        ).strip()
+        normalized = str(key).strip()
 
         if not normalized:
             return None
@@ -846,20 +636,12 @@ class ProcessLocalDecisionRepository:
         async with self._lock:
             self._ensure_open()
 
-            decision_id = (
-                self._idempotency.get(
-                    normalized
-                )
-            )
+            decision_id = self._idempotency.get(normalized)
 
             if decision_id is None:
                 return None
 
-            return deepcopy(
-                self._records.get(
-                    decision_id
-                )
-            )
+            return deepcopy(self._records.get(decision_id))
 
     async def close(
         self,
@@ -874,6 +656,7 @@ class ProcessLocalDecisionRepository:
 # ------------------------------------------------------------------
 # Evaluator
 # ------------------------------------------------------------------
+
 
 @runtime_checkable
 class DecisionEvaluator(
@@ -893,13 +676,13 @@ class DecisionEvaluator(
             Any,
         ],
         dry_run: bool,
-    ) -> DecisionEvaluation:
-        ...
+    ) -> DecisionEvaluation: ...
 
 
 # ------------------------------------------------------------------
 # Conservative default evaluator
 # ------------------------------------------------------------------
+
 
 class ConservativeDecisionEvaluator:
     """
@@ -931,89 +714,48 @@ class ConservativeDecisionEvaluator:
         ],
         dry_run: bool,
     ) -> DecisionEvaluation:
-        action = str(
-            candidate_action
-        ).strip()
+        action = str(candidate_action).strip()
 
         if not action:
             return DecisionEvaluation(
-                status=(
-                    DecisionStatusAPI.
-                    DENIED.value
-                ),
-
-                reason=(
-                    "No candidate action "
-                    "was supplied."
-                ),
-
-                risk=(
-                    RemediationRiskAPI.
-                    HIGH.value
-                ),
-
+                status=(DecisionStatusAPI.DENIED.value),
+                reason=("No candidate action was supplied."),
+                risk=(RemediationRiskAPI.HIGH.value),
                 approval_required=False,
-
                 policy_results=(
                     PolicyResult(
-                        policy=(
-                            "candidate_action_present"
-                        ),
-
+                        policy=("candidate_action_present"),
                         allowed=False,
-
-                        reason=(
-                            "Candidate action "
-                            "is required."
-                        ),
-
+                        reason=("Candidate action is required."),
                         severity="high",
                     ),
                 ),
             )
 
         return DecisionEvaluation(
-            status=(
-                DecisionStatusAPI.
-                REQUIRES_APPROVAL.value
-            ),
-
+            status=(DecisionStatusAPI.REQUIRES_APPROVAL.value),
             reason=(
                 "The default API decision evaluator "
                 "does not automatically authorize "
                 "infrastructure-changing actions."
             ),
-
-            risk=(
-                RemediationRiskAPI.
-                HIGH.value
-            ),
-
+            risk=(RemediationRiskAPI.HIGH.value),
             approval_required=True,
-
             policy_results=(
                 PolicyResult(
-                    policy=(
-                        "explicit_approval"
-                    ),
-
+                    policy=("explicit_approval"),
                     allowed=False,
-
                     reason=(
                         "Explicit authorization "
                         "is required before "
                         "remediation planning."
                     ),
-
                     severity="high",
                 ),
             ),
-
             attributes={
                 "default_evaluator": True,
-                "dry_run": bool(
-                    dry_run
-                ),
+                "dry_run": bool(dry_run),
             },
         )
 
@@ -1022,12 +764,11 @@ class ConservativeDecisionEvaluator:
 # Async helper
 # ------------------------------------------------------------------
 
+
 async def await_if_needed(
     value: Any,
 ) -> Any:
-    if inspect.isawaitable(
-        value
-    ):
+    if inspect.isawaitable(value):
         return await value
 
     return value
@@ -1037,6 +778,7 @@ async def await_if_needed(
 # Response
 # ------------------------------------------------------------------
 
+
 def decision_response(
     decision: DecisionRecord,
 ) -> DecisionResponse:
@@ -1045,70 +787,29 @@ def decision_response(
     status = decision.status
 
     if decision.expired:
-        status = (
-            DecisionStatusAPI.
-            EXPIRED.value
-        )
+        status = DecisionStatusAPI.EXPIRED.value
 
-    attributes = safe_mapping(
-        decision.attributes
-    )
+    attributes = safe_mapping(decision.attributes)
 
     attributes.update(
         {
-            "version": (
-                decision.version
-            ),
-
-            "dry_run": (
-                decision.dry_run
-            ),
-
-            "correlation_id": (
-                decision.correlation_id
-            ),
+            "version": (decision.version),
+            "dry_run": (decision.dry_run),
+            "correlation_id": (decision.correlation_id),
         }
     )
 
     return DecisionResponse(
-        decision_id=(
-            decision.decision_id
-        ),
-
-        incident_id=(
-            decision.incident_id
-        ),
-
+        decision_id=(decision.decision_id),
+        incident_id=(decision.incident_id),
         status=status,
-
-        candidate_action=(
-            decision.candidate_action
-        ),
-
-        reason=(
-            decision.reason
-        ),
-
+        candidate_action=(decision.candidate_action),
+        reason=(decision.reason),
         risk=decision.risk,
-
-        approval_required=(
-            decision.approval_required
-        ),
-
-        policy_results=[
-            result.to_dict()
-            for result
-            in decision.policy_results
-        ],
-
-        created_at=(
-            decision.created_at
-        ),
-
-        expires_at=(
-            decision.expires_at
-        ),
-
+        approval_required=(decision.approval_required),
+        policy_results=[result.to_dict() for result in decision.policy_results],
+        created_at=(decision.created_at),
+        expires_at=(decision.expires_at),
         attributes=attributes,
     )
 
@@ -1117,21 +818,18 @@ def decision_response(
 # Incident service lookup helper
 # ------------------------------------------------------------------
 
+
 async def resolve_incident(
     incident_service: Any,
     incident_id: str,
     *,
-    context: Optional[
-        DecisionOperationContext
-    ] = None,
+    context: Optional[DecisionOperationContext] = None,
 ) -> Any:
     if incident_service is None:
         raise InternalServerAPIError(
             "Incident service is unavailable.",
             details={
-                "resource": (
-                    "incident_service"
-                ),
+                "resource": ("incident_service"),
             },
         )
 
@@ -1141,16 +839,11 @@ async def resolve_incident(
         None,
     )
 
-    if not callable(
-        getter
-    ):
+    if not callable(getter):
         raise InternalServerAPIError(
-            "Incident service does not "
-            "support incident retrieval.",
+            "Incident service does not support incident retrieval.",
             details={
-                "resource": (
-                    "incident_service"
-                ),
+                "resource": ("incident_service"),
             },
         )
 
@@ -1162,36 +855,13 @@ async def resolve_incident(
                 IncidentOperationContext,
             )
 
-            incident_context = (
-                IncidentOperationContext(
-                    request_id=(
-                        context.request_id
-                        if context
-                        is not None
-                        else None
-                    ),
-
-                    actor_id=(
-                        context.actor_id
-                        if context
-                        is not None
-                        else None
-                    ),
-
-                    tenant_id=(
-                        context.tenant_id
-                        if context
-                        is not None
-                        else None
-                    ),
-
-                    correlation_id=(
-                        context.correlation_id
-                        if context
-                        is not None
-                        else None
-                    ),
-                )
+            incident_context = IncidentOperationContext(
+                request_id=(context.request_id if context is not None else None),
+                actor_id=(context.actor_id if context is not None else None),
+                tenant_id=(context.tenant_id if context is not None else None),
+                correlation_id=(
+                    context.correlation_id if context is not None else None
+                ),
             )
 
         except Exception:
@@ -1211,6 +881,7 @@ async def resolve_incident(
 # ------------------------------------------------------------------
 # Decision service
 # ------------------------------------------------------------------
+
 
 class DecisionService:
     """
@@ -1235,9 +906,7 @@ class DecisionService:
         self.repository = repository
         self.evaluator = evaluator
 
-        self.incident_service = (
-            incident_service
-        )
+        self.incident_service = incident_service
 
         self._closed = False
 
@@ -1254,39 +923,27 @@ class DecisionService:
             raise InternalServerAPIError(
                 "The decision service is closed.",
                 details={
-                    "resource": (
-                        DECISION_SERVICE_NAME
-                    ),
+                    "resource": (DECISION_SERVICE_NAME),
                 },
             )
 
     def _require_read_enabled(
         self,
     ) -> None:
-        if not (
-            self.config.features.
-            decision_read_enabled
-        ):
+        if not (self.config.features.decision_read_enabled):
             raise FeatureDisabledError(
                 details={
-                    "resource": (
-                        "decision_read"
-                    ),
+                    "resource": ("decision_read"),
                 },
             )
 
     def _require_evaluation_enabled(
         self,
     ) -> None:
-        if not (
-            self.config.features.
-            decision_evaluation_enabled
-        ):
+        if not (self.config.features.decision_evaluation_enabled):
             raise FeatureDisabledError(
                 details={
-                    "resource": (
-                        "decision_evaluation"
-                    ),
+                    "resource": ("decision_evaluation"),
                 },
             )
 
@@ -1297,9 +954,7 @@ class DecisionService:
             if self._closed:
                 return
 
-            await await_if_needed(
-                self.repository.close()
-            )
+            await await_if_needed(self.repository.close())
 
             self._closed = True
 
@@ -1311,31 +966,20 @@ class DecisionService:
         self,
         request: DecisionEvaluateRequest,
         *,
-        context: Optional[
-            DecisionOperationContext
-        ] = None,
+        context: Optional[DecisionOperationContext] = None,
     ) -> DecisionResponse:
         self._ensure_open()
         self._require_evaluation_enabled()
 
-        idempotency_key = (
-            context.idempotency_key
-            if context is not None
-            else None
-        )
+        idempotency_key = context.idempotency_key if context is not None else None
 
         if idempotency_key:
             existing = await await_if_needed(
-                self.repository.
-                find_by_idempotency_key(
-                    idempotency_key
-                )
+                self.repository.find_by_idempotency_key(idempotency_key)
             )
 
             if existing is not None:
-                return decision_response(
-                    existing
-                )
+                return decision_response(existing)
 
         incident = await resolve_incident(
             self.incident_service,
@@ -1343,13 +987,9 @@ class DecisionService:
             context=context,
         )
 
-        target = safe_mapping(
-            request.target
-        )
+        target = safe_mapping(request.target)
 
-        evaluation_context = safe_mapping(
-            request.context
-        )
+        evaluation_context = safe_mapping(request.context)
 
         if context is not None:
             evaluation_context.setdefault(
@@ -1368,26 +1008,13 @@ class DecisionService:
             )
 
         try:
-            evaluation = (
-                await await_if_needed(
-                    self.evaluator.evaluate(
-                        incident=incident,
-
-                        candidate_action=(
-                            request.
-                            candidate_action
-                        ),
-
-                        target=target,
-
-                        context=(
-                            evaluation_context
-                        ),
-
-                        dry_run=(
-                            request.dry_run
-                        ),
-                    )
+            evaluation = await await_if_needed(
+                self.evaluator.evaluate(
+                    incident=incident,
+                    candidate_action=(request.candidate_action),
+                    target=target,
+                    context=(evaluation_context),
+                    dry_run=(request.dry_run),
                 )
             )
 
@@ -1395,10 +1022,7 @@ class DecisionService:
                 evaluation,
                 DecisionEvaluation,
             ):
-                raise TypeError(
-                    "Decision evaluator returned "
-                    "an invalid result."
-                )
+                raise TypeError("Decision evaluator returned an invalid result.")
 
             evaluation.validate()
 
@@ -1409,163 +1033,59 @@ class DecisionService:
             raise InternalServerAPIError(
                 "Decision evaluation failed.",
                 details={
-                    "operation": (
-                        "decision_evaluation"
-                    ),
-
-                    "incident_id": (
-                        request.incident_id
-                    ),
-
-                    "error_type": (
-                        type(
-                            exc
-                        ).__name__
-                    ),
+                    "operation": ("decision_evaluation"),
+                    "incident_id": (request.incident_id),
+                    "error_type": (type(exc).__name__),
                 },
             ) from exc
 
         created_at = utc_now()
 
-        expires_at = (
-            created_at
-            + timedelta(
-                seconds=(
-                    evaluation.
-                    ttl_seconds
-                )
-            )
-        )
+        expires_at = created_at + timedelta(seconds=(evaluation.ttl_seconds))
 
         record = DecisionRecord(
-            decision_id=(
-                "dec-"
-                + uuid4().hex
-            ),
-
-            incident_id=(
-                request.incident_id
-            ),
-
-            candidate_action=(
-                request.candidate_action
-            ),
-
+            decision_id=("dec-" + uuid4().hex),
+            incident_id=(request.incident_id),
+            candidate_action=(request.candidate_action),
             target=target,
-
-            status=(
-                evaluation.status
-            ),
-
-            reason=(
-                evaluation.reason
-            ),
-
-            risk=(
-                evaluation.risk
-            ),
-
-            approval_required=(
-                evaluation.
-                approval_required
-            ),
-
-            policy_results=(
-                evaluation.
-                policy_results
-            ),
-
-            created_at=(
-                created_at
-            ),
-
-            expires_at=(
-                expires_at
-            ),
-
+            status=(evaluation.status),
+            reason=(evaluation.reason),
+            risk=(evaluation.risk),
+            approval_required=(evaluation.approval_required),
+            policy_results=(evaluation.policy_results),
+            created_at=(created_at),
+            expires_at=(expires_at),
             version=1,
-
-            dry_run=(
-                request.dry_run
-            ),
-
-            tenant_id=(
-                context.tenant_id
-                if context is not None
-                else None
-            ),
-
-            actor_id=(
-                context.actor_id
-                if context is not None
-                else None
-            ),
-
-            correlation_id=(
-                context.correlation_id
-                if context is not None
-                else None
-            ),
-
-            idempotency_key=(
-                idempotency_key
-            ),
-
+            dry_run=(request.dry_run),
+            tenant_id=(context.tenant_id if context is not None else None),
+            actor_id=(context.actor_id if context is not None else None),
+            correlation_id=(context.correlation_id if context is not None else None),
+            idempotency_key=(idempotency_key),
             attributes={
-                **safe_mapping(
-                    evaluation.attributes
-                ),
-
+                **safe_mapping(evaluation.attributes),
                 "target": target,
             },
         )
 
         record.validate()
 
-        stored = await await_if_needed(
-            self.repository.create(
-                record
-            )
-        )
+        stored = await await_if_needed(self.repository.create(record))
 
         logger.info(
             "Decision evaluated",
             extra={
                 "decision": {
-                    "decision_id": (
-                        stored.decision_id
-                    ),
-
-                    "incident_id": (
-                        stored.incident_id
-                    ),
-
-                    "status": (
-                        stored.status
-                    ),
-
-                    "risk": (
-                        stored.risk
-                    ),
-
-                    "approval_required": (
-                        stored.
-                        approval_required
-                    ),
-
-                    "request_id": (
-                        context.request_id
-                        if context
-                        is not None
-                        else None
-                    ),
+                    "decision_id": (stored.decision_id),
+                    "incident_id": (stored.incident_id),
+                    "status": (stored.status),
+                    "risk": (stored.risk),
+                    "approval_required": (stored.approval_required),
+                    "request_id": (context.request_id if context is not None else None),
                 },
             },
         )
 
-        return decision_response(
-            stored
-        )
+        return decision_response(stored)
 
     # ------------------------------------------------------
     # Get
@@ -1575,58 +1095,41 @@ class DecisionService:
         self,
         decision_id: str,
         *,
-        context: Optional[
-            DecisionOperationContext
-        ] = None,
+        context: Optional[DecisionOperationContext] = None,
     ) -> DecisionResponse:
         self._ensure_open()
         self._require_read_enabled()
 
-        normalized = str(
-            decision_id
-        ).strip()
+        normalized = str(decision_id).strip()
 
         if not normalized:
             raise DecisionNotFoundAPIError(
                 details={
-                    "resource": (
-                        "decision"
-                    ),
+                    "resource": ("decision"),
                 },
             )
 
-        decision = await await_if_needed(
-            self.repository.get(
-                normalized
-            )
-        )
+        decision = await await_if_needed(self.repository.get(normalized))
 
         if decision is None:
             raise DecisionNotFoundAPIError(
                 details={
-                    "decision_id": (
-                        normalized
-                    ),
+                    "decision_id": (normalized),
                 },
             )
 
         if (
             context is not None
             and context.tenant_id is not None
-            and decision.tenant_id
-            != context.tenant_id
+            and decision.tenant_id != context.tenant_id
         ):
             raise DecisionNotFoundAPIError(
                 details={
-                    "decision_id": (
-                        normalized
-                    ),
+                    "decision_id": (normalized),
                 },
             )
 
-        return decision_response(
-            decision
-        )
+        return decision_response(decision)
 
     # ------------------------------------------------------
     # Internal record lookup for remediation
@@ -1636,37 +1139,23 @@ class DecisionService:
         self,
         decision_id: str,
         *,
-        tenant_id: Optional[
-            str
-        ] = None,
+        tenant_id: Optional[str] = None,
     ) -> DecisionRecord:
         self._ensure_open()
 
-        decision = await await_if_needed(
-            self.repository.get(
-                decision_id
-            )
-        )
+        decision = await await_if_needed(self.repository.get(decision_id))
 
         if decision is None:
             raise DecisionNotFoundAPIError(
                 details={
-                    "decision_id": (
-                        decision_id
-                    ),
+                    "decision_id": (decision_id),
                 },
             )
 
-        if (
-            tenant_id is not None
-            and decision.tenant_id
-            != tenant_id
-        ):
+        if tenant_id is not None and decision.tenant_id != tenant_id:
             raise DecisionNotFoundAPIError(
                 details={
-                    "decision_id": (
-                        decision_id
-                    ),
+                    "decision_id": (decision_id),
                 },
             )
 
@@ -1679,14 +1168,10 @@ class DecisionService:
     async def list_decisions(
         self,
         *,
-        incident_id: Optional[
-            str
-        ] = None,
+        incident_id: Optional[str] = None,
         limit: int = 100,
         offset: int = 0,
-        context: Optional[
-            DecisionOperationContext
-        ] = None,
+        context: Optional[DecisionOperationContext] = None,
     ) -> Tuple[
         Tuple[
             DecisionResponse,
@@ -1697,35 +1182,17 @@ class DecisionService:
         self._ensure_open()
         self._require_read_enabled()
 
-        records, total = (
-            await await_if_needed(
-                self.repository.list(
-                    incident_id=(
-                        incident_id
-                    ),
-
-                    tenant_id=(
-                        context.tenant_id
-                        if context
-                        is not None
-                        else None
-                    ),
-
-                    limit=limit,
-
-                    offset=offset,
-                )
+        records, total = await await_if_needed(
+            self.repository.list(
+                incident_id=(incident_id),
+                tenant_id=(context.tenant_id if context is not None else None),
+                limit=limit,
+                offset=offset,
             )
         )
 
         return (
-            tuple(
-                decision_response(
-                    record
-                )
-                for record
-                in records
-            ),
+            tuple(decision_response(record) for record in records),
             total,
         )
 
@@ -1737,24 +1204,10 @@ class DecisionService:
         self,
     ) -> Dict[str, Any]:
         return {
-            "status": (
-                "unhealthy"
-                if self._closed
-                else "healthy"
-            ),
-
-            "ready": (
-                not self._closed
-            ),
-
-            "repository": type(
-                self.repository
-            ).__name__,
-
-            "evaluator": type(
-                self.evaluator
-            ).__name__,
-
+            "status": ("unhealthy" if self._closed else "healthy"),
+            "ready": (not self._closed),
+            "repository": type(self.repository).__name__,
+            "evaluator": type(self.evaluator).__name__,
             "persistent": (
                 not isinstance(
                     self.repository,
@@ -1771,46 +1224,20 @@ class DecisionService:
         self,
     ) -> Dict[str, Any]:
         return {
-            "service": (
-                DECISION_SERVICE_NAME
-            ),
-
-            "version": (
-                DECISION_SERVICE_VERSION
-            ),
-
-            "closed": (
-                self._closed
-            ),
-
-            "read_enabled": (
-                self.config.features.
-                decision_read_enabled
-            ),
-
-            "evaluation_enabled": (
-                self.config.features.
-                decision_evaluation_enabled
-            ),
-
-            "repository": type(
-                self.repository
-            ).__name__,
-
-            "evaluator": type(
-                self.evaluator
-            ).__name__,
-
+            "service": (DECISION_SERVICE_NAME),
+            "version": (DECISION_SERVICE_VERSION),
+            "closed": (self._closed),
+            "read_enabled": (self.config.features.decision_read_enabled),
+            "evaluation_enabled": (self.config.features.decision_evaluation_enabled),
+            "repository": type(self.repository).__name__,
+            "evaluator": type(self.evaluator).__name__,
             "persistent_repository": (
                 not isinstance(
                     self.repository,
                     ProcessLocalDecisionRepository,
                 )
             ),
-
-            "infrastructure_execution": (
-                False
-            ),
+            "infrastructure_execution": (False),
         }
 
 
@@ -1818,33 +1245,19 @@ class DecisionService:
 # Construction
 # ------------------------------------------------------------------
 
+
 def create_decision_service(
     *,
     config: APIConfig,
     incident_service: Any,
-    repository: Optional[
-        DecisionRepository
-    ] = None,
-    evaluator: Optional[
-        DecisionEvaluator
-    ] = None,
+    repository: Optional[DecisionRepository] = None,
+    evaluator: Optional[DecisionEvaluator] = None,
 ) -> DecisionService:
     return DecisionService(
         config=config,
-
-        incident_service=(
-            incident_service
-        ),
-
-        repository=(
-            repository
-            or ProcessLocalDecisionRepository()
-        ),
-
-        evaluator=(
-            evaluator
-            or ConservativeDecisionEvaluator()
-        ),
+        incident_service=(incident_service),
+        repository=(repository or ProcessLocalDecisionRepository()),
+        evaluator=(evaluator or ConservativeDecisionEvaluator()),
     )
 
 
@@ -1852,15 +1265,12 @@ def create_decision_service(
 # Dependency registration
 # ------------------------------------------------------------------
 
+
 def register_decision_service(
     dependencies: Any,
     *,
-    repository: Optional[
-        DecisionRepository
-    ] = None,
-    evaluator: Optional[
-        DecisionEvaluator
-    ] = None,
+    repository: Optional[DecisionRepository] = None,
+    evaluator: Optional[DecisionEvaluator] = None,
     replace: bool = False,
 ) -> DecisionService:
     config = getattr(
@@ -1885,52 +1295,32 @@ def register_decision_service(
         raise InternalServerAPIError(
             "API configuration is unavailable.",
             details={
-                "resource": (
-                    "api_config"
-                ),
+                "resource": ("api_config"),
             },
         )
 
-    if not callable(
-        register
-    ):
+    if not callable(register):
         raise InternalServerAPIError(
-            "API service registration is "
-            "unavailable.",
+            "API service registration is unavailable.",
             details={
-                "resource": (
-                    "api_dependencies"
-                ),
+                "resource": ("api_dependencies"),
             },
         )
 
-    if not callable(
-        service_lookup
-    ):
+    if not callable(service_lookup):
         raise InternalServerAPIError(
             "API service lookup is unavailable.",
             details={
-                "resource": (
-                    "api_dependencies"
-                ),
+                "resource": ("api_dependencies"),
             },
         )
 
-    incident_service = (
-        service_lookup(
-            "incidents"
-        )
-    )
+    incident_service = service_lookup("incidents")
 
     service = create_decision_service(
         config=config,
-
-        incident_service=(
-            incident_service
-        ),
-
+        incident_service=(incident_service),
         repository=repository,
-
         evaluator=evaluator,
     )
 
@@ -1950,27 +1340,19 @@ def register_decision_service(
 __all__ = [
     "DECISION_SERVICE_NAME",
     "DECISION_SERVICE_VERSION",
-
     "DEFAULT_DECISION_TTL_SECONDS",
-
     "DecisionOperationContext",
-
     "PolicyResult",
     "DecisionEvaluation",
     "DecisionRecord",
-
     "DecisionRepository",
     "ProcessLocalDecisionRepository",
-
     "DecisionEvaluator",
     "ConservativeDecisionEvaluator",
-
     "safe_mapping",
     "decision_response",
     "resolve_incident",
-
     "DecisionService",
-
     "create_decision_service",
     "register_decision_service",
 ]

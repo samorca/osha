@@ -1,5 +1,6 @@
 psutil
-torch
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.9.1+cpu
 transformers
 pytest
 pytest-cov
@@ -10,3 +11,4 @@ matplotlib
 kubernetes
 openstacksdk
 fastapi
+uvicorn

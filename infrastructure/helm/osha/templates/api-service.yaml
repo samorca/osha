@@ -1,0 +1,70 @@
+{{/*
+=====================================================================
+OSHA API Service
+=====================================================================
+
+Provides stable Kubernetes service discovery for
+the OSHA API Pods.
+
+Public exposure is intentionally handled separately
+through an Ingress, Gateway, or reverse proxy.
+*/}}
+
+{{- if .Values.api.enabled }}
+---
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: {{ include "osha.api.fullname" . }}
+  namespace: {{ include "osha.namespace" . }}
+
+  labels:
+    {{- include "osha.api.labels" . | nindent 4 }}
+
+  annotations:
+    osha.atonixcorp.io/description: >-
+      Internal Kubernetes Service for the OSHA API.
+
+
+spec:
+  # -----------------------------------------------------------------
+  # Service type
+  # -----------------------------------------------------------------
+
+  type: {{ .Values.api.service.type }}
+
+
+  # -----------------------------------------------------------------
+  # Pod selection
+  # -----------------------------------------------------------------
+  #
+  # Must exactly match the stable selector labels
+  # rendered by api-deployment.yaml.
+  # -----------------------------------------------------------------
+
+  selector:
+    {{- include "osha.api.selectorLabels" . | nindent 4 }}
+
+
+  # -----------------------------------------------------------------
+  # Ports
+  # -----------------------------------------------------------------
+
+  ports:
+    - name: http
+      protocol: TCP
+
+      # Client-facing Service port inside the cluster.
+      port: {{ .Values.api.service.port }}
+
+      # Named port from the API container.
+      targetPort: http
+
+
+  # -----------------------------------------------------------------
+  # Session behavior
+  # -----------------------------------------------------------------
+
+  sessionAffinity: None
+{{- end }}

@@ -51,6 +51,7 @@ OBSERVABILITY_SCHEMA_VERSION = "1"
 # Signal kinds
 # ---------------------------------------------------------------
 
+
 class SignalKind(
     str,
     Enum,
@@ -69,6 +70,7 @@ class SignalKind(
 # ---------------------------------------------------------------
 # Severity
 # ---------------------------------------------------------------
+
 
 class Severity(
     str,
@@ -89,6 +91,7 @@ class Severity(
 # Health status
 # ---------------------------------------------------------------
 
+
 class HealthStatus(
     str,
     Enum,
@@ -106,6 +109,7 @@ class HealthStatus(
 # Metric type
 # ---------------------------------------------------------------
 
+
 class MetricType(
     str,
     Enum,
@@ -121,6 +125,7 @@ class MetricType(
 # Trace span status
 # ---------------------------------------------------------------
 
+
 class SpanStatus(
     str,
     Enum,
@@ -135,6 +140,7 @@ class SpanStatus(
 # ---------------------------------------------------------------
 # Observability context
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class ObservabilityContext:
@@ -153,43 +159,27 @@ class ObservabilityContext:
 
     service: str
 
-    component: Optional[
-        str
-    ] = None
+    component: Optional[str] = None
 
-    runtime_id: Optional[
-        str
-    ] = None
+    runtime_id: Optional[str] = None
 
-    worker_id: Optional[
-        str
-    ] = None
+    worker_id: Optional[str] = None
 
-    orchestration_run_id: Optional[
-        str
-    ] = None
+    orchestration_run_id: Optional[str] = None
 
-    job_id: Optional[
-        str
-    ] = None
+    job_id: Optional[str] = None
 
-    correlation_id: Optional[
-        str
-    ] = None
+    correlation_id: Optional[str] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
     ) -> "ObservabilityContext":
-        environment_id(
-            self.environment_id
-        )
+        environment_id(self.environment_id)
 
         required_string(
             self.service,
@@ -212,38 +202,22 @@ class ObservabilityContext:
         self.finalize()
 
         return {
-            "environment_id": (
-                self.environment_id
-            ),
+            "environment_id": (self.environment_id),
             "service": self.service,
-            "component": (
-                self.component
-            ),
-            "runtime_id": (
-                self.runtime_id
-            ),
-            "worker_id": (
-                self.worker_id
-            ),
-            "orchestration_run_id": (
-                self.
-                orchestration_run_id
-            ),
+            "component": (self.component),
+            "runtime_id": (self.runtime_id),
+            "worker_id": (self.worker_id),
+            "orchestration_run_id": (self.orchestration_run_id),
             "job_id": self.job_id,
-            "correlation_id": (
-                self.correlation_id
-            ),
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
+            "correlation_id": (self.correlation_id),
+            "attributes": (to_json_safe(self.attributes)),
         }
 
 
 # ---------------------------------------------------------------
 # Application event
 # ---------------------------------------------------------------
+
 
 @dataclass
 class ObservabilityEvent:
@@ -256,42 +230,24 @@ class ObservabilityEvent:
 
     context: ObservabilityContext
 
-    severity: str = (
-        Severity.INFO.value
-    )
+    severity: str = Severity.INFO.value
 
-    message: Optional[
-        str
-    ] = None
+    message: Optional[str] = None
 
-    event_type: Optional[
-        str
-    ] = None
+    event_type: Optional[str] = None
 
-    reference_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    reference_ids: List[str] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    occurred_at: str = field(
-        default_factory=utc_now
-    )
+    occurred_at: str = field(default_factory=utc_now)
 
-    event_id: Optional[
-        str
-    ] = None
+    event_id: Optional[str] = None
 
-    schema_version: str = (
-        OBSERVABILITY_SCHEMA_VERSION
-    )
+    schema_version: str = OBSERVABILITY_SCHEMA_VERSION
 
     def finalize(
         self,
@@ -304,29 +260,13 @@ class ObservabilityEvent:
             maximum_length=256,
         )
 
-        if (
-            self.severity
-            not in {
-                item.value
-                for item
-                in Severity
-            }
-        ):
-            raise ValueError(
-                "Unknown event severity: "
-                f"{self.severity}"
-            )
+        if self.severity not in {item.value for item in Severity}:
+            raise ValueError(f"Unknown event severity: {self.severity}")
 
-        self.reference_ids = (
-            unique_strings(
-                self.reference_ids
-            )
-        )
+        self.reference_ids = unique_strings(self.reference_ids)
 
         if not self.event_id:
-            self.event_id = random_id(
-                "observability:event"
-            )
+            self.event_id = random_id("observability:event")
 
         return self
 
@@ -336,45 +276,24 @@ class ObservabilityEvent:
         self.finalize()
 
         return {
-            "schema_version": (
-                self.schema_version
-            ),
-            "event_id": (
-                self.event_id
-            ),
-            "kind": (
-                SignalKind.EVENT.value
-            ),
+            "schema_version": (self.schema_version),
+            "event_id": (self.event_id),
+            "kind": (SignalKind.EVENT.value),
             "name": self.name,
-            "severity": (
-                self.severity
-            ),
-            "message": (
-                self.message
-            ),
-            "event_type": (
-                self.event_type
-            ),
-            "context": (
-                self.context.to_dict()
-            ),
-            "reference_ids": (
-                self.reference_ids
-            ),
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
-            "occurred_at": (
-                self.occurred_at
-            ),
+            "severity": (self.severity),
+            "message": (self.message),
+            "event_type": (self.event_type),
+            "context": (self.context.to_dict()),
+            "reference_ids": (self.reference_ids),
+            "attributes": (to_json_safe(self.attributes)),
+            "occurred_at": (self.occurred_at),
         }
 
 
 # ---------------------------------------------------------------
 # Log record
 # ---------------------------------------------------------------
+
 
 @dataclass
 class LogRecord:
@@ -389,40 +308,24 @@ class LogRecord:
 
     context: ObservabilityContext
 
-    severity: str = (
-        Severity.INFO.value
-    )
+    severity: str = Severity.INFO.value
 
     logger: str = "osha"
 
-    error_type: Optional[
-        str
-    ] = None
+    error_type: Optional[str] = None
 
-    reference_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    reference_ids: List[str] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    occurred_at: str = field(
-        default_factory=utc_now
-    )
+    occurred_at: str = field(default_factory=utc_now)
 
-    log_id: Optional[
-        str
-    ] = None
+    log_id: Optional[str] = None
 
-    schema_version: str = (
-        OBSERVABILITY_SCHEMA_VERSION
-    )
+    schema_version: str = OBSERVABILITY_SCHEMA_VERSION
 
     def finalize(
         self,
@@ -441,29 +344,13 @@ class LogRecord:
             maximum_length=256,
         )
 
-        if (
-            self.severity
-            not in {
-                item.value
-                for item
-                in Severity
-            }
-        ):
-            raise ValueError(
-                "Unknown log severity: "
-                f"{self.severity}"
-            )
+        if self.severity not in {item.value for item in Severity}:
+            raise ValueError(f"Unknown log severity: {self.severity}")
 
-        self.reference_ids = (
-            unique_strings(
-                self.reference_ids
-            )
-        )
+        self.reference_ids = unique_strings(self.reference_ids)
 
         if not self.log_id:
-            self.log_id = random_id(
-                "observability:log"
-            )
+            self.log_id = random_id("observability:log")
 
         return self
 
@@ -473,41 +360,24 @@ class LogRecord:
         self.finalize()
 
         return {
-            "schema_version": (
-                self.schema_version
-            ),
+            "schema_version": (self.schema_version),
             "log_id": self.log_id,
-            "kind": (
-                SignalKind.LOG.value
-            ),
+            "kind": (SignalKind.LOG.value),
             "message": self.message,
-            "severity": (
-                self.severity
-            ),
+            "severity": (self.severity),
             "logger": self.logger,
-            "error_type": (
-                self.error_type
-            ),
-            "context": (
-                self.context.to_dict()
-            ),
-            "reference_ids": (
-                self.reference_ids
-            ),
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
-            "occurred_at": (
-                self.occurred_at
-            ),
+            "error_type": (self.error_type),
+            "context": (self.context.to_dict()),
+            "reference_ids": (self.reference_ids),
+            "attributes": (to_json_safe(self.attributes)),
+            "occurred_at": (self.occurred_at),
         }
 
 
 # ---------------------------------------------------------------
 # Metric sample
 # ---------------------------------------------------------------
+
 
 @dataclass
 class MetricSample:
@@ -522,32 +392,20 @@ class MetricSample:
 
     context: ObservabilityContext
 
-    metric_type: str = (
-        MetricType.GAUGE.value
-    )
+    metric_type: str = MetricType.GAUGE.value
 
-    unit: Optional[
-        str
-    ] = None
+    unit: Optional[str] = None
 
     labels: Dict[
         str,
         str,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    observed_at: str = field(
-        default_factory=utc_now
-    )
+    observed_at: str = field(default_factory=utc_now)
 
-    metric_id: Optional[
-        str
-    ] = None
+    metric_id: Optional[str] = None
 
-    schema_version: str = (
-        OBSERVABILITY_SCHEMA_VERSION
-    )
+    schema_version: str = OBSERVABILITY_SCHEMA_VERSION
 
     def finalize(
         self,
@@ -565,51 +423,22 @@ class MetricSample:
             name="metric value",
         )
 
-        if (
-            self.metric_type
-            not in {
-                item.value
-                for item
-                in MetricType
-            }
-        ):
-            raise ValueError(
-                "Unknown metric type: "
-                f"{self.metric_type}"
-            )
+        if self.metric_type not in {item.value for item in MetricType}:
+            raise ValueError(f"Unknown metric type: {self.metric_type}")
 
-        self.labels = {
-            str(key): str(value)
-            for key, value
-            in self.labels.items()
-        }
+        self.labels = {str(key): str(value) for key, value in self.labels.items()}
 
         if not self.metric_id:
-            self.metric_id = (
-                deterministic_id(
-                    "observability:metric",
-                    {
-                        "name": self.name,
-                        "environment_id": (
-                            self.context.
-                            environment_id
-                        ),
-                        "service": (
-                            self.context.
-                            service
-                        ),
-                        "component": (
-                            self.context.
-                            component
-                        ),
-                        "labels": (
-                            self.labels
-                        ),
-                        "observed_at": (
-                            self.observed_at
-                        ),
-                    },
-                )
+            self.metric_id = deterministic_id(
+                "observability:metric",
+                {
+                    "name": self.name,
+                    "environment_id": (self.context.environment_id),
+                    "service": (self.context.service),
+                    "component": (self.context.component),
+                    "labels": (self.labels),
+                    "observed_at": (self.observed_at),
+                },
             )
 
         return self
@@ -620,36 +449,23 @@ class MetricSample:
         self.finalize()
 
         return {
-            "schema_version": (
-                self.schema_version
-            ),
-            "metric_id": (
-                self.metric_id
-            ),
-            "kind": (
-                SignalKind.METRIC.value
-            ),
+            "schema_version": (self.schema_version),
+            "metric_id": (self.metric_id),
+            "kind": (SignalKind.METRIC.value),
             "name": self.name,
             "value": self.value,
-            "metric_type": (
-                self.metric_type
-            ),
+            "metric_type": (self.metric_type),
             "unit": self.unit,
-            "labels": dict(
-                self.labels
-            ),
-            "context": (
-                self.context.to_dict()
-            ),
-            "observed_at": (
-                self.observed_at
-            ),
+            "labels": dict(self.labels),
+            "context": (self.context.to_dict()),
+            "observed_at": (self.observed_at),
         }
 
 
 # ---------------------------------------------------------------
 # Trace span
 # ---------------------------------------------------------------
+
 
 @dataclass
 class TraceSpan:
@@ -664,36 +480,22 @@ class TraceSpan:
 
     trace_id: str
 
-    parent_span_id: Optional[
-        str
-    ] = None
+    parent_span_id: Optional[str] = None
 
-    span_id: Optional[
-        str
-    ] = None
+    span_id: Optional[str] = None
 
-    status: str = (
-        SpanStatus.UNSET.value
-    )
+    status: str = SpanStatus.UNSET.value
 
-    started_at: str = field(
-        default_factory=utc_now
-    )
+    started_at: str = field(default_factory=utc_now)
 
-    ended_at: Optional[
-        str
-    ] = None
+    ended_at: Optional[str] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    schema_version: str = (
-        OBSERVABILITY_SCHEMA_VERSION
-    )
+    schema_version: str = OBSERVABILITY_SCHEMA_VERSION
 
     def finalize(
         self,
@@ -712,23 +514,11 @@ class TraceSpan:
             maximum_length=256,
         )
 
-        if (
-            self.status
-            not in {
-                item.value
-                for item
-                in SpanStatus
-            }
-        ):
-            raise ValueError(
-                "Unknown span status: "
-                f"{self.status}"
-            )
+        if self.status not in {item.value for item in SpanStatus}:
+            raise ValueError(f"Unknown span status: {self.status}")
 
         if not self.span_id:
-            self.span_id = random_id(
-                "observability:span"
-            )
+            self.span_id = random_id("observability:span")
 
         return self
 
@@ -738,41 +528,24 @@ class TraceSpan:
         self.finalize()
 
         return {
-            "schema_version": (
-                self.schema_version
-            ),
-            "kind": (
-                SignalKind.TRACE.value
-            ),
-            "trace_id": (
-                self.trace_id
-            ),
+            "schema_version": (self.schema_version),
+            "kind": (SignalKind.TRACE.value),
+            "trace_id": (self.trace_id),
             "span_id": self.span_id,
-            "parent_span_id": (
-                self.parent_span_id
-            ),
+            "parent_span_id": (self.parent_span_id),
             "name": self.name,
             "status": self.status,
-            "context": (
-                self.context.to_dict()
-            ),
-            "started_at": (
-                self.started_at
-            ),
-            "ended_at": (
-                self.ended_at
-            ),
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
+            "context": (self.context.to_dict()),
+            "started_at": (self.started_at),
+            "ended_at": (self.ended_at),
+            "attributes": (to_json_safe(self.attributes)),
         }
 
 
 # ---------------------------------------------------------------
 # Health observation
 # ---------------------------------------------------------------
+
 
 @dataclass
 class HealthObservation:
@@ -790,36 +563,22 @@ class HealthObservation:
 
     context: ObservabilityContext
 
-    message: Optional[
-        str
-    ] = None
+    message: Optional[str] = None
 
     required: bool = True
 
-    evidence_reference_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    evidence_reference_ids: List[str] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    observed_at: str = field(
-        default_factory=utc_now
-    )
+    observed_at: str = field(default_factory=utc_now)
 
-    observation_id: Optional[
-        str
-    ] = None
+    observation_id: Optional[str] = None
 
-    schema_version: str = (
-        OBSERVABILITY_SCHEMA_VERSION
-    )
+    schema_version: str = OBSERVABILITY_SCHEMA_VERSION
 
     def finalize(
         self,
@@ -832,32 +591,13 @@ class HealthObservation:
             maximum_length=256,
         )
 
-        if (
-            self.status
-            not in {
-                item.value
-                for item
-                in HealthStatus
-            }
-        ):
-            raise ValueError(
-                "Unknown health status: "
-                f"{self.status}"
-            )
+        if self.status not in {item.value for item in HealthStatus}:
+            raise ValueError(f"Unknown health status: {self.status}")
 
-        self.evidence_reference_ids = (
-            unique_strings(
-                self.
-                evidence_reference_ids
-            )
-        )
+        self.evidence_reference_ids = unique_strings(self.evidence_reference_ids)
 
         if not self.observation_id:
-            self.observation_id = (
-                random_id(
-                    "observability:health"
-                )
-            )
+            self.observation_id = random_id("observability:health")
 
         return self
 
@@ -867,42 +607,24 @@ class HealthObservation:
         self.finalize()
 
         return {
-            "schema_version": (
-                self.schema_version
-            ),
-            "observation_id": (
-                self.observation_id
-            ),
-            "kind": (
-                SignalKind.HEALTH.value
-            ),
-            "component": (
-                self.component
-            ),
+            "schema_version": (self.schema_version),
+            "observation_id": (self.observation_id),
+            "kind": (SignalKind.HEALTH.value),
+            "component": (self.component),
             "status": self.status,
             "required": self.required,
             "message": self.message,
-            "context": (
-                self.context.to_dict()
-            ),
-            "evidence_reference_ids": (
-                self.
-                evidence_reference_ids
-            ),
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
-            "observed_at": (
-                self.observed_at
-            ),
+            "context": (self.context.to_dict()),
+            "evidence_reference_ids": (self.evidence_reference_ids),
+            "attributes": (to_json_safe(self.attributes)),
+            "observed_at": (self.observed_at),
         }
 
 
 # ---------------------------------------------------------------
 # Observability batch
 # ---------------------------------------------------------------
+
 
 @dataclass
 class ObservabilityBatch:
@@ -914,83 +636,37 @@ class ObservabilityBatch:
     observability modules.
     """
 
-    events: List[
-        ObservabilityEvent
-    ] = field(
-        default_factory=list
-    )
+    events: List[ObservabilityEvent] = field(default_factory=list)
 
-    logs: List[
-        LogRecord
-    ] = field(
-        default_factory=list
-    )
+    logs: List[LogRecord] = field(default_factory=list)
 
-    metrics: List[
-        MetricSample
-    ] = field(
-        default_factory=list
-    )
+    metrics: List[MetricSample] = field(default_factory=list)
 
-    spans: List[
-        TraceSpan
-    ] = field(
-        default_factory=list
-    )
+    spans: List[TraceSpan] = field(default_factory=list)
 
-    health: List[
-        HealthObservation
-    ] = field(
-        default_factory=list
-    )
+    health: List[HealthObservation] = field(default_factory=list)
 
-    generated_at: str = field(
-        default_factory=utc_now
-    )
+    generated_at: str = field(default_factory=utc_now)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    schema_version: str = (
-        OBSERVABILITY_SCHEMA_VERSION
-    )
+    schema_version: str = OBSERVABILITY_SCHEMA_VERSION
 
     def finalize(
         self,
     ) -> "ObservabilityBatch":
-        self.events = [
-            item.finalize()
-            for item
-            in self.events
-        ]
+        self.events = [item.finalize() for item in self.events]
 
-        self.logs = [
-            item.finalize()
-            for item
-            in self.logs
-        ]
+        self.logs = [item.finalize() for item in self.logs]
 
-        self.metrics = [
-            item.finalize()
-            for item
-            in self.metrics
-        ]
+        self.metrics = [item.finalize() for item in self.metrics]
 
-        self.spans = [
-            item.finalize()
-            for item
-            in self.spans
-        ]
+        self.spans = [item.finalize() for item in self.spans]
 
-        self.health = [
-            item.finalize()
-            for item
-            in self.health
-        ]
+        self.health = [item.finalize() for item in self.health]
 
         return self
 
@@ -1000,59 +676,21 @@ class ObservabilityBatch:
         self.finalize()
 
         return {
-            "schema_version": (
-                self.schema_version
-            ),
-            "generated_at": (
-                self.generated_at
-            ),
+            "schema_version": (self.schema_version),
+            "generated_at": (self.generated_at),
             "counts": {
-                "events": len(
-                    self.events
-                ),
-                "logs": len(
-                    self.logs
-                ),
-                "metrics": len(
-                    self.metrics
-                ),
-                "spans": len(
-                    self.spans
-                ),
-                "health": len(
-                    self.health
-                ),
+                "events": len(self.events),
+                "logs": len(self.logs),
+                "metrics": len(self.metrics),
+                "spans": len(self.spans),
+                "health": len(self.health),
             },
-            "events": [
-                item.to_dict()
-                for item
-                in self.events
-            ],
-            "logs": [
-                item.to_dict()
-                for item
-                in self.logs
-            ],
-            "metrics": [
-                item.to_dict()
-                for item
-                in self.metrics
-            ],
-            "spans": [
-                item.to_dict()
-                for item
-                in self.spans
-            ],
-            "health": [
-                item.to_dict()
-                for item
-                in self.health
-            ],
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
+            "events": [item.to_dict() for item in self.events],
+            "logs": [item.to_dict() for item in self.logs],
+            "metrics": [item.to_dict() for item in self.metrics],
+            "spans": [item.to_dict() for item in self.spans],
+            "health": [item.to_dict() for item in self.health],
+            "attributes": (to_json_safe(self.attributes)),
         }
 
 
@@ -1062,20 +700,16 @@ class ObservabilityBatch:
 
 __all__ = [
     "OBSERVABILITY_SCHEMA_VERSION",
-
     "SignalKind",
     "Severity",
     "HealthStatus",
     "MetricType",
     "SpanStatus",
-
     "ObservabilityContext",
-
     "ObservabilityEvent",
     "LogRecord",
     "MetricSample",
     "TraceSpan",
     "HealthObservation",
-
     "ObservabilityBatch",
 ]

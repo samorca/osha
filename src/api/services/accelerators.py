@@ -67,6 +67,7 @@ from src.accelerators import (
 
 from src.accelerators.cpu.metrics import (
     CPUMetricsCollector,
+    CPUMetricsSnapshot,
 )
 
 from src.accelerators.cpu.optimizer import (
@@ -75,6 +76,7 @@ from src.accelerators.cpu.optimizer import (
 
 from src.accelerators.cuda.metrics import (
     CUDAMetricsCollector,
+    CUDAMetricsSnapshot,
 )
 
 from src.accelerators.cuda.optimizer import (
@@ -89,6 +91,7 @@ from src.accelerators.optimization import (
 
 from src.accelerators.rocm.metrics import (
     ROCmMetricsCollector,
+    ROCmMetricsSnapshot,
 )
 
 from src.accelerators.rocm.optimizer import (
@@ -106,6 +109,7 @@ from src.api.config import (
 )
 
 from src.api.errors import (
+    APIException,
     AcceleratorAPIError,
     AcceleratorNotFoundAPIError,
     AcceleratorOptimizationAPIError,
@@ -134,18 +138,14 @@ from src.api.schema import (
 # Logging
 # ------------------------------------------------------------------
 
-logger = logging.getLogger(
-    __name__
-)
+logger = logging.getLogger(__name__)
 
 
 # ------------------------------------------------------------------
 # Service identity
 # ------------------------------------------------------------------
 
-ACCELERATOR_SERVICE_NAME = (
-    "accelerators"
-)
+ACCELERATOR_SERVICE_NAME = "accelerators"
 
 ACCELERATOR_SERVICE_VERSION = "1"
 
@@ -153,6 +153,7 @@ ACCELERATOR_SERVICE_VERSION = "1"
 # ------------------------------------------------------------------
 # Operation context
 # ------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class AcceleratorOperationContext:
@@ -175,27 +176,17 @@ class AcceleratorOperationContext:
         self,
     ) -> Dict[str, Any]:
         return {
-            "request_id": (
-                self.request_id
-            ),
-
-            "actor_id": (
-                self.actor_id
-            ),
-
-            "tenant_id": (
-                self.tenant_id
-            ),
-
-            "correlation_id": (
-                self.correlation_id
-            ),
+            "request_id": (self.request_id),
+            "actor_id": (self.actor_id),
+            "tenant_id": (self.tenant_id),
+            "correlation_id": (self.correlation_id),
         }
 
 
 # ------------------------------------------------------------------
 # Mapping helpers
 # ------------------------------------------------------------------
+
 
 def _mapping(
     value: Any,
@@ -207,9 +198,7 @@ def _mapping(
         value,
         Mapping,
     ):
-        return dict(
-            value
-        )
+        return dict(value)
 
     converter = getattr(
         value,
@@ -217,18 +206,14 @@ def _mapping(
         None,
     )
 
-    if callable(
-        converter
-    ):
+    if callable(converter):
         result = converter()
 
         if isinstance(
             result,
             Mapping,
         ):
-            return dict(
-                result
-            )
+            return dict(result)
 
     return {}
 
@@ -264,26 +249,15 @@ def _string_list(
         value,
         str,
     ):
-        return [
-            value
-        ]
+        return [value]
 
     if isinstance(
         value,
         Iterable,
     ):
-        return [
-            str(
-                item
-            )
-            for item in value
-        ]
+        return [str(item) for item in value]
 
-    return [
-        str(
-            value
-        )
-    ]
+    return [str(value)]
 
 
 def _optional_datetime(
@@ -331,9 +305,7 @@ def _device_available(
     )
 
     if value is not None:
-        return bool(
-            value
-        )
+        return bool(value)
 
     state = str(
         _value(
@@ -360,9 +332,7 @@ def _device_degraded(
     )
 
     if value is not None:
-        return bool(
-            value
-        )
+        return bool(value)
 
     return (
         str(
@@ -386,108 +356,61 @@ def _device_accelerator(
     )
 
     if value is not None:
-        return bool(
-            value
-        )
+        return bool(value)
 
-    return (
-        str(
-            _value(
-                device,
-                "kind",
-                "",
-            )
-        ).lower()
-        in {
-            AcceleratorKind.CUDA.value,
-            AcceleratorKind.ROCM.value,
-        }
-    )
+    return str(
+        _value(
+            device,
+            "kind",
+            "",
+        )
+    ).lower() in {
+        AcceleratorKind.CUDA.value,
+        AcceleratorKind.ROCM.value,
+    }
 
 
 # ------------------------------------------------------------------
 # Public response conversion
 # ------------------------------------------------------------------
 
+
 def memory_response(
     value: Any,
 ) -> AcceleratorMemoryResponse:
-    source = _mapping(
-        value
-    )
+    source = _mapping(value)
 
-    total = source.get(
-        "total_bytes"
-    )
+    total = source.get("total_bytes")
 
-    free = source.get(
-        "free_bytes"
-    )
+    free = source.get("free_bytes")
 
-    used = source.get(
-        "used_bytes"
-    )
+    used = source.get("used_bytes")
 
-    if (
-        used is None
-        and total is not None
-        and free is not None
-    ):
+    if used is None and total is not None and free is not None:
         used = max(
             0,
-            int(
-                total
-            )
-            - int(
-                free
-            ),
+            int(total) - int(free),
         )
 
-    utilization_ratio = source.get(
-        "utilization_ratio"
-    )
+    utilization_ratio = source.get("utilization_ratio")
 
-    if (
-        utilization_ratio is None
-        and total
-        and used is not None
-    ):
-        utilization_ratio = (
-            float(
-                used
-            )
-            / float(
-                total
-            )
-        )
+    if utilization_ratio is None and total and used is not None:
+        utilization_ratio = float(used) / float(total)
 
     return AcceleratorMemoryResponse(
         total_bytes=total,
-
         free_bytes=free,
-
         used_bytes=used,
-
-        allocated_bytes=source.get(
-            "allocated_bytes"
-        ),
-
-        reserved_bytes=source.get(
-            "reserved_bytes"
-        ),
-
-        utilization_ratio=(
-            utilization_ratio
-        ),
+        allocated_bytes=source.get("allocated_bytes"),
+        reserved_bytes=source.get("reserved_bytes"),
+        utilization_ratio=(utilization_ratio),
     )
 
 
 def device_response(
     device: Any,
 ) -> AcceleratorDeviceResponse:
-    source = _mapping(
-        device
-    )
+    source = _mapping(device)
 
     attributes = _mapping(
         source.get(
@@ -511,7 +434,6 @@ def device_response(
                 ),
             )
         ),
-
         kind=str(
             source.get(
                 "kind",
@@ -522,7 +444,6 @@ def device_response(
                 ),
             )
         ),
-
         runtime_device=str(
             source.get(
                 "runtime_device",
@@ -533,7 +454,6 @@ def device_response(
                 ),
             )
         ),
-
         index=source.get(
             "index",
             _value(
@@ -542,7 +462,6 @@ def device_response(
                 None,
             ),
         ),
-
         name=source.get(
             "name",
             _value(
@@ -551,7 +470,6 @@ def device_response(
                 None,
             ),
         ),
-
         state=str(
             source.get(
                 "state",
@@ -562,19 +480,9 @@ def device_response(
                 ),
             )
         ),
-
-        available=_device_available(
-            device
-        ),
-
-        degraded=_device_degraded(
-            device
-        ),
-
-        accelerator=_device_accelerator(
-            device
-        ),
-
+        available=_device_available(device),
+        degraded=_device_degraded(device),
+        accelerator=_device_accelerator(device),
         memory=memory_response(
             source.get(
                 "memory",
@@ -585,7 +493,6 @@ def device_response(
                 ),
             )
         ),
-
         capabilities=_string_list(
             source.get(
                 "capabilities",
@@ -596,7 +503,6 @@ def device_response(
                 ),
             )
         ),
-
         supported_precisions=_string_list(
             source.get(
                 "supported_precisions",
@@ -607,7 +513,6 @@ def device_response(
                 ),
             )
         ),
-
         architecture=source.get(
             "architecture",
             _value(
@@ -616,7 +521,6 @@ def device_response(
                 None,
             ),
         ),
-
         compute_capability=source.get(
             "compute_capability",
             _value(
@@ -625,7 +529,6 @@ def device_response(
                 None,
             ),
         ),
-
         vendor=source.get(
             "vendor",
             _value(
@@ -634,7 +537,6 @@ def device_response(
                 None,
             ),
         ),
-
         runtime_version=source.get(
             "runtime_version",
             _value(
@@ -643,7 +545,6 @@ def device_response(
                 None,
             ),
         ),
-
         attributes=attributes,
     )
 
@@ -660,9 +561,7 @@ def inventory_devices(
     if devices is None:
         return ()
 
-    return tuple(
-        devices
-    )
+    return tuple(devices)
 
 
 def inventory_response(
@@ -670,9 +569,7 @@ def inventory_response(
     *,
     request_id: Optional[str] = None,
 ) -> AcceleratorInventoryResponse:
-    devices = inventory_devices(
-        inventory
-    )
+    devices = inventory_devices(inventory)
 
     failures = _value(
         inventory,
@@ -683,63 +580,30 @@ def inventory_response(
     safe_failures = []
 
     for failure in failures or ():
-        value = _mapping(
-            failure
-        )
+        value = _mapping(failure)
 
         safe_failures.append(
             {
-                "backend": value.get(
-                    "backend"
-                ),
-
-                "error_type": value.get(
-                    "error_type"
-                ),
-
+                "backend": value.get("backend"),
+                "error_type": value.get("error_type"),
                 "message": value.get(
                     "message",
-                    (
-                        "Accelerator backend "
-                        "discovery failed."
-                    ),
+                    ("Accelerator backend discovery failed."),
                 ),
             }
         )
 
     return AcceleratorInventoryResponse(
-        devices=[
-            device_response(
-                device
-            )
-            for device in devices
-        ],
-
-        device_count=len(
-            devices
-        ),
-
+        devices=[device_response(device) for device in devices],
+        device_count=len(devices),
         available_device_count=sum(
-            1
-            for device in devices
-            if _device_available(
-                device
-            )
+            1 for device in devices if _device_available(device)
         ),
-
         accelerator_device_count=sum(
             1
             for device in devices
-            if (
-                _device_available(
-                    device
-                )
-                and _device_accelerator(
-                    device
-                )
-            )
+            if (_device_available(device) and _device_accelerator(device))
         ),
-
         detected_at=_optional_datetime(
             _value(
                 inventory,
@@ -747,9 +611,7 @@ def inventory_response(
                 None,
             )
         ),
-
         failures=safe_failures,
-
         metadata=APIResponseMetadata(
             request_id=request_id,
         ),
@@ -761,9 +623,7 @@ def selection_response(
     *,
     request_id: Optional[str] = None,
 ) -> AcceleratorSelectionResponse:
-    selection_map = _mapping(
-        selection
-    )
+    selection_map = _mapping(selection)
 
     rejected = selection_map.get(
         "rejected_candidates",
@@ -771,34 +631,19 @@ def selection_response(
     )
 
     safe_rejected = {
-        str(
-            device_id
-        ): _string_list(
-            reasons
-        )
-        for device_id, reasons
-        in dict(
-            rejected
-            or {}
-        ).items()
+        str(device_id): _string_list(reasons)
+        for device_id, reasons in dict(rejected or {}).items()
     }
 
     return AcceleratorSelectionResponse(
-        device=device_response(
-            selection.device
-        ),
-
+        device=device_response(selection.device),
         reason=str(
             _value(
                 selection,
                 "reason",
-                (
-                    "Accelerator selected "
-                    "successfully."
-                ),
+                ("Accelerator selected successfully."),
             )
         ),
-
         fallback_used=bool(
             _value(
                 selection,
@@ -806,7 +651,6 @@ def selection_response(
                 False,
             )
         ),
-
         candidates_considered=_string_list(
             _value(
                 selection,
@@ -814,11 +658,7 @@ def selection_response(
                 (),
             )
         ),
-
-        rejected_candidates=(
-            safe_rejected
-        ),
-
+        rejected_candidates=(safe_rejected),
         selected_at=_optional_datetime(
             _value(
                 selection,
@@ -826,7 +666,6 @@ def selection_response(
                 None,
             )
         ),
-
         metadata=APIResponseMetadata(
             request_id=request_id,
         ),
@@ -836,9 +675,7 @@ def selection_response(
 def recommendation_response(
     recommendation: Any,
 ) -> OptimizationRecommendationResponse:
-    source = _mapping(
-        recommendation
-    )
+    source = _mapping(recommendation)
 
     return OptimizationRecommendationResponse(
         kind=str(
@@ -851,7 +688,6 @@ def recommendation_response(
                 ),
             )
         ),
-
         title=str(
             source.get(
                 "title",
@@ -862,7 +698,6 @@ def recommendation_response(
                 ),
             )
         ),
-
         reason=str(
             source.get(
                 "reason",
@@ -873,7 +708,6 @@ def recommendation_response(
                 ),
             )
         ),
-
         current_value=source.get(
             "current_value",
             _value(
@@ -882,7 +716,6 @@ def recommendation_response(
                 None,
             ),
         ),
-
         recommended_value=source.get(
             "recommended_value",
             _value(
@@ -891,7 +724,6 @@ def recommendation_response(
                 None,
             ),
         ),
-
         priority=str(
             source.get(
                 "priority",
@@ -902,7 +734,6 @@ def recommendation_response(
                 ),
             )
         ),
-
         confidence=str(
             source.get(
                 "confidence",
@@ -913,7 +744,6 @@ def recommendation_response(
                 ),
             )
         ),
-
         disposition=str(
             source.get(
                 "disposition",
@@ -924,7 +754,6 @@ def recommendation_response(
                 ),
             )
         ),
-
         expected_effect=source.get(
             "expected_effect",
             _value(
@@ -933,7 +762,6 @@ def recommendation_response(
                 None,
             ),
         ),
-
         risks=_string_list(
             source.get(
                 "risks",
@@ -944,7 +772,6 @@ def recommendation_response(
                 ),
             )
         ),
-
         prerequisites=_string_list(
             source.get(
                 "prerequisites",
@@ -955,7 +782,6 @@ def recommendation_response(
                 ),
             )
         ),
-
         evidence=_string_list(
             source.get(
                 "evidence",
@@ -966,7 +792,6 @@ def recommendation_response(
                 ),
             )
         ),
-
         automatically_applicable=bool(
             source.get(
                 "automatically_applicable",
@@ -977,7 +802,6 @@ def recommendation_response(
                 ),
             )
         ),
-
         attributes=_mapping(
             source.get(
                 "attributes",
@@ -1005,63 +829,37 @@ def optimization_response(
                 plan.device_id,
             )
         ),
-
         backend=str(
             source.get(
                 "backend",
                 plan.backend,
             )
         ),
-
-        optimizer_name=source.get(
-            "optimizer_name"
-        ),
-
-        optimizer_version=source.get(
-            "optimizer_version"
-        ),
-
+        optimizer_name=source.get("optimizer_name"),
+        optimizer_version=source.get("optimizer_version"),
         recommendation_count=int(
             source.get(
                 "recommendation_count",
-                len(
-                    plan.recommendations
-                ),
+                len(plan.recommendations),
             )
         ),
-
         high_priority_count=int(
             source.get(
                 "high_priority_count",
                 plan.high_priority_count,
             )
         ),
-
         recommendations=[
-            recommendation_response(
-                item
-            )
-            for item
-            in plan.recommendations
+            recommendation_response(item) for item in plan.recommendations
         ],
-
-        profile=source.get(
-            "profile"
-        ),
-
+        profile=source.get("profile"),
         automatically_applied=bool(
             source.get(
                 "automatically_applied",
                 False,
             )
         ),
-
-        generated_at=_optional_datetime(
-            source.get(
-                "generated_at"
-            )
-        ),
-
+        generated_at=_optional_datetime(source.get("generated_at")),
         metadata=APIResponseMetadata(
             request_id=request_id,
         ),
@@ -1072,87 +870,29 @@ def optimization_response(
 # Request conversion
 # ------------------------------------------------------------------
 
+
 def workload_from_request(
     request: AcceleratorWorkloadRequest,
 ) -> AcceleratorWorkload:
     workload = AcceleratorWorkload(
         kind=request.kind,
-
-        batch_size=(
-            request.batch_size
-        ),
-
-        model_parameter_count=(
-            request.
-            model_parameter_count
-        ),
-
-        estimated_model_bytes=(
-            request.
-            estimated_model_bytes
-        ),
-
-        estimated_input_bytes=(
-            request.
-            estimated_input_bytes
-        ),
-
-        estimated_peak_memory_bytes=(
-            request.
-            estimated_peak_memory_bytes
-        ),
-
-        sequence_length=(
-            request.sequence_length
-        ),
-
+        batch_size=(request.batch_size),
+        model_parameter_count=(request.model_parameter_count),
+        estimated_model_bytes=(request.estimated_model_bytes),
+        estimated_input_bytes=(request.estimated_input_bytes),
+        estimated_peak_memory_bytes=(request.estimated_peak_memory_bytes),
+        sequence_length=(request.sequence_length),
         precision=request.precision,
-
-        mixed_precision_enabled=(
-            request.
-            mixed_precision_enabled
-        ),
-
-        gradient_accumulation_steps=(
-            request.
-            gradient_accumulation_steps
-        ),
-
-        data_loader_workers=(
-            request.
-            data_loader_workers
-        ),
-
-        pin_memory_enabled=(
-            request.
-            pin_memory_enabled
-        ),
-
-        non_blocking_transfers=(
-            request.
-            non_blocking_transfers
-        ),
-
-        compiled=(
-            request.compiled
-        ),
-
-        latency_sensitive=(
-            request.latency_sensitive
-        ),
-
-        throughput_sensitive=(
-            request.
-            throughput_sensitive
-        ),
-
-        deterministic=(
-            request.deterministic
-        ),
-
-        attributes=dict(
-            request.attributes
-        ),
+        mixed_precision_enabled=(request.mixed_precision_enabled),
+        gradient_accumulation_steps=(request.gradient_accumulation_steps),
+        data_loader_workers=(request.data_loader_workers),
+        pin_memory_enabled=(request.pin_memory_enabled),
+        non_blocking_transfers=(request.non_blocking_transfers),
+        compiled=(request.compiled),
+        latency_sensitive=(request.latency_sensitive),
+        throughput_sensitive=(request.throughput_sensitive),
+        deterministic=(request.deterministic),
+        attributes=dict(request.attributes),
     )
 
     workload.validate()
@@ -1165,61 +905,17 @@ def constraints_from_request(
 ) -> OptimizationConstraints:
     constraints = OptimizationConstraints(
         level=request.level,
-
-        allow_precision_change=(
-            request.
-            allow_precision_change
-        ),
-
-        allow_mixed_precision=(
-            request.
-            allow_mixed_precision
-        ),
-
-        allow_batch_size_change=(
-            request.
-            allow_batch_size_change
-        ),
-
-        allow_compilation=(
-            request.
-            allow_compilation
-        ),
-
-        allow_thread_change=(
-            request.
-            allow_thread_change
-        ),
-
-        allow_data_loader_change=(
-            request.
-            allow_data_loader_change
-        ),
-
-        allow_memory_tuning=(
-            request.
-            allow_memory_tuning
-        ),
-
-        minimum_batch_size=(
-            request.
-            minimum_batch_size
-        ),
-
-        maximum_batch_size=(
-            request.
-            maximum_batch_size
-        ),
-
-        maximum_memory_fraction=(
-            request.
-            maximum_memory_fraction
-        ),
-
-        required_precision=(
-            request.
-            required_precision
-        ),
+        allow_precision_change=(request.allow_precision_change),
+        allow_mixed_precision=(request.allow_mixed_precision),
+        allow_batch_size_change=(request.allow_batch_size_change),
+        allow_compilation=(request.allow_compilation),
+        allow_thread_change=(request.allow_thread_change),
+        allow_data_loader_change=(request.allow_data_loader_change),
+        allow_memory_tuning=(request.allow_memory_tuning),
+        minimum_batch_size=(request.minimum_batch_size),
+        maximum_batch_size=(request.maximum_batch_size),
+        maximum_memory_fraction=(request.maximum_memory_fraction),
+        required_precision=(request.required_precision),
     )
 
     constraints.validate()
@@ -1230,6 +926,7 @@ def constraints_from_request(
 # ------------------------------------------------------------------
 # Service
 # ------------------------------------------------------------------
+
 
 class AcceleratorService:
     """
@@ -1245,35 +942,20 @@ class AcceleratorService:
         *,
         config: APIConfig,
         manager: AcceleratorManager,
-        cpu_optimizer: Optional[
-            CPUOptimizer
-        ] = None,
-        cuda_optimizer: Optional[
-            CUDAOptimizer
-        ] = None,
-        rocm_optimizer: Optional[
-            ROCmOptimizer
-        ] = None,
+        cpu_optimizer: Optional[CPUOptimizer] = None,
+        cuda_optimizer: Optional[CUDAOptimizer] = None,
+        rocm_optimizer: Optional[ROCmOptimizer] = None,
     ) -> None:
         config.validate()
 
         self.config = config
         self.manager = manager
 
-        self.cpu_optimizer = (
-            cpu_optimizer
-            or CPUOptimizer()
-        )
+        self.cpu_optimizer = cpu_optimizer or CPUOptimizer()
 
-        self.cuda_optimizer = (
-            cuda_optimizer
-            or CUDAOptimizer()
-        )
+        self.cuda_optimizer = cuda_optimizer or CUDAOptimizer()
 
-        self.rocm_optimizer = (
-            rocm_optimizer
-            or ROCmOptimizer()
-        )
+        self.rocm_optimizer = rocm_optimizer or ROCmOptimizer()
 
         self._lock = RLock()
 
@@ -1289,12 +971,9 @@ class AcceleratorService:
         with self._lock:
             if self._closed:
                 raise AcceleratorUnavailableAPIError(
-                    "The accelerator service "
-                    "is closed.",
+                    "The accelerator service is closed.",
                     details={
-                        "resource": (
-                            ACCELERATOR_SERVICE_NAME
-                        ),
+                        "resource": (ACCELERATOR_SERVICE_NAME),
                     },
                 )
 
@@ -1311,30 +990,20 @@ class AcceleratorService:
     def _require_read_enabled(
         self,
     ) -> None:
-        if not (
-            self.config.features.
-            accelerator_read_enabled
-        ):
+        if not (self.config.features.accelerator_read_enabled):
             raise FeatureDisabledError(
                 details={
-                    "resource": (
-                        "accelerator_read"
-                    ),
+                    "resource": ("accelerator_read"),
                 },
             )
 
     def _require_optimization_enabled(
         self,
     ) -> None:
-        if not (
-            self.config.features.
-            accelerator_optimization_enabled
-        ):
+        if not (self.config.features.accelerator_optimization_enabled):
             raise FeatureDisabledError(
                 details={
-                    "resource": (
-                        "accelerator_optimization"
-                    ),
+                    "resource": ("accelerator_optimization"),
                 },
             )
 
@@ -1346,25 +1015,15 @@ class AcceleratorService:
         self,
         *,
         refresh: bool = False,
-        context: Optional[
-            AcceleratorOperationContext
-        ] = None,
+        context: Optional[AcceleratorOperationContext] = None,
     ) -> AcceleratorInventoryResponse:
         self._ensure_open()
         self._require_read_enabled()
 
-        request_id = (
-            context.request_id
-            if context is not None
-            else None
-        )
+        request_id = context.request_id if context is not None else None
 
         try:
-            inventory = (
-                self.manager.inventory(
-                    refresh=refresh
-                )
-            )
+            inventory = self.manager.inventory(refresh=refresh)
 
             return inventory_response(
                 inventory,
@@ -1376,18 +1035,10 @@ class AcceleratorService:
 
         except Exception as exc:
             raise AcceleratorAPIError(
-                "Accelerator inventory "
-                "could not be retrieved.",
+                "Accelerator inventory could not be retrieved.",
                 details={
-                    "operation": (
-                        "accelerator_inventory"
-                    ),
-
-                    "error_type": (
-                        type(
-                            exc
-                        ).__name__
-                    ),
+                    "operation": ("accelerator_inventory"),
+                    "error_type": (type(exc).__name__),
                 },
             ) from exc
 
@@ -1401,26 +1052,18 @@ class AcceleratorService:
         *,
         refresh: bool = False,
     ) -> AcceleratorDevice:
-        normalized = str(
-            device_id
-        ).strip().lower()
+        normalized = str(device_id).strip().lower()
 
         if not normalized:
             raise AcceleratorNotFoundAPIError(
                 details={
-                    "resource": (
-                        "accelerator_device"
-                    ),
+                    "resource": ("accelerator_device"),
                 },
             )
 
-        inventory = self.manager.inventory(
-            refresh=refresh
-        )
+        inventory = self.manager.inventory(refresh=refresh)
 
-        for device in inventory_devices(
-            inventory
-        ):
+        for device in inventory_devices(inventory):
             if (
                 str(
                     _value(
@@ -1428,20 +1071,17 @@ class AcceleratorService:
                         "device_id",
                         "",
                     )
-                ).strip().lower()
+                )
+                .strip()
+                .lower()
                 == normalized
             ):
                 return device
 
         raise AcceleratorNotFoundAPIError(
             details={
-                "resource": (
-                    "accelerator_device"
-                ),
-
-                "resource_id": (
-                    normalized
-                ),
+                "resource": ("accelerator_device"),
+                "resource_id": (normalized),
             },
         )
 
@@ -1450,9 +1090,7 @@ class AcceleratorService:
         device_id: str,
         *,
         refresh: bool = False,
-        context: Optional[
-            AcceleratorOperationContext
-        ] = None,
+        context: Optional[AcceleratorOperationContext] = None,
     ) -> AcceleratorDeviceResponse:
         self._ensure_open()
         self._require_read_enabled()
@@ -1470,22 +1108,11 @@ class AcceleratorService:
 
         except Exception as exc:
             raise AcceleratorAPIError(
-                "The accelerator device "
-                "could not be retrieved.",
+                "The accelerator device could not be retrieved.",
                 details={
-                    "operation": (
-                        "accelerator_device"
-                    ),
-
-                    "device_id": (
-                        device_id
-                    ),
-
-                    "error_type": (
-                        type(
-                            exc
-                        ).__name__
-                    ),
+                    "operation": ("accelerator_device"),
+                    "device_id": (device_id),
+                    "error_type": (type(exc).__name__),
                 },
             ) from exc
 
@@ -1498,56 +1125,17 @@ class AcceleratorService:
         request: AcceleratorSelectionRequest,
     ) -> Dict[str, Any]:
         return {
-            "preferred_kind": (
-                request.preferred_kind
-            ),
-
-            "device_id": (
-                request.device_id
-            ),
-
-            "device_index": (
-                request.device_index
-            ),
-
-            "minimum_total_memory_bytes": (
-                request.
-                minimum_total_memory_bytes
-            ),
-
-            "minimum_free_memory_bytes": (
-                request.
-                minimum_free_memory_bytes
-            ),
-
-            "required_capabilities": tuple(
-                request.
-                required_capabilities
-            ),
-
-            "required_precisions": tuple(
-                request.
-                required_precisions
-            ),
-
-            "allow_degraded": (
-                request.allow_degraded
-            ),
-
-            "require_accelerator": (
-                request.
-                require_accelerator
-            ),
-
-            "allow_cpu_fallback": (
-                request.
-                allow_cpu_fallback
-            ),
-
-            "mixed_precision": (
-                request.mixed_precision
-            ),
-
+            "preferred_kind": (request.preferred_kind),
+            "device_id": (request.device_id),
+            "device_index": (request.device_index),
+            "minimum_total_memory_bytes": (request.minimum_total_memory_bytes),
+            "minimum_free_memory_bytes": (request.minimum_free_memory_bytes),
+            "required_capabilities": tuple(request.required_capabilities),
+            "required_precisions": tuple(request.required_precisions),
+            "allow_degraded": (request.allow_degraded),
+            "require_accelerator": (request.require_accelerator),
+            "allow_cpu_fallback": (request.allow_cpu_fallback),
+            "mixed_precision": (request.mixed_precision),
             "refresh": True,
         }
 
@@ -1558,12 +1146,7 @@ class AcceleratorService:
             Any,
         ],
     ) -> Dict[str, Any]:
-        return {
-            key: value
-            for key, value
-            in values.items()
-            if value is not None
-        }
+        return {key: value for key, value in values.items() if value is not None}
 
     def select_internal(
         self,
@@ -1575,29 +1158,13 @@ class AcceleratorService:
         The caller owns release responsibility.
         """
 
-        arguments = (
-            self._remove_none_values(
-                self._selection_arguments(
-                    request
-                )
-            )
-        )
+        arguments = self._remove_none_values(self._selection_arguments(request))
 
         try:
             if request.training:
-                return (
-                    self.manager.
-                    select_for_training(
-                        **arguments
-                    )
-                )
+                return self.manager.select_for_training(**arguments)
 
-            return (
-                self.manager.
-                select_for_inference(
-                    **arguments
-                )
-            )
+            return self.manager.select_for_inference(**arguments)
 
         except TypeError:
             # Compatibility fallback for manager
@@ -1605,8 +1172,7 @@ class AcceleratorService:
             # method signature.
             compact = {
                 key: value
-                for key, value
-                in arguments.items()
+                for key, value in arguments.items()
                 if key
                 in {
                     "preferred_kind",
@@ -1621,45 +1187,25 @@ class AcceleratorService:
             }
 
             if request.training:
-                return (
-                    self.manager.
-                    select_for_training(
-                        **compact
-                    )
-                )
+                return self.manager.select_for_training(**compact)
 
-            return (
-                self.manager.
-                select_for_inference(
-                    **compact
-                )
-            )
+            return self.manager.select_for_inference(**compact)
 
     def select(
         self,
         request: AcceleratorSelectionRequest,
         *,
-        context: Optional[
-            AcceleratorOperationContext
-        ] = None,
+        context: Optional[AcceleratorOperationContext] = None,
     ) -> AcceleratorSelectionResponse:
         self._ensure_open()
         self._require_read_enabled()
 
         selection = None
 
-        request_id = (
-            context.request_id
-            if context is not None
-            else None
-        )
+        request_id = context.request_id if context is not None else None
 
         try:
-            selection = (
-                self.select_internal(
-                    request
-                )
-            )
+            selection = self.select_internal(request)
 
             return selection_response(
                 selection,
@@ -1672,49 +1218,25 @@ class AcceleratorService:
         except Exception as exc:
             raise AcceleratorUnavailableAPIError(
                 details={
-                    "operation": (
-                        "accelerator_selection"
-                    ),
-
-                    "preferred_kind": (
-                        request.
-                        preferred_kind
-                    ),
-
-                    "fallback_allowed": (
-                        request.
-                        allow_cpu_fallback
-                    ),
-
-                    "error_type": (
-                        type(
-                            exc
-                        ).__name__
-                    ),
+                    "operation": ("accelerator_selection"),
+                    "preferred_kind": (request.preferred_kind),
+                    "fallback_allowed": (request.allow_cpu_fallback),
+                    "error_type": (type(exc).__name__),
                 },
             ) from exc
 
         finally:
             if selection is not None:
                 try:
-                    self.manager.release(
-                        selection
-                    )
+                    self.manager.release(selection)
 
                 except Exception:
                     logger.exception(
-                        "Temporary accelerator "
-                        "selection release failed",
+                        "Temporary accelerator selection release failed",
                         extra={
                             "accelerator_service": {
-                                "device_id": (
-                                    selection.
-                                    device_id
-                                ),
-
-                                "request_id": (
-                                    request_id
-                                ),
+                                "device_id": (selection.device_id),
+                                "request_id": (request_id),
                             },
                         },
                     )
@@ -1728,123 +1250,71 @@ class AcceleratorService:
         device_id: str,
         *,
         refresh_device: bool = False,
-        context: Optional[
-            AcceleratorOperationContext
-        ] = None,
+        context: Optional[AcceleratorOperationContext] = None,
     ) -> AcceleratorMetricsResponse:
         self._ensure_open()
         self._require_read_enabled()
 
-        request_id = (
-            context.request_id
-            if context is not None
-            else None
-        )
+        request_id = context.request_id if context is not None else None
 
         device = self._find_device(
             device_id,
             refresh=refresh_device,
         )
 
-        if not _device_available(
-            device
-        ):
+        if not _device_available(device):
             raise AcceleratorUnavailableAPIError(
                 details={
-                    "device_id": (
-                        device_id
-                    ),
-
-                    "operation": (
-                        "accelerator_metrics"
-                    ),
+                    "device_id": (device_id),
+                    "operation": ("accelerator_metrics"),
                 },
             )
 
-        kind = str(
-            device.kind
+        kind = str(device.kind)
+
+        snapshot: (
+            CPUMetricsSnapshot
+            | CUDAMetricsSnapshot
+            | ROCmMetricsSnapshot
         )
 
         try:
-            if (
-                kind
-                == AcceleratorKind.CPU.value
-            ):
-                snapshot = (
-                    CPUMetricsCollector().
-                    collect(
-                        interval=None,
-                        include_process=True,
-                    )
+            if kind == AcceleratorKind.CPU.value:
+                snapshot = CPUMetricsCollector().collect(
+                    interval=None,
+                    include_process=True,
                 )
 
-            elif (
-                kind
-                == AcceleratorKind.CUDA.value
-            ):
-                snapshot = (
-                    CUDAMetricsCollector(
-                        device=device
-                    ).collect(
-                        refresh_profile=(
-                            refresh_device
-                        )
-                    )
+            elif kind == AcceleratorKind.CUDA.value:
+                snapshot = CUDAMetricsCollector(device=device).collect(
+                    refresh_profile=(refresh_device)
                 )
 
-            elif (
-                kind
-                == AcceleratorKind.ROCM.value
-            ):
-                snapshot = (
-                    ROCmMetricsCollector(
-                        device=device
-                    ).collect(
-                        refresh_profile=(
-                            refresh_device
-                        )
-                    )
+            elif kind == AcceleratorKind.ROCM.value:
+                snapshot = ROCmMetricsCollector(device=device).collect(
+                    refresh_profile=(refresh_device)
                 )
 
             else:
                 raise AcceleratorAPIError(
-                    "Metrics are not supported "
-                    "for this accelerator kind.",
+                    "Metrics are not supported for this accelerator kind.",
                     details={
-                        "device_id": (
-                            device_id
-                        ),
-
+                        "device_id": (device_id),
                         "kind": kind,
                     },
                 )
 
-            data = _mapping(
-                snapshot
-            )
+            data = _mapping(snapshot)
 
             return AcceleratorMetricsResponse(
                 device_id=device.device_id,
-
                 kind=kind,
-
-                runtime_device=(
-                    device.runtime_device
-                ),
-
+                runtime_device=(device.runtime_device),
                 metrics=data,
-
-                sampled_at=_optional_datetime(
-                    data.get(
-                        "sampled_at"
-                    )
-                ),
-
+                sampled_at=_optional_datetime(data.get("sampled_at")),
                 metadata=(
                     APIResponseMetadata(
-                        request_id=(
-                            request_id
-                        ),
+                        request_id=(request_id),
                     )
                 ),
             )
@@ -1854,27 +1324,13 @@ class AcceleratorService:
 
         except Exception as exc:
             raise AcceleratorAPIError(
-                "Accelerator metrics could "
-                "not be collected.",
-                code=(
-                    "accelerator_metrics_unavailable"
-                ),
+                "Accelerator metrics could not be collected.",
+                code=("accelerator_metrics_unavailable"),
                 details={
-                    "operation": (
-                        "accelerator_metrics"
-                    ),
-
-                    "device_id": (
-                        device_id
-                    ),
-
+                    "operation": ("accelerator_metrics"),
+                    "device_id": (device_id),
                     "kind": kind,
-
-                    "error_type": (
-                        type(
-                            exc
-                        ).__name__
-                    ),
+                    "error_type": (type(exc).__name__),
                 },
             ) from exc
 
@@ -1886,31 +1342,19 @@ class AcceleratorService:
         self,
         kind: str,
     ) -> Any:
-        if (
-            kind
-            == AcceleratorKind.CPU.value
-        ):
+        if kind == AcceleratorKind.CPU.value:
             return self.cpu_optimizer
 
-        if (
-            kind
-            == AcceleratorKind.CUDA.value
-        ):
+        if kind == AcceleratorKind.CUDA.value:
             return self.cuda_optimizer
 
-        if (
-            kind
-            == AcceleratorKind.ROCM.value
-        ):
+        if kind == AcceleratorKind.ROCM.value:
             return self.rocm_optimizer
 
         raise AcceleratorOptimizationAPIError(
             details={
                 "kind": kind,
-
-                "operation": (
-                    "accelerator_optimization"
-                ),
+                "operation": ("accelerator_optimization"),
             },
         )
 
@@ -1918,9 +1362,7 @@ class AcceleratorService:
         self,
         request: AcceleratorOptimizationRequest,
         *,
-        context: Optional[
-            AcceleratorOperationContext
-        ] = None,
+        context: Optional[AcceleratorOperationContext] = None,
     ) -> AcceleratorOptimizationResponse:
         """
         Generate an advisory optimization plan.
@@ -1933,36 +1375,16 @@ class AcceleratorService:
 
         selection = None
 
-        request_id = (
-            context.request_id
-            if context is not None
-            else None
-        )
+        request_id = context.request_id if context is not None else None
 
         try:
-            selection = (
-                self.select_internal(
-                    request.selection
-                )
-            )
+            selection = self.select_internal(request.selection)
 
-            workload = (
-                workload_from_request(
-                    request.workload
-                )
-            )
+            workload = workload_from_request(request.workload)
 
-            constraints = (
-                constraints_from_request(
-                    request.constraints
-                )
-            )
+            constraints = constraints_from_request(request.constraints)
 
-            optimizer = (
-                self._optimizer_for_kind(
-                    selection.kind
-                )
-            )
+            optimizer = self._optimizer_for_kind(selection.kind)
 
             plan = optimizer.recommend(
                 selection=selection,
@@ -1975,46 +1397,25 @@ class AcceleratorService:
                 OptimizationPlan,
             ):
                 raise InternalServerAPIError(
-                    "Accelerator optimizer "
-                    "returned an invalid plan.",
+                    "Accelerator optimizer returned an invalid plan.",
                     details={
-                        "operation": (
-                            "accelerator_optimization"
-                        ),
-
-                        "device_id": (
-                            selection.device_id
-                        ),
-
-                        "kind": (
-                            selection.kind
-                        ),
+                        "operation": ("accelerator_optimization"),
+                        "device_id": (selection.device_id),
+                        "kind": (selection.kind),
                     },
                 )
 
-            response = (
-                optimization_response(
-                    plan,
-                    request_id=request_id,
-                )
+            response = optimization_response(
+                plan,
+                request_id=request_id,
             )
 
-            if (
-                response.
-                automatically_applied
-            ):
+            if response.automatically_applied:
                 raise InternalServerAPIError(
-                    "Accelerator optimizer "
-                    "violated advisory-only "
-                    "execution policy.",
+                    "Accelerator optimizer violated advisory-only execution policy.",
                     details={
-                        "operation": (
-                            "accelerator_optimization"
-                        ),
-
-                        "device_id": (
-                            selection.device_id
-                        ),
+                        "operation": ("accelerator_optimization"),
+                        "device_id": (selection.device_id),
                     },
                 )
 
@@ -2026,44 +1427,24 @@ class AcceleratorService:
         except Exception as exc:
             raise AcceleratorOptimizationAPIError(
                 details={
-                    "operation": (
-                        "accelerator_optimization"
-                    ),
-
-                    "preferred_kind": (
-                        request.selection.
-                        preferred_kind
-                    ),
-
-                    "error_type": (
-                        type(
-                            exc
-                        ).__name__
-                    ),
+                    "operation": ("accelerator_optimization"),
+                    "preferred_kind": (request.selection.preferred_kind),
+                    "error_type": (type(exc).__name__),
                 },
             ) from exc
 
         finally:
             if selection is not None:
                 try:
-                    self.manager.release(
-                        selection
-                    )
+                    self.manager.release(selection)
 
                 except Exception:
                     logger.exception(
-                        "Optimization accelerator "
-                        "selection release failed",
+                        "Optimization accelerator selection release failed",
                         extra={
                             "accelerator_service": {
-                                "device_id": (
-                                    selection.
-                                    device_id
-                                ),
-
-                                "request_id": (
-                                    request_id
-                                ),
+                                "device_id": (selection.device_id),
+                                "request_id": (request_id),
                             },
                         },
                     )
@@ -2085,51 +1466,29 @@ class AcceleratorService:
                 refresh_inventory=True,
             )
 
-            return _mapping(
-                report
-            )
+            return _mapping(report)
 
         except TypeError:
             try:
-                report = (
-                    self.manager.health()
-                )
+                report = self.manager.health()
 
-                return _mapping(
-                    report
-                )
+                return _mapping(report)
 
             except Exception as exc:
                 raise AcceleratorAPIError(
-                    "Accelerator health could "
-                    "not be evaluated.",
+                    "Accelerator health could not be evaluated.",
                     details={
-                        "operation": (
-                            "accelerator_health"
-                        ),
-
-                        "error_type": (
-                            type(
-                                exc
-                            ).__name__
-                        ),
+                        "operation": ("accelerator_health"),
+                        "error_type": (type(exc).__name__),
                     },
                 ) from exc
 
         except Exception as exc:
             raise AcceleratorAPIError(
-                "Accelerator health could "
-                "not be evaluated.",
+                "Accelerator health could not be evaluated.",
                 details={
-                    "operation": (
-                        "accelerator_health"
-                    ),
-
-                    "error_type": (
-                        type(
-                            exc
-                        ).__name__
-                    ),
+                    "operation": ("accelerator_health"),
+                    "error_type": (type(exc).__name__),
                 },
             ) from exc
 
@@ -2144,49 +1503,26 @@ class AcceleratorService:
             closed = self._closed
 
         return {
-            "service": (
-                ACCELERATOR_SERVICE_NAME
-            ),
-
-            "version": (
-                ACCELERATOR_SERVICE_VERSION
-            ),
-
+            "service": (ACCELERATOR_SERVICE_NAME),
+            "version": (ACCELERATOR_SERVICE_VERSION),
             "closed": closed,
-
-            "read_enabled": (
-                self.config.features.
-                accelerator_read_enabled
-            ),
-
+            "read_enabled": (self.config.features.accelerator_read_enabled),
             "optimization_enabled": (
-                self.config.features.
-                accelerator_optimization_enabled
+                self.config.features.accelerator_optimization_enabled
             ),
-
             "optimizers": {
-                "cpu": type(
-                    self.cpu_optimizer
-                ).__name__,
-
-                "cuda": type(
-                    self.cuda_optimizer
-                ).__name__,
-
-                "rocm": type(
-                    self.rocm_optimizer
-                ).__name__,
+                "cpu": type(self.cpu_optimizer).__name__,
+                "cuda": type(self.cuda_optimizer).__name__,
+                "rocm": type(self.rocm_optimizer).__name__,
             },
-
-            "optimization_policy": (
-                "advisory_only"
-            ),
+            "optimization_policy": ("advisory_only"),
         }
 
 
 # ------------------------------------------------------------------
 # Construction
 # ------------------------------------------------------------------
+
 
 def create_accelerator_service(
     *,
@@ -2202,6 +1538,7 @@ def create_accelerator_service(
 # ------------------------------------------------------------------
 # Dependency registration
 # ------------------------------------------------------------------
+
 
 def register_accelerator_service(
     dependencies: Any,
@@ -2238,9 +1575,7 @@ def register_accelerator_service(
         raise InternalServerAPIError(
             "API configuration is unavailable.",
             details={
-                "resource": (
-                    "api_config"
-                ),
+                "resource": ("api_config"),
             },
         )
 
@@ -2248,22 +1583,15 @@ def register_accelerator_service(
         raise InternalServerAPIError(
             "Accelerator manager is unavailable.",
             details={
-                "resource": (
-                    "accelerator_manager"
-                ),
+                "resource": ("accelerator_manager"),
             },
         )
 
-    if not callable(
-        register
-    ):
+    if not callable(register):
         raise InternalServerAPIError(
-            "API service registration is "
-            "unavailable.",
+            "API service registration is unavailable.",
             details={
-                "resource": (
-                    "api_dependencies"
-                ),
+                "resource": ("api_dependencies"),
             },
         )
 
@@ -2288,23 +1616,17 @@ def register_accelerator_service(
 __all__ = [
     "ACCELERATOR_SERVICE_NAME",
     "ACCELERATOR_SERVICE_VERSION",
-
     "AcceleratorOperationContext",
-
     "memory_response",
     "device_response",
     "inventory_devices",
     "inventory_response",
     "selection_response",
-
     "recommendation_response",
     "optimization_response",
-
     "workload_from_request",
     "constraints_from_request",
-
     "AcceleratorService",
-
     "create_accelerator_service",
     "register_accelerator_service",
 ]

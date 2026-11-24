@@ -51,17 +51,15 @@ except ImportError:
 # Errors
 # ---------------------------------------------------------------
 
-class OpenStackClientError(
-    IntegrationOperationError
-):
-    default_code = (
-        "openstack_client_error"
-    )
+
+class OpenStackClientError(IntegrationOperationError):
+    default_code = "openstack_client_error"
 
 
 # ---------------------------------------------------------------
 # Serialization helpers
 # ---------------------------------------------------------------
+
 
 def resource_to_dict(
     resource: Any,
@@ -82,9 +80,7 @@ def resource_to_dict(
         resource,
         Mapping,
     ):
-        return dict(
-            resource
-        )
+        return dict(resource)
 
     to_dict = getattr(
         resource,
@@ -92,26 +88,20 @@ def resource_to_dict(
         None,
     )
 
-    if callable(
-        to_dict
-    ):
+    if callable(to_dict):
         try:
             value = to_dict()
 
         except TypeError:
             # Some SDK resource implementations
             # expose to_dict with optional flags.
-            value = to_dict(
-                original_names=False
-            )
+            value = to_dict(original_names=False)
 
         if isinstance(
             value,
             Mapping,
         ):
-            return dict(
-                value
-            )
+            return dict(value)
 
     # Keep fallback deliberately narrow.
     result: Dict[
@@ -131,35 +121,26 @@ def resource_to_dict(
         )
 
         if value is not None:
-            result[
-                name
-            ] = value
+            result[name] = value
 
     return result
 
 
 def resources_to_dicts(
-    resources: Iterable[
-        Any
-    ],
+    resources: Iterable[Any],
 ) -> List[
     Dict[
         str,
         Any,
     ]
 ]:
-    return [
-        resource_to_dict(
-            resource
-        )
-        for resource
-        in resources
-    ]
+    return [resource_to_dict(resource) for resource in resources]
 
 
 # ---------------------------------------------------------------
 # OpenStack client
 # ---------------------------------------------------------------
+
 
 class OpenStackClient:
     """
@@ -176,9 +157,7 @@ class OpenStackClient:
         self,
         *,
         config: OpenStackConfig,
-        credential: Optional[
-            SecretValue
-        ] = None,
+        credential: Optional[SecretValue] = None,
     ) -> None:
         self.config = config
 
@@ -196,10 +175,7 @@ class OpenStackClient:
     def connected(
         self,
     ) -> bool:
-        return (
-            self._connection
-            is not None
-        )
+        return self._connection is not None
 
     # ---------------------------------------------------------
     # Connection
@@ -209,16 +185,8 @@ class OpenStackClient:
     def connection(
         self,
     ) -> Any:
-        if (
-            self._connection
-            is None
-        ):
-            raise (
-                IntegrationConnectionError(
-                    "OpenStack client is "
-                    "not connected."
-                )
-            )
+        if self._connection is None:
+            raise (IntegrationConnectionError("OpenStack client is not connected."))
 
         return self._connection
 
@@ -235,68 +203,38 @@ class OpenStackClient:
             str,
             Any,
         ] = {
-            "auth_url": (
-                auth.auth_url
-            ),
+            "auth_url": (auth.auth_url),
         }
 
         if auth.username:
-            values[
-                "username"
-            ] = auth.username
+            values["username"] = auth.username
 
         if auth.user_id:
-            values[
-                "user_id"
-            ] = auth.user_id
+            values["user_id"] = auth.user_id
 
         if auth.project_name:
-            values[
-                "project_name"
-            ] = auth.project_name
+            values["project_name"] = auth.project_name
 
         if auth.project_id:
-            values[
-                "project_id"
-            ] = auth.project_id
+            values["project_id"] = auth.project_id
 
         if auth.user_domain_name:
-            values[
-                "user_domain_name"
-            ] = (
-                auth.user_domain_name
-            )
+            values["user_domain_name"] = auth.user_domain_name
 
         if auth.user_domain_id:
-            values[
-                "user_domain_id"
-            ] = (
-                auth.user_domain_id
-            )
+            values["user_domain_id"] = auth.user_domain_id
 
         if auth.project_domain_name:
-            values[
-                "project_domain_name"
-            ] = (
-                auth.project_domain_name
-            )
+            values["project_domain_name"] = auth.project_domain_name
 
         if auth.project_domain_id:
-            values[
-                "project_domain_id"
-            ] = (
-                auth.project_domain_id
-            )
+            values["project_domain_id"] = auth.project_domain_id
 
         if self.credential is not None:
             # SecretValue is deliberately
             # revealed only at the provider SDK
             # authentication boundary.
-            values[
-                "password"
-            ] = (
-                self.credential.reveal()
-            )
+            values["password"] = self.credential.reveal()
 
         return values
 
@@ -319,63 +257,20 @@ class OpenStackClient:
         if self.connected:
             return self._connection
 
-        if (
-            openstack_connection
-            is None
-        ):
-            raise (
-                IntegrationConnectionError(
-                    "openstacksdk is not "
-                    "installed."
-                )
-            )
+        if openstack_connection is None:
+            raise (IntegrationConnectionError("openstacksdk is not installed."))
 
         try:
-            self._connection = (
-                openstack_connection.
-                Connection(
-                    region_name=(
-                        self.config.
-                        region_name
-                    ),
-
-                    auth=self._auth(),
-
-                    verify=(
-                        self.config.
-                        verify_tls
-                    ),
-
-                    compute_api_version=(
-                        self.config.
-                        compute_api_version
-                    ),
-
-                    identity_api_version=(
-                        self.config.
-                        identity_api_version
-                    ),
-
-                    network_api_version=(
-                        self.config.
-                        network_api_version
-                    ),
-
-                    compute_interface=(
-                        self.config.
-                        interface
-                    ),
-
-                    network_interface=(
-                        self.config.
-                        interface
-                    ),
-
-                    identity_interface=(
-                        self.config.
-                        interface
-                    ),
-                )
+            self._connection = openstack_connection.Connection(
+                region_name=(self.config.region_name),
+                auth=self._auth(),
+                verify=(self.config.verify_tls),
+                compute_api_version=(self.config.compute_api_version),
+                identity_api_version=(self.config.identity_api_version),
+                network_api_version=(self.config.network_api_version),
+                compute_interface=(self.config.interface),
+                network_interface=(self.config.interface),
+                identity_interface=(self.config.interface),
             )
 
             return self._connection
@@ -386,17 +281,10 @@ class OpenStackClient:
             raise wrap_provider_error(
                 exc,
                 provider="openstack",
-                target_id=(
-                    self.config.target_id
-                ),
-                message=(
-                    "OpenStack connection "
-                    "failed."
-                ),
+                target_id=(self.config.target_id),
+                message=("OpenStack connection failed."),
                 retryable=True,
-                code=(
-                    "openstack_connection_failed"
-                ),
+                code=("openstack_connection_failed"),
             ) from exc
 
     # ---------------------------------------------------------
@@ -413,9 +301,7 @@ class OpenStackClient:
         invoke it.
         """
 
-        connection = (
-            self._connection
-        )
+        connection = self._connection
 
         if connection is None:
             return
@@ -427,26 +313,17 @@ class OpenStackClient:
         )
 
         try:
-            if callable(
-                close
-            ):
+            if callable(close):
                 close()
 
         except Exception as exc:
             raise wrap_provider_error(
                 exc,
                 provider="openstack",
-                target_id=(
-                    self.config.target_id
-                ),
-                message=(
-                    "OpenStack client close "
-                    "failed."
-                ),
+                target_id=(self.config.target_id),
+                message=("OpenStack client close failed."),
                 retryable=False,
-                code=(
-                    "openstack_close_failed"
-                ),
+                code=("openstack_close_failed"),
             ) from exc
 
         finally:
@@ -471,42 +348,24 @@ class OpenStackClient:
             return False
 
         try:
-            if (
-                self.config.
-                enable_identity
-            ):
-                iterator = (
-                    self.connection.
-                    identity.projects()
-                )
+            if self.config.enable_identity:
+                iterator = self.connection.identity.projects()
 
                 # Force at least initial API
                 # evaluation without consuming
                 # the complete project list.
                 next(
-                    iter(
-                        iterator
-                    ),
+                    iter(iterator),
                     None,
                 )
 
                 return True
 
-            if (
-                self.config.
-                enable_compute
-            ):
-                iterator = (
-                    self.connection.
-                    compute.servers(
-                        details=False
-                    )
-                )
+            if self.config.enable_compute:
+                iterator = self.connection.compute.servers(details=False)
 
                 next(
-                    iter(
-                        iterator
-                    ),
+                    iter(iterator),
                     None,
                 )
 
@@ -533,59 +392,36 @@ class OpenStackClient:
             Any,
         ]
     ]:
-        self._require_service(
-            "compute"
-        )
+        self._require_service("compute")
 
         try:
-            return resources_to_dicts(
-                self.connection.
-                compute.servers(
-                    details=True
-                )
-            )
+            return resources_to_dicts(self.connection.compute.servers(details=True))
 
         except Exception as exc:
             raise self._operation_error(
                 exc,
-                "OpenStack server "
-                "listing failed.",
+                "OpenStack server listing failed.",
             ) from exc
 
     def get_server(
         self,
         server_id: str,
     ) -> Dict[str, Any]:
-        self._require_service(
-            "compute"
-        )
+        self._require_service("compute")
 
         try:
-            server = (
-                self.connection.
-                compute.get_server(
-                    server_id
-                )
-            )
+            server = self.connection.compute.get_server(server_id)
 
         except Exception as exc:
             raise self._operation_error(
                 exc,
-                "OpenStack server lookup "
-                "failed.",
+                "OpenStack server lookup failed.",
             ) from exc
 
         if server is None:
-            raise (
-                IntegrationResourceNotFoundError(
-                    "OpenStack server was "
-                    "not found."
-                )
-            )
+            raise (IntegrationResourceNotFoundError("OpenStack server was not found."))
 
-        return resource_to_dict(
-            server
-        )
+        return resource_to_dict(server)
 
     # ---------------------------------------------------------
     # Network
@@ -599,21 +435,15 @@ class OpenStackClient:
             Any,
         ]
     ]:
-        self._require_service(
-            "network"
-        )
+        self._require_service("network")
 
         try:
-            return resources_to_dicts(
-                self.connection.
-                network.networks()
-            )
+            return resources_to_dicts(self.connection.network.networks())
 
         except Exception as exc:
             raise self._operation_error(
                 exc,
-                "OpenStack network "
-                "listing failed.",
+                "OpenStack network listing failed.",
             ) from exc
 
     # ---------------------------------------------------------
@@ -628,21 +458,15 @@ class OpenStackClient:
             Any,
         ]
     ]:
-        self._require_service(
-            "image"
-        )
+        self._require_service("image")
 
         try:
-            return resources_to_dicts(
-                self.connection.
-                image.images()
-            )
+            return resources_to_dicts(self.connection.image.images())
 
         except Exception as exc:
             raise self._operation_error(
                 exc,
-                "OpenStack image listing "
-                "failed.",
+                "OpenStack image listing failed.",
             ) from exc
 
     # ---------------------------------------------------------
@@ -657,22 +481,15 @@ class OpenStackClient:
             Any,
         ]
     ]:
-        self._require_service(
-            "volume"
-        )
+        self._require_service("volume")
 
         try:
-            return resources_to_dicts(
-                self.connection.
-                block_storage.
-                volumes()
-            )
+            return resources_to_dicts(self.connection.block_storage.volumes())
 
         except Exception as exc:
             raise self._operation_error(
                 exc,
-                "OpenStack volume "
-                "listing failed.",
+                "OpenStack volume listing failed.",
             ) from exc
 
     # ---------------------------------------------------------
@@ -684,56 +501,21 @@ class OpenStackClient:
         service: str,
     ) -> None:
         enabled = {
-            "compute": (
-                self.config.
-                enable_compute
-            ),
-
-            "network": (
-                self.config.
-                enable_network
-            ),
-
-            "identity": (
-                self.config.
-                enable_identity
-            ),
-
-            "image": (
-                self.config.
-                enable_image
-            ),
-
-            "volume": (
-                self.config.
-                enable_volume
-            ),
-
-            "object_store": (
-                self.config.
-                enable_object_store
-            ),
+            "compute": (self.config.enable_compute),
+            "network": (self.config.enable_network),
+            "identity": (self.config.enable_identity),
+            "image": (self.config.enable_image),
+            "volume": (self.config.enable_volume),
+            "object_store": (self.config.enable_object_store),
         }
 
-        if (
-            service not in enabled
-        ):
-            raise (
-                IntegrationCapabilityError(
-                    "Unknown OpenStack "
-                    f"service: {service}"
-                )
-            )
+        if service not in enabled:
+            raise (IntegrationCapabilityError(f"Unknown OpenStack service: {service}"))
 
-        if not enabled[
-            service
-        ]:
+        if not enabled[service]:
             raise (
                 IntegrationCapabilityError(
-                    "OpenStack service is "
-                    "disabled by "
-                    "configuration: "
-                    f"{service}"
+                    f"OpenStack service is disabled by configuration: {service}"
                 )
             )
 
@@ -749,25 +531,17 @@ class OpenStackClient:
         wrapped = wrap_provider_error(
             error,
             provider="openstack",
-            target_id=(
-                self.config.target_id
-            ),
+            target_id=(self.config.target_id),
             message=message,
             retryable=False,
-            code=(
-                "openstack_operation_failed"
-            ),
+            code=("openstack_operation_failed"),
         )
 
         return OpenStackClientError(
             message,
             code=wrapped.code,
-            retryable=(
-                wrapped.retryable
-            ),
-            details=(
-                wrapped.details
-            ),
+            retryable=(wrapped.retryable),
+            details=(wrapped.details),
         )
 
     # ---------------------------------------------------------
@@ -778,57 +552,19 @@ class OpenStackClient:
         self,
     ) -> Dict[str, Any]:
         return {
-            "connected": (
-                self.connected
-            ),
-
-            "target_id": (
-                self.config.target_id
-            ),
-
-            "region_name": (
-                self.config.region_name
-            ),
-
-            "interface": (
-                self.config.interface
-            ),
-
+            "connected": (self.connected),
+            "target_id": (self.config.target_id),
+            "region_name": (self.config.region_name),
+            "interface": (self.config.interface),
             "services": {
-                "compute": (
-                    self.config.
-                    enable_compute
-                ),
-
-                "network": (
-                    self.config.
-                    enable_network
-                ),
-
-                "identity": (
-                    self.config.
-                    enable_identity
-                ),
-
-                "image": (
-                    self.config.
-                    enable_image
-                ),
-
-                "volume": (
-                    self.config.
-                    enable_volume
-                ),
-
-                "object_store": (
-                    self.config.
-                    enable_object_store
-                ),
+                "compute": (self.config.enable_compute),
+                "network": (self.config.enable_network),
+                "identity": (self.config.enable_identity),
+                "image": (self.config.enable_image),
+                "volume": (self.config.enable_volume),
+                "object_store": (self.config.enable_object_store),
             },
-
-            "credential_value_exposed": (
-                False
-            ),
+            "credential_value_exposed": (False),
         }
 
 
@@ -838,9 +574,7 @@ class OpenStackClient:
 
 __all__ = [
     "OpenStackClientError",
-
     "resource_to_dict",
     "resources_to_dicts",
-
     "OpenStackClient",
 ]

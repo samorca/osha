@@ -57,14 +57,13 @@ from src.database.schema import (
 # Generic repository type
 # ---------------------------------------------------------------
 
-T = TypeVar(
-    "T"
-)
+T = TypeVar("T")
 
 
 # ---------------------------------------------------------------
 # Repository contract
 # ---------------------------------------------------------------
+
 
 class Repository(
     ABC,
@@ -103,9 +102,7 @@ class Repository(
         value: T,
         *,
         environment: str,
-        expected_version: Optional[
-            int
-        ] = None,
+        expected_version: Optional[int] = None,
     ) -> PersistenceResult:
         raise NotImplementedError
 
@@ -115,9 +112,7 @@ class Repository(
         record_id: str,
         *,
         environment: str,
-        expected_version: Optional[
-            int
-        ] = None,
+        expected_version: Optional[int] = None,
     ) -> PersistenceResult:
         raise NotImplementedError
 
@@ -133,6 +128,7 @@ class Repository(
 # ---------------------------------------------------------------
 # Memory repository
 # ---------------------------------------------------------------
+
 
 class MemoryRepository(
     Repository[
@@ -175,9 +171,7 @@ class MemoryRepository(
         connection: DatabaseConnection,
         name: str,
     ) -> None:
-        self.connection = (
-            connection
-        )
+        self.connection = connection
 
         self.name = required_string(
             name,
@@ -194,42 +188,31 @@ class MemoryRepository(
     def _store(
         self,
     ) -> Dict[str, Any]:
-        handle = (
-            self.connection.handle
-        )
+        handle = self.connection.handle
 
         if (
             not isinstance(
                 handle,
                 dict,
             )
-            or "store"
-            not in handle
+            or "store" not in handle
         ):
             raise (
                 RepositoryValidationError(
-                    "MemoryRepository "
-                    "requires the memory "
-                    "database backend."
+                    "MemoryRepository requires the memory database backend."
                 )
             )
 
-        root = handle[
-            "store"
-        ]
+        root = handle["store"]
 
-        repositories = (
-            root.setdefault(
-                "repositories",
-                {},
-            )
+        repositories = root.setdefault(
+            "repositories",
+            {},
         )
 
-        return (
-            repositories.setdefault(
-                self.name,
-                {},
-            )
+        return repositories.setdefault(
+            self.name,
+            {},
         )
 
     # ---------------------------------------------------------
@@ -246,9 +229,7 @@ class MemoryRepository(
             Any,
         ],
     ]:
-        normalized = environment_id(
-            environment
-        )
+        normalized = environment_id(environment)
 
         store = self._store()
 
@@ -287,11 +268,7 @@ class MemoryRepository(
         this layer.
         """
 
-        safe = to_json_safe(
-            dict(
-                value
-            )
-        )
+        safe = to_json_safe(dict(value))
 
         if not isinstance(
             safe,
@@ -299,9 +276,7 @@ class MemoryRepository(
         ):
             raise (
                 RepositoryValidationError(
-                    "Repository value "
-                    "must serialize to "
-                    "a mapping."
+                    "Repository value must serialize to a mapping."
                 )
             )
 
@@ -320,11 +295,7 @@ class MemoryRepository(
         update().
         """
 
-        return deepcopy(
-            stored[
-                "value"
-            ]
-        )
+        return deepcopy(stored["value"])
 
     # ---------------------------------------------------------
     # Create
@@ -340,66 +311,38 @@ class MemoryRepository(
         *,
         environment: str,
     ) -> PersistenceResult:
-        record_id = (
-            self._normalize_record_id(
-                record_id
-            )
-        )
+        record_id = self._normalize_record_id(record_id)
 
-        normalized_value = (
-            self._normalize_value(
-                value
-            )
-        )
+        normalized_value = self._normalize_value(value)
 
         with self._lock:
-            records = (
-                self._environment_store(
-                    environment
-                )
-            )
+            records = self._environment_store(environment)
 
-            if (
-                record_id
-                in records
-            ):
+            if record_id in records:
                 raise (
                     RepositoryConflictError(
-                        "Record already "
-                        "exists in "
-                        f"repository "
-                        f"{self.name}: "
-                        f"{record_id}"
+                        f"Record already exists in repository {self.name}: {record_id}"
                     )
                 )
 
             now = utc_now()
 
-            records[
-                record_id
-            ] = {
+            records[record_id] = {
                 "version": 1,
                 "created_at": now,
                 "updated_at": now,
-                "value": deepcopy(
-                    normalized_value
-                ),
+                "value": deepcopy(normalized_value),
             }
 
-        return (
-            PersistenceResult(
-                operation=(
-                    PersistenceOperation.
-                    CREATE.value
-                ),
-                success=True,
-                repository=self.name,
-                record_id=record_id,
-                attributes={
-                    "version": 1,
-                },
-            ).finalize()
-        )
+        return PersistenceResult(
+            operation=(PersistenceOperation.CREATE.value),
+            success=True,
+            repository=self.name,
+            record_id=record_id,
+            attributes={
+                "version": 1,
+            },
+        ).finalize()
 
     # ---------------------------------------------------------
     # Get
@@ -416,27 +359,15 @@ class MemoryRepository(
             Any,
         ]
     ]:
-        record_id = (
-            self._normalize_record_id(
-                record_id
-            )
-        )
+        record_id = self._normalize_record_id(record_id)
 
         with self._lock:
-            stored = (
-                self._environment_store(
-                    environment
-                ).get(
-                    record_id
-                )
-            )
+            stored = self._environment_store(environment).get(record_id)
 
             if stored is None:
                 return None
 
-            return self._public_value(
-                stored
-            )
+            return self._public_value(stored)
 
     # ---------------------------------------------------------
     # Require
@@ -456,10 +387,7 @@ class MemoryRepository(
         if value is None:
             raise (
                 RepositoryNotFoundError(
-                    "Record not found in "
-                    f"repository "
-                    f"{self.name}: "
-                    f"{record_id}"
+                    f"Record not found in repository {self.name}: {record_id}"
                 )
             )
 
@@ -475,29 +403,15 @@ class MemoryRepository(
         *,
         environment: str,
     ) -> Optional[int]:
-        record_id = (
-            self._normalize_record_id(
-                record_id
-            )
-        )
+        record_id = self._normalize_record_id(record_id)
 
         with self._lock:
-            stored = (
-                self._environment_store(
-                    environment
-                ).get(
-                    record_id
-                )
-            )
+            stored = self._environment_store(environment).get(record_id)
 
             if stored is None:
                 return None
 
-            return int(
-                stored[
-                    "version"
-                ]
-            )
+            return int(stored["version"])
 
     # ---------------------------------------------------------
     # Update
@@ -512,102 +426,49 @@ class MemoryRepository(
         ],
         *,
         environment: str,
-        expected_version: Optional[
-            int
-        ] = None,
+        expected_version: Optional[int] = None,
     ) -> PersistenceResult:
-        record_id = (
-            self._normalize_record_id(
-                record_id
-            )
-        )
+        record_id = self._normalize_record_id(record_id)
 
-        normalized_value = (
-            self._normalize_value(
-                value
-            )
-        )
+        normalized_value = self._normalize_value(value)
 
         with self._lock:
-            records = (
-                self._environment_store(
-                    environment
-                )
-            )
+            records = self._environment_store(environment)
 
-            stored = records.get(
-                record_id
-            )
+            stored = records.get(record_id)
 
             if stored is None:
                 raise (
                     RepositoryNotFoundError(
-                        "Record not found "
-                        f"in repository "
-                        f"{self.name}: "
-                        f"{record_id}"
+                        f"Record not found in repository {self.name}: {record_id}"
                     )
                 )
 
-            current_version = int(
-                stored[
-                    "version"
-                ]
-            )
+            current_version = int(stored["version"])
 
-            if (
+            if expected_version is not None and current_version != int(
                 expected_version
-                is not None
-                and current_version
-                != int(
-                    expected_version
-                )
             ):
-                raise (
-                    RepositoryConflictError(
-                        "Repository version "
-                        "conflict."
-                    )
-                )
+                raise (RepositoryConflictError("Repository version conflict."))
 
-            new_version = (
-                current_version
-                + 1
-            )
+            new_version = current_version + 1
 
-            stored[
-                "version"
-            ] = new_version
+            stored["version"] = new_version
 
-            stored[
-                "updated_at"
-            ] = utc_now()
+            stored["updated_at"] = utc_now()
 
-            stored[
-                "value"
-            ] = deepcopy(
-                normalized_value
-            )
+            stored["value"] = deepcopy(normalized_value)
 
-        return (
-            PersistenceResult(
-                operation=(
-                    PersistenceOperation.
-                    UPDATE.value
-                ),
-                success=True,
-                repository=self.name,
-                record_id=record_id,
-                attributes={
-                    "version": (
-                        new_version
-                    ),
-                    "previous_version": (
-                        current_version
-                    ),
-                },
-            ).finalize()
-        )
+        return PersistenceResult(
+            operation=(PersistenceOperation.UPDATE.value),
+            success=True,
+            repository=self.name,
+            record_id=record_id,
+            attributes={
+                "version": (new_version),
+                "previous_version": (current_version),
+            },
+        ).finalize()
 
     # ---------------------------------------------------------
     # Delete
@@ -618,78 +479,40 @@ class MemoryRepository(
         record_id: str,
         *,
         environment: str,
-        expected_version: Optional[
-            int
-        ] = None,
+        expected_version: Optional[int] = None,
     ) -> PersistenceResult:
-        record_id = (
-            self._normalize_record_id(
-                record_id
-            )
-        )
+        record_id = self._normalize_record_id(record_id)
 
         with self._lock:
-            records = (
-                self._environment_store(
-                    environment
-                )
-            )
+            records = self._environment_store(environment)
 
-            stored = records.get(
-                record_id
-            )
+            stored = records.get(record_id)
 
             if stored is None:
                 raise (
                     RepositoryNotFoundError(
-                        "Record not found "
-                        f"in repository "
-                        f"{self.name}: "
-                        f"{record_id}"
+                        f"Record not found in repository {self.name}: {record_id}"
                     )
                 )
 
-            current_version = int(
-                stored[
-                    "version"
-                ]
-            )
+            current_version = int(stored["version"])
 
-            if (
+            if expected_version is not None and current_version != int(
                 expected_version
-                is not None
-                and current_version
-                != int(
-                    expected_version
-                )
             ):
-                raise (
-                    RepositoryConflictError(
-                        "Repository version "
-                        "conflict."
-                    )
-                )
+                raise (RepositoryConflictError("Repository version conflict."))
 
-            del records[
-                record_id
-            ]
+            del records[record_id]
 
-        return (
-            PersistenceResult(
-                operation=(
-                    PersistenceOperation.
-                    DELETE.value
-                ),
-                success=True,
-                repository=self.name,
-                record_id=record_id,
-                attributes={
-                    "deleted_version": (
-                        current_version
-                    ),
-                },
-            ).finalize()
-        )
+        return PersistenceResult(
+            operation=(PersistenceOperation.DELETE.value),
+            success=True,
+            repository=self.name,
+            record_id=record_id,
+            attributes={
+                "deleted_version": (current_version),
+            },
+        ).finalize()
 
     # ---------------------------------------------------------
     # List environment records
@@ -706,22 +529,10 @@ class MemoryRepository(
         ]
     ]:
         with self._lock:
-            records = (
-                self._environment_store(
-                    environment
-                )
-            )
+            records = self._environment_store(environment)
 
             return [
-                self._public_value(
-                    records[
-                        record_id
-                    ]
-                )
-                for record_id
-                in sorted(
-                    records
-                )
+                self._public_value(records[record_id]) for record_id in sorted(records)
             ]
 
     # ---------------------------------------------------------
@@ -739,60 +550,23 @@ class MemoryRepository(
             Any,
         ]
     ]:
-        record_id = (
-            self._normalize_record_id(
-                record_id
-            )
-        )
+        record_id = self._normalize_record_id(record_id)
 
-        normalized_environment = (
-            environment_id(
-                environment
-            )
-        )
+        normalized_environment = environment_id(environment)
 
         with self._lock:
-            stored = (
-                self._environment_store(
-                    normalized_environment
-                ).get(
-                    record_id
-                )
-            )
+            stored = self._environment_store(normalized_environment).get(record_id)
 
             if stored is None:
                 return None
 
             return {
-                "record_id": (
-                    record_id
-                ),
-
-                "repository": (
-                    self.name
-                ),
-
-                "environment_id": (
-                    normalized_environment
-                ),
-
-                "version": int(
-                    stored[
-                        "version"
-                    ]
-                ),
-
-                "created_at": (
-                    stored[
-                        "created_at"
-                    ]
-                ),
-
-                "updated_at": (
-                    stored[
-                        "updated_at"
-                    ]
-                ),
+                "record_id": (record_id),
+                "repository": (self.name),
+                "environment_id": (normalized_environment),
+                "version": int(stored["version"]),
+                "created_at": (stored["created_at"]),
+                "updated_at": (stored["updated_at"]),
             }
 
     # ---------------------------------------------------------
@@ -805,11 +579,7 @@ class MemoryRepository(
         environment: str,
     ) -> int:
         with self._lock:
-            return len(
-                self._environment_store(
-                    environment
-                )
-            )
+            return len(self._environment_store(environment))
 
     # ---------------------------------------------------------
     # Summary
@@ -822,29 +592,10 @@ class MemoryRepository(
             store = self._store()
 
             return {
-                "repository": (
-                    self.name
-                ),
-
-                "backend": (
-                    "memory"
-                ),
-
-                "environment_count": (
-                    len(
-                        store
-                    )
-                ),
-
-                "record_count": (
-                    sum(
-                        len(
-                            records
-                        )
-                        for records
-                        in store.values()
-                    )
-                ),
+                "repository": (self.name),
+                "backend": ("memory"),
+                "environment_count": (len(store)),
+                "record_count": (sum(len(records) for records in store.values())),
             }
 
 
@@ -854,6 +605,5 @@ class MemoryRepository(
 
 __all__ = [
     "Repository",
-
     "MemoryRepository",
 ]

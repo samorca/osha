@@ -18,21 +18,13 @@ def load_kubernetes_client(
         "kubeconfig",
     }:
         raise ValueError(
-            "connection_mode must be 'auto', "
-            "'in_cluster', or 'kubeconfig'"
+            "connection_mode must be 'auto', 'in_cluster', or 'kubeconfig'"
         )
 
-    use_in_cluster_config = (
-        settings.connection_mode == "in_cluster"
-        or (
-            settings.connection_mode == "auto"
-            and settings.kubeconfig is None
-            and bool(
-                os.getenv(
-                    "KUBERNETES_SERVICE_HOST"
-                )
-            )
-        )
+    use_in_cluster_config = settings.connection_mode == "in_cluster" or (
+        settings.connection_mode == "auto"
+        and settings.kubeconfig is None
+        and bool(os.getenv("KUBERNETES_SERVICE_HOST"))
     )
 
     if use_in_cluster_config:
@@ -41,17 +33,11 @@ def load_kubernetes_client(
         kwargs = {}
 
         if settings.kubeconfig:
-            kwargs["config_file"] = (
-                settings.kubeconfig
-            )
+            kwargs["config_file"] = settings.kubeconfig
 
         if settings.context:
-            kwargs["context"] = (
-                settings.context
-            )
+            kwargs["context"] = settings.context
 
-        config.load_kube_config(
-            **kwargs
-        )
+        config.load_kube_config(**kwargs)
 
     return client.CoreV1Api()

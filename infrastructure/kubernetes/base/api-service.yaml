@@ -1,0 +1,68 @@
+---
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: osha-api
+  namespace: osha
+
+  labels:
+    app.kubernetes.io/name: osha
+    app.kubernetes.io/instance: osha
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: osha
+    app.kubernetes.io/managed-by: kustomize
+
+    osha.atonixcorp.io/system: orchestration-self-healing-ai
+
+  annotations:
+    osha.atonixcorp.io/description: >-
+      Internal Kubernetes service for the OSHA API.
+
+
+spec:
+  # Internal-only base exposure.
+  #
+  # Public/external exposure should be handled by an
+  # Ingress, Gateway, or reverse proxy rather than
+  # changing the base Service to NodePort.
+  type: ClusterIP
+
+
+  # -------------------------------------------------------------
+  # Pod selection
+  # -------------------------------------------------------------
+  #
+  # These labels exactly match api-deployment.yaml.
+  # -------------------------------------------------------------
+
+  selector:
+    app.kubernetes.io/name: osha
+    app.kubernetes.io/instance: osha
+    app.kubernetes.io/component: api
+
+
+  # -------------------------------------------------------------
+  # Service ports
+  # -------------------------------------------------------------
+
+  ports:
+    - name: http
+
+      protocol: TCP
+
+      # Port used by clients inside the cluster.
+      port: 8000
+
+      # Named container port from api-deployment.yaml.
+      targetPort: http
+
+
+  # -------------------------------------------------------------
+  # Session behavior
+  # -------------------------------------------------------------
+  #
+  # OSHA API should not depend on client stickiness.
+  # -------------------------------------------------------------
+
+  sessionAffinity: None

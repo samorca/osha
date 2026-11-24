@@ -1,0 +1,35 @@
+schema_version: "1"
+
+models:
+  registry:
+    root: "models"
+
+  artifacts:
+    root: "artifacts"
+
+  checkpoints:
+    root: "checkpoints"
+
+  validation:
+    require_model_config: true
+    require_model_state: true
+    require_nonempty_artifact: true
+    compute_sha256: true
+
+  loading:
+    accelerator: "auto"
+    allow_cpu_fallback: true
+
+  event:
+    enabled: true
+
+  anomaly:
+    enabled: true
+
+  promotion:
+    require_validation: true
+    require_evaluation: true
+
+    # Promotion itself should remain an explicit
+    # operator-controlled action.
+    automatic: false

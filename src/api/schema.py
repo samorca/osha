@@ -102,10 +102,9 @@ MAX_REMEDIATION_STEP_COUNT = 256
 # Helpers
 # ------------------------------------------------------------------
 
+
 def utc_now() -> datetime:
-    return datetime.now(
-        timezone.utc
-    )
+    return datetime.now(timezone.utc)
 
 
 def clean_required_text(
@@ -114,20 +113,13 @@ def clean_required_text(
     field_name: str,
     maximum_length: int,
 ) -> str:
-    text = str(
-        value
-    ).strip()
+    text = str(value).strip()
 
     if not text:
-        raise ValueError(
-            f"{field_name} cannot be empty"
-        )
+        raise ValueError(f"{field_name} cannot be empty")
 
     if len(text) > maximum_length:
-        raise ValueError(
-            f"{field_name} cannot exceed "
-            f"{maximum_length} characters"
-        )
+        raise ValueError(f"{field_name} cannot exceed {maximum_length} characters")
 
     return text
 
@@ -141,18 +133,13 @@ def clean_optional_text(
     if value is None:
         return None
 
-    text = str(
-        value
-    ).strip()
+    text = str(value).strip()
 
     if not text:
         return None
 
     if len(text) > maximum_length:
-        raise ValueError(
-            f"{field_name} cannot exceed "
-            f"{maximum_length} characters"
-        )
+        raise ValueError(f"{field_name} cannot exceed {maximum_length} characters")
 
     return text
 
@@ -166,29 +153,19 @@ def finite_number(
         value,
         bool,
     ):
-        raise ValueError(
-            f"{field_name} must be numeric"
-        )
+        raise ValueError(f"{field_name} must be numeric")
 
     try:
-        number = float(
-            value
-        )
+        number = float(value)
 
     except (
         TypeError,
         ValueError,
     ) as exc:
-        raise ValueError(
-            f"{field_name} must be numeric"
-        ) from exc
+        raise ValueError(f"{field_name} must be numeric") from exc
 
-    if not math.isfinite(
-        number
-    ):
-        raise ValueError(
-            f"{field_name} must be finite"
-        )
+    if not math.isfinite(number):
+        raise ValueError(f"{field_name} must be finite")
 
     return number
 
@@ -199,14 +176,11 @@ def validate_attributes(
         Any,
     ],
 ) -> Dict[str, Any]:
-    result = dict(
-        value
-    )
+    result = dict(value)
 
     if len(result) > MAX_ATTRIBUTE_COUNT:
         raise ValueError(
-            "attributes cannot contain more than "
-            f"{MAX_ATTRIBUTE_COUNT} entries"
+            f"attributes cannot contain more than {MAX_ATTRIBUTE_COUNT} entries"
         )
 
     for key in result:
@@ -214,20 +188,13 @@ def validate_attributes(
             key,
             str,
         ):
-            raise ValueError(
-                "attribute keys must be strings"
-            )
+            raise ValueError("attribute keys must be strings")
 
         if not key.strip():
-            raise ValueError(
-                "attribute keys cannot be empty"
-            )
+            raise ValueError("attribute keys cannot be empty")
 
         if len(key) > MAX_NAME_LENGTH:
-            raise ValueError(
-                "attribute key exceeds the "
-                "maximum allowed length"
-            )
+            raise ValueError("attribute key exceeds the maximum allowed length")
 
     return result
 
@@ -235,6 +202,7 @@ def validate_attributes(
 # ------------------------------------------------------------------
 # Common enums
 # ------------------------------------------------------------------
+
 
 class APIStatus(
     str,
@@ -405,9 +373,8 @@ class RemediationRiskAPI(
 # Shared base models
 # ------------------------------------------------------------------
 
-class APIInputModel(
-    BaseModel
-):
+
+class APIInputModel(BaseModel):
     """
     Strict public request model.
 
@@ -424,9 +391,7 @@ class APIInputModel(
     )
 
 
-class APIOutputModel(
-    BaseModel
-):
+class APIOutputModel(BaseModel):
     """
     Public response contract.
 
@@ -443,9 +408,7 @@ class APIOutputModel(
     )
 
 
-class APIResponseMetadata(
-    APIOutputModel
-):
+class APIResponseMetadata(APIOutputModel):
     schema_version: str = Field(
         default=API_SCHEMA_VERSION,
     )
@@ -469,12 +432,9 @@ class APIResponseMetadata(
 # Error contracts
 # ------------------------------------------------------------------
 
-class APIErrorField(
-    APIOutputModel
-):
-    location: List[
-        str | int
-    ] = Field(
+
+class APIErrorField(APIOutputModel):
+    location: List[str | int] = Field(
         default_factory=list,
     )
 
@@ -489,9 +449,7 @@ class APIErrorField(
     )
 
 
-class APIError(
-    APIOutputModel
-):
+class APIError(APIOutputModel):
     code: str = Field(
         min_length=1,
         max_length=MAX_NAME_LENGTH,
@@ -511,16 +469,12 @@ class APIError(
         default_factory=dict,
     )
 
-    fields: List[
-        APIErrorField
-    ] = Field(
+    fields: List[APIErrorField] = Field(
         default_factory=list,
     )
 
 
-class APIErrorResponse(
-    APIOutputModel
-):
+class APIErrorResponse(APIOutputModel):
     status: str = Field(
         default=APIStatus.ERROR.value,
     )
@@ -536,9 +490,8 @@ class APIErrorResponse(
 # Generic operation contracts
 # ------------------------------------------------------------------
 
-class OperationResponse(
-    APIOutputModel
-):
+
+class OperationResponse(APIOutputModel):
     operation_id: UUID = Field(
         default_factory=uuid4,
     )
@@ -564,9 +517,7 @@ class OperationResponse(
     )
 
 
-class PaginationMetadata(
-    APIOutputModel
-):
+class PaginationMetadata(APIOutputModel):
     limit: int = Field(
         ge=1,
         le=1000,
@@ -592,9 +543,8 @@ class PaginationMetadata(
 # Health contracts
 # ------------------------------------------------------------------
 
-class HealthComponentResponse(
-    APIOutputModel
-):
+
+class HealthComponentResponse(APIOutputModel):
     component: str = Field(
         min_length=1,
         max_length=MAX_NAME_LENGTH,
@@ -622,9 +572,7 @@ class HealthComponentResponse(
     )
 
 
-class HealthResponse(
-    APIOutputModel
-):
+class HealthResponse(APIOutputModel):
     service: str = Field(
         min_length=1,
         max_length=MAX_NAME_LENGTH,
@@ -641,9 +589,7 @@ class HealthResponse(
         max_length=128,
     )
 
-    components: List[
-        HealthComponentResponse
-    ] = Field(
+    components: List[HealthComponentResponse] = Field(
         default_factory=list,
     )
 
@@ -652,9 +598,7 @@ class HealthResponse(
     )
 
 
-class LivenessResponse(
-    APIOutputModel
-):
+class LivenessResponse(APIOutputModel):
     status: str = Field(
         default=HealthStatus.HEALTHY.value,
     )
@@ -666,9 +610,7 @@ class LivenessResponse(
     )
 
 
-class ReadinessResponse(
-    APIOutputModel
-):
+class ReadinessResponse(APIOutputModel):
     status: str
 
     ready: bool
@@ -686,9 +628,8 @@ class ReadinessResponse(
 # Inference provenance
 # ------------------------------------------------------------------
 
-class InferenceProvenanceRequest(
-    APIInputModel
-):
+
+class InferenceProvenanceRequest(APIInputModel):
     source: Optional[str] = Field(
         default=None,
         max_length=MAX_NAME_LENGTH,
@@ -744,14 +685,10 @@ class InferenceProvenanceRequest(
             Any,
         ],
     ) -> Dict[str, Any]:
-        return validate_attributes(
-            value
-        )
+        return validate_attributes(value)
 
 
-class InferenceProvenanceResponse(
-    APIOutputModel
-):
+class InferenceProvenanceResponse(APIOutputModel):
     source: Optional[str] = None
 
     source_id: Optional[str] = None
@@ -780,9 +717,8 @@ class InferenceProvenanceResponse(
 # Event inference
 # ------------------------------------------------------------------
 
-class EventInferenceRequest(
-    APIInputModel
-):
+
+class EventInferenceRequest(APIInputModel):
     content: str = Field(
         min_length=1,
         max_length=MAX_CONTENT_LENGTH,
@@ -804,9 +740,7 @@ class EventInferenceRequest(
         le=65_536,
     )
 
-    provenance: Optional[
-        InferenceProvenanceRequest
-    ] = None
+    provenance: Optional[InferenceProvenanceRequest] = None
 
     payload: Dict[
         str,
@@ -833,9 +767,7 @@ class EventInferenceRequest(
         return clean_required_text(
             value,
             field_name="content",
-            maximum_length=(
-                MAX_CONTENT_LENGTH
-            ),
+            maximum_length=(MAX_CONTENT_LENGTH),
         )
 
     @field_validator(
@@ -850,18 +782,15 @@ class EventInferenceRequest(
             Any,
         ],
     ) -> Dict[str, Any]:
-        return validate_attributes(
-            value
-        )
+        return validate_attributes(value)
 
 
 # ------------------------------------------------------------------
 # Anomaly inference
 # ------------------------------------------------------------------
 
-class AnomalyInferenceRequest(
-    APIInputModel
-):
+
+class AnomalyInferenceRequest(APIInputModel):
     features: List[float] = Field(
         min_length=1,
         max_length=MAX_FEATURE_COUNT,
@@ -883,9 +812,7 @@ class AnomalyInferenceRequest(
         le=1.0,
     )
 
-    provenance: Optional[
-        InferenceProvenanceRequest
-    ] = None
+    provenance: Optional[InferenceProvenanceRequest] = None
 
     payload: Dict[
         str,
@@ -911,15 +838,11 @@ class AnomalyInferenceRequest(
     ) -> List[float]:
         output = []
 
-        for index, value in enumerate(
-            values
-        ):
+        for index, value in enumerate(values):
             output.append(
                 finite_number(
                     value,
-                    field_name=(
-                        f"features[{index}]"
-                    ),
+                    field_name=(f"features[{index}]"),
                 )
             )
 
@@ -937,18 +860,15 @@ class AnomalyInferenceRequest(
             Any,
         ],
     ) -> Dict[str, Any]:
-        return validate_attributes(
-            value
-        )
+        return validate_attributes(value)
 
 
 # ------------------------------------------------------------------
 # Batch inference
 # ------------------------------------------------------------------
 
-class BatchInferenceItemRequest(
-    APIInputModel
-):
+
+class BatchInferenceItemRequest(APIInputModel):
     item_id: str = Field(
         min_length=1,
         max_length=MAX_REQUEST_ID_LENGTH,
@@ -956,13 +876,9 @@ class BatchInferenceItemRequest(
 
     family: str
 
-    event: Optional[
-        EventInferenceRequest
-    ] = None
+    event: Optional[EventInferenceRequest] = None
 
-    anomaly: Optional[
-        AnomalyInferenceRequest
-    ] = None
+    anomaly: Optional[AnomalyInferenceRequest] = None
 
     @model_validator(
         mode="after",
@@ -970,52 +886,28 @@ class BatchInferenceItemRequest(
     def validate_family_payload(
         self,
     ) -> "BatchInferenceItemRequest":
-        if (
-            self.family
-            == ModelFamilyAPI.EVENT.value
-        ):
+        if self.family == ModelFamilyAPI.EVENT.value:
             if self.event is None:
-                raise ValueError(
-                    "event payload is required "
-                    "for family=event"
-                )
+                raise ValueError("event payload is required for family=event")
 
             if self.anomaly is not None:
-                raise ValueError(
-                    "anomaly payload is not "
-                    "allowed for family=event"
-                )
+                raise ValueError("anomaly payload is not allowed for family=event")
 
-        elif (
-            self.family
-            == ModelFamilyAPI.ANOMALY.value
-        ):
+        elif self.family == ModelFamilyAPI.ANOMALY.value:
             if self.anomaly is None:
-                raise ValueError(
-                    "anomaly payload is required "
-                    "for family=anomaly"
-                )
+                raise ValueError("anomaly payload is required for family=anomaly")
 
             if self.event is not None:
-                raise ValueError(
-                    "event payload is not "
-                    "allowed for family=anomaly"
-                )
+                raise ValueError("event payload is not allowed for family=anomaly")
 
         else:
-            raise ValueError(
-                "family must be event or anomaly"
-            )
+            raise ValueError("family must be event or anomaly")
 
         return self
 
 
-class BatchInferenceRequest(
-    APIInputModel
-):
-    items: List[
-        BatchInferenceItemRequest
-    ] = Field(
+class BatchInferenceRequest(APIInputModel):
+    items: List[BatchInferenceItemRequest] = Field(
         min_length=1,
         max_length=MAX_BATCH_SIZE,
     )
@@ -1030,24 +922,15 @@ class BatchInferenceRequest(
     @classmethod
     def validate_unique_item_ids(
         cls,
-        values: List[
-            BatchInferenceItemRequest
-        ],
-    ) -> List[
-        BatchInferenceItemRequest
-    ]:
+        values: List[BatchInferenceItemRequest],
+    ) -> List[BatchInferenceItemRequest]:
         seen = set()
 
         for item in values:
             if item.item_id in seen:
-                raise ValueError(
-                    "batch item IDs must "
-                    "be unique"
-                )
+                raise ValueError("batch item IDs must be unique")
 
-            seen.add(
-                item.item_id
-            )
+            seen.add(item.item_id)
 
         return values
 
@@ -1056,9 +939,8 @@ class BatchInferenceRequest(
 # Inference responses
 # ------------------------------------------------------------------
 
-class ModelIdentityResponse(
-    APIOutputModel
-):
+
+class ModelIdentityResponse(APIOutputModel):
     model_id: str
 
     name: str
@@ -1068,9 +950,7 @@ class ModelIdentityResponse(
     version: str
 
 
-class PredictionResponse(
-    APIOutputModel
-):
+class PredictionResponse(APIOutputModel):
     label: str
 
     score: Optional[float] = None
@@ -1089,24 +969,14 @@ class PredictionResponse(
     )
 
 
-class EventInferenceDetailResponse(
-    APIOutputModel
-):
-    source: Optional[
-        PredictionResponse
-    ] = None
+class EventInferenceDetailResponse(APIOutputModel):
+    source: Optional[PredictionResponse] = None
 
-    component: Optional[
-        PredictionResponse
-    ] = None
+    component: Optional[PredictionResponse] = None
 
-    event: Optional[
-        PredictionResponse
-    ] = None
+    event: Optional[PredictionResponse] = None
 
-    representation_dimension: Optional[
-        int
-    ] = Field(
+    representation_dimension: Optional[int] = Field(
         default=None,
         ge=0,
     )
@@ -1119,9 +989,7 @@ class EventInferenceDetailResponse(
     )
 
 
-class AnomalyInferenceDetailResponse(
-    APIOutputModel
-):
+class AnomalyInferenceDetailResponse(APIOutputModel):
     probability: float = Field(
         ge=0.0,
         le=1.0,
@@ -1136,9 +1004,7 @@ class AnomalyInferenceDetailResponse(
 
     score: Optional[float] = None
 
-    representation_dimension: Optional[
-        int
-    ] = Field(
+    representation_dimension: Optional[int] = Field(
         default=None,
         ge=0,
     )
@@ -1151,9 +1017,7 @@ class AnomalyInferenceDetailResponse(
     )
 
 
-class InferenceResponse(
-    APIOutputModel
-):
+class InferenceResponse(APIOutputModel):
     request_id: str
 
     state: str = Field(
@@ -1162,23 +1026,15 @@ class InferenceResponse(
 
     model: ModelIdentityResponse
 
-    predictions: List[
-        PredictionResponse
-    ] = Field(
+    predictions: List[PredictionResponse] = Field(
         default_factory=list,
     )
 
-    event: Optional[
-        EventInferenceDetailResponse
-    ] = None
+    event: Optional[EventInferenceDetailResponse] = None
 
-    anomaly: Optional[
-        AnomalyInferenceDetailResponse
-    ] = None
+    anomaly: Optional[AnomalyInferenceDetailResponse] = None
 
-    provenance: Optional[
-        InferenceProvenanceResponse
-    ] = None
+    provenance: Optional[InferenceProvenanceResponse] = None
 
     latency_ms: Optional[float] = Field(
         default=None,
@@ -1197,20 +1053,14 @@ class InferenceResponse(
     )
 
 
-class BatchInferenceItemResponse(
-    APIOutputModel
-):
+class BatchInferenceItemResponse(APIOutputModel):
     item_id: str
 
     success: bool
 
-    result: Optional[
-        InferenceResponse
-    ] = None
+    result: Optional[InferenceResponse] = None
 
-    error: Optional[
-        APIError
-    ] = None
+    error: Optional[APIError] = None
 
     @model_validator(
         mode="after",
@@ -1220,31 +1070,20 @@ class BatchInferenceItemResponse(
     ) -> "BatchInferenceItemResponse":
         if self.success:
             if self.result is None:
-                raise ValueError(
-                    "successful item requires result"
-                )
+                raise ValueError("successful item requires result")
 
             if self.error is not None:
-                raise ValueError(
-                    "successful item cannot "
-                    "contain an error"
-                )
+                raise ValueError("successful item cannot contain an error")
 
         else:
             if self.error is None:
-                raise ValueError(
-                    "failed item requires error"
-                )
+                raise ValueError("failed item requires error")
 
         return self
 
 
-class BatchInferenceResponse(
-    APIOutputModel
-):
-    items: List[
-        BatchInferenceItemResponse
-    ]
+class BatchInferenceResponse(APIOutputModel):
+    items: List[BatchInferenceItemResponse]
 
     total: int = Field(
         ge=0,
@@ -1268,22 +1107,11 @@ class BatchInferenceResponse(
     def validate_counts(
         self,
     ) -> "BatchInferenceResponse":
-        if (
-            self.succeeded
-            + self.failed
-            != self.total
-        ):
-            raise ValueError(
-                "succeeded + failed must "
-                "equal total"
-            )
+        if self.succeeded + self.failed != self.total:
+            raise ValueError("succeeded + failed must equal total")
 
-        if len(
-            self.items
-        ) != self.total:
-            raise ValueError(
-                "items length must equal total"
-            )
+        if len(self.items) != self.total:
+            raise ValueError("items length must equal total")
 
         return self
 
@@ -1292,9 +1120,8 @@ class BatchInferenceResponse(
 # Accelerator requests
 # ------------------------------------------------------------------
 
-class AcceleratorSelectionRequest(
-    APIInputModel
-):
+
+class AcceleratorSelectionRequest(APIInputModel):
     preferred_kind: str = Field(
         default=AcceleratorKindAPI.AUTO.value,
     )
@@ -1319,30 +1146,22 @@ class AcceleratorSelectionRequest(
 
     allow_degraded: bool = True
 
-    minimum_total_memory_bytes: Optional[
-        int
-    ] = Field(
+    minimum_total_memory_bytes: Optional[int] = Field(
         default=None,
         ge=0,
     )
 
-    minimum_free_memory_bytes: Optional[
-        int
-    ] = Field(
+    minimum_free_memory_bytes: Optional[int] = Field(
         default=None,
         ge=0,
     )
 
-    required_capabilities: List[
-        str
-    ] = Field(
+    required_capabilities: List[str] = Field(
         default_factory=list,
         max_length=128,
     )
 
-    required_precisions: List[
-        str
-    ] = Field(
+    required_precisions: List[str] = Field(
         default_factory=list,
         max_length=16,
     )
@@ -1355,25 +1174,16 @@ class AcceleratorSelectionRequest(
     def validate_policy(
         self,
     ) -> "AcceleratorSelectionRequest":
-        if (
-            self.require_accelerator
-            and self.allow_cpu_fallback
-        ):
+        if self.require_accelerator and self.allow_cpu_fallback:
             raise ValueError(
-                "require_accelerator and "
-                "allow_cpu_fallback cannot "
-                "both be enabled"
+                "require_accelerator and allow_cpu_fallback cannot both be enabled"
             )
 
         if (
             self.require_accelerator
-            and self.preferred_kind
-            == AcceleratorKindAPI.CPU.value
+            and self.preferred_kind == AcceleratorKindAPI.CPU.value
         ):
-            raise ValueError(
-                "CPU cannot satisfy "
-                "require_accelerator"
-            )
+            raise ValueError("CPU cannot satisfy require_accelerator")
 
         return self
 
@@ -1382,9 +1192,8 @@ class AcceleratorSelectionRequest(
 # Accelerator responses
 # ------------------------------------------------------------------
 
-class AcceleratorMemoryResponse(
-    APIOutputModel
-):
+
+class AcceleratorMemoryResponse(APIOutputModel):
     total_bytes: Optional[int] = Field(
         default=None,
         ge=0,
@@ -1417,9 +1226,7 @@ class AcceleratorMemoryResponse(
     )
 
 
-class AcceleratorDeviceResponse(
-    APIOutputModel
-):
+class AcceleratorDeviceResponse(APIOutputModel):
     device_id: str
 
     kind: str
@@ -1442,15 +1249,11 @@ class AcceleratorDeviceResponse(
         default_factory=AcceleratorMemoryResponse,
     )
 
-    capabilities: List[
-        str
-    ] = Field(
+    capabilities: List[str] = Field(
         default_factory=list,
     )
 
-    supported_precisions: List[
-        str
-    ] = Field(
+    supported_precisions: List[str] = Field(
         default_factory=list,
     )
 
@@ -1470,12 +1273,8 @@ class AcceleratorDeviceResponse(
     )
 
 
-class AcceleratorInventoryResponse(
-    APIOutputModel
-):
-    devices: List[
-        AcceleratorDeviceResponse
-    ] = Field(
+class AcceleratorInventoryResponse(APIOutputModel):
+    devices: List[AcceleratorDeviceResponse] = Field(
         default_factory=list,
     )
 
@@ -1507,18 +1306,14 @@ class AcceleratorInventoryResponse(
     )
 
 
-class AcceleratorSelectionResponse(
-    APIOutputModel
-):
+class AcceleratorSelectionResponse(APIOutputModel):
     device: AcceleratorDeviceResponse
 
     reason: str
 
     fallback_used: bool
 
-    candidates_considered: List[
-        str
-    ] = Field(
+    candidates_considered: List[str] = Field(
         default_factory=list,
     )
 
@@ -1540,9 +1335,8 @@ class AcceleratorSelectionResponse(
 # Optimization requests
 # ------------------------------------------------------------------
 
-class AcceleratorWorkloadRequest(
-    APIInputModel
-):
+
+class AcceleratorWorkloadRequest(APIInputModel):
     kind: str
 
     batch_size: Optional[int] = Field(
@@ -1565,9 +1359,7 @@ class AcceleratorWorkloadRequest(
         ge=0,
     )
 
-    estimated_peak_memory_bytes: Optional[
-        int
-    ] = Field(
+    estimated_peak_memory_bytes: Optional[int] = Field(
         default=None,
         ge=0,
     )
@@ -1613,9 +1405,7 @@ class AcceleratorWorkloadRequest(
     )
 
 
-class OptimizationConstraintsRequest(
-    APIInputModel
-):
+class OptimizationConstraintsRequest(APIInputModel):
     level: str = Field(
         default=OptimizationLevelAPI.BALANCED.value,
     )
@@ -1644,9 +1434,7 @@ class OptimizationConstraintsRequest(
         ge=1,
     )
 
-    maximum_memory_fraction: Optional[
-        float
-    ] = Field(
+    maximum_memory_fraction: Optional[float] = Field(
         default=None,
         gt=0.0,
         le=1.0,
@@ -1661,24 +1449,16 @@ class OptimizationConstraintsRequest(
         self,
     ) -> "OptimizationConstraintsRequest":
         if (
-            self.minimum_batch_size
-            is not None
-            and self.maximum_batch_size
-            is not None
-            and self.minimum_batch_size
-            > self.maximum_batch_size
+            self.minimum_batch_size is not None
+            and self.maximum_batch_size is not None
+            and self.minimum_batch_size > self.maximum_batch_size
         ):
-            raise ValueError(
-                "minimum_batch_size cannot "
-                "exceed maximum_batch_size"
-            )
+            raise ValueError("minimum_batch_size cannot exceed maximum_batch_size")
 
         return self
 
 
-class AcceleratorOptimizationRequest(
-    APIInputModel
-):
+class AcceleratorOptimizationRequest(APIInputModel):
     selection: AcceleratorSelectionRequest
 
     workload: AcceleratorWorkloadRequest
@@ -1694,9 +1474,8 @@ class AcceleratorOptimizationRequest(
 # Optimization responses
 # ------------------------------------------------------------------
 
-class OptimizationRecommendationResponse(
-    APIOutputModel
-):
+
+class OptimizationRecommendationResponse(APIOutputModel):
     kind: str
 
     title: str
@@ -1737,9 +1516,7 @@ class OptimizationRecommendationResponse(
     )
 
 
-class AcceleratorOptimizationResponse(
-    APIOutputModel
-):
+class AcceleratorOptimizationResponse(APIOutputModel):
     device_id: str
 
     backend: str
@@ -1756,9 +1533,7 @@ class AcceleratorOptimizationResponse(
         ge=0,
     )
 
-    recommendations: List[
-        OptimizationRecommendationResponse
-    ] = Field(
+    recommendations: List[OptimizationRecommendationResponse] = Field(
         default_factory=list,
     )
 
@@ -1782,9 +1557,8 @@ class AcceleratorOptimizationResponse(
 # Accelerator metrics response
 # ------------------------------------------------------------------
 
-class AcceleratorMetricsResponse(
-    APIOutputModel
-):
+
+class AcceleratorMetricsResponse(APIOutputModel):
     device_id: str
 
     kind: str
@@ -1807,9 +1581,8 @@ class AcceleratorMetricsResponse(
 # Model contracts
 # ------------------------------------------------------------------
 
-class ModelResponse(
-    APIOutputModel
-):
+
+class ModelResponse(APIOutputModel):
     model_id: str
 
     name: str
@@ -1848,12 +1621,8 @@ class ModelResponse(
     loaded_at: Optional[datetime] = None
 
 
-class ModelListResponse(
-    APIOutputModel
-):
-    models: List[
-        ModelResponse
-    ] = Field(
+class ModelListResponse(APIOutputModel):
+    models: List[ModelResponse] = Field(
         default_factory=list,
     )
 
@@ -1864,9 +1633,7 @@ class ModelListResponse(
     )
 
 
-class ModelOperationRequest(
-    APIInputModel
-):
+class ModelOperationRequest(APIInputModel):
     force: bool = False
 
     idempotency_key: Optional[str] = Field(
@@ -1875,9 +1642,7 @@ class ModelOperationRequest(
     )
 
 
-class ModelRefreshRequest(
-    APIInputModel
-):
+class ModelRefreshRequest(APIInputModel):
     fail_fast: bool = False
 
     replace: bool = False
@@ -1885,9 +1650,7 @@ class ModelRefreshRequest(
     eager_load: Optional[bool] = None
 
 
-class ModelRefreshResponse(
-    APIOutputModel
-):
+class ModelRefreshResponse(APIOutputModel):
     discovered: int = Field(
         ge=0,
     )
@@ -1918,9 +1681,8 @@ class ModelRefreshResponse(
 # Incident contracts
 # ------------------------------------------------------------------
 
-class IncidentSignalRequest(
-    APIInputModel
-):
+
+class IncidentSignalRequest(APIInputModel):
     signal_id: str = Field(
         min_length=1,
         max_length=MAX_NAME_LENGTH,
@@ -1957,9 +1719,7 @@ class IncidentSignalRequest(
     )
 
 
-class IncidentCreateRequest(
-    APIInputModel
-):
+class IncidentCreateRequest(APIInputModel):
     title: str = Field(
         min_length=1,
         max_length=MAX_NAME_LENGTH,
@@ -1984,9 +1744,7 @@ class IncidentCreateRequest(
         max_length=MAX_NAME_LENGTH,
     )
 
-    signals: List[
-        IncidentSignalRequest
-    ] = Field(
+    signals: List[IncidentSignalRequest] = Field(
         default_factory=list,
         max_length=MAX_INCIDENT_SIGNAL_COUNT,
     )
@@ -2004,9 +1762,7 @@ class IncidentCreateRequest(
     )
 
 
-class IncidentResponse(
-    APIOutputModel
-):
+class IncidentResponse(APIOutputModel):
     incident_id: str
 
     title: str
@@ -2037,12 +1793,8 @@ class IncidentResponse(
     )
 
 
-class IncidentListResponse(
-    APIOutputModel
-):
-    incidents: List[
-        IncidentResponse
-    ] = Field(
+class IncidentListResponse(APIOutputModel):
+    incidents: List[IncidentResponse] = Field(
         default_factory=list,
     )
 
@@ -2057,9 +1809,8 @@ class IncidentListResponse(
 # Decision contracts
 # ------------------------------------------------------------------
 
-class DecisionEvaluateRequest(
-    APIInputModel
-):
+
+class DecisionEvaluateRequest(APIInputModel):
     incident_id: str = Field(
         min_length=1,
         max_length=MAX_NAME_LENGTH,
@@ -2087,9 +1838,7 @@ class DecisionEvaluateRequest(
     dry_run: bool = True
 
 
-class DecisionResponse(
-    APIOutputModel
-):
+class DecisionResponse(APIOutputModel):
     decision_id: str
 
     incident_id: str
@@ -2129,9 +1878,8 @@ class DecisionResponse(
 # Remediation contracts
 # ------------------------------------------------------------------
 
-class RemediationStepRequest(
-    APIInputModel
-):
+
+class RemediationStepRequest(APIInputModel):
     step_id: str = Field(
         min_length=1,
         max_length=MAX_NAME_LENGTH,
@@ -2180,21 +1928,13 @@ class RemediationStepRequest(
     def validate_rollback(
         self,
     ) -> "RemediationStepRequest":
-        if (
-            self.reversible
-            and not self.rollback_action
-        ):
-            raise ValueError(
-                "reversible remediation step "
-                "requires rollback_action"
-            )
+        if self.reversible and not self.rollback_action:
+            raise ValueError("reversible remediation step requires rollback_action")
 
         return self
 
 
-class RemediationPlanCreateRequest(
-    APIInputModel
-):
+class RemediationPlanCreateRequest(APIInputModel):
     incident_id: str = Field(
         min_length=1,
         max_length=MAX_NAME_LENGTH,
@@ -2219,9 +1959,7 @@ class RemediationPlanCreateRequest(
         default=RemediationRiskAPI.MEDIUM.value,
     )
 
-    steps: List[
-        RemediationStepRequest
-    ] = Field(
+    steps: List[RemediationStepRequest] = Field(
         min_length=1,
         max_length=MAX_REMEDIATION_STEP_COUNT,
     )
@@ -2239,31 +1977,20 @@ class RemediationPlanCreateRequest(
     @classmethod
     def validate_unique_steps(
         cls,
-        values: List[
-            RemediationStepRequest
-        ],
-    ) -> List[
-        RemediationStepRequest
-    ]:
+        values: List[RemediationStepRequest],
+    ) -> List[RemediationStepRequest]:
         seen = set()
 
         for step in values:
             if step.step_id in seen:
-                raise ValueError(
-                    "remediation step IDs "
-                    "must be unique"
-                )
+                raise ValueError("remediation step IDs must be unique")
 
-            seen.add(
-                step.step_id
-            )
+            seen.add(step.step_id)
 
         return values
 
 
-class RemediationApprovalRequest(
-    APIInputModel
-):
+class RemediationApprovalRequest(APIInputModel):
     approved: bool
 
     reason: str = Field(
@@ -2281,9 +2008,7 @@ class RemediationApprovalRequest(
     )
 
 
-class RemediationExecutionRequest(
-    APIInputModel
-):
+class RemediationExecutionRequest(APIInputModel):
     confirm: bool
 
     dry_run: bool = True
@@ -2304,17 +2029,12 @@ class RemediationExecutionRequest(
         self,
     ) -> "RemediationExecutionRequest":
         if not self.confirm:
-            raise ValueError(
-                "remediation execution "
-                "requires confirm=true"
-            )
+            raise ValueError("remediation execution requires confirm=true")
 
         return self
 
 
-class RemediationStepResponse(
-    APIOutputModel
-):
+class RemediationStepResponse(APIOutputModel):
     step_id: str
 
     action: str
@@ -2339,9 +2059,7 @@ class RemediationStepResponse(
     )
 
 
-class RemediationPlanResponse(
-    APIOutputModel
-):
+class RemediationPlanResponse(APIOutputModel):
     plan_id: str
 
     version: int = Field(
@@ -2368,9 +2086,7 @@ class RemediationPlanResponse(
 
     approved_at: Optional[datetime] = None
 
-    steps: List[
-        RemediationStepResponse
-    ] = Field(
+    steps: List[RemediationStepResponse] = Field(
         default_factory=list,
     )
 
@@ -2392,7 +2108,6 @@ class RemediationPlanResponse(
 
 __all__ = [
     "API_SCHEMA_VERSION",
-
     "MAX_REQUEST_ID_LENGTH",
     "MAX_IDEMPOTENCY_KEY_LENGTH",
     "MAX_NAME_LENGTH",
@@ -2401,100 +2116,72 @@ __all__ = [
     "MAX_BATCH_SIZE",
     "MAX_FEATURE_COUNT",
     "MAX_ATTRIBUTE_COUNT",
-
     "APIStatus",
     "HealthStatus",
     "OperationState",
-
     "AcceleratorKindAPI",
     "PrecisionAPI",
     "WorkloadKindAPI",
     "OptimizationLevelAPI",
-
     "ModelFamilyAPI",
     "ModelStateAPI",
     "InferenceStateAPI",
-
     "IncidentStatusAPI",
     "SeverityAPI",
     "DecisionStatusAPI",
-
     "RemediationPlanStatusAPI",
     "RemediationRiskAPI",
-
     "APIInputModel",
     "APIOutputModel",
-
     "APIResponseMetadata",
-
     "APIErrorField",
     "APIError",
     "APIErrorResponse",
-
     "OperationResponse",
     "PaginationMetadata",
-
     "HealthComponentResponse",
     "HealthResponse",
     "LivenessResponse",
     "ReadinessResponse",
-
     "InferenceProvenanceRequest",
     "InferenceProvenanceResponse",
-
     "EventInferenceRequest",
     "AnomalyInferenceRequest",
-
     "BatchInferenceItemRequest",
     "BatchInferenceRequest",
-
     "ModelIdentityResponse",
     "PredictionResponse",
-
     "EventInferenceDetailResponse",
     "AnomalyInferenceDetailResponse",
-
     "InferenceResponse",
-
     "BatchInferenceItemResponse",
     "BatchInferenceResponse",
-
     "AcceleratorSelectionRequest",
-
     "AcceleratorMemoryResponse",
     "AcceleratorDeviceResponse",
     "AcceleratorInventoryResponse",
     "AcceleratorSelectionResponse",
-
     "AcceleratorWorkloadRequest",
     "OptimizationConstraintsRequest",
     "AcceleratorOptimizationRequest",
-
     "OptimizationRecommendationResponse",
     "AcceleratorOptimizationResponse",
-
     "AcceleratorMetricsResponse",
-
     "ModelResponse",
     "ModelListResponse",
-
     "ModelOperationRequest",
     "ModelRefreshRequest",
     "ModelRefreshResponse",
-
     "IncidentSignalRequest",
     "IncidentCreateRequest",
     "IncidentResponse",
     "IncidentListResponse",
-
     "DecisionEvaluateRequest",
     "DecisionResponse",
-
     "RemediationStepRequest",
     "RemediationPlanCreateRequest",
     "RemediationApprovalRequest",
     "RemediationExecutionRequest",
-
     "RemediationStepResponse",
     "RemediationPlanResponse",
 ]

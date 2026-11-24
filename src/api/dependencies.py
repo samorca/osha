@@ -59,8 +59,6 @@ from typing import (
     Dict,
     Mapping,
     Optional,
-    TypeVar,
-    cast,
 )
 
 from fastapi import (
@@ -104,36 +102,22 @@ from src.api.errors import (
 # Logging
 # ------------------------------------------------------------------
 
-logger = logging.getLogger(
-    __name__
-)
+logger = logging.getLogger(__name__)
 
 
 # ------------------------------------------------------------------
 # Constants
 # ------------------------------------------------------------------
 
-APP_DEPENDENCY_STATE_KEY = (
-    "osha_dependencies"
-)
+APP_DEPENDENCY_STATE_KEY = "osha_dependencies"
 
-APP_CONFIG_STATE_KEY = (
-    "osha_api_config"
-)
-
-
-# ------------------------------------------------------------------
-# Generic type
-# ------------------------------------------------------------------
-
-T = TypeVar(
-    "T"
-)
+APP_CONFIG_STATE_KEY = "osha_api_config"
 
 
 # ------------------------------------------------------------------
 # Optional-call helpers
 # ------------------------------------------------------------------
+
 
 def _call_if_available(
     target: Any,
@@ -158,9 +142,7 @@ def _call_if_available(
         None,
     )
 
-    if not callable(
-        method
-    ):
+    if not callable(method):
         return None
 
     return method(
@@ -187,9 +169,7 @@ async def _call_maybe_async(
         **kwargs,
     )
 
-    if inspect.isawaitable(
-        result
-    ):
+    if inspect.isawaitable(result):
         return await result
 
     return result
@@ -198,6 +178,7 @@ async def _call_maybe_async(
 # ------------------------------------------------------------------
 # Dependency container
 # ------------------------------------------------------------------
+
 
 @dataclass
 class APIDependencies:
@@ -213,35 +194,25 @@ class APIDependencies:
 
     config: APIConfig
 
-    accelerator_manager: (
-        AcceleratorManager
-    )
+    accelerator_manager: AcceleratorManager
 
     ai_config: AIConfig
 
-    model_registry: (
-        AIModelRegistry
-    )
+    model_registry: AIModelRegistry
 
-    model_loader: (
-        AIModelLoader
-    )
+    model_loader: AIModelLoader
 
     ai_pipeline: AIPipeline
 
     services: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     started: bool = False
 
@@ -265,10 +236,7 @@ class APIDependencies:
         self.ai_config.validate()
 
         if self.closed:
-            raise RuntimeError(
-                "API dependency container "
-                "is already closed."
-            )
+            raise RuntimeError("API dependency container is already closed.")
 
     # ------------------------------------------------------
     # Service registration
@@ -294,34 +262,19 @@ class APIDependencies:
             services/remediation.py
         """
 
-        service_name = str(
-            name
-        ).strip()
+        service_name = str(name).strip()
 
         if not service_name:
-            raise ValueError(
-                "service name cannot be empty"
-            )
+            raise ValueError("service name cannot be empty")
 
         if service is None:
-            raise ValueError(
-                "service cannot be None"
-            )
+            raise ValueError("service cannot be None")
 
         with self._lock:
-            if (
-                service_name
-                in self.services
-                and not replace
-            ):
-                raise ValueError(
-                    "API service is already "
-                    f"registered: {service_name}"
-                )
+            if service_name in self.services and not replace:
+                raise ValueError(f"API service is already registered: {service_name}")
 
-            self.services[
-                service_name
-            ] = service
+            self.services[service_name] = service
 
     # ------------------------------------------------------
     # Service lookup
@@ -331,27 +284,17 @@ class APIDependencies:
         self,
         name: str,
     ) -> Any:
-        service_name = str(
-            name
-        ).strip()
+        service_name = str(name).strip()
 
         with self._lock:
-            value = self.services.get(
-                service_name
-            )
+            value = self.services.get(service_name)
 
         if value is None:
             raise ServiceUnavailableAPIError(
-                "The requested API service "
-                "is unavailable.",
+                "The requested API service is unavailable.",
                 details={
-                    "resource": (
-                        "api_service"
-                    ),
-
-                    "resource_id": (
-                        service_name
-                    ),
+                    "resource": ("api_service"),
+                    "resource_id": (service_name),
                 },
             )
 
@@ -375,10 +318,7 @@ class APIDependencies:
                 return
 
             if self.closed:
-                raise RuntimeError(
-                    "Closed API dependency "
-                    "container cannot start."
-                )
+                raise RuntimeError("Closed API dependency container cannot start.")
 
         self.validate()
 
@@ -413,15 +353,8 @@ class APIDependencies:
             "OSHA API dependencies started",
             extra={
                 "api_dependencies": {
-                    "service": (
-                        self.config.
-                        service_name
-                    ),
-
-                    "environment": (
-                        self.config.
-                        environment
-                    ),
+                    "service": (self.config.service_name),
+                    "environment": (self.config.environment),
                 },
             },
         )
@@ -450,16 +383,12 @@ class APIDependencies:
         # --------------------------------------------------
 
         with self._lock:
-            services = list(
-                self.services.items()
-            )
+            services = list(self.services.items())
 
         for (
             service_name,
             service,
-        ) in reversed(
-            services
-        ):
+        ) in reversed(services):
             try:
                 if callable(
                     getattr(
@@ -488,19 +417,9 @@ class APIDependencies:
             except Exception as exc:
                 failures.append(
                     {
-                        "resource": (
-                            "api_service"
-                        ),
-
-                        "resource_id": (
-                            service_name
-                        ),
-
-                        "error_type": (
-                            type(
-                                exc
-                            ).__name__
-                        ),
+                        "resource": ("api_service"),
+                        "resource_id": (service_name),
+                        "error_type": (type(exc).__name__),
                     }
                 )
 
@@ -548,15 +467,8 @@ class APIDependencies:
         except Exception as exc:
             failures.append(
                 {
-                    "resource": (
-                        "ai_pipeline"
-                    ),
-
-                    "error_type": (
-                        type(
-                            exc
-                        ).__name__
-                    ),
+                    "resource": ("ai_pipeline"),
+                    "error_type": (type(exc).__name__),
                 }
             )
 
@@ -571,14 +483,10 @@ class APIDependencies:
                 None,
             )
 
-            if callable(
-                unload_all
-            ):
+            if callable(unload_all):
                 result = unload_all()
 
-                if inspect.isawaitable(
-                    result
-                ):
+                if inspect.isawaitable(result):
                     await result
 
             else:
@@ -593,13 +501,9 @@ class APIDependencies:
                     None,
                 )
 
-                if callable(
-                    find
-                ):
+                if callable(find):
                     try:
-                        entries = list(
-                            find()
-                        )
+                        entries = list(find())
 
                     except TypeError:
                         entries = []
@@ -610,9 +514,7 @@ class APIDependencies:
                     None,
                 )
 
-                if callable(
-                    unload
-                ):
+                if callable(unload):
                     for entry in entries:
                         model_id = getattr(
                             entry,
@@ -628,31 +530,17 @@ class APIDependencies:
                             )
                         )
 
-                        if (
-                            model_id
-                            and loaded
-                        ):
-                            result = unload(
-                                model_id
-                            )
+                        if model_id and loaded:
+                            result = unload(model_id)
 
-                            if inspect.isawaitable(
-                                result
-                            ):
+                            if inspect.isawaitable(result):
                                 await result
 
         except Exception as exc:
             failures.append(
                 {
-                    "resource": (
-                        "model_registry"
-                    ),
-
-                    "error_type": (
-                        type(
-                            exc
-                        ).__name__
-                    ),
+                    "resource": ("model_registry"),
+                    "error_type": (type(exc).__name__),
                 }
             )
 
@@ -666,15 +554,8 @@ class APIDependencies:
         except Exception as exc:
             failures.append(
                 {
-                    "resource": (
-                        "accelerator_manager"
-                    ),
-
-                    "error_type": (
-                        type(
-                            exc
-                        ).__name__
-                    ),
+                    "resource": ("accelerator_manager"),
+                    "error_type": (type(exc).__name__),
                 }
             )
 
@@ -686,19 +567,14 @@ class APIDependencies:
 
         if failures:
             logger.warning(
-                "OSHA API dependency shutdown "
-                "completed with cleanup failures",
+                "OSHA API dependency shutdown completed with cleanup failures",
                 extra={
-                    "api_dependency_failures": (
-                        failures
-                    ),
+                    "api_dependency_failures": (failures),
                 },
             )
 
         else:
-            logger.info(
-                "OSHA API dependencies closed"
-            )
+            logger.info("OSHA API dependencies closed")
 
     # ------------------------------------------------------
     # Readiness
@@ -709,10 +585,7 @@ class APIDependencies:
         self,
     ) -> bool:
         with self._lock:
-            return bool(
-                self.started
-                and not self.closed
-            )
+            return bool(self.started and not self.closed)
 
     # ------------------------------------------------------
     # Summary
@@ -722,58 +595,24 @@ class APIDependencies:
         self,
     ) -> Dict[str, Any]:
         with self._lock:
-            service_names = sorted(
-                self.services
-            )
+            service_names = sorted(self.services)
 
             started = self.started
             closed = self.closed
 
         return {
-            "ready": bool(
-                started
-                and not closed
-            ),
-
+            "ready": bool(started and not closed),
             "started": started,
-
             "closed": closed,
-
-            "config": (
-                safe_config_summary(
-                    self.config
-                )
-            ),
-
-            "services": (
-                service_names
-            ),
-
+            "config": (safe_config_summary(self.config)),
+            "services": (service_names),
             "resources": {
-                "accelerator_manager": (
-                    self.accelerator_manager
-                    is not None
-                ),
-
-                "model_registry": (
-                    self.model_registry
-                    is not None
-                ),
-
-                "model_loader": (
-                    self.model_loader
-                    is not None
-                ),
-
-                "ai_pipeline": (
-                    self.ai_pipeline
-                    is not None
-                ),
+                "accelerator_manager": (self.accelerator_manager is not None),
+                "model_registry": (self.model_registry is not None),
+                "model_loader": (self.model_loader is not None),
+                "ai_pipeline": (self.ai_pipeline is not None),
             },
-
-            "attributes": dict(
-                self.attributes
-            ),
+            "attributes": dict(self.attributes),
         }
 
 
@@ -781,29 +620,16 @@ class APIDependencies:
 # Construction
 # ------------------------------------------------------------------
 
+
 def create_api_dependencies(
     *,
-    config: Optional[
-        APIConfig
-    ] = None,
-    accelerator_manager: Optional[
-        AcceleratorManager
-    ] = None,
-    accelerator_config: Optional[
-        AcceleratorConfig
-    ] = None,
-    ai_config: Optional[
-        AIConfig
-    ] = None,
-    model_registry: Optional[
-        AIModelRegistry
-    ] = None,
-    model_loader: Optional[
-        AIModelLoader
-    ] = None,
-    ai_pipeline: Optional[
-        AIPipeline
-    ] = None,
+    config: Optional[APIConfig] = None,
+    accelerator_manager: Optional[AcceleratorManager] = None,
+    accelerator_config: Optional[AcceleratorConfig] = None,
+    ai_config: Optional[AIConfig] = None,
+    model_registry: Optional[AIModelRegistry] = None,
+    model_loader: Optional[AIModelLoader] = None,
+    ai_pipeline: Optional[AIPipeline] = None,
 ) -> APIDependencies:
     """
     Construct the process-scoped dependency graph.
@@ -817,98 +643,40 @@ def create_api_dependencies(
     from FastAPI lifespan startup.
     """
 
-    resolved_config = (
-        config
-        or from_environment()
-    )
+    resolved_config = config or from_environment()
 
     resolved_config.validate()
 
-    resolved_accelerator_manager = (
-        accelerator_manager
-        or AcceleratorManager(
-            config=(
-                accelerator_config
-                or AcceleratorConfig()
-            )
-        )
+    resolved_accelerator_manager = accelerator_manager or AcceleratorManager(
+        config=(accelerator_config or AcceleratorConfig())
     )
 
-    resolved_ai_config = (
-        ai_config
-        or AIConfig()
-    )
+    resolved_ai_config = ai_config or AIConfig()
 
     resolved_ai_config.validate()
 
-    resolved_registry = (
-        model_registry
-        or AIModelRegistry(
-            config=(
-                resolved_ai_config
-            )
-        )
+    resolved_registry = model_registry or AIModelRegistry(config=(resolved_ai_config))
+
+    resolved_loader = model_loader or AIModelLoader(
+        config=(resolved_ai_config),
+        registry=(resolved_registry),
     )
 
-    resolved_loader = (
-        model_loader
-        or AIModelLoader(
-            config=(
-                resolved_ai_config
-            ),
-
-            registry=(
-                resolved_registry
-            ),
-        )
-    )
-
-    resolved_pipeline = (
-        ai_pipeline
-        or AIPipeline(
-            config=(
-                resolved_ai_config
-            ),
-
-            registry=(
-                resolved_registry
-            ),
-
-            loader=(
-                resolved_loader
-            ),
-        )
+    resolved_pipeline = ai_pipeline or AIPipeline(
+        config=(resolved_ai_config),
+        registry=(resolved_registry),
+        loader=(resolved_loader),
     )
 
     dependencies = APIDependencies(
-        config=(
-            resolved_config
-        ),
-
-        accelerator_manager=(
-            resolved_accelerator_manager
-        ),
-
-        ai_config=(
-            resolved_ai_config
-        ),
-
-        model_registry=(
-            resolved_registry
-        ),
-
-        model_loader=(
-            resolved_loader
-        ),
-
-        ai_pipeline=(
-            resolved_pipeline
-        ),
-
+        config=(resolved_config),
+        accelerator_manager=(resolved_accelerator_manager),
+        ai_config=(resolved_ai_config),
+        model_registry=(resolved_registry),
+        model_loader=(resolved_loader),
+        ai_pipeline=(resolved_pipeline),
         attributes={
-            "scope": (
-                "worker_process"
-            ),
+            "scope": ("worker_process"),
         },
     )
 
@@ -921,6 +689,7 @@ def create_api_dependencies(
 # FastAPI app-state installation
 # ------------------------------------------------------------------
 
+
 def install_api_dependencies(
     app: Any,
     dependencies: APIDependencies,
@@ -931,17 +700,13 @@ def install_api_dependencies(
     """
 
     if app is None:
-        raise ValueError(
-            "app cannot be None"
-        )
+        raise ValueError("app cannot be None")
 
     if not hasattr(
         app,
         "state",
     ):
-        raise ValueError(
-            "app does not expose state"
-        )
+        raise ValueError("app does not expose state")
 
     setattr(
         app.state,
@@ -960,15 +725,13 @@ def install_api_dependencies(
 # FastAPI app-state removal
 # ------------------------------------------------------------------
 
+
 def remove_api_dependencies(
     app: Any,
 ) -> None:
-    if (
-        app is None
-        or not hasattr(
-            app,
-            "state",
-        )
+    if app is None or not hasattr(
+        app,
+        "state",
     ):
         return
 
@@ -990,6 +753,7 @@ def remove_api_dependencies(
 # Container retrieval
 # ------------------------------------------------------------------
 
+
 def get_api_dependencies(
     request: Request,
 ) -> APIDependencies:
@@ -1006,12 +770,9 @@ def get_api_dependencies(
 
     if value is None:
         raise ServiceUnavailableAPIError(
-            "API runtime dependencies have "
-            "not been initialized.",
+            "API runtime dependencies have not been initialized.",
             details={
-                "resource": (
-                    "api_dependencies"
-                ),
+                "resource": ("api_dependencies"),
             },
         )
 
@@ -1020,23 +781,17 @@ def get_api_dependencies(
         APIDependencies,
     ):
         raise InternalServerAPIError(
-            "API runtime dependency state "
-            "is invalid.",
+            "API runtime dependency state is invalid.",
             details={
-                "resource": (
-                    "api_dependencies"
-                ),
+                "resource": ("api_dependencies"),
             },
         )
 
     if not value.ready:
         raise ServiceUnavailableAPIError(
-            "API runtime dependencies are "
-            "not ready.",
+            "API runtime dependencies are not ready.",
             details={
-                "resource": (
-                    "api_dependencies"
-                ),
+                "resource": ("api_dependencies"),
             },
         )
 
@@ -1047,73 +802,59 @@ def get_api_dependencies(
 # Core request dependencies
 # ------------------------------------------------------------------
 
+
 def get_api_config(
     request: Request,
 ) -> APIConfig:
-    return get_api_dependencies(
-        request
-    ).config
+    return get_api_dependencies(request).config
 
 
 def get_accelerator_manager(
     request: Request,
 ) -> AcceleratorManager:
-    return get_api_dependencies(
-        request
-    ).accelerator_manager
+    return get_api_dependencies(request).accelerator_manager
 
 
 def get_ai_config(
     request: Request,
 ) -> AIConfig:
-    return get_api_dependencies(
-        request
-    ).ai_config
+    return get_api_dependencies(request).ai_config
 
 
 def get_model_registry(
     request: Request,
 ) -> AIModelRegistry:
-    return get_api_dependencies(
-        request
-    ).model_registry
+    return get_api_dependencies(request).model_registry
 
 
 def get_model_loader(
     request: Request,
 ) -> AIModelLoader:
-    return get_api_dependencies(
-        request
-    ).model_loader
+    return get_api_dependencies(request).model_loader
 
 
 def get_ai_pipeline(
     request: Request,
 ) -> AIPipeline:
-    return get_api_dependencies(
-        request
-    ).ai_pipeline
+    return get_api_dependencies(request).ai_pipeline
 
 
 # ------------------------------------------------------------------
 # Named API service retrieval
 # ------------------------------------------------------------------
 
+
 def get_api_service(
     request: Request,
     name: str,
 ) -> Any:
-    return get_api_dependencies(
-        request
-    ).service(
-        name
-    )
+    return get_api_dependencies(request).service(name)
 
 
 def typed_api_service(
     request: Request,
     name: str,
-) -> T:
+) -> Any:
     """
     Typed wrapper for service retrieval.
 
@@ -1122,18 +863,16 @@ def typed_api_service(
     service's responsibility.
     """
 
-    return cast(
-        T,
-        get_api_service(
-            request,
-            name,
-        ),
+    return get_api_service(
+        request,
+        name,
     )
 
 
 # ------------------------------------------------------------------
 # Feature gates
 # ------------------------------------------------------------------
+
 
 def require_feature(
     config: APIConfig,
@@ -1146,14 +885,10 @@ def require_feature(
     before executing an optional API capability.
     """
 
-    name = str(
-        feature_name
-    ).strip()
+    name = str(feature_name).strip()
 
     if not name:
-        raise ValueError(
-            "feature_name cannot be empty"
-        )
+        raise ValueError("feature_name cannot be empty")
 
     if not hasattr(
         config.features,
@@ -1162,13 +897,8 @@ def require_feature(
         raise InternalServerAPIError(
             "Unknown API feature gate.",
             details={
-                "resource": (
-                    "api_feature"
-                ),
-
-                "resource_id": (
-                    name
-                ),
+                "resource": ("api_feature"),
+                "resource_id": (name),
             },
         )
 
@@ -1186,13 +916,8 @@ def require_feature(
 
         raise FeatureDisabledError(
             details={
-                "resource": (
-                    "api_feature"
-                ),
-
-                "resource_id": (
-                    name
-                ),
+                "resource": ("api_feature"),
+                "resource_id": (name),
             },
         )
 
@@ -1200,9 +925,7 @@ def require_feature(
 def require_inference_feature(
     request: Request,
 ) -> APIConfig:
-    config = get_api_config(
-        request
-    )
+    config = get_api_config(request)
 
     require_feature(
         config,
@@ -1215,9 +938,7 @@ def require_inference_feature(
 def require_accelerator_read_feature(
     request: Request,
 ) -> APIConfig:
-    config = get_api_config(
-        request
-    )
+    config = get_api_config(request)
 
     require_feature(
         config,
@@ -1230,9 +951,7 @@ def require_accelerator_read_feature(
 def require_accelerator_optimization_feature(
     request: Request,
 ) -> APIConfig:
-    config = get_api_config(
-        request
-    )
+    config = get_api_config(request)
 
     require_feature(
         config,
@@ -1245,9 +964,7 @@ def require_accelerator_optimization_feature(
 def require_model_read_feature(
     request: Request,
 ) -> APIConfig:
-    config = get_api_config(
-        request
-    )
+    config = get_api_config(request)
 
     require_feature(
         config,
@@ -1260,9 +977,7 @@ def require_model_read_feature(
 def require_model_operations_feature(
     request: Request,
 ) -> APIConfig:
-    config = get_api_config(
-        request
-    )
+    config = get_api_config(request)
 
     require_feature(
         config,
@@ -1275,9 +990,7 @@ def require_model_operations_feature(
 def require_incident_create_feature(
     request: Request,
 ) -> APIConfig:
-    config = get_api_config(
-        request
-    )
+    config = get_api_config(request)
 
     require_feature(
         config,
@@ -1290,9 +1003,7 @@ def require_incident_create_feature(
 def require_decision_evaluation_feature(
     request: Request,
 ) -> APIConfig:
-    config = get_api_config(
-        request
-    )
+    config = get_api_config(request)
 
     require_feature(
         config,
@@ -1305,9 +1016,7 @@ def require_decision_evaluation_feature(
 def require_remediation_plan_feature(
     request: Request,
 ) -> APIConfig:
-    config = get_api_config(
-        request
-    )
+    config = get_api_config(request)
 
     require_feature(
         config,
@@ -1320,9 +1029,7 @@ def require_remediation_plan_feature(
 def require_remediation_approval_feature(
     request: Request,
 ) -> APIConfig:
-    config = get_api_config(
-        request
-    )
+    config = get_api_config(request)
 
     require_feature(
         config,
@@ -1335,9 +1042,7 @@ def require_remediation_approval_feature(
 def require_remediation_execution_feature(
     request: Request,
 ) -> APIConfig:
-    config = get_api_config(
-        request
-    )
+    config = get_api_config(request)
 
     require_feature(
         config,
@@ -1350,9 +1055,7 @@ def require_remediation_execution_feature(
 def require_live_remediation_feature(
     request: Request,
 ) -> APIConfig:
-    config = get_api_config(
-        request
-    )
+    config = get_api_config(request)
 
     require_feature(
         config,
@@ -1371,15 +1074,12 @@ def require_live_remediation_feature(
 # Startup helper
 # ------------------------------------------------------------------
 
+
 async def start_api_dependencies(
     app: Any,
     *,
-    config: Optional[
-        APIConfig
-    ] = None,
-    dependencies: Optional[
-        APIDependencies
-    ] = None,
+    config: Optional[APIConfig] = None,
+    dependencies: Optional[APIDependencies] = None,
 ) -> APIDependencies:
     """
     Create, start, and install dependencies.
@@ -1387,12 +1087,7 @@ async def start_api_dependencies(
     Designed for src/api/app.py lifespan.
     """
 
-    resolved = (
-        dependencies
-        or create_api_dependencies(
-            config=config
-        )
-    )
+    resolved = dependencies or create_api_dependencies(config=config)
 
     try:
         await resolved.start()
@@ -1409,10 +1104,7 @@ async def start_api_dependencies(
             await resolved.close()
 
         except Exception:
-            logger.exception(
-                "API dependency cleanup failed "
-                "after startup failure"
-            )
+            logger.exception("API dependency cleanup failed after startup failure")
 
         raise
 
@@ -1420,6 +1112,7 @@ async def start_api_dependencies(
 # ------------------------------------------------------------------
 # Shutdown helper
 # ------------------------------------------------------------------
+
 
 async def close_api_dependencies(
     app: Any,
@@ -1430,12 +1123,9 @@ async def close_api_dependencies(
     Designed for src/api/app.py lifespan.
     """
 
-    if (
-        app is None
-        or not hasattr(
-            app,
-            "state",
-        )
+    if app is None or not hasattr(
+        app,
+        "state",
     ):
         return
 
@@ -1453,9 +1143,7 @@ async def close_api_dependencies(
             await dependencies.close()
 
     finally:
-        remove_api_dependencies(
-            app
-        )
+        remove_api_dependencies(app)
 
 
 # ------------------------------------------------------------------
@@ -1465,45 +1153,31 @@ async def close_api_dependencies(
 __all__ = [
     "APP_DEPENDENCY_STATE_KEY",
     "APP_CONFIG_STATE_KEY",
-
     "APIDependencies",
-
     "create_api_dependencies",
-
     "install_api_dependencies",
     "remove_api_dependencies",
-
     "get_api_dependencies",
-
     "get_api_config",
     "get_accelerator_manager",
-
     "get_ai_config",
     "get_model_registry",
     "get_model_loader",
     "get_ai_pipeline",
-
     "get_api_service",
     "typed_api_service",
-
     "require_feature",
-
     "require_inference_feature",
-
     "require_accelerator_read_feature",
     "require_accelerator_optimization_feature",
-
     "require_model_read_feature",
     "require_model_operations_feature",
-
     "require_incident_create_feature",
     "require_decision_evaluation_feature",
-
     "require_remediation_plan_feature",
     "require_remediation_approval_feature",
     "require_remediation_execution_feature",
     "require_live_remediation_feature",
-
     "start_api_dependencies",
     "close_api_dependencies",
 ]

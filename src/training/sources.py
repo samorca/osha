@@ -82,46 +82,20 @@ EXCLUDED_OPERATIONAL_DIRECTORIES = {
 # ---------------------------------------------------------------
 
 OPERATIONAL_SOURCE_DIRECTORIES = {
-    TrainingSourceKind.
-    PROCESSED_OPERATIONAL_DATA.value: (
-        "processed"
-    ),
-
-    TrainingSourceKind.
-    NORMALIZED_TELEMETRY.value: (
-        "normalized"
-    ),
-
-    TrainingSourceKind.
-    CORRELATED_DATA.value: (
-        "correlated"
-    ),
-
-    TrainingSourceKind.
-    INTELLIGENCE_DATA.value: (
-        "intelligence"
-    ),
-
-    TrainingSourceKind.
-    DECISION_DATA.value: (
-        "decision"
-    ),
-
-    TrainingSourceKind.
-    REMEDIATION_DATA.value: (
-        "remediation"
-    ),
-
-    TrainingSourceKind.
-    MEMORY_DATA.value: (
-        "memory"
-    ),
+    TrainingSourceKind.PROCESSED_OPERATIONAL_DATA.value: ("processed"),
+    TrainingSourceKind.NORMALIZED_TELEMETRY.value: ("normalized"),
+    TrainingSourceKind.CORRELATED_DATA.value: ("correlated"),
+    TrainingSourceKind.INTELLIGENCE_DATA.value: ("intelligence"),
+    TrainingSourceKind.DECISION_DATA.value: ("decision"),
+    TrainingSourceKind.REMEDIATION_DATA.value: ("remediation"),
+    TrainingSourceKind.MEMORY_DATA.value: ("memory"),
 }
 
 
 # ---------------------------------------------------------------
 # Discovered source
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class DiscoveredTrainingSource:
@@ -136,17 +110,9 @@ class DiscoveredTrainingSource:
         self,
     ) -> Dict[str, Any]:
         return {
-            "source": (
-                self.source.to_dict()
-            ),
-
-            "file_count": len(
-                self.files
-            ),
-
-            "files": list(
-                self.files
-            ),
+            "source": (self.source.to_dict()),
+            "file_count": len(self.files),
+            "files": list(self.files),
         }
 
 
@@ -154,12 +120,11 @@ class DiscoveredTrainingSource:
 # Safe root/path resolution
 # ---------------------------------------------------------------
 
+
 def _root(
     value: str | Path,
 ) -> Path:
-    return Path(
-        value
-    ).expanduser().resolve()
+    return Path(value).expanduser().resolve()
 
 
 def _inside(
@@ -167,9 +132,7 @@ def _inside(
     path: Path,
 ) -> bool:
     try:
-        path.resolve().relative_to(
-            root.resolve()
-        )
+        path.resolve().relative_to(root.resolve())
 
         return True
 
@@ -187,28 +150,18 @@ def _require_file_inside(
         root,
         resolved,
     ):
-        raise TrainingSourceError(
-            "Training source path "
-            "escapes its configured "
-            "root."
-        )
+        raise TrainingSourceError("Training source path escapes its configured root.")
 
     if not resolved.exists():
         raise TrainingSourceNotFoundError(
-            "Training source file was "
-            "not found.",
+            "Training source file was not found.",
             details={
-                "path": str(
-                    resolved
-                ),
+                "path": str(resolved),
             },
         )
 
     if not resolved.is_file():
-        raise TrainingSourceError(
-            "Training source path is "
-            "not a regular file."
-        )
+        raise TrainingSourceError("Training source path is not a regular file.")
 
     return resolved
 
@@ -217,51 +170,34 @@ def _require_file_inside(
 # Discover compatible files
 # ---------------------------------------------------------------
 
+
 def discover_files(
     root: str | Path,
     *,
     recursive: bool = True,
 ) -> List[Path]:
-    root_path = _root(
-        root
-    )
+    root_path = _root(root)
 
     if not root_path.exists():
         return []
 
     if not root_path.is_dir():
         raise TrainingSourceError(
-            "Training source root is "
-            "not a directory.",
+            "Training source root is not a directory.",
             details={
-                "path": str(
-                    root_path
-                ),
+                "path": str(root_path),
             },
         )
 
-    iterator = (
-        root_path.rglob(
-            "*"
-        )
-        if recursive
-        else root_path.glob(
-            "*"
-        )
-    )
+    iterator = root_path.rglob("*") if recursive else root_path.glob("*")
 
-    output: List[
-        Path
-    ] = []
+    output: List[Path] = []
 
     for path in iterator:
         if not path.is_file():
             continue
 
-        if (
-            path.suffix.lower()
-            not in SUPPORTED_SUFFIXES
-        ):
+        if path.suffix.lower() not in SUPPORTED_SUFFIXES:
             continue
 
         if not _inside(
@@ -270,21 +206,18 @@ def discover_files(
         ):
             continue
 
-        output.append(
-            path.resolve()
-        )
+        output.append(path.resolve())
 
     return sorted(
         output,
-        key=lambda path: str(
-            path
-        ),
+        key=lambda path: str(path),
     )
 
 
 # ---------------------------------------------------------------
 # JSONL streaming
 # ---------------------------------------------------------------
+
 
 def _iter_jsonl(
     path: Path,
@@ -309,23 +242,15 @@ def _iter_jsonl(
                     continue
 
                 try:
-                    value = json.loads(
-                        text
-                    )
+                    value = json.loads(text)
 
                 except json.JSONDecodeError as exc:
                     raise (
                         TrainingSourceFormatError(
-                            "Training JSONL "
-                            "contains invalid "
-                            "JSON.",
+                            "Training JSONL contains invalid JSON.",
                             details={
-                                "path": str(
-                                    path
-                                ),
-                                "line_number": (
-                                    line_number
-                                ),
+                                "path": str(path),
+                                "line_number": (line_number),
                             },
                         )
                     ) from exc
@@ -336,23 +261,15 @@ def _iter_jsonl(
                 ):
                     raise (
                         TrainingSourceFormatError(
-                            "Training JSONL "
-                            "record must be "
-                            "an object.",
+                            "Training JSONL record must be an object.",
                             details={
-                                "path": str(
-                                    path
-                                ),
-                                "line_number": (
-                                    line_number
-                                ),
+                                "path": str(path),
+                                "line_number": (line_number),
                             },
                         )
                     )
 
-                yield dict(
-                    value
-                )
+                yield dict(value)
 
     except TrainingSourceError:
         raise
@@ -362,15 +279,10 @@ def _iter_jsonl(
         UnicodeError,
     ) as exc:
         raise TrainingSourceError(
-            "Training JSONL source "
-            "could not be read.",
+            "Training JSONL source could not be read.",
             details={
-                "path": str(
-                    path
-                ),
-                "error_type": (
-                    type(exc).__name__
-                ),
+                "path": str(path),
+                "error_type": (type(exc).__name__),
             },
         ) from exc
 
@@ -378,6 +290,7 @@ def _iter_jsonl(
 # ---------------------------------------------------------------
 # JSON loading
 # ---------------------------------------------------------------
+
 
 def _iter_json(
     path: Path,
@@ -392,9 +305,7 @@ def _iter_json(
             "r",
             encoding="utf-8",
         ) as stream:
-            value = json.load(
-                stream
-            )
+            value = json.load(stream)
 
     except (
         OSError,
@@ -402,15 +313,10 @@ def _iter_json(
         json.JSONDecodeError,
     ) as exc:
         raise TrainingSourceFormatError(
-            "Training JSON source "
-            "could not be parsed.",
+            "Training JSON source could not be parsed.",
             details={
-                "path": str(
-                    path
-                ),
-                "error_type": (
-                    type(exc).__name__
-                ),
+                "path": str(path),
+                "error_type": (type(exc).__name__),
             },
         ) from exc
 
@@ -418,9 +324,7 @@ def _iter_json(
         value,
         Mapping,
     ):
-        yield dict(
-            value
-        )
+        yield dict(value)
 
         return
 
@@ -438,35 +342,25 @@ def _iter_json(
             ):
                 raise (
                     TrainingSourceFormatError(
-                        "Training JSON array "
-                        "entry must be an "
-                        "object.",
+                        "Training JSON array entry must be an object.",
                         details={
-                            "path": str(
-                                path
-                            ),
-                            "record_number": (
-                                index
-                            ),
+                            "path": str(path),
+                            "record_number": (index),
                         },
                     )
                 )
 
-            yield dict(
-                item
-            )
+            yield dict(item)
 
         return
 
-    raise TrainingSourceFormatError(
-        "Training JSON root must be "
-        "an object or array."
-    )
+    raise TrainingSourceFormatError("Training JSON root must be an object or array.")
 
 
 # ---------------------------------------------------------------
 # Generic source reader
 # ---------------------------------------------------------------
+
 
 def iter_source_file(
     path: str | Path,
@@ -478,38 +372,27 @@ def iter_source_file(
         Any,
     ]
 ]:
-    root_path = _root(
-        root
-    )
+    root_path = _root(root)
 
     source = _require_file_inside(
         root_path,
-        Path(
-            path
-        ),
+        Path(path),
     )
 
-    suffix = (
-        source.suffix.lower()
-    )
+    suffix = source.suffix.lower()
 
     if suffix == ".jsonl":
-        yield from _iter_jsonl(
-            source
-        )
+        yield from _iter_jsonl(source)
 
         return
 
     if suffix == ".json":
-        yield from _iter_json(
-            source
-        )
+        yield from _iter_json(source)
 
         return
 
     raise TrainingSourceUnsupportedError(
-        "Training source file type "
-        "is unsupported.",
+        "Training source file type is unsupported.",
         details={
             "suffix": suffix,
         },
@@ -519,6 +402,7 @@ def iter_source_file(
 # ---------------------------------------------------------------
 # Training source manager
 # ---------------------------------------------------------------
+
 
 class TrainingSourceManager:
     """
@@ -532,14 +416,9 @@ class TrainingSourceManager:
     def __init__(
         self,
         *,
-        config: Optional[
-            TrainingConfig
-        ] = None,
+        config: Optional[TrainingConfig] = None,
     ) -> None:
-        self.config = (
-            config
-            or TrainingConfig()
-        )
+        self.config = config or TrainingConfig()
 
         self.config.validate()
 
@@ -551,23 +430,13 @@ class TrainingSourceManager:
     def prepared_root(
         self,
     ) -> Path:
-        return Path(
-            self.config.
-            paths.resolved()[
-                "prepared_data"
-            ]
-        )
+        return Path(self.config.paths.resolved()["prepared_data"])
 
     @property
     def operational_root(
         self,
     ) -> Path:
-        return Path(
-            self.config.
-            paths.resolved()[
-                "orchestration_data"
-            ]
-        )
+        return Path(self.config.paths.resolved()["orchestration_data"])
 
     # ---------------------------------------------------------
     # Prepared data discovery
@@ -575,14 +444,8 @@ class TrainingSourceManager:
 
     def discover_prepared(
         self,
-    ) -> List[
-        DiscoveredTrainingSource
-    ]:
-        if not (
-            self.config.
-            sources.
-            include_prepared_datasets
-        ):
+    ) -> List[DiscoveredTrainingSource]:
+        if not (self.config.sources.include_prepared_datasets):
             return []
 
         root = self.prepared_root
@@ -590,9 +453,7 @@ class TrainingSourceManager:
         if not root.exists():
             return []
 
-        sources: List[
-            DiscoveredTrainingSource
-        ] = []
+        sources: List[DiscoveredTrainingSource] = []
 
         # Expected data layout:
         #
@@ -615,10 +476,7 @@ class TrainingSourceManager:
                 dataset_directory.iterdir(),
                 key=lambda path: path.name,
             ):
-                if not (
-                    version_directory.
-                    is_dir()
-                ):
+                if not (version_directory.is_dir()):
                     continue
 
                 files = discover_files(
@@ -628,8 +486,7 @@ class TrainingSourceManager:
 
                 training_files = [
                     path
-                    for path
-                    in files
+                    for path in files
                     if path.name
                     in {
                         "train.jsonl",
@@ -642,48 +499,25 @@ class TrainingSourceManager:
                     continue
 
                 source = TrainingSource(
-                    kind=(
-                        TrainingSourceKind.
-                        PREPARED_DATASET.value
-                    ),
-
-                    location=str(
-                        version_directory.
-                        resolve()
-                    ),
-
+                    kind=(TrainingSourceKind.PREPARED_DATASET.value),
+                    location=str(version_directory.resolve()),
                     source_id=(
                         "prepared:"
                         + dataset_directory.name
                         + ":"
                         + version_directory.name
                     ),
-
-                    dataset_id=(
-                        dataset_directory.name
-                    ),
-
-                    dataset_version=(
-                        version_directory.name
-                    ),
-
+                    dataset_id=(dataset_directory.name),
+                    dataset_version=(version_directory.name),
                     attributes={
-                        "origin": (
-                            "data_pipeline"
-                        ),
+                        "origin": ("data_pipeline"),
                     },
                 ).finalize()
 
                 sources.append(
                     DiscoveredTrainingSource(
                         source=source,
-                        files=tuple(
-                            str(
-                                path
-                            )
-                            for path
-                            in training_files
-                        ),
+                        files=tuple(str(path) for path in training_files),
                     )
                 )
 
@@ -697,52 +531,28 @@ class TrainingSourceManager:
         self,
         kind: str,
     ) -> bool:
-        source_config = (
-            self.config.sources
-        )
+        source_config = self.config.sources
 
         mapping = {
-            TrainingSourceKind.
-            PROCESSED_OPERATIONAL_DATA.value: (
-                source_config.
-                include_processed_operational_data
+            TrainingSourceKind.PROCESSED_OPERATIONAL_DATA.value: (
+                source_config.include_processed_operational_data
             ),
-
-            TrainingSourceKind.
-            NORMALIZED_TELEMETRY.value: (
-                source_config.
-                include_normalized_telemetry
+            TrainingSourceKind.NORMALIZED_TELEMETRY.value: (
+                source_config.include_normalized_telemetry
             ),
-
-            TrainingSourceKind.
-            CORRELATED_DATA.value: (
-                source_config.
-                include_correlated_data
+            TrainingSourceKind.CORRELATED_DATA.value: (
+                source_config.include_correlated_data
             ),
-
-            TrainingSourceKind.
-            INTELLIGENCE_DATA.value: (
-                source_config.
-                include_intelligence_data
+            TrainingSourceKind.INTELLIGENCE_DATA.value: (
+                source_config.include_intelligence_data
             ),
-
-            TrainingSourceKind.
-            DECISION_DATA.value: (
-                source_config.
-                include_decision_data
+            TrainingSourceKind.DECISION_DATA.value: (
+                source_config.include_decision_data
             ),
-
-            TrainingSourceKind.
-            REMEDIATION_DATA.value: (
-                source_config.
-                include_remediation_data
+            TrainingSourceKind.REMEDIATION_DATA.value: (
+                source_config.include_remediation_data
             ),
-
-            TrainingSourceKind.
-            MEMORY_DATA.value: (
-                source_config.
-                include_memory_data
-            ),
+            TrainingSourceKind.MEMORY_DATA.value: (source_config.include_memory_data),
         }
 
         return bool(
@@ -758,49 +568,30 @@ class TrainingSourceManager:
 
     def discover_operational(
         self,
-    ) -> List[
-        DiscoveredTrainingSource
-    ]:
-        root = (
-            self.operational_root
-        )
+    ) -> List[DiscoveredTrainingSource]:
+        root = self.operational_root
 
         if not root.exists():
             return []
 
         if not root.is_dir():
             raise TrainingSourceError(
-                "Configured orchestration "
-                "data root is not a "
-                "directory."
+                "Configured orchestration data root is not a directory."
             )
 
-        sources: List[
-            DiscoveredTrainingSource
-        ] = []
+        sources: List[DiscoveredTrainingSource] = []
 
         for (
             kind,
             directory_name,
-        ) in (
-            OPERATIONAL_SOURCE_DIRECTORIES.
-            items()
-        ):
-            if not self._operational_enabled(
-                kind
-            ):
+        ) in OPERATIONAL_SOURCE_DIRECTORIES.items():
+            if not self._operational_enabled(kind):
                 continue
 
-            if (
-                directory_name
-                in EXCLUDED_OPERATIONAL_DIRECTORIES
-            ):
+            if directory_name in EXCLUDED_OPERATIONAL_DIRECTORIES:
                 continue
 
-            directory = (
-                root
-                / directory_name
-            )
+            directory = root / directory_name
 
             if not directory.exists():
                 continue
@@ -815,38 +606,18 @@ class TrainingSourceManager:
 
             source = TrainingSource(
                 kind=kind,
-
-                location=str(
-                    directory.resolve()
-                ),
-
-                source_id=(
-                    "operational:"
-                    + directory_name
-                ),
-
+                location=str(directory.resolve()),
+                source_id=("operational:" + directory_name),
                 attributes={
-                    "origin": (
-                        "orchestration-ai-data"
-                    ),
-
-                    "directory": (
-                        directory_name
-                    ),
+                    "origin": ("orchestration-ai-data"),
+                    "directory": (directory_name),
                 },
             ).finalize()
 
             sources.append(
                 DiscoveredTrainingSource(
                     source=source,
-
-                    files=tuple(
-                        str(
-                            path
-                        )
-                        for path
-                        in files
-                    ),
+                    files=tuple(str(path) for path in files),
                 )
             )
 
@@ -858,9 +629,7 @@ class TrainingSourceManager:
 
     def discover(
         self,
-    ) -> List[
-        DiscoveredTrainingSource
-    ]:
+    ) -> List[DiscoveredTrainingSource]:
         return [
             *self.discover_prepared(),
             *self.discover_operational(),
@@ -888,53 +657,24 @@ class TrainingSourceManager:
         replacing source fields.
         """
 
-        root = Path(
-            source.source.location
-        ).resolve()
+        root = Path(source.source.location).resolve()
 
         for file_path in source.files:
-            path = Path(
-                file_path
-            ).resolve()
+            path = Path(file_path).resolve()
 
             for value in iter_source_file(
                 path,
                 root=root,
             ):
-                record = dict(
-                    value
-                )
+                record = dict(value)
 
-                record[
-                    "_training_source"
-                ] = {
-                    "kind": (
-                        source.source.kind
-                    ),
-
-                    "source_id": (
-                        source.source.
-                        source_id
-                    ),
-
-                    "dataset_id": (
-                        source.source.
-                        dataset_id
-                    ),
-
-                    "dataset_version": (
-                        source.source.
-                        dataset_version
-                    ),
-
-                    "provider": (
-                        source.source.
-                        provider
-                    ),
-
-                    "file": str(
-                        path
-                    ),
+                record["_training_source"] = {
+                    "kind": (source.source.kind),
+                    "source_id": (source.source.source_id),
+                    "dataset_id": (source.source.dataset_id),
+                    "dataset_version": (source.source.dataset_version),
+                    "provider": (source.source.provider),
+                    "file": str(path),
                 }
 
                 yield record
@@ -952,9 +692,7 @@ class TrainingSourceManager:
         ]
     ]:
         for source in self.discover():
-            yield from self.iter_records(
-                source
-            )
+            yield from self.iter_records(source)
 
     # ---------------------------------------------------------
     # Summary
@@ -973,13 +711,9 @@ class TrainingSourceManager:
         file_count = 0
 
         for item in discovered:
-            kind = (
-                item.source.kind
-            )
+            kind = item.source.kind
 
-            by_kind[
-                kind
-            ] = (
+            by_kind[kind] = (
                 by_kind.get(
                     kind,
                     0,
@@ -987,50 +721,20 @@ class TrainingSourceManager:
                 + 1
             )
 
-            file_count += len(
-                item.files
-            )
+            file_count += len(item.files)
 
         return {
-            "prepared_root": str(
-                self.prepared_root
-            ),
-
-            "operational_root": str(
-                self.operational_root
-            ),
-
-            "source_count": len(
-                discovered
-            ),
-
-            "file_count": (
-                file_count
-            ),
-
-            "sources_by_kind": (
-                by_kind
-            ),
-
-            "supported_file_types": (
-                sorted(
-                    SUPPORTED_SUFFIXES
-                )
-            ),
-
+            "prepared_root": str(self.prepared_root),
+            "operational_root": str(self.operational_root),
+            "source_count": len(discovered),
+            "file_count": (file_count),
+            "sources_by_kind": (by_kind),
+            "supported_file_types": (sorted(SUPPORTED_SUFFIXES)),
             "excluded_operational_directories": (
-                sorted(
-                    EXCLUDED_OPERATIONAL_DIRECTORIES
-                )
+                sorted(EXCLUDED_OPERATIONAL_DIRECTORIES)
             ),
-
-            "direct_live_training": (
-                False
-            ),
-
-            "quarantine_training": (
-                False
-            ),
+            "direct_live_training": (False),
+            "quarantine_training": (False),
         }
 
 
@@ -1042,11 +746,8 @@ __all__ = [
     "SUPPORTED_SUFFIXES",
     "EXCLUDED_OPERATIONAL_DIRECTORIES",
     "OPERATIONAL_SOURCE_DIRECTORIES",
-
     "DiscoveredTrainingSource",
-
     "discover_files",
     "iter_source_file",
-
     "TrainingSourceManager",
 ]

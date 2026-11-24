@@ -46,14 +46,13 @@ from src.core.validation import (
 # Generic result value
 # ---------------------------------------------------------------
 
-T = TypeVar(
-    "T"
-)
+T = TypeVar("T")
 
 
 # ---------------------------------------------------------------
 # Result status
 # ---------------------------------------------------------------
+
 
 class ResultStatus(
     str,
@@ -76,6 +75,7 @@ class ResultStatus(
 # Error information
 # ---------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class ErrorInfo:
     """
@@ -92,16 +92,12 @@ class ErrorInfo:
 
     retryable: bool = False
 
-    error_type: Optional[
-        str
-    ] = None
+    error_type: Optional[str] = None
 
     details: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     # ---------------------------------------------------------
     # Construct from exception
@@ -114,9 +110,7 @@ class ErrorInfo:
         *,
         expose_message: bool = False,
         include_details: bool = False,
-        fallback_message: str = (
-            "Operation failed."
-        ),
+        fallback_message: str = ("Operation failed."),
     ) -> "ErrorInfo":
         """
         Convert an exception into bounded
@@ -132,37 +126,17 @@ class ErrorInfo:
         ):
             return cls(
                 code=error.code,
-                message=(
-                    error.message
-                    if expose_message
-                    else fallback_message
-                ),
-                retryable=(
-                    error.retryable
-                ),
-                error_type=(
-                    type(error).__name__
-                ),
-                details=(
-                    dict(
-                        error.details
-                    )
-                    if include_details
-                    else {}
-                ),
+                message=(error.message if expose_message else fallback_message),
+                retryable=(error.retryable),
+                error_type=(type(error).__name__),
+                details=(dict(error.details) if include_details else {}),
             ).finalize()
 
         return cls(
             code="unexpected_error",
-            message=(
-                str(error)
-                if expose_message
-                else fallback_message
-            ),
+            message=(str(error) if expose_message else fallback_message),
             retryable=False,
-            error_type=(
-                type(error).__name__
-            ),
+            error_type=(type(error).__name__),
         ).finalize()
 
     # ---------------------------------------------------------
@@ -202,26 +176,13 @@ class ErrorInfo:
             Any,
         ] = {
             "code": self.code,
-            "message": (
-                self.message
-            ),
-            "retryable": (
-                self.retryable
-            ),
-            "error_type": (
-                self.error_type
-            ),
+            "message": (self.message),
+            "retryable": (self.retryable),
+            "error_type": (self.error_type),
         }
 
-        if (
-            include_details
-            and self.details
-        ):
-            value[
-                "details"
-            ] = to_json_safe(
-                self.details
-            )
+        if include_details and self.details:
+            value["details"] = to_json_safe(self.details)
 
         return value
 
@@ -229,6 +190,7 @@ class ErrorInfo:
 # ---------------------------------------------------------------
 # Warning information
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class WarningInfo:
@@ -244,9 +206,7 @@ class WarningInfo:
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def finalize(
         self,
@@ -272,14 +232,8 @@ class WarningInfo:
 
         return {
             "code": self.code,
-            "message": (
-                self.message
-            ),
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
+            "message": (self.message),
+            "attributes": (to_json_safe(self.attributes)),
         }
 
 
@@ -287,10 +241,9 @@ class WarningInfo:
 # Generic result
 # ---------------------------------------------------------------
 
+
 @dataclass
-class Result(
-    Generic[T]
-):
+class Result(Generic[T]):
     """
     Generic OSHA result envelope.
 
@@ -304,38 +257,20 @@ class Result(
 
     status: str
 
-    value: Optional[
-        T
-    ] = None
+    value: Optional[T] = None
 
-    errors: List[
-        ErrorInfo
-    ] = field(
-        default_factory=list
-    )
+    errors: List[ErrorInfo] = field(default_factory=list)
 
-    warnings: List[
-        WarningInfo
-    ] = field(
-        default_factory=list
-    )
+    warnings: List[WarningInfo] = field(default_factory=list)
 
-    reference_ids: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    reference_ids: List[str] = field(default_factory=list)
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    created_at: str = field(
-        default_factory=utc_now
-    )
+    created_at: str = field(default_factory=utc_now)
 
     # ---------------------------------------------------------
     # Convenience properties
@@ -345,36 +280,22 @@ class Result(
     def success(
         self,
     ) -> bool:
-        return (
-            self.status
-            in {
-                ResultStatus.
-                SUCCESS.value,
-
-                ResultStatus.
-                PARTIAL.value,
-            }
-        )
+        return self.status in {
+            ResultStatus.SUCCESS.value,
+            ResultStatus.PARTIAL.value,
+        }
 
     @property
     def failed(
         self,
     ) -> bool:
-        return (
-            self.status
-            == ResultStatus.
-            FAILED.value
-        )
+        return self.status == ResultStatus.FAILED.value
 
     @property
     def blocked(
         self,
     ) -> bool:
-        return (
-            self.status
-            == ResultStatus.
-            BLOCKED.value
-        )
+        return self.status == ResultStatus.BLOCKED.value
 
     @property
     def retryable(
@@ -391,13 +312,7 @@ class Result(
         retry.
         """
 
-        return bool(
-            self.errors
-        ) and all(
-            error.retryable
-            for error
-            in self.errors
-        )
+        return bool(self.errors) and all(error.retryable for error in self.errors)
 
     # ---------------------------------------------------------
     # Validation
@@ -406,73 +321,26 @@ class Result(
     def finalize(
         self,
     ) -> "Result[T]":
-        allowed = {
-            item.value
-            for item
-            in ResultStatus
-        }
+        allowed = {item.value for item in ResultStatus}
 
-        if (
-            self.status
-            not in allowed
-        ):
+        if self.status not in allowed:
+            raise ValidationError(f"Unknown result status: {self.status}")
+
+        self.errors = [item.finalize() for item in self.errors]
+
+        self.warnings = [item.finalize() for item in self.warnings]
+
+        self.reference_ids = unique_strings(self.reference_ids)
+
+        if self.status == ResultStatus.SUCCESS.value and self.errors:
+            raise ValidationError("A successful result cannot contain errors.")
+
+        if self.status == ResultStatus.FAILED.value and not self.errors:
+            raise ValidationError("A failed result must contain at least one error.")
+
+        if self.status == ResultStatus.BLOCKED.value and not self.errors:
             raise ValidationError(
-                "Unknown result status: "
-                f"{self.status}"
-            )
-
-        self.errors = [
-            item.finalize()
-            for item
-            in self.errors
-        ]
-
-        self.warnings = [
-            item.finalize()
-            for item
-            in self.warnings
-        ]
-
-        self.reference_ids = (
-            unique_strings(
-                self.reference_ids
-            )
-        )
-
-        if (
-            self.status
-            == ResultStatus.
-            SUCCESS.value
-            and self.errors
-        ):
-            raise ValidationError(
-                "A successful result "
-                "cannot contain errors."
-            )
-
-        if (
-            self.status
-            == ResultStatus.
-            FAILED.value
-            and not self.errors
-        ):
-            raise ValidationError(
-                "A failed result must "
-                "contain at least one "
-                "error."
-            )
-
-        if (
-            self.status
-            == ResultStatus.
-            BLOCKED.value
-            and not self.errors
-        ):
-            raise ValidationError(
-                "A blocked result must "
-                "contain at least one "
-                "error explaining the "
-                "block."
+                "A blocked result must contain at least one error explaining the block."
             )
 
         return self
@@ -494,45 +362,20 @@ class Result(
             Any,
         ] = {
             "status": self.status,
-            "success": (
-                self.success
-            ),
-            "retryable": (
-                self.retryable
-            ),
+            "success": (self.success),
+            "retryable": (self.retryable),
             "errors": [
-                item.to_dict(
-                    include_details=(
-                        include_error_details
-                    )
-                )
-                for item
-                in self.errors
+                item.to_dict(include_details=(include_error_details))
+                for item in self.errors
             ],
-            "warnings": [
-                item.to_dict()
-                for item
-                in self.warnings
-            ],
-            "reference_ids": list(
-                self.reference_ids
-            ),
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
-            "created_at": (
-                self.created_at
-            ),
+            "warnings": [item.to_dict() for item in self.warnings],
+            "reference_ids": list(self.reference_ids),
+            "attributes": (to_json_safe(self.attributes)),
+            "created_at": (self.created_at),
         }
 
         if include_value:
-            output[
-                "value"
-            ] = to_json_safe(
-                self.value
-            )
+            output["value"] = to_json_safe(self.value)
 
         return output
 
@@ -543,16 +386,10 @@ class Result(
     @classmethod
     def ok(
         cls,
-        value: Optional[
-            T
-        ] = None,
+        value: Optional[T] = None,
         *,
-        reference_ids: Iterable[
-            str
-        ] = (),
-        warnings: Iterable[
-            WarningInfo
-        ] = (),
+        reference_ids: Iterable[str] = (),
+        warnings: Iterable[WarningInfo] = (),
         attributes: Optional[
             Mapping[
                 str,
@@ -561,21 +398,11 @@ class Result(
         ] = None,
     ) -> "Result[T]":
         return cls(
-            status=(
-                ResultStatus.
-                SUCCESS.value
-            ),
+            status=(ResultStatus.SUCCESS.value),
             value=value,
-            warnings=list(
-                warnings
-            ),
-            reference_ids=list(
-                reference_ids
-            ),
-            attributes=dict(
-                attributes
-                or {}
-            ),
+            warnings=list(warnings),
+            reference_ids=list(reference_ids),
+            attributes=dict(attributes or {}),
         ).finalize()
 
     # ---------------------------------------------------------
@@ -585,19 +412,11 @@ class Result(
     @classmethod
     def partial(
         cls,
-        value: Optional[
-            T
-        ] = None,
+        value: Optional[T] = None,
         *,
-        errors: Iterable[
-            ErrorInfo
-        ] = (),
-        warnings: Iterable[
-            WarningInfo
-        ] = (),
-        reference_ids: Iterable[
-            str
-        ] = (),
+        errors: Iterable[ErrorInfo] = (),
+        warnings: Iterable[WarningInfo] = (),
+        reference_ids: Iterable[str] = (),
         attributes: Optional[
             Mapping[
                 str,
@@ -606,24 +425,12 @@ class Result(
         ] = None,
     ) -> "Result[T]":
         return cls(
-            status=(
-                ResultStatus.
-                PARTIAL.value
-            ),
+            status=(ResultStatus.PARTIAL.value),
             value=value,
-            errors=list(
-                errors
-            ),
-            warnings=list(
-                warnings
-            ),
-            reference_ids=list(
-                reference_ids
-            ),
-            attributes=dict(
-                attributes
-                or {}
-            ),
+            errors=list(errors),
+            warnings=list(warnings),
+            reference_ids=list(reference_ids),
+            attributes=dict(attributes or {}),
         ).finalize()
 
     # ---------------------------------------------------------
@@ -633,12 +440,9 @@ class Result(
     @classmethod
     def fail(
         cls,
-        error: ErrorInfo
-        | BaseException,
+        error: ErrorInfo | BaseException,
         *,
-        reference_ids: Iterable[
-            str
-        ] = (),
+        reference_ids: Iterable[str] = (),
         attributes: Optional[
             Mapping[
                 str,
@@ -652,29 +456,14 @@ class Result(
                 error,
                 ErrorInfo,
             )
-            else (
-                ErrorInfo.
-                from_exception(
-                    error
-                )
-            )
+            else (ErrorInfo.from_exception(error))
         )
 
         return cls(
-            status=(
-                ResultStatus.
-                FAILED.value
-            ),
-            errors=[
-                info
-            ],
-            reference_ids=list(
-                reference_ids
-            ),
-            attributes=dict(
-                attributes
-                or {}
-            ),
+            status=(ResultStatus.FAILED.value),
+            errors=[info],
+            reference_ids=list(reference_ids),
+            attributes=dict(attributes or {}),
         ).finalize()
 
     # ---------------------------------------------------------
@@ -684,12 +473,9 @@ class Result(
     @classmethod
     def blocked_result(
         cls,
-        error: ErrorInfo
-        | BaseException,
+        error: ErrorInfo | BaseException,
         *,
-        reference_ids: Iterable[
-            str
-        ] = (),
+        reference_ids: Iterable[str] = (),
         attributes: Optional[
             Mapping[
                 str,
@@ -703,29 +489,14 @@ class Result(
                 error,
                 ErrorInfo,
             )
-            else (
-                ErrorInfo.
-                from_exception(
-                    error
-                )
-            )
+            else (ErrorInfo.from_exception(error))
         )
 
         return cls(
-            status=(
-                ResultStatus.
-                BLOCKED.value
-            ),
-            errors=[
-                info
-            ],
-            reference_ids=list(
-                reference_ids
-            ),
-            attributes=dict(
-                attributes
-                or {}
-            ),
+            status=(ResultStatus.BLOCKED.value),
+            errors=[info],
+            reference_ids=list(reference_ids),
+            attributes=dict(attributes or {}),
         ).finalize()
 
 

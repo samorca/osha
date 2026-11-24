@@ -28,6 +28,7 @@ from src.orchestrator.schema import (
 # Health status
 # ---------------------------------------------------------------
 
+
 class HealthStatus(
     str,
     Enum,
@@ -45,6 +46,7 @@ class HealthStatus(
 # Component health
 # ---------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class ComponentHealth:
     """
@@ -61,47 +63,32 @@ class ComponentHealth:
 
     required: bool = True
 
-    message: Optional[
-        str
-    ] = None
+    message: Optional[str] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    checked_at: str = field(
-        default_factory=utc_now
-    )
+    checked_at: str = field(default_factory=utc_now)
 
     def to_dict(
         self,
     ) -> Dict[str, Any]:
         return {
-            "component": (
-                self.component
-            ),
+            "component": (self.component),
             "status": self.status,
-            "required": (
-                self.required
-            ),
-            "message": (
-                self.message
-            ),
-            "attributes": dict(
-                self.attributes
-            ),
-            "checked_at": (
-                self.checked_at
-            ),
+            "required": (self.required),
+            "message": (self.message),
+            "attributes": dict(self.attributes),
+            "checked_at": (self.checked_at),
         }
 
 
 # ---------------------------------------------------------------
 # Overall orchestrator health
 # ---------------------------------------------------------------
+
 
 @dataclass
 class OrchestratorHealth:
@@ -110,27 +97,13 @@ class OrchestratorHealth:
     layer.
     """
 
-    status: str = (
-        HealthStatus.UNKNOWN.value
-    )
+    status: str = HealthStatus.UNKNOWN.value
 
-    components: List[
-        ComponentHealth
-    ] = field(
-        default_factory=list
-    )
+    components: List[ComponentHealth] = field(default_factory=list)
 
-    registered_stages: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    registered_stages: List[str] = field(default_factory=list)
 
-    missing_required_stages: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+    missing_required_stages: List[str] = field(default_factory=list)
 
     active_run_count: int = 0
 
@@ -139,110 +112,52 @@ class OrchestratorHealth:
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    checked_at: str = field(
-        default_factory=utc_now
-    )
+    checked_at: str = field(default_factory=utc_now)
 
     def finalize(
         self,
     ) -> "OrchestratorHealth":
-        self.registered_stages = (
-            sorted(
-                set(
-                    self.
-                    registered_stages
-                )
-            )
-        )
+        self.registered_stages = sorted(set(self.registered_stages))
 
-        self.missing_required_stages = (
-            sorted(
-                set(
-                    self.
-                    missing_required_stages
-                )
-            )
-        )
+        self.missing_required_stages = sorted(set(self.missing_required_stages))
 
         self.active_run_count = max(
             0,
-            int(
-                self.active_run_count
-            ),
+            int(self.active_run_count),
         )
 
         self.failed_run_count = max(
             0,
-            int(
-                self.failed_run_count
-            ),
+            int(self.failed_run_count),
         )
 
         # Required unavailable components make
         # the orchestrator unavailable.
         if any(
-            (
-                item.required
-                and item.status
-                == HealthStatus.
-                UNAVAILABLE.value
-            )
-            for item
-            in self.components
+            (item.required and item.status == HealthStatus.UNAVAILABLE.value)
+            for item in self.components
         ):
-            self.status = (
-                HealthStatus.
-                UNAVAILABLE.value
-            )
+            self.status = HealthStatus.UNAVAILABLE.value
 
         # Missing required capabilities or
         # degraded probes produce DEGRADED.
-        elif (
-            self.missing_required_stages
-            or any(
-                item.status
-                == HealthStatus.
-                DEGRADED.value
-                for item
-                in self.components
-            )
+        elif self.missing_required_stages or any(
+            item.status == HealthStatus.DEGRADED.value for item in self.components
         ):
-            self.status = (
-                HealthStatus.
-                DEGRADED.value
-            )
+            self.status = HealthStatus.DEGRADED.value
 
-        elif (
-            self.components
-            and all(
-                item.status
-                == HealthStatus.
-                READY.value
-                for item
-                in self.components
-            )
+        elif self.components and all(
+            item.status == HealthStatus.READY.value for item in self.components
         ):
-            self.status = (
-                HealthStatus.READY.value
-            )
+            self.status = HealthStatus.READY.value
 
-        elif (
-            not self.components
-            and not self.
-            missing_required_stages
-        ):
-            self.status = (
-                HealthStatus.READY.value
-            )
+        elif not self.components and not self.missing_required_stages:
+            self.status = HealthStatus.READY.value
 
         else:
-            self.status = (
-                HealthStatus.UNKNOWN.value
-            )
+            self.status = HealthStatus.UNKNOWN.value
 
         return self
 
@@ -253,36 +168,20 @@ class OrchestratorHealth:
 
         return {
             "status": self.status,
-            "components": [
-                item.to_dict()
-                for item
-                in self.components
-            ],
-            "registered_stages": (
-                self.registered_stages
-            ),
-            "missing_required_stages": (
-                self.
-                missing_required_stages
-            ),
-            "active_run_count": (
-                self.active_run_count
-            ),
-            "failed_run_count": (
-                self.failed_run_count
-            ),
-            "attributes": dict(
-                self.attributes
-            ),
-            "checked_at": (
-                self.checked_at
-            ),
+            "components": [item.to_dict() for item in self.components],
+            "registered_stages": (self.registered_stages),
+            "missing_required_stages": (self.missing_required_stages),
+            "active_run_count": (self.active_run_count),
+            "failed_run_count": (self.failed_run_count),
+            "attributes": dict(self.attributes),
+            "checked_at": (self.checked_at),
         }
 
 
 # ---------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class HealthConfig:
@@ -299,20 +198,11 @@ class HealthConfig:
         str,
         ...,
     ] = (
-        StageName.
-        CORRELATION.value,
-
-        StageName.
-        INTELLIGENCE.value,
-
-        StageName.
-        DECISION.value,
-
-        StageName.
-        REMEDIATION.value,
-
-        StageName.
-        SELF_HEALING.value,
+        StageName.CORRELATION.value,
+        StageName.INTELLIGENCE.value,
+        StageName.DECISION.value,
+        StageName.REMEDIATION.value,
+        StageName.SELF_HEALING.value,
     )
 
     fail_on_probe_exception: bool = False
@@ -320,23 +210,12 @@ class HealthConfig:
     def validate(
         self,
     ) -> None:
-        valid = {
-            item.value
-            for item in StageName
-        }
+        valid = {item.value for item in StageName}
 
-        unknown = sorted(
-            set(
-                self.required_stages
-            )
-            - valid
-        )
+        unknown = sorted(set(self.required_stages) - valid)
 
         if unknown:
-            raise ValueError(
-                "Unknown required stages: "
-                f"{unknown}"
-            )
+            raise ValueError(f"Unknown required stages: {unknown}")
 
 
 # ---------------------------------------------------------------
@@ -353,18 +232,15 @@ HealthProbe = Callable[
 # Handler readiness
 # ---------------------------------------------------------------
 
+
 def handler_health(
     handlers: Mapping[
         str,
         Any,
     ],
     *,
-    required_stages: Iterable[
-        str
-    ],
-) -> List[
-    ComponentHealth
-]:
+    required_stages: Iterable[str],
+) -> List[ComponentHealth]:
     """
     Determine whether required stage handlers
     have been registered.
@@ -373,44 +249,29 @@ def handler_health(
     underlying infrastructure is healthy.
     """
 
-    registered = set(
-        handlers
-    )
+    registered = set(handlers)
 
-    required = set(
-        required_stages
-    )
+    required = set(required_stages)
 
     return [
         ComponentHealth(
-            component=(
-                f"stage:{stage}"
-            ),
+            component=(f"stage:{stage}"),
             status=(
-                HealthStatus.
-                READY.value
+                HealthStatus.READY.value
                 if stage in registered
-                else HealthStatus.
-                UNAVAILABLE.value
+                else HealthStatus.UNAVAILABLE.value
             ),
-            required=(
-                stage in required
-            ),
+            required=(stage in required),
             message=(
-                "Stage handler is "
-                "registered."
+                "Stage handler is registered."
                 if stage in registered
-                else (
-                    "Required stage handler "
-                    "is not registered."
-                )
+                else ("Required stage handler is not registered.")
             ),
             attributes={
                 "stage": stage,
             },
         )
-        for stage
-        in sorted(required)
+        for stage in sorted(required)
     ]
 
 
@@ -418,10 +279,9 @@ def handler_health(
 # Run statistics
 # ---------------------------------------------------------------
 
+
 def run_health(
-    runs: Iterable[
-        OrchestrationRun
-    ],
+    runs: Iterable[OrchestrationRun],
 ) -> Dict[str, int]:
     """
     Summarize orchestration run states.
@@ -430,55 +290,25 @@ def run_health(
     not external infrastructure health.
     """
 
-    values = list(
-        runs
-    )
+    values = list(runs)
 
     active_states = {
-        OrchestrationState.
-        CREATED.value,
-
-        OrchestrationState.
-        QUEUED.value,
-
-        OrchestrationState.
-        RUNNING.value,
-
-        OrchestrationState.
-        WAITING.value,
-
-        OrchestrationState.
-        PAUSED.value,
+        OrchestrationState.CREATED.value,
+        OrchestrationState.QUEUED.value,
+        OrchestrationState.RUNNING.value,
+        OrchestrationState.WAITING.value,
+        OrchestrationState.PAUSED.value,
     }
 
     return {
-        "run_count": len(
-            values
-        ),
-        "active_run_count": sum(
-            1
-            for run in values
-            if run.state
-            in active_states
-        ),
+        "run_count": len(values),
+        "active_run_count": sum(1 for run in values if run.state in active_states),
         "failed_run_count": sum(
-            1
-            for run in values
-            if (
-                run.state
-                == OrchestrationState.
-                FAILED.value
-            )
+            1 for run in values if (run.state == OrchestrationState.FAILED.value)
         ),
         "escalated_run_count": (
             sum(
-                1
-                for run in values
-                if (
-                    run.state
-                    == OrchestrationState.
-                    ESCALATED.value
-                )
+                1 for run in values if (run.state == OrchestrationState.ESCALATED.value)
             )
         ),
     }
@@ -488,21 +318,16 @@ def run_health(
 # Health evaluation
 # ---------------------------------------------------------------
 
+
 def assess_health(
     *,
     handlers: Mapping[
         str,
         Any,
     ],
-    runs: Iterable[
-        OrchestrationRun
-    ] = (),
-    probes: Iterable[
-        HealthProbe
-    ] = (),
-    config: Optional[
-        HealthConfig
-    ] = None,
+    runs: Iterable[OrchestrationRun] = (),
+    probes: Iterable[HealthProbe] = (),
+    config: Optional[HealthConfig] = None,
 ) -> OrchestratorHealth:
     """
     Assess orchestrator readiness.
@@ -514,35 +339,17 @@ def assess_health(
     exception text.
     """
 
-    configuration = (
-        config
-        or HealthConfig()
-    )
+    configuration = config or HealthConfig()
 
     configuration.validate()
 
-    registered = sorted(
-        set(
-            handlers
-        )
-    )
+    registered = sorted(set(handlers))
 
-    missing = sorted(
-        set(
-            configuration.
-            required_stages
-        )
-        - set(
-            registered
-        )
-    )
+    missing = sorted(set(configuration.required_stages) - set(registered))
 
     components = handler_health(
         handlers,
-        required_stages=(
-            configuration.
-            required_stages
-        ),
+        required_stages=(configuration.required_stages),
     )
 
     # ---------------------------------------------------------
@@ -557,14 +364,9 @@ def assess_health(
                 result,
                 ComponentHealth,
             ):
-                raise TypeError(
-                    "Health probe must "
-                    "return ComponentHealth"
-                )
+                raise TypeError("Health probe must return ComponentHealth")
 
-            components.append(
-                result
-            )
+            components.append(result)
 
         except Exception as exc:
             components.append(
@@ -577,70 +379,31 @@ def assess_health(
                         )
                     ),
                     status=(
-                        HealthStatus.
-                        UNAVAILABLE.value
-                        if configuration.
-                        fail_on_probe_exception
-                        else (
-                            HealthStatus.
-                            DEGRADED.value
-                        )
+                        HealthStatus.UNAVAILABLE.value
+                        if configuration.fail_on_probe_exception
+                        else (HealthStatus.DEGRADED.value)
                     ),
-                    required=(
-                        configuration.
-                        fail_on_probe_exception
-                    ),
-                    message=(
-                        "Health probe failed."
-                    ),
+                    required=(configuration.fail_on_probe_exception),
+                    message=("Health probe failed."),
                     attributes={
-                        "error_type": (
-                            type(exc).
-                            __name__
-                        ),
+                        "error_type": (type(exc).__name__),
                     },
                 )
             )
 
-    counts = run_health(
-        runs
-    )
+    counts = run_health(runs)
 
     return OrchestratorHealth(
         components=components,
-        registered_stages=(
-            registered
-        ),
-        missing_required_stages=(
-            missing
-        ),
-        active_run_count=(
-            counts[
-                "active_run_count"
-            ]
-        ),
-        failed_run_count=(
-            counts[
-                "failed_run_count"
-            ]
-        ),
+        registered_stages=(registered),
+        missing_required_stages=(missing),
+        active_run_count=(counts["active_run_count"]),
+        failed_run_count=(counts["failed_run_count"]),
         attributes={
-            "run_count": (
-                counts[
-                    "run_count"
-                ]
-            ),
-            "escalated_run_count": (
-                counts[
-                    "escalated_run_count"
-                ]
-            ),
-            "scope": (
-                "orchestrator_readiness"
-            ),
-            "infrastructure_health_claimed": (
-                False
-            ),
+            "run_count": (counts["run_count"]),
+            "escalated_run_count": (counts["escalated_run_count"]),
+            "scope": ("orchestrator_readiness"),
+            "infrastructure_health_claimed": (False),
         },
     ).finalize()
 
@@ -649,10 +412,9 @@ def assess_health(
 # Stage failure summary
 # ---------------------------------------------------------------
 
+
 def recent_stage_failures(
-    runs: Iterable[
-        OrchestrationRun
-    ],
+    runs: Iterable[OrchestrationRun],
 ) -> Dict[str, int]:
     """
     Count recorded failed stages across the
@@ -669,14 +431,8 @@ def recent_stage_failures(
 
     for run in runs:
         for stage in run.stages:
-            if (
-                stage.status
-                == StageStatus.
-                FAILED.value
-            ):
-                failures[
-                    stage.stage
-                ] = (
+            if stage.status == StageStatus.FAILED.value:
+                failures[stage.stage] = (
                     failures.get(
                         stage.stage,
                         0,
@@ -690,6 +446,7 @@ def recent_stage_failures(
 # ---------------------------------------------------------------
 # Health checker facade
 # ---------------------------------------------------------------
+
 
 class OrchestratorHealthChecker:
     """
@@ -708,35 +465,21 @@ class OrchestratorHealthChecker:
                 Any,
             ]
         ] = None,
-        probes: Iterable[
-            HealthProbe
-        ] = (),
-        config: Optional[
-            HealthConfig
-        ] = None,
+        probes: Iterable[HealthProbe] = (),
+        config: Optional[HealthConfig] = None,
     ) -> None:
-        self.handlers = dict(
-            handlers
-            or {}
-        )
+        self.handlers = dict(handlers or {})
 
-        self.probes = list(
-            probes
-        )
+        self.probes = list(probes)
 
-        self.config = (
-            config
-            or HealthConfig()
-        )
+        self.config = config or HealthConfig()
 
         self.config.validate()
 
     def check(
         self,
         *,
-        runs: Iterable[
-            OrchestrationRun
-        ] = (),
+        runs: Iterable[OrchestrationRun] = (),
     ) -> OrchestratorHealth:
         return assess_health(
             handlers=self.handlers,
@@ -748,14 +491,6 @@ class OrchestratorHealthChecker:
     def ready(
         self,
         *,
-        runs: Iterable[
-            OrchestrationRun
-        ] = (),
+        runs: Iterable[OrchestrationRun] = (),
     ) -> bool:
-        return (
-            self.check(
-                runs=runs
-            ).status
-            == HealthStatus.
-            READY.value
-        )
+        return self.check(runs=runs).status == HealthStatus.READY.value

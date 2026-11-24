@@ -40,27 +40,23 @@ from src.security.schema import (
 # Errors
 # ---------------------------------------------------------------
 
-class IdentityError(
-    RuntimeError
-):
+
+class IdentityError(RuntimeError):
     pass
 
 
-class IdentityNotFoundError(
-    IdentityError
-):
+class IdentityNotFoundError(IdentityError):
     pass
 
 
-class IdentityConflictError(
-    IdentityError
-):
+class IdentityConflictError(IdentityError):
     pass
 
 
 # ---------------------------------------------------------------
 # Principal ID normalization
 # ---------------------------------------------------------------
+
 
 def normalize_principal_id(
     value: Any,
@@ -84,6 +80,7 @@ def normalize_principal_id(
 # Role normalization
 # ---------------------------------------------------------------
 
+
 def normalize_role(
     value: Any,
 ) -> str:
@@ -100,18 +97,10 @@ def normalize_role(
 
 
 def normalize_roles(
-    values: Iterable[
-        Any
-    ],
+    values: Iterable[Any],
 ) -> List[str]:
     return unique_strings(
-        (
-            normalize_role(
-                value
-            )
-            for value
-            in values
-        ),
+        (normalize_role(value) for value in values),
         name="roles",
         allow_empty=False,
     )
@@ -120,6 +109,7 @@ def normalize_roles(
 # ---------------------------------------------------------------
 # Group normalization
 # ---------------------------------------------------------------
+
 
 def normalize_group(
     value: Any,
@@ -132,18 +122,10 @@ def normalize_group(
 
 
 def normalize_groups(
-    values: Iterable[
-        Any
-    ],
+    values: Iterable[Any],
 ) -> List[str]:
     return unique_strings(
-        (
-            normalize_group(
-                value
-            )
-            for value
-            in values
-        ),
+        (normalize_group(value) for value in values),
         name="groups",
         allow_empty=False,
     )
@@ -153,19 +135,14 @@ def normalize_groups(
 # Generic principal constructor
 # ---------------------------------------------------------------
 
+
 def principal(
     *,
     principal_id: str,
     principal_type: str,
-    display_name: Optional[
-        str
-    ] = None,
-    roles: Iterable[
-        str
-    ] = (),
-    groups: Iterable[
-        str
-    ] = (),
+    display_name: Optional[str] = None,
+    roles: Iterable[str] = (),
+    groups: Iterable[str] = (),
     attributes: Optional[
         Mapping[
             str,
@@ -180,59 +157,28 @@ def principal(
     serialization before being attached.
     """
 
-    if (
-        principal_type
-        not in {
-            item.value
-            for item
-            in PrincipalType
-        }
-    ):
-        raise IdentityError(
-            "Unknown principal type: "
-            f"{principal_type}"
-        )
+    if principal_type not in {item.value for item in PrincipalType}:
+        raise IdentityError(f"Unknown principal type: {principal_type}")
 
     return SecurityPrincipal(
-        principal_id=(
-            normalize_principal_id(
-                principal_id
-            )
-        ),
-
-        principal_type=(
-            principal_type
-        ),
-
+        principal_id=(normalize_principal_id(principal_id)),
+        principal_type=(principal_type),
         display_name=(
             required_string(
                 display_name,
                 name="display_name",
                 maximum_length=256,
             )
-            if display_name
-            is not None
+            if display_name is not None
             else None
         ),
-
-        roles=normalize_roles(
-            roles
-        ),
-
-        groups=normalize_groups(
-            groups
-        ),
-
+        roles=normalize_roles(roles),
+        groups=normalize_groups(groups),
         attributes=(
             to_json_safe(
-                dict(
-                    attributes
-                    or {}
-                ),
+                dict(attributes or {}),
                 redact_sensitive=True,
-                sensitive_keys=(
-                    DEFAULT_SENSITIVE_KEYS
-                ),
+                sensitive_keys=(DEFAULT_SENSITIVE_KEYS),
             )
         ),
     ).finalize()
@@ -242,15 +188,14 @@ def principal(
 # Typed constructors
 # ---------------------------------------------------------------
 
+
 def user_principal(
     principal_id: str,
     **kwargs: Any,
 ) -> SecurityPrincipal:
     return principal(
         principal_id=principal_id,
-        principal_type=(
-            PrincipalType.USER.value
-        ),
+        principal_type=(PrincipalType.USER.value),
         **kwargs,
     )
 
@@ -261,9 +206,7 @@ def service_principal(
 ) -> SecurityPrincipal:
     return principal(
         principal_id=principal_id,
-        principal_type=(
-            PrincipalType.SERVICE.value
-        ),
+        principal_type=(PrincipalType.SERVICE.value),
         **kwargs,
     )
 
@@ -274,24 +217,18 @@ def worker_principal(
 ) -> SecurityPrincipal:
     return principal(
         principal_id=principal_id,
-        principal_type=(
-            PrincipalType.WORKER.value
-        ),
+        principal_type=(PrincipalType.WORKER.value),
         **kwargs,
     )
 
 
 def system_principal(
-    principal_id: str = (
-        "osha-system"
-    ),
+    principal_id: str = ("osha-system"),
     **kwargs: Any,
 ) -> SecurityPrincipal:
     return principal(
         principal_id=principal_id,
-        principal_type=(
-            PrincipalType.SYSTEM.value
-        ),
+        principal_type=(PrincipalType.SYSTEM.value),
         **kwargs,
     )
 
@@ -300,67 +237,42 @@ def system_principal(
 # Role checks
 # ---------------------------------------------------------------
 
+
 def has_role(
     value: SecurityPrincipal,
     role: str,
 ) -> bool:
     value.finalize()
 
-    return (
-        normalize_role(
-            role
-        )
-        in set(
-            value.roles
-        )
-    )
+    return normalize_role(role) in set(value.roles)
 
 
 def has_any_role(
     value: SecurityPrincipal,
-    roles: Iterable[
-        str
-    ],
+    roles: Iterable[str],
 ) -> bool:
     value.finalize()
 
-    requested = set(
-        normalize_roles(
-            roles
-        )
-    )
+    requested = set(normalize_roles(roles))
 
-    return bool(
-        requested.intersection(
-            value.roles
-        )
-    )
+    return bool(requested.intersection(value.roles))
 
 
 def has_all_roles(
     value: SecurityPrincipal,
-    roles: Iterable[
-        str
-    ],
+    roles: Iterable[str],
 ) -> bool:
     value.finalize()
 
-    requested = set(
-        normalize_roles(
-            roles
-        )
-    )
+    requested = set(normalize_roles(roles))
 
-    return requested.issubset(
-        set(
-            value.roles
-        )
-    )
+    return requested.issubset(set(value.roles))
 
 
 # ---------------------------------------------------------------
 # Group checks
 # ---------------------------------------------------------------
+
 
 def in_group(
     value: SecurityPrincipal,
@@ -368,19 +280,13 @@ def in_group(
 ) -> bool:
     value.finalize()
 
-    return (
-        normalize_group(
-            group
-        )
-        in set(
-            value.groups
-        )
-    )
+    return normalize_group(group) in set(value.groups)
 
 
 # ---------------------------------------------------------------
 # Identity registry
 # ---------------------------------------------------------------
+
 
 class IdentityRegistry:
     """
@@ -411,19 +317,12 @@ class IdentityRegistry:
         value.finalize()
 
         with self._lock:
-            if (
-                value.principal_id
-                in self._principals
-            ):
+            if value.principal_id in self._principals:
                 raise IdentityConflictError(
-                    "Principal already "
-                    "registered: "
-                    f"{value.principal_id}"
+                    f"Principal already registered: {value.principal_id}"
                 )
 
-            self._principals[
-                value.principal_id
-            ] = value
+            self._principals[value.principal_id] = value
 
         return value
 
@@ -438,9 +337,7 @@ class IdentityRegistry:
         value.finalize()
 
         with self._lock:
-            self._principals[
-                value.principal_id
-            ] = value
+            self._principals[value.principal_id] = value
 
         return value
 
@@ -451,33 +348,20 @@ class IdentityRegistry:
     def get(
         self,
         principal_id: str,
-    ) -> Optional[
-        SecurityPrincipal
-    ]:
-        normalized = (
-            normalize_principal_id(
-                principal_id
-            )
-        )
+    ) -> Optional[SecurityPrincipal]:
+        normalized = normalize_principal_id(principal_id)
 
         with self._lock:
-            return self._principals.get(
-                normalized
-            )
+            return self._principals.get(normalized)
 
     def require(
         self,
         principal_id: str,
     ) -> SecurityPrincipal:
-        value = self.get(
-            principal_id
-        )
+        value = self.get(principal_id)
 
         if value is None:
-            raise IdentityNotFoundError(
-                "Unknown principal: "
-                f"{principal_id}"
-            )
+            raise IdentityNotFoundError(f"Unknown principal: {principal_id}")
 
         return value
 
@@ -489,25 +373,16 @@ class IdentityRegistry:
         self,
         principal_id: str,
     ) -> SecurityPrincipal:
-        normalized = (
-            normalize_principal_id(
-                principal_id
-            )
-        )
+        normalized = normalize_principal_id(principal_id)
 
         with self._lock:
-            value = (
-                self._principals.pop(
-                    normalized,
-                    None,
-                )
+            value = self._principals.pop(
+                normalized,
+                None,
             )
 
         if value is None:
-            raise IdentityNotFoundError(
-                "Unknown principal: "
-                f"{principal_id}"
-            )
+            raise IdentityNotFoundError(f"Unknown principal: {principal_id}")
 
         return value
 
@@ -518,93 +393,39 @@ class IdentityRegistry:
     def list(
         self,
         *,
-        principal_type: Optional[
-            str
-        ] = None,
-        role: Optional[
-            str
-        ] = None,
-        group: Optional[
-            str
-        ] = None,
-    ) -> List[
-        SecurityPrincipal
-    ]:
-        if (
-            principal_type
-            is not None
-            and principal_type
-            not in {
-                item.value
-                for item
-                in PrincipalType
-            }
-        ):
-            raise IdentityError(
-                "Unknown principal type: "
-                f"{principal_type}"
-            )
+        principal_type: Optional[str] = None,
+        role: Optional[str] = None,
+        group: Optional[str] = None,
+    ) -> List[SecurityPrincipal]:
+        if principal_type is not None and principal_type not in {
+            item.value for item in PrincipalType
+        }:
+            raise IdentityError(f"Unknown principal type: {principal_type}")
 
-        normalized_role = (
-            normalize_role(
-                role
-            )
-            if role is not None
-            else None
-        )
+        normalized_role = normalize_role(role) if role is not None else None
 
-        normalized_group = (
-            normalize_group(
-                group
-            )
-            if group is not None
-            else None
-        )
+        normalized_group = normalize_group(group) if group is not None else None
 
         with self._lock:
-            values = list(
-                self._principals.
-                values()
-            )
+            values = list(self._principals.values())
 
-        output: List[
-            SecurityPrincipal
-        ] = []
+        output: List[SecurityPrincipal] = []
 
         for value in values:
-            if (
-                principal_type
-                is not None
-                and value.principal_type
-                != principal_type
-            ):
+            if principal_type is not None and value.principal_type != principal_type:
                 continue
 
-            if (
-                normalized_role
-                is not None
-                and normalized_role
-                not in value.roles
-            ):
+            if normalized_role is not None and normalized_role not in value.roles:
                 continue
 
-            if (
-                normalized_group
-                is not None
-                and normalized_group
-                not in value.groups
-            ):
+            if normalized_group is not None and normalized_group not in value.groups:
                 continue
 
-            output.append(
-                value
-            )
+            output.append(value)
 
         return sorted(
             output,
-            key=lambda item: (
-                item.principal_id
-            ),
+            key=lambda item: item.principal_id,
         )
 
     # ---------------------------------------------------------
@@ -615,24 +436,16 @@ class IdentityRegistry:
         self,
         principal_id: str,
         *,
-        roles: Iterable[
-            str
-        ],
+        roles: Iterable[str],
     ) -> SecurityPrincipal:
-        current = self.require(
-            principal_id
-        )
+        current = self.require(principal_id)
 
         updated = replace(
             current,
-            roles=normalize_roles(
-                roles
-            ),
+            roles=normalize_roles(roles),
         ).finalize()
 
-        return self.upsert(
-            updated
-        )
+        return self.upsert(updated)
 
     # ---------------------------------------------------------
     # Group update
@@ -642,24 +455,16 @@ class IdentityRegistry:
         self,
         principal_id: str,
         *,
-        groups: Iterable[
-            str
-        ],
+        groups: Iterable[str],
     ) -> SecurityPrincipal:
-        current = self.require(
-            principal_id
-        )
+        current = self.require(principal_id)
 
         updated = replace(
             current,
-            groups=normalize_groups(
-                groups
-            ),
+            groups=normalize_groups(groups),
         ).finalize()
 
-        return self.upsert(
-            updated
-        )
+        return self.upsert(updated)
 
     # ---------------------------------------------------------
     # Summary
@@ -674,13 +479,8 @@ class IdentityRegistry:
                 int,
             ] = {}
 
-            for value in (
-                self._principals.
-                values()
-            ):
-                by_type[
-                    value.principal_type
-                ] = (
+            for value in self._principals.values():
+                by_type[value.principal_type] = (
                     by_type.get(
                         value.principal_type,
                         0,
@@ -689,14 +489,8 @@ class IdentityRegistry:
                 )
 
             return {
-                "principal_count": (
-                    len(
-                        self._principals
-                    )
-                ),
-                "principal_types": (
-                    by_type
-                ),
+                "principal_count": (len(self._principals)),
+                "principal_types": (by_type),
             }
 
 
@@ -708,24 +502,19 @@ __all__ = [
     "IdentityError",
     "IdentityNotFoundError",
     "IdentityConflictError",
-
     "normalize_principal_id",
     "normalize_role",
     "normalize_group",
     "normalize_roles",
     "normalize_groups",
-
     "principal",
-
     "user_principal",
     "service_principal",
     "worker_principal",
     "system_principal",
-
     "has_role",
     "has_any_role",
     "has_all_roles",
     "in_group",
-
     "IdentityRegistry",
 ]

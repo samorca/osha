@@ -38,35 +38,22 @@ def collect_login_users() -> List[dict]:
     records: List[dict] = []
 
     for user in pwd.getpwall():
-        login_enabled = (
-            user.pw_shell
-            in LOGIN_SHELLS
-        )
+        login_enabled = user.pw_shell in LOGIN_SHELLS
 
         if not login_enabled:
             continue
 
         records.append(
             build_record(
-                signal_type=(
-                    "security_identity"
-                ),
+                signal_type=("security_identity"),
                 payload={
-                    "user_name": (
-                        user.pw_name
-                    ),
+                    "user_name": (user.pw_name),
                     "uid": user.pw_uid,
                     "gid": user.pw_gid,
-                    "home_directory": (
-                        user.pw_dir
-                    ),
-                    "login_shell": (
-                        user.pw_shell
-                    ),
+                    "home_directory": (user.pw_dir),
+                    "login_shell": (user.pw_shell),
                     "login_enabled": True,
-                    "password_data_collected": (
-                        False
-                    ),
+                    "password_data_collected": (False),
                 },
             )
         )
@@ -89,14 +76,8 @@ def collect_firewall() -> List[dict]:
             {
                 "backend": "ufw",
                 "available": True,
-                "query_succeeded": (
-                    result.returncode
-                    == 0
-                ),
-                "summary": (
-                    result.stdout
-                    .splitlines()[:10]
-                ),
+                "query_succeeded": (result.returncode == 0),
+                "summary": (result.stdout.splitlines()[:10]),
             }
         )
 
@@ -113,15 +94,8 @@ def collect_firewall() -> List[dict]:
             {
                 "backend": "nftables",
                 "available": True,
-                "query_succeeded": (
-                    result.returncode
-                    == 0
-                ),
-                "ruleset_present": (
-                    bool(
-                        result.stdout.strip()
-                    )
-                ),
+                "query_succeeded": (result.returncode == 0),
+                "ruleset_present": (bool(result.stdout.strip())),
             }
         )
 
@@ -137,27 +111,16 @@ def collect_firewall() -> List[dict]:
             {
                 "backend": "iptables",
                 "available": True,
-                "query_succeeded": (
-                    result.returncode
-                    == 0
-                ),
+                "query_succeeded": (result.returncode == 0),
                 "rule_count": (
-                    len(
-                        result.stdout
-                        .splitlines()
-                    )
-                    if result.returncode
-                    == 0
-                    else None
+                    len(result.stdout.splitlines()) if result.returncode == 0 else None
                 ),
             }
         )
 
     return [
         build_record(
-            signal_type=(
-                "security_posture"
-            ),
+            signal_type=("security_posture"),
             payload={
                 "category": "firewall",
                 "backends": checks,
@@ -168,60 +131,26 @@ def collect_firewall() -> List[dict]:
 
 def collect_kernel_security() -> List[dict]:
     allowed = {
-        "kernel.randomize_va_space": (
-            Path(
-                "/proc/sys/kernel/"
-                "randomize_va_space"
-            )
-        ),
-        "kernel.kptr_restrict": (
-            Path(
-                "/proc/sys/kernel/"
-                "kptr_restrict"
-            )
-        ),
-        "kernel.dmesg_restrict": (
-            Path(
-                "/proc/sys/kernel/"
-                "dmesg_restrict"
-            )
-        ),
-        "fs.protected_hardlinks": (
-            Path(
-                "/proc/sys/fs/"
-                "protected_hardlinks"
-            )
-        ),
-        "fs.protected_symlinks": (
-            Path(
-                "/proc/sys/fs/"
-                "protected_symlinks"
-            )
-        ),
+        "kernel.randomize_va_space": (Path("/proc/sys/kernel/randomize_va_space")),
+        "kernel.kptr_restrict": (Path("/proc/sys/kernel/kptr_restrict")),
+        "kernel.dmesg_restrict": (Path("/proc/sys/kernel/dmesg_restrict")),
+        "fs.protected_hardlinks": (Path("/proc/sys/fs/protected_hardlinks")),
+        "fs.protected_symlinks": (Path("/proc/sys/fs/protected_symlinks")),
     }
 
     values = {}
 
     for name, path in allowed.items():
         try:
-            values[name] = (
-                path.read_text(
-                    encoding="utf-8"
-                )
-                .strip()
-            )
+            values[name] = path.read_text(encoding="utf-8").strip()
         except OSError:
             values[name] = None
 
     return [
         build_record(
-            signal_type=(
-                "security_posture"
-            ),
+            signal_type=("security_posture"),
             payload={
-                "category": (
-                    "kernel_security"
-                ),
+                "category": ("kernel_security"),
                 "values": values,
             },
         )
@@ -229,11 +158,7 @@ def collect_kernel_security() -> List[dict]:
 
 
 def collect_security() -> List[dict]:
-    return (
-        collect_login_users()
-        + collect_firewall()
-        + collect_kernel_security()
-    )
+    return collect_login_users() + collect_firewall() + collect_kernel_security()
 
 
 if __name__ == "__main__":

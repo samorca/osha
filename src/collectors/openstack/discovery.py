@@ -59,34 +59,19 @@ def detect_configuration_source(
     if cloud:
         return "named_cloud"
 
-    if os.getenv(
-        "OS_CLOUD"
-    ):
+    if os.getenv("OS_CLOUD"):
         return "os_cloud"
 
-    if os.getenv(
-        "OS_AUTH_URL"
-    ):
+    if os.getenv("OS_AUTH_URL"):
         return "environment"
 
-    if os.getenv(
-        "OS_CLIENT_CONFIG_FILE"
-    ):
-        return (
-            "explicit_clouds_yaml"
-        )
+    if os.getenv("OS_CLIENT_CONFIG_FILE"):
+        return "explicit_clouds_yaml"
 
     candidate_paths = [
-        Path.cwd()
-        / "clouds.yaml",
-        Path.home()
-        / ".config"
-        / "openstack"
-        / "clouds.yaml",
-        Path(
-            "/etc/openstack/"
-            "clouds.yaml"
-        ),
+        Path.cwd() / "clouds.yaml",
+        Path.home() / ".config" / "openstack" / "clouds.yaml",
+        Path("/etc/openstack/clouds.yaml"),
     ]
 
     for path in candidate_paths:
@@ -105,22 +90,12 @@ def configured_cloud_name(
     the connected OpenStack cloud.
     """
 
-    explicit = (
-        normalize_optional_string(
-            cloud
-        )
-    )
+    explicit = normalize_optional_string(cloud)
 
     if explicit:
         return explicit
 
-    env_cloud = (
-        normalize_optional_string(
-            os.getenv(
-                "OS_CLOUD"
-            )
-        )
-    )
+    env_cloud = normalize_optional_string(os.getenv("OS_CLOUD"))
 
     if env_cloud:
         return env_cloud
@@ -135,13 +110,11 @@ def configured_cloud_name(
         "name",
         "cloud",
     ):
-        value = (
-            normalize_optional_string(
-                getattr(
-                    config,
-                    attribute,
-                    None,
-                )
+        value = normalize_optional_string(
+            getattr(
+                config,
+                attribute,
+                None,
             )
         )
 
@@ -151,9 +124,7 @@ def configured_cloud_name(
     # OpenStack SDK uses an environment-backed
     # configuration when ordinary OS_* variables
     # are supplied.
-    if os.getenv(
-        "OS_AUTH_URL"
-    ):
+    if os.getenv("OS_AUTH_URL"):
         return "envvars"
 
     return "openstack-default"
@@ -163,11 +134,7 @@ def configured_region(
     conn: Any,
     requested_region: Optional[str],
 ) -> Optional[str]:
-    requested = (
-        normalize_optional_string(
-            requested_region
-        )
-    )
+    requested = normalize_optional_string(requested_region)
 
     if requested:
         return requested
@@ -178,24 +145,18 @@ def configured_region(
         None,
     )
 
-    config_region = (
-        normalize_optional_string(
-            getattr(
-                config,
-                "region_name",
-                None,
-            )
+    config_region = normalize_optional_string(
+        getattr(
+            config,
+            "region_name",
+            None,
         )
     )
 
     if config_region:
         return config_region
 
-    return normalize_optional_string(
-        os.getenv(
-            "OS_REGION_NAME"
-        )
-    )
+    return normalize_optional_string(os.getenv("OS_REGION_NAME"))
 
 
 def connect(
@@ -226,9 +187,7 @@ def connect(
     kwargs: Dict[str, Any] = {
         "verify": verify,
         "timeout": timeout,
-        "connect_retries": (
-            connect_retries
-        ),
+        "connect_retries": (connect_retries),
         "connect_retry_delay": 2,
     }
 
@@ -236,13 +195,9 @@ def connect(
         kwargs["cloud"] = cloud
 
     if region:
-        kwargs[
-            "region_name"
-        ] = region
+        kwargs["region_name"] = region
 
-    conn = openstack.connect(
-        **kwargs
-    )
+    conn = openstack.connect(**kwargs)
 
     # Force authentication immediately.
     # This prevents an invalid configuration
@@ -250,37 +205,24 @@ def connect(
     # attempts an API request.
     conn.authorize()
 
-    cloud_id = (
-        configured_cloud_name(
-            cloud,
-            conn,
-        )
+    cloud_id = configured_cloud_name(
+        cloud,
+        conn,
     )
 
-    region_name = (
-        configured_region(
-            conn,
-            region,
-        )
+    region_name = configured_region(
+        conn,
+        region,
     )
 
-    config_source = (
-        detect_configuration_source(
-            cloud
-        )
-    )
+    config_source = detect_configuration_source(cloud)
 
     return OpenStackContext(
         conn=conn,
         cloud_id=cloud_id,
         region=region_name,
-        environment_id=(
-            environment_id
-            or "default"
-        ),
-        config_source=(
-            config_source
-        ),
+        environment_id=(environment_id or "default"),
+        config_source=(config_source),
     )
 
 
@@ -297,11 +239,7 @@ def service_available(
     """
 
     try:
-        return bool(
-            ctx.conn.has_service(
-                service_type
-            )
-        )
+        return bool(ctx.conn.has_service(service_type))
     except Exception:
         return False
 
@@ -333,12 +271,8 @@ def discover_services(
 
     result = {}
 
-    for service_type in (
-        service_types
-    ):
-        result[
-            service_type
-        ] = service_available(
+    for service_type in service_types:
+        result[service_type] = service_available(
             ctx,
             service_type,
         )
@@ -368,13 +302,9 @@ def get_authenticated_project(
     }
 
     try:
-        auth = (
-            ctx.conn.session.auth
-        )
+        auth = ctx.conn.session.auth
 
-        access = auth.get_access(
-            ctx.conn.session
-        )
+        access = auth.get_access(ctx.conn.session)
 
         project_id = getattr(
             access,
@@ -388,17 +318,9 @@ def get_authenticated_project(
             None,
         )
 
-        result[
-            "project_id"
-        ] = normalize_optional_string(
-            project_id
-        )
+        result["project_id"] = normalize_optional_string(project_id)
 
-        result[
-            "user_id"
-        ] = normalize_optional_string(
-            user_id
-        )
+        result["user_id"] = normalize_optional_string(user_id)
 
         token = getattr(
             access,
@@ -413,56 +335,29 @@ def get_authenticated_project(
             token,
             dict,
         ):
-            token_data = (
-                token.get("token")
-                or {}
-            )
+            token_data = token.get("token") or {}
 
             if isinstance(
                 token_data,
                 dict,
-                ):
-                project = (
-                    token_data.get(
-                        "project"
-                    )
-                    or {}
-                )
+            ):
+                project = token_data.get("project") or {}
 
-                user = (
-                    token_data.get(
-                        "user"
-                    )
-                    or {}
-                )
+                user = token_data.get("user") or {}
 
                 if isinstance(
                     project,
                     dict,
                 ):
-                    result[
-                        "project_name"
-                    ] = (
-                        normalize_optional_string(
-                            project.get(
-                                "name"
-                            )
-                        )
+                    result["project_name"] = normalize_optional_string(
+                        project.get("name")
                     )
 
                 if isinstance(
                     user,
                     dict,
                 ):
-                    result[
-                        "user_name"
-                    ] = (
-                        normalize_optional_string(
-                            user.get(
-                                "name"
-                            )
-                        )
-                    )
+                    result["user_name"] = normalize_optional_string(user.get("name"))
 
     except Exception:
         # Authentication is already validated
@@ -482,55 +377,27 @@ def discovery_record(
     connected OpenStack environment.
     """
 
-    service_map = (
-        discover_services(
-            ctx
-        )
-    )
+    service_map = discover_services(ctx)
 
-    identity = (
-        get_authenticated_project(
-            ctx
-        )
-    )
+    identity = get_authenticated_project(ctx)
 
     available_services = sorted(
-        service
-        for service, enabled
-        in service_map.items()
-        if enabled
+        service for service, enabled in service_map.items() if enabled
     )
 
     unavailable_services = sorted(
-        service
-        for service, enabled
-        in service_map.items()
-        if not enabled
+        service for service, enabled in service_map.items() if not enabled
     )
 
     payload = {
-        "cloud_id": (
-            ctx.cloud_id
-        ),
+        "cloud_id": (ctx.cloud_id),
         "region": ctx.region,
-        "environment_id": (
-            ctx.environment_id
-        ),
-        "configuration_source": (
-            ctx.config_source
-        ),
-        "authenticated_identity": (
-            identity
-        ),
-        "service_availability": (
-            service_map
-        ),
-        "available_services": (
-            available_services
-        ),
-        "unavailable_services": (
-            unavailable_services
-        ),
+        "environment_id": (ctx.environment_id),
+        "configuration_source": (ctx.config_source),
+        "authenticated_identity": (identity),
+        "service_availability": (service_map),
+        "available_services": (available_services),
+        "unavailable_services": (unavailable_services),
     }
 
     return record(
@@ -539,12 +406,8 @@ def discovery_record(
         payload,
         cloud_id=ctx.cloud_id,
         region=ctx.region,
-        environment_id=(
-            ctx.environment_id
-        ),
-        resource_id=(
-            ctx.cloud_id
-        ),
+        environment_id=(ctx.environment_id),
+        resource_id=(ctx.cloud_id),
         source="openstacksdk",
     )
 
@@ -569,30 +432,18 @@ def capability_records(
 
     records: List[dict] = []
 
-    services = (
-        discover_services(
-            ctx
-        )
-    )
+    services = discover_services(ctx)
 
-    for service_type, enabled in (
-        services.items()
-    ):
+    for service_type, enabled in services.items():
         if enabled:
             records.append(
                 available(
                     service_type,
-                    cloud_id=(
-                        ctx.cloud_id
-                    ),
+                    cloud_id=(ctx.cloud_id),
                     region=ctx.region,
-                    environment_id=(
-                        ctx.environment_id
-                    ),
+                    environment_id=(ctx.environment_id),
                     details={
-                        "service_type": (
-                            service_type
-                        ),
+                        "service_type": (service_type),
                     },
                 )
             )
@@ -600,17 +451,10 @@ def capability_records(
             records.append(
                 unavailable(
                     service_type,
-                    (
-                        "No usable service "
-                        "endpoint was discovered"
-                    ),
-                    cloud_id=(
-                        ctx.cloud_id
-                    ),
+                    ("No usable service endpoint was discovered"),
+                    cloud_id=(ctx.cloud_id),
                     region=ctx.region,
-                    environment_id=(
-                        ctx.environment_id
-                    ),
+                    environment_id=(ctx.environment_id),
                 )
             )
 
@@ -627,17 +471,9 @@ def collect(
     No OpenStack resources are modified.
     """
 
-    records = [
-        discovery_record(
-            ctx
-        )
-    ]
+    records = [discovery_record(ctx)]
 
-    records.extend(
-        capability_records(
-            ctx
-        )
-    )
+    records.extend(capability_records(ctx))
 
     return records
 
@@ -646,11 +482,7 @@ if __name__ == "__main__":
     import argparse
     import json
 
-    parser = argparse.ArgumentParser(
-        description=(
-            "OSHA OpenStack discovery test"
-        )
-    )
+    parser = argparse.ArgumentParser(description=("OSHA OpenStack discovery test"))
 
     parser.add_argument(
         "--cloud",
@@ -670,10 +502,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--insecure",
         action="store_true",
-        help=(
-            "Disable TLS verification. "
-            "Development use only."
-        ),
+        help=("Disable TLS verification. Development use only."),
     )
 
     args = parser.parse_args()
@@ -682,17 +511,11 @@ if __name__ == "__main__":
         context = connect(
             cloud=args.cloud,
             region=args.region,
-            environment_id=(
-                args.environment
-            ),
-            verify=(
-                not args.insecure
-            ),
+            environment_id=(args.environment),
+            verify=(not args.insecure),
         )
 
-        for item in collect(
-            context
-        ):
+        for item in collect(context):
             print(
                 json.dumps(
                     item,
@@ -705,9 +528,7 @@ if __name__ == "__main__":
         print(
             json.dumps(
                 {
-                    "error": (
-                        type(exc).__name__
-                    ),
+                    "error": (type(exc).__name__),
                     "message": str(exc),
                 },
                 ensure_ascii=False,

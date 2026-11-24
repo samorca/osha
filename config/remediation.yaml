@@ -1,0 +1,45 @@
+schema_version: "1"
+
+remediation:
+  enabled: true
+
+  # Safe default.
+  dry_run: true
+
+  automatic_execution: false
+
+  require_approval: true
+
+  planning:
+    enabled: true
+
+  execution:
+    enabled: false
+
+    timeout_seconds: 60.0
+
+    max_attempts: 1
+
+  safety:
+    require_runtime_ready: true
+    require_decision_approval: true
+    require_plan_validation: true
+
+    allow_destructive_actions: false
+    allow_unbounded_actions: false
+
+  rollback:
+    enabled: true
+
+  audit:
+    enabled: true
+
+  providers:
+    linux:
+      enabled: true
+
+    kubernetes:
+      enabled: false
+
+    openstack:
+      enabled: false

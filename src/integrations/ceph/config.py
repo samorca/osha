@@ -39,14 +39,13 @@ from src.security.schema import (
 # Environment prefix
 # ---------------------------------------------------------------
 
-DEFAULT_ENV_PREFIX = (
-    "OSHA_CEPH_"
-)
+DEFAULT_ENV_PREFIX = "OSHA_CEPH_"
 
 
 # ---------------------------------------------------------------
 # Ceph API authentication
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class CephAuthConfig:
@@ -58,13 +57,9 @@ class CephAuthConfig:
     SecretReference / SecretManager.
     """
 
-    username: Optional[
-        str
-    ] = None
+    username: Optional[str] = None
 
-    credential: Optional[
-        SecretReference
-    ] = None
+    credential: Optional[SecretReference] = None
 
     def validate(
         self,
@@ -85,25 +80,16 @@ class CephAuthConfig:
         self.validate()
 
         return {
-            "username": (
-                self.username
-            ),
-
-            "credential": (
-                self.credential.to_dict()
-                if self.credential
-                else None
-            ),
-
-            "credential_value_exposed": (
-                False
-            ),
+            "username": (self.username),
+            "credential": (self.credential.to_dict() if self.credential else None),
+            "credential_value_exposed": (False),
         }
 
 
 # ---------------------------------------------------------------
 # Ceph configuration
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class CephConfig:
@@ -118,15 +104,11 @@ class CephConfig:
 
     api_url: str
 
-    auth: CephAuthConfig = field(
-        default_factory=CephAuthConfig
-    )
+    auth: CephAuthConfig = field(default_factory=CephAuthConfig)
 
     verify_tls: bool = True
 
-    ca_cert_path: Optional[
-        str
-    ] = None
+    ca_cert_path: Optional[str] = None
 
     request_timeout_seconds: float = 30.0
 
@@ -149,9 +131,7 @@ class CephConfig:
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def validate(
         self,
@@ -182,9 +162,7 @@ class CephConfig:
 
         number(
             self.request_timeout_seconds,
-            name=(
-                "request_timeout_seconds"
-            ),
+            name=("request_timeout_seconds"),
             minimum=0.001,
         )
 
@@ -212,21 +190,12 @@ class CephConfig:
 
         self.validate()
 
-        value = (
-            self.api_url.rstrip(
-                "/"
-            )
-        )
+        value = self.api_url.rstrip("/")
 
-        if value.endswith(
-            "/api"
-        ):
+        if value.endswith("/api"):
             return value
 
-        return (
-            value
-            + "/api"
-        )
+        return value + "/api"
 
     # ---------------------------------------------------------
     # Versioned media type
@@ -238,10 +207,7 @@ class CephConfig:
     ) -> str:
         self.validate()
 
-        return (
-            "application/vnd.ceph.api.v"
-            f"{self.api_version}+json"
-        )
+        return f"application/vnd.ceph.api.v{self.api_version}+json"
 
     # ---------------------------------------------------------
     # Generic integration target
@@ -253,34 +219,14 @@ class CephConfig:
         self.validate()
 
         return IntegrationTarget(
-            provider=(
-                ProviderKind.CEPH.value
-            ),
-
-            environment_id=(
-                self.environment_id
-            ),
-
-            target_id=(
-                self.target_id
-            ),
-
-            endpoint=(
-                self.normalized_api_url
-            ),
-
-            credential=(
-                self.auth.credential
-            ),
-
+            provider=(ProviderKind.CEPH.value),
+            environment_id=(self.environment_id),
+            target_id=(self.target_id),
+            endpoint=(self.normalized_api_url),
+            credential=(self.auth.credential),
             attributes={
-                "api_version": (
-                    self.api_version
-                ),
-
-                "verify_tls": (
-                    self.verify_tls
-                ),
+                "api_version": (self.api_version),
+                "verify_tls": (self.verify_tls),
             },
         ).finalize()
 
@@ -294,74 +240,30 @@ class CephConfig:
         self.validate()
 
         return {
-            "environment_id": (
-                self.environment_id
-            ),
-
-            "target_id": (
-                self.target_id
-            ),
-
-            "api_url": (
-                self.normalized_api_url
-            ),
-
-            "api_version": (
-                self.api_version
-            ),
-
-            "verify_tls": (
-                self.verify_tls
-            ),
-
-            "ca_cert_path": (
-                self.ca_cert_path
-            ),
-
-            "request_timeout_seconds": (
-                self.
-                request_timeout_seconds
-            ),
-
-            "auth": (
-                self.auth.to_dict()
-            ),
-
+            "environment_id": (self.environment_id),
+            "target_id": (self.target_id),
+            "api_url": (self.normalized_api_url),
+            "api_version": (self.api_version),
+            "verify_tls": (self.verify_tls),
+            "ca_cert_path": (self.ca_cert_path),
+            "request_timeout_seconds": (self.request_timeout_seconds),
+            "auth": (self.auth.to_dict()),
             "resources": {
-                "health": (
-                    self.enable_health
-                ),
-
-                "osd": (
-                    self.enable_osd
-                ),
-
-                "pools": (
-                    self.enable_pools
-                ),
-
-                "hosts": (
-                    self.enable_hosts
-                ),
-
-                "monitors": (
-                    self.enable_monitors
-                ),
-
-                "services": (
-                    self.enable_services
-                ),
+                "health": (self.enable_health),
+                "osd": (self.enable_osd),
+                "pools": (self.enable_pools),
+                "hosts": (self.enable_hosts),
+                "monitors": (self.enable_monitors),
+                "services": (self.enable_services),
             },
-
-            "attributes": dict(
-                self.attributes
-            ),
+            "attributes": dict(self.attributes),
         }
 
 
 # ---------------------------------------------------------------
 # Parsing helpers
 # ---------------------------------------------------------------
+
 
 def _get(
     values: Mapping[
@@ -385,9 +287,7 @@ def _text(
     ],
     prefix: str,
     name: str,
-    default: Optional[
-        str
-    ] = None,
+    default: Optional[str] = None,
 ) -> Optional[str]:
     value = _get(
         values,
@@ -399,9 +299,7 @@ def _text(
     if value is None:
         return None
 
-    result = str(
-        value
-    ).strip()
+    result = str(value).strip()
 
     return result or None
 
@@ -421,10 +319,7 @@ def _bool(
         name,
     )
 
-    if (
-        value is None
-        or str(value).strip() == ""
-    ):
+    if value is None or str(value).strip() == "":
         return default
 
     return boolean(
@@ -448,10 +343,7 @@ def _float(
         name,
     )
 
-    if (
-        value is None
-        or str(value).strip() == ""
-    ):
+    if value is None or str(value).strip() == "":
         return default
 
     return number(
@@ -464,6 +356,7 @@ def _float(
 # ---------------------------------------------------------------
 # Mapping loader
 # ---------------------------------------------------------------
+
 
 def from_mapping(
     values: Mapping[
@@ -480,10 +373,7 @@ def from_mapping(
     )
 
     if not api_url:
-        raise ValueError(
-            "OSHA_CEPH_API_URL "
-            "is required"
-        )
+        raise ValueError("OSHA_CEPH_API_URL is required")
 
     secret_key = _text(
         values,
@@ -512,13 +402,8 @@ def from_mapping(
     credential = (
         SecretReference(
             name=secret_name,
-
-            provider=(
-                secret_provider
-            ),
-
+            provider=(secret_provider),
             key=secret_key,
-
             version=_text(
                 values,
                 prefix,
@@ -539,7 +424,6 @@ def from_mapping(
             )
             or "local-dev"
         ),
-
         target_id=(
             _text(
                 values,
@@ -549,32 +433,26 @@ def from_mapping(
             )
             or "ceph-default"
         ),
-
         api_url=api_url,
-
         auth=CephAuthConfig(
             username=_text(
                 values,
                 prefix,
                 "USERNAME",
             ),
-
             credential=credential,
         ),
-
         verify_tls=_bool(
             values,
             prefix,
             "VERIFY_TLS",
             True,
         ),
-
         ca_cert_path=_text(
             values,
             prefix,
             "CA_CERT_PATH",
         ),
-
         request_timeout_seconds=(
             _float(
                 values,
@@ -583,7 +461,6 @@ def from_mapping(
                 30.0,
             )
         ),
-
         api_version=(
             _text(
                 values,
@@ -593,53 +470,44 @@ def from_mapping(
             )
             or "1.0"
         ),
-
         enable_health=_bool(
             values,
             prefix,
             "ENABLE_HEALTH",
             True,
         ),
-
         enable_osd=_bool(
             values,
             prefix,
             "ENABLE_OSD",
             True,
         ),
-
         enable_pools=_bool(
             values,
             prefix,
             "ENABLE_POOLS",
             True,
         ),
-
         enable_hosts=_bool(
             values,
             prefix,
             "ENABLE_HOSTS",
             True,
         ),
-
         enable_monitors=_bool(
             values,
             prefix,
             "ENABLE_MONITORS",
             True,
         ),
-
         enable_services=_bool(
             values,
             prefix,
             "ENABLE_SERVICES",
             True,
         ),
-
         attributes={
-            "config_source": (
-                "mapping"
-            ),
+            "config_source": ("mapping"),
         },
     )
 
@@ -652,6 +520,7 @@ def from_mapping(
 # Environment loader
 # ---------------------------------------------------------------
 
+
 def from_environment(
     *,
     environ: Optional[
@@ -662,11 +531,7 @@ def from_environment(
     ] = None,
     prefix: str = DEFAULT_ENV_PREFIX,
 ) -> CephConfig:
-    source = (
-        os.environ
-        if environ is None
-        else environ
-    )
+    source = os.environ if environ is None else environ
 
     return from_mapping(
         source,
@@ -678,82 +543,33 @@ def from_environment(
 # Safe summary
 # ---------------------------------------------------------------
 
+
 def safe_config_summary(
     config: CephConfig,
 ) -> Dict[str, Any]:
     config.validate()
 
     return {
-        "environment_id": (
-            config.environment_id
-        ),
-
-        "target_id": (
-            config.target_id
-        ),
-
-        "api_url": (
-            config.normalized_api_url
-        ),
-
-        "api_version": (
-            config.api_version
-        ),
-
-        "verify_tls": (
-            config.verify_tls
-        ),
-
-        "username_configured": (
-            config.auth.username
-            is not None
-        ),
-
-        "credential_reference_configured": (
-            config.auth.credential
-            is not None
-        ),
-
+        "environment_id": (config.environment_id),
+        "target_id": (config.target_id),
+        "api_url": (config.normalized_api_url),
+        "api_version": (config.api_version),
+        "verify_tls": (config.verify_tls),
+        "username_configured": (config.auth.username is not None),
+        "credential_reference_configured": (config.auth.credential is not None),
         "credential_provider": (
-            config.auth.
-            credential.provider
-            if config.auth.credential
-            else None
+            config.auth.credential.provider if config.auth.credential else None
         ),
-
         "resources": {
-            "health": (
-                config.enable_health
-            ),
-
-            "osd": (
-                config.enable_osd
-            ),
-
-            "pools": (
-                config.enable_pools
-            ),
-
-            "hosts": (
-                config.enable_hosts
-            ),
-
-            "monitors": (
-                config.enable_monitors
-            ),
-
-            "services": (
-                config.enable_services
-            ),
+            "health": (config.enable_health),
+            "osd": (config.enable_osd),
+            "pools": (config.enable_pools),
+            "hosts": (config.enable_hosts),
+            "monitors": (config.enable_monitors),
+            "services": (config.enable_services),
         },
-
-        "mutating_operations_enabled": (
-            False
-        ),
-
-        "credential_value_exposed": (
-            False
-        ),
+        "mutating_operations_enabled": (False),
+        "credential_value_exposed": (False),
     }
 
 
@@ -763,12 +579,9 @@ def safe_config_summary(
 
 __all__ = [
     "DEFAULT_ENV_PREFIX",
-
     "CephAuthConfig",
     "CephConfig",
-
     "from_mapping",
     "from_environment",
-
     "safe_config_summary",
 ]

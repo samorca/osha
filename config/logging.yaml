@@ -1,0 +1,364 @@
+# =============================================================================
+# OSHA - Logging Configuration
+# =============================================================================
+#
+# Central logging configuration for the OSHA platform.
+#
+# Goals:
+#   - Structured production logs
+#   - Console visibility
+#   - Rotating persistent logs
+#   - Separate error and audit logs
+#   - Sensitive-data redaction
+#   - Component-specific log levels
+#
+# Never log passwords, access tokens, API keys, private keys,
+# authentication headers, or infrastructure credentials.
+# =============================================================================
+
+
+logging:
+
+  # ---------------------------------------------------------------------------
+  # Global
+  # ---------------------------------------------------------------------------
+
+  enabled: true
+
+  level: "INFO"
+
+  format: "json"
+
+  encoding: "utf-8"
+
+  propagate: false
+
+  capture_warnings: true
+
+  capture_exceptions: true
+
+  include_timestamp: true
+  include_level: true
+  include_logger_name: true
+  include_component: true
+  include_process_id: true
+  include_thread_id: false
+
+
+  # ---------------------------------------------------------------------------
+  # Console
+  # ---------------------------------------------------------------------------
+
+  console:
+    enabled: true
+
+    level: "INFO"
+
+    stream: "stdout"
+
+    format: "json"
+
+
+  # ---------------------------------------------------------------------------
+  # Main Application Log
+  # ---------------------------------------------------------------------------
+
+  file:
+    enabled: true
+
+    level: "INFO"
+
+    directory: "./logs"
+
+    filename: "osha.log"
+
+    format: "json"
+
+    rotation:
+      enabled: true
+
+      strategy: "size"
+
+      max_bytes: 104857600
+
+      backup_count: 20
+
+
+  # ---------------------------------------------------------------------------
+  # Error Log
+  # ---------------------------------------------------------------------------
+
+  error_file:
+    enabled: true
+
+    level: "ERROR"
+
+    directory: "./logs"
+
+    filename: "error.log"
+
+    format: "json"
+
+    rotation:
+      enabled: true
+
+      strategy: "size"
+
+      max_bytes: 104857600
+
+      backup_count: 20
+
+
+  # ---------------------------------------------------------------------------
+  # Audit Log
+  # ---------------------------------------------------------------------------
+
+  audit:
+    enabled: true
+
+    level: "INFO"
+
+    directory: "./logs/audit"
+
+    filename: "audit.log"
+
+    format: "json"
+
+    rotation:
+      enabled: true
+
+      strategy: "size"
+
+      max_bytes: 104857600
+
+      backup_count: 30
+
+    record:
+      authentication: true
+      authorization: true
+      configuration_changes: true
+      incidents: true
+      decisions: true
+      remediation_requests: true
+      remediation_actions: true
+      remediation_results: true
+      rollback_actions: true
+      security_events: true
+      failures: true
+
+    include_sensitive_data: false
+
+
+  # ---------------------------------------------------------------------------
+  # Structured Context
+  # ---------------------------------------------------------------------------
+
+  context:
+    enabled: true
+
+    fields:
+      application: true
+      environment: true
+      component: true
+
+      correlation_id: true
+      event_id: true
+      incident_id: true
+
+      provider: true
+      resource_id: true
+
+      model: true
+
+      action_id: true
+      remediation_id: true
+
+
+  # ---------------------------------------------------------------------------
+  # Sensitive Data Protection
+  # ---------------------------------------------------------------------------
+
+  redaction:
+    enabled: true
+
+    replacement: "[REDACTED]"
+
+    fields:
+      - "password"
+      - "passwd"
+      - "secret"
+      - "token"
+      - "access_token"
+      - "refresh_token"
+      - "api_key"
+      - "apikey"
+      - "authorization"
+      - "credential"
+      - "credentials"
+      - "private_key"
+
+    headers:
+      - "Authorization"
+      - "Proxy-Authorization"
+      - "X-API-Key"
+
+    redact_environment_secrets: true
+
+
+  # ---------------------------------------------------------------------------
+  # Component Logging
+  # ---------------------------------------------------------------------------
+
+  components:
+
+    runtime:
+      level: "INFO"
+
+    collectors:
+      level: "INFO"
+
+    telemetry:
+      level: "INFO"
+
+    events:
+      level: "INFO"
+
+    correlation:
+      level: "INFO"
+
+    incidents:
+      level: "INFO"
+
+    ai:
+      level: "INFO"
+
+    models:
+      level: "INFO"
+
+    decision:
+      level: "INFO"
+
+    remediation:
+      level: "INFO"
+
+    recovery:
+      level: "INFO"
+
+    security:
+      level: "INFO"
+
+    observability:
+      level: "INFO"
+
+    infrastructure:
+      level: "INFO"
+
+    training:
+      level: "INFO"
+
+    data:
+      level: "INFO"
+
+
+  # ---------------------------------------------------------------------------
+  # Third-Party Libraries
+  # ---------------------------------------------------------------------------
+
+  libraries:
+
+    urllib3:
+      level: "WARNING"
+
+    asyncio:
+      level: "WARNING"
+
+    kubernetes:
+      level: "WARNING"
+
+    openstack:
+      level: "WARNING"
+
+    boto3:
+      level: "WARNING"
+
+    botocore:
+      level: "WARNING"
+
+    torch:
+      level: "WARNING"
+
+
+  # ---------------------------------------------------------------------------
+  # Noise Control
+  # ---------------------------------------------------------------------------
+
+  filtering:
+    enabled: true
+
+    suppress_duplicate_messages: true
+
+    duplicate_window_seconds: 30
+
+    suppress_health_check_success: true
+
+    suppress_polling_debug: true
+
+
+  # ---------------------------------------------------------------------------
+  # Exception Logging
+  # ---------------------------------------------------------------------------
+
+  exceptions:
+    enabled: true
+
+    include_traceback: true
+
+    include_exception_type: true
+
+    include_exception_message: true
+
+    redact_sensitive_data: true
+
+
+  # ---------------------------------------------------------------------------
+  # Performance Logging
+  # ---------------------------------------------------------------------------
+
+  performance:
+    enabled: true
+
+    minimum_duration_ms: 1000
+
+    log_slow_collectors: true
+
+    log_slow_inference: true
+
+    log_slow_remediation: true
+
+
+  # ---------------------------------------------------------------------------
+  # Security
+  # ---------------------------------------------------------------------------
+
+  security:
+    log_authentication_failures: true
+
+    log_authorization_failures: true
+
+    log_policy_violations: true
+
+    log_blocked_actions: true
+
+    log_invalid_configuration: true
+
+    log_secret_access: false
+
+
+  # ---------------------------------------------------------------------------
+  # Shutdown
+  # ---------------------------------------------------------------------------
+
+  shutdown:
+    flush: true
+
+    flush_timeout_seconds: 10

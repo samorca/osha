@@ -58,15 +58,13 @@ SUPPORTED_ALGORITHMS = {
 # Default streaming block size
 # ---------------------------------------------------------------
 
-DEFAULT_BLOCK_SIZE = (
-    1024
-    * 1024
-)
+DEFAULT_BLOCK_SIZE = 1024 * 1024
 
 
 # ---------------------------------------------------------------
 # Checksum result
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class ChecksumResult:
@@ -87,21 +85,16 @@ class ChecksumResult:
     ) -> Dict[str, Any]:
         return {
             "path": self.path,
-            "algorithm": (
-                self.algorithm
-            ),
-            "checksum": (
-                self.checksum
-            ),
-            "size_bytes": (
-                self.size_bytes
-            ),
+            "algorithm": (self.algorithm),
+            "checksum": (self.checksum),
+            "size_bytes": (self.size_bytes),
         }
 
 
 # ---------------------------------------------------------------
 # Verification result
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class FileIntegrityResult:
@@ -126,54 +119,30 @@ class FileIntegrityResult:
 
     valid: bool
 
-    algorithm: Optional[
-        str
-    ] = None
+    algorithm: Optional[str] = None
 
-    calculated_checksum: Optional[
-        str
-    ] = None
+    calculated_checksum: Optional[str] = None
 
-    expected_checksum: Optional[
-        str
-    ] = None
+    expected_checksum: Optional[str] = None
 
-    size_bytes: Optional[
-        int
-    ] = None
+    size_bytes: Optional[int] = None
 
     def to_dict(
         self,
     ) -> Dict[str, Any]:
         return {
-            "file_id": (
-                self.file_id
-            ),
+            "file_id": (self.file_id),
             "path": self.path,
             "present": self.present,
             "required": self.required,
-            "checksum_required": (
-                self.checksum_required
-            ),
-            "checksum_verified": (
-                self.checksum_verified
-            ),
-            "size_verified": (
-                self.size_verified
-            ),
+            "checksum_required": (self.checksum_required),
+            "checksum_verified": (self.checksum_verified),
+            "size_verified": (self.size_verified),
             "valid": self.valid,
-            "algorithm": (
-                self.algorithm
-            ),
-            "calculated_checksum": (
-                self.calculated_checksum
-            ),
-            "expected_checksum": (
-                self.expected_checksum
-            ),
-            "size_bytes": (
-                self.size_bytes
-            ),
+            "algorithm": (self.algorithm),
+            "calculated_checksum": (self.calculated_checksum),
+            "expected_checksum": (self.expected_checksum),
+            "size_bytes": (self.size_bytes),
         }
 
 
@@ -181,30 +150,19 @@ class FileIntegrityResult:
 # Algorithm normalization
 # ---------------------------------------------------------------
 
+
 def normalize_algorithm(
     algorithm: str,
 ) -> str:
-    normalized = str(
-        algorithm
-    ).strip().lower()
+    normalized = str(algorithm).strip().lower()
 
-    if (
-        normalized
-        not in SUPPORTED_ALGORITHMS
-    ):
+    if normalized not in SUPPORTED_ALGORITHMS:
         raise (
             ChecksumAlgorithmError(
-                "Unsupported checksum "
-                "algorithm.",
+                "Unsupported checksum algorithm.",
                 details={
-                    "algorithm": (
-                        normalized
-                    ),
-                    "supported": (
-                        sorted(
-                            SUPPORTED_ALGORITHMS
-                        )
-                    ),
+                    "algorithm": (normalized),
+                    "supported": (sorted(SUPPORTED_ALGORITHMS)),
                 },
             )
         )
@@ -216,14 +174,11 @@ def normalize_algorithm(
 # Hash implementation
 # ---------------------------------------------------------------
 
+
 def _hasher(
     algorithm: str,
 ) -> Any:
-    algorithm = (
-        normalize_algorithm(
-            algorithm
-        )
-    )
+    algorithm = normalize_algorithm(algorithm)
 
     if algorithm == "sha256":
         return hashlib.sha256()
@@ -231,25 +186,19 @@ def _hasher(
     if algorithm == "sha512":
         return hashlib.sha512()
 
-    raise (
-        ChecksumAlgorithmError(
-            "Unsupported checksum "
-            "algorithm."
-        )
-    )
+    raise (ChecksumAlgorithmError("Unsupported checksum algorithm."))
 
 
 # ---------------------------------------------------------------
 # Calculate checksum
 # ---------------------------------------------------------------
 
+
 def checksum_file(
     path: str | Path,
     *,
     algorithm: str = "sha256",
-    maximum_size_bytes: Optional[
-        int
-    ] = None,
+    maximum_size_bytes: Optional[int] = None,
     block_size: int = DEFAULT_BLOCK_SIZE,
 ) -> ChecksumResult:
     """
@@ -259,40 +208,22 @@ def checksum_file(
     into memory at once.
     """
 
-    source = Path(
-        path
-    ).expanduser()
+    source = Path(path).expanduser()
 
-    algorithm = (
-        normalize_algorithm(
-            algorithm
-        )
-    )
+    algorithm = normalize_algorithm(algorithm)
 
     if block_size < 1:
-        raise ValueError(
-            "block_size must be >= 1"
-        )
+        raise ValueError("block_size must be >= 1")
 
-    if (
-        maximum_size_bytes
-        is not None
-        and maximum_size_bytes < 1
-    ):
-        raise ValueError(
-            "maximum_size_bytes "
-            "must be >= 1"
-        )
+    if maximum_size_bytes is not None and maximum_size_bytes < 1:
+        raise ValueError("maximum_size_bytes must be >= 1")
 
     if not source.exists():
         raise (
             DataSourceNotFoundError(
-                "Dataset file was not "
-                "found.",
+                "Dataset file was not found.",
                 details={
-                    "path": str(
-                        source
-                    ),
+                    "path": str(source),
                 },
             )
         )
@@ -300,12 +231,9 @@ def checksum_file(
     if not source.is_file():
         raise (
             DataIntegrityError(
-                "Dataset path is not "
-                "a regular file.",
+                "Dataset path is not a regular file.",
                 details={
-                    "path": str(
-                        source
-                    ),
+                    "path": str(source),
                 },
             )
         )
@@ -316,76 +244,43 @@ def checksum_file(
     except OSError as exc:
         raise (
             DataIntegrityError(
-                "Dataset file metadata "
-                "could not be read.",
+                "Dataset file metadata could not be read.",
                 details={
-                    "path": str(
-                        source
-                    ),
-                    "error_type": (
-                        type(exc).__name__
-                    ),
+                    "path": str(source),
+                    "error_type": (type(exc).__name__),
                 },
             )
         ) from exc
 
-    size_bytes = int(
-        stat.st_size
-    )
+    size_bytes = int(stat.st_size)
 
-    if (
-        maximum_size_bytes
-        is not None
-        and size_bytes
-        > maximum_size_bytes
-    ):
+    if maximum_size_bytes is not None and size_bytes > maximum_size_bytes:
         raise (
             DatasetFileSizeError(
-                "Dataset file exceeds "
-                "the configured size "
-                "limit.",
+                "Dataset file exceeds the configured size limit.",
                 details={
-                    "path": str(
-                        source
-                    ),
-                    "size_bytes": (
-                        size_bytes
-                    ),
-                    "maximum_size_bytes": (
-                        maximum_size_bytes
-                    ),
+                    "path": str(source),
+                    "size_bytes": (size_bytes),
+                    "maximum_size_bytes": (maximum_size_bytes),
                 },
             )
         )
 
-    digest = _hasher(
-        algorithm
-    )
+    digest = _hasher(algorithm)
 
     bytes_read = 0
 
     try:
-        with source.open(
-            "rb"
-        ) as stream:
+        with source.open("rb") as stream:
             while True:
-                block = stream.read(
-                    block_size
-                )
+                block = stream.read(block_size)
 
                 if not block:
                     break
 
-                bytes_read += len(
-                    block
-                )
+                bytes_read += len(block)
 
-                if (
-                    maximum_size_bytes
-                    is not None
-                    and bytes_read
-                    > maximum_size_bytes
-                ):
+                if maximum_size_bytes is not None and bytes_read > maximum_size_bytes:
                     raise (
                         DatasetFileSizeError(
                             "Dataset file "
@@ -394,19 +289,13 @@ def checksum_file(
                             "limit while "
                             "reading.",
                             details={
-                                "path": str(
-                                    source
-                                ),
-                                "maximum_size_bytes": (
-                                    maximum_size_bytes
-                                ),
+                                "path": str(source),
+                                "maximum_size_bytes": (maximum_size_bytes),
                             },
                         )
                     )
 
-                digest.update(
-                    block
-                )
+                digest.update(block)
 
     except DatasetFileSizeError:
         raise
@@ -414,31 +303,19 @@ def checksum_file(
     except OSError as exc:
         raise (
             DataIntegrityError(
-                "Dataset file could not "
-                "be read for checksum "
-                "calculation.",
+                "Dataset file could not be read for checksum calculation.",
                 details={
-                    "path": str(
-                        source
-                    ),
-                    "error_type": (
-                        type(exc).__name__
-                    ),
+                    "path": str(source),
+                    "error_type": (type(exc).__name__),
                 },
             )
         ) from exc
 
     return ChecksumResult(
-        path=str(
-            source.resolve()
-        ),
+        path=str(source.resolve()),
         algorithm=algorithm,
-        checksum=(
-            digest.hexdigest()
-        ),
-        size_bytes=(
-            bytes_read
-        ),
+        checksum=(digest.hexdigest()),
+        size_bytes=(bytes_read),
     )
 
 
@@ -446,41 +323,35 @@ def checksum_file(
 # Convenience checksums
 # ---------------------------------------------------------------
 
+
 def sha256_file(
     path: str | Path,
     *,
-    maximum_size_bytes: Optional[
-        int
-    ] = None,
+    maximum_size_bytes: Optional[int] = None,
 ) -> str:
     return checksum_file(
         path,
         algorithm="sha256",
-        maximum_size_bytes=(
-            maximum_size_bytes
-        ),
+        maximum_size_bytes=(maximum_size_bytes),
     ).checksum
 
 
 def sha512_file(
     path: str | Path,
     *,
-    maximum_size_bytes: Optional[
-        int
-    ] = None,
+    maximum_size_bytes: Optional[int] = None,
 ) -> str:
     return checksum_file(
         path,
         algorithm="sha512",
-        maximum_size_bytes=(
-            maximum_size_bytes
-        ),
+        maximum_size_bytes=(maximum_size_bytes),
     ).checksum
 
 
 # ---------------------------------------------------------------
 # Compare checksum
 # ---------------------------------------------------------------
+
 
 def checksum_matches(
     actual: str,
@@ -491,27 +362,19 @@ def checksum_matches(
     after whitespace/case normalization.
     """
 
-    return (
-        str(
-            actual
-        ).strip().lower()
-        == str(
-            expected
-        ).strip().lower()
-    )
+    return str(actual).strip().lower() == str(expected).strip().lower()
 
 
 # ---------------------------------------------------------------
 # Verify one DatasetFile
 # ---------------------------------------------------------------
 
+
 def verify_dataset_file(
     root_directory: str | Path,
     dataset_file: DatasetFile,
     *,
-    config: Optional[
-        IntegrityConfig
-    ] = None,
+    config: Optional[IntegrityConfig] = None,
     raise_on_mismatch: bool = True,
 ) -> FileIntegrityResult:
     """
@@ -519,10 +382,7 @@ def verify_dataset_file(
     and checksum for one manifest file.
     """
 
-    integrity = (
-        config
-        or IntegrityConfig()
-    )
+    integrity = config or IntegrityConfig()
 
     integrity.validate()
 
@@ -538,58 +398,28 @@ def verify_dataset_file(
     # ---------------------------------------------------------
 
     if not path.exists():
-        valid_missing = (
-            not dataset_file.required
+        valid_missing = not dataset_file.required
+
+        result = FileIntegrityResult(
+            file_id=(dataset_file.file_id),
+            path=str(path),
+            present=False,
+            required=(dataset_file.required),
+            checksum_required=(integrity.require_checksums),
+            checksum_verified=False,
+            size_verified=False,
+            valid=(valid_missing),
+            algorithm=(dataset_file.checksum_algorithm),
+            expected_checksum=(dataset_file.checksum),
         )
 
-        result = (
-            FileIntegrityResult(
-                file_id=(
-                    dataset_file.file_id
-                ),
-                path=str(
-                    path
-                ),
-                present=False,
-                required=(
-                    dataset_file.required
-                ),
-                checksum_required=(
-                    integrity.
-                    require_checksums
-                ),
-                checksum_verified=False,
-                size_verified=False,
-                valid=(
-                    valid_missing
-                ),
-                algorithm=(
-                    dataset_file.
-                    checksum_algorithm
-                ),
-                expected_checksum=(
-                    dataset_file.
-                    checksum
-                ),
-            )
-        )
-
-        if (
-            dataset_file.required
-            and raise_on_mismatch
-        ):
+        if dataset_file.required and raise_on_mismatch:
             raise (
                 DataSourceNotFoundError(
-                    "Required dataset "
-                    "file is missing.",
+                    "Required dataset file is missing.",
                     details={
-                        "file_id": (
-                            dataset_file.
-                            file_id
-                        ),
-                        "path": str(
-                            path
-                        ),
+                        "file_id": (dataset_file.file_id),
+                        "path": str(path),
                     },
                 )
             )
@@ -600,100 +430,56 @@ def verify_dataset_file(
         if raise_on_mismatch:
             raise (
                 DataIntegrityError(
-                    "Dataset path is not "
-                    "a regular file.",
+                    "Dataset path is not a regular file.",
                     details={
-                        "file_id": (
-                            dataset_file.
-                            file_id
-                        ),
-                        "path": str(
-                            path
-                        ),
+                        "file_id": (dataset_file.file_id),
+                        "path": str(path),
                     },
                 )
             )
 
         return FileIntegrityResult(
-            file_id=(
-                dataset_file.file_id
-            ),
-            path=str(
-                path
-            ),
+            file_id=(dataset_file.file_id),
+            path=str(path),
             present=True,
-            required=(
-                dataset_file.required
-            ),
-            checksum_required=(
-                integrity.
-                require_checksums
-            ),
+            required=(dataset_file.required),
+            checksum_required=(integrity.require_checksums),
             checksum_verified=False,
             size_verified=False,
             valid=False,
-            algorithm=(
-                dataset_file.
-                checksum_algorithm
-            ),
-            expected_checksum=(
-                dataset_file.checksum
-            ),
+            algorithm=(dataset_file.checksum_algorithm),
+            expected_checksum=(dataset_file.checksum),
         )
 
     # ---------------------------------------------------------
     # Determine algorithm
     # ---------------------------------------------------------
 
-    algorithm = (
-        dataset_file.
-        checksum_algorithm
-        or integrity.
-        checksum_algorithm
-    )
+    algorithm = dataset_file.checksum_algorithm or integrity.checksum_algorithm
 
-    algorithm = (
-        normalize_algorithm(
-            algorithm
-        )
-    )
+    algorithm = normalize_algorithm(algorithm)
 
     # ---------------------------------------------------------
     # Missing required checksum
     # ---------------------------------------------------------
 
-    if (
-        integrity.require_checksums
-        and not dataset_file.checksum
-    ):
+    if integrity.require_checksums and not dataset_file.checksum:
         if raise_on_mismatch:
             raise (
                 ChecksumMismatchError(
-                    "Dataset file has no "
-                    "required checksum.",
+                    "Dataset file has no required checksum.",
                     details={
-                        "file_id": (
-                            dataset_file.
-                            file_id
-                        ),
-                        "path": str(
-                            path
-                        ),
+                        "file_id": (dataset_file.file_id),
+                        "path": str(path),
                     },
                 )
             )
 
         return FileIntegrityResult(
-            file_id=(
-                dataset_file.file_id
-            ),
-            path=str(
-                path
-            ),
+            file_id=(dataset_file.file_id),
+            path=str(path),
             present=True,
-            required=(
-                dataset_file.required
-            ),
+            required=(dataset_file.required),
             checksum_required=True,
             checksum_verified=False,
             size_verified=False,
@@ -709,10 +495,7 @@ def verify_dataset_file(
     calculated = checksum_file(
         path,
         algorithm=algorithm,
-        maximum_size_bytes=(
-            integrity.
-            maximum_file_size_bytes
-        ),
+        maximum_size_bytes=(integrity.maximum_file_size_bytes),
     )
 
     # ---------------------------------------------------------
@@ -721,39 +504,17 @@ def verify_dataset_file(
 
     size_verified = True
 
-    if (
-        dataset_file.size_bytes
-        is not None
-    ):
-        size_verified = (
-            int(
-                dataset_file.size_bytes
-            )
-            == calculated.size_bytes
-        )
+    if dataset_file.size_bytes is not None:
+        size_verified = int(dataset_file.size_bytes) == calculated.size_bytes
 
-        if (
-            not size_verified
-            and raise_on_mismatch
-        ):
+        if not size_verified and raise_on_mismatch:
             raise (
                 DatasetFileSizeError(
-                    "Dataset file size "
-                    "does not match the "
-                    "manifest.",
+                    "Dataset file size does not match the manifest.",
                     details={
-                        "file_id": (
-                            dataset_file.
-                            file_id
-                        ),
-                        "expected_size_bytes": (
-                            dataset_file.
-                            size_bytes
-                        ),
-                        "actual_size_bytes": (
-                            calculated.
-                            size_bytes
-                        ),
+                        "file_id": (dataset_file.file_id),
+                        "expected_size_bytes": (dataset_file.size_bytes),
+                        "actual_size_bytes": (calculated.size_bytes),
                     },
                 )
             )
@@ -764,8 +525,7 @@ def verify_dataset_file(
 
     checksum_verified = (
         True
-        if dataset_file.checksum
-        is None
+        if dataset_file.checksum is None
         else checksum_matches(
             calculated.checksum,
             dataset_file.checksum,
@@ -775,75 +535,35 @@ def verify_dataset_file(
     valid = bool(
         size_verified
         and checksum_verified
-        and (
-            dataset_file.checksum
-            is not None
-            or not integrity.
-            require_checksums
-        )
+        and (dataset_file.checksum is not None or not integrity.require_checksums)
     )
 
-    if (
-        not checksum_verified
-        and raise_on_mismatch
-    ):
+    if not checksum_verified and raise_on_mismatch:
         raise (
             ChecksumMismatchError(
-                "Dataset file checksum "
-                "does not match the "
-                "manifest.",
+                "Dataset file checksum does not match the manifest.",
                 details={
-                    "file_id": (
-                        dataset_file.
-                        file_id
-                    ),
-                    "algorithm": (
-                        algorithm
-                    ),
-                    "expected_checksum": (
-                        dataset_file.
-                        checksum
-                    ),
-                    "actual_checksum": (
-                        calculated.
-                        checksum
-                    ),
+                    "file_id": (dataset_file.file_id),
+                    "algorithm": (algorithm),
+                    "expected_checksum": (dataset_file.checksum),
+                    "actual_checksum": (calculated.checksum),
                 },
             )
         )
 
     return FileIntegrityResult(
-        file_id=(
-            dataset_file.file_id
-        ),
-        path=str(
-            path
-        ),
+        file_id=(dataset_file.file_id),
+        path=str(path),
         present=True,
-        required=(
-            dataset_file.required
-        ),
-        checksum_required=(
-            integrity.
-            require_checksums
-        ),
-        checksum_verified=(
-            checksum_verified
-        ),
-        size_verified=(
-            size_verified
-        ),
+        required=(dataset_file.required),
+        checksum_required=(integrity.require_checksums),
+        checksum_verified=(checksum_verified),
+        size_verified=(size_verified),
         valid=valid,
         algorithm=algorithm,
-        calculated_checksum=(
-            calculated.checksum
-        ),
-        expected_checksum=(
-            dataset_file.checksum
-        ),
-        size_bytes=(
-            calculated.size_bytes
-        ),
+        calculated_checksum=(calculated.checksum),
+        expected_checksum=(dataset_file.checksum),
+        size_bytes=(calculated.size_bytes),
     )
 
 
@@ -851,17 +571,14 @@ def verify_dataset_file(
 # Verify manifest
 # ---------------------------------------------------------------
 
+
 def verify_manifest_files(
     manifest: DatasetManifest,
     root_directory: str | Path,
     *,
-    config: Optional[
-        IntegrityConfig
-    ] = None,
+    config: Optional[IntegrityConfig] = None,
     raise_on_mismatch: bool = True,
-) -> List[
-    FileIntegrityResult
-]:
+) -> List[FileIntegrityResult]:
     """
     Verify all files declared by a manifest.
 
@@ -872,32 +589,21 @@ def verify_manifest_files(
 
     manifest.finalize()
 
-    integrity = (
-        config
-        or IntegrityConfig()
-    )
+    integrity = config or IntegrityConfig()
 
     integrity.validate()
 
-    results: List[
-        FileIntegrityResult
-    ] = []
+    results: List[FileIntegrityResult] = []
 
-    for dataset_file in (
-        manifest.files
-    ):
+    for dataset_file in manifest.files:
         result = verify_dataset_file(
             root_directory,
             dataset_file,
             config=integrity,
-            raise_on_mismatch=(
-                raise_on_mismatch
-            ),
+            raise_on_mismatch=(raise_on_mismatch),
         )
 
-        results.append(
-            result
-        )
+        results.append(result)
 
     return results
 
@@ -906,10 +612,9 @@ def verify_manifest_files(
 # Manifest verification status
 # ---------------------------------------------------------------
 
+
 def manifest_integrity_ok(
-    results: List[
-        FileIntegrityResult
-    ],
+    results: List[FileIntegrityResult],
 ) -> bool:
     """
     Return True when every required file is valid
@@ -917,16 +622,10 @@ def manifest_integrity_ok(
     """
 
     for result in results:
-        if (
-            result.required
-            and not result.valid
-        ):
+        if result.required and not result.valid:
             return False
 
-        if (
-            result.present
-            and not result.valid
-        ):
+        if result.present and not result.valid:
             return False
 
     return True
@@ -939,18 +638,13 @@ def manifest_integrity_ok(
 __all__ = [
     "SUPPORTED_ALGORITHMS",
     "DEFAULT_BLOCK_SIZE",
-
     "ChecksumResult",
     "FileIntegrityResult",
-
     "normalize_algorithm",
-
     "checksum_file",
     "sha256_file",
     "sha512_file",
-
     "checksum_matches",
-
     "verify_dataset_file",
     "verify_manifest_files",
     "manifest_integrity_ok",

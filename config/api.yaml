@@ -1,0 +1,43 @@
+schema_version: "1"
+
+api:
+  application:
+    name: "OSHA API"
+
+  server:
+    host: "0.0.0.0"
+    port: 8000
+    workers: 1
+    log_level: "info"
+
+    graceful_shutdown_seconds: 30
+
+    limit_concurrency: 500
+    limit_max_requests: 10000
+
+  development:
+    host: "127.0.0.1"
+    port: 8000
+    reload: true
+    log_level: "debug"
+
+  health:
+    enabled: true
+
+    endpoints:
+      liveness: "/health/live"
+      readiness: "/health/ready"
+      components: "/health"
+
+  proxy:
+    enabled: true
+
+    # Local reverse proxy by default.
+    forwarded_allow_ips:
+      - "127.0.0.1"
+
+  request:
+    request_id_header: "X-Request-ID"
+
+  docs:
+    openapi: true

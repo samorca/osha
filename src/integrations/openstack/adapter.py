@@ -53,21 +53,13 @@ from src.security.secrets import (
 # Capability names
 # ---------------------------------------------------------------
 
-CAPABILITY_COMPUTE_READ = (
-    "compute.read"
-)
+CAPABILITY_COMPUTE_READ = "compute.read"
 
-CAPABILITY_NETWORK_READ = (
-    "network.read"
-)
+CAPABILITY_NETWORK_READ = "network.read"
 
-CAPABILITY_IMAGE_READ = (
-    "image.read"
-)
+CAPABILITY_IMAGE_READ = "image.read"
 
-CAPABILITY_STORAGE_READ = (
-    "storage.read"
-)
+CAPABILITY_STORAGE_READ = "storage.read"
 
 
 # ---------------------------------------------------------------
@@ -83,9 +75,8 @@ ACTION_GET = "get"
 # OpenStack adapter
 # ---------------------------------------------------------------
 
-class OpenStackAdapter(
-    IntegrationAdapter
-):
+
+class OpenStackAdapter(IntegrationAdapter):
     """
     Translate provider-neutral OSHA operations
     into OpenStackClient calls.
@@ -105,26 +96,15 @@ class OpenStackAdapter(
         self,
         *,
         openstack_config: OpenStackConfig,
-        config: Optional[
-            IntegrationsConfig
-        ] = None,
+        config: Optional[IntegrationsConfig] = None,
     ) -> None:
-        self.openstack_config = (
-            openstack_config
-        )
+        self.openstack_config = openstack_config
 
         self.openstack_config.validate()
 
         super().__init__(
-            target=(
-                self.openstack_config.
-                target()
-            ),
-
-            config=(
-                config
-                or IntegrationsConfig()
-            ),
+            target=(self.openstack_config.target()),
+            config=(config or IntegrationsConfig()),
         )
 
     # ---------------------------------------------------------
@@ -133,9 +113,7 @@ class OpenStackAdapter(
 
     def define_capabilities(
         self,
-    ) -> Iterable[
-        IntegrationCapability
-    ]:
+    ) -> Iterable[IntegrationCapability]:
         """
         Advertise only services explicitly
         enabled in OpenStackConfig.
@@ -143,123 +121,67 @@ class OpenStackAdapter(
 
         capabilities = []
 
-        if (
-            self.openstack_config.
-            enable_compute
-        ):
+        if self.openstack_config.enable_compute:
             capabilities.append(
                 IntegrationCapability(
-                    name=(
-                        CAPABILITY_COMPUTE_READ
-                    ),
-
+                    name=(CAPABILITY_COMPUTE_READ),
                     resource="compute",
-
                     actions=[
                         ACTION_LIST,
                         ACTION_GET,
                     ],
-
                     read_only=True,
-
                     attributes={
-                        "provider": (
-                            "openstack"
-                        ),
-
-                        "service": (
-                            "compute"
-                        ),
+                        "provider": ("openstack"),
+                        "service": ("compute"),
                     },
                 )
             )
 
-        if (
-            self.openstack_config.
-            enable_network
-        ):
+        if self.openstack_config.enable_network:
             capabilities.append(
                 IntegrationCapability(
-                    name=(
-                        CAPABILITY_NETWORK_READ
-                    ),
-
+                    name=(CAPABILITY_NETWORK_READ),
                     resource="network",
-
                     actions=[
                         ACTION_LIST,
                     ],
-
                     read_only=True,
-
                     attributes={
-                        "provider": (
-                            "openstack"
-                        ),
-
-                        "service": (
-                            "network"
-                        ),
+                        "provider": ("openstack"),
+                        "service": ("network"),
                     },
                 )
             )
 
-        if (
-            self.openstack_config.
-            enable_image
-        ):
+        if self.openstack_config.enable_image:
             capabilities.append(
                 IntegrationCapability(
-                    name=(
-                        CAPABILITY_IMAGE_READ
-                    ),
-
+                    name=(CAPABILITY_IMAGE_READ),
                     resource="image",
-
                     actions=[
                         ACTION_LIST,
                     ],
-
                     read_only=True,
-
                     attributes={
-                        "provider": (
-                            "openstack"
-                        ),
-
-                        "service": (
-                            "image"
-                        ),
+                        "provider": ("openstack"),
+                        "service": ("image"),
                     },
                 )
             )
 
-        if (
-            self.openstack_config.
-            enable_volume
-        ):
+        if self.openstack_config.enable_volume:
             capabilities.append(
                 IntegrationCapability(
-                    name=(
-                        CAPABILITY_STORAGE_READ
-                    ),
-
+                    name=(CAPABILITY_STORAGE_READ),
                     resource="volume",
-
                     actions=[
                         ACTION_LIST,
                     ],
-
                     read_only=True,
-
                     attributes={
-                        "provider": (
-                            "openstack"
-                        ),
-
-                        "service": (
-                            "block_storage"
-                        ),
+                        "provider": ("openstack"),
+                        "service": ("block_storage"),
                     },
                 )
             )
@@ -272,15 +194,10 @@ class OpenStackAdapter(
 
     def connect_client(
         self,
-        credential: Optional[
-            SecretValue
-        ],
+        credential: Optional[SecretValue],
     ) -> OpenStackClient:
         client = OpenStackClient(
-            config=(
-                self.openstack_config
-            ),
-
+            config=(self.openstack_config),
             credential=credential,
         )
 
@@ -333,93 +250,51 @@ class OpenStackAdapter(
 
         operation.finalize()
 
-        capability = (
-            operation.capability
-        )
+        capability = operation.capability
 
-        action = (
-            operation.action
-        )
+        action = operation.action
 
         # -----------------------------------------------------
         # Compute
         # -----------------------------------------------------
 
-        if (
-            capability
-            == CAPABILITY_COMPUTE_READ
-        ):
+        if capability == CAPABILITY_COMPUTE_READ:
             if action == ACTION_LIST:
-                return {
-                    "servers": (
-                        client.list_servers()
-                    )
-                }
+                return {"servers": (client.list_servers())}
 
             if action == ACTION_GET:
                 if not operation.resource_id:
                     raise (
                         IntegrationOperationError(
-                            "compute.read/get "
-                            "requires "
-                            "resource_id."
+                            "compute.read/get requires resource_id."
                         )
                     )
 
-                return {
-                    "server": (
-                        client.get_server(
-                            operation.
-                            resource_id
-                        )
-                    )
-                }
+                return {"server": (client.get_server(operation.resource_id))}
 
         # -----------------------------------------------------
         # Network
         # -----------------------------------------------------
 
-        elif (
-            capability
-            == CAPABILITY_NETWORK_READ
-        ):
+        elif capability == CAPABILITY_NETWORK_READ:
             if action == ACTION_LIST:
-                return {
-                    "networks": (
-                        client.
-                        list_networks()
-                    )
-                }
+                return {"networks": (client.list_networks())}
 
         # -----------------------------------------------------
         # Images
         # -----------------------------------------------------
 
-        elif (
-            capability
-            == CAPABILITY_IMAGE_READ
-        ):
+        elif capability == CAPABILITY_IMAGE_READ:
             if action == ACTION_LIST:
-                return {
-                    "images": (
-                        client.list_images()
-                    )
-                }
+                return {"images": (client.list_images())}
 
         # -----------------------------------------------------
         # Storage
         # -----------------------------------------------------
 
-        elif (
-            capability
-            == CAPABILITY_STORAGE_READ
-        ):
+        elif capability == CAPABILITY_STORAGE_READ:
             if action == ACTION_LIST:
-                return {
-                    "volumes": (
-                        client.list_volumes()
-                    )
-                }
+                return {"volumes": (client.list_volumes())}
 
         # -----------------------------------------------------
         # Unsupported operation
@@ -427,9 +302,7 @@ class OpenStackAdapter(
 
         raise (
             IntegrationCapabilityError(
-                "Unsupported OpenStack "
-                "integration operation: "
-                f"{capability}/{action}"
+                f"Unsupported OpenStack integration operation: {capability}/{action}"
             )
         )
 
@@ -449,51 +322,19 @@ class OpenStackAdapter(
                 client,
                 OpenStackClient,
             ):
-                client_summary = (
-                    client.summary()
-                )
+                client_summary = client.summary()
 
         return {
             "provider": "openstack",
-
-            "target_id": (
-                self.target.target_id
-            ),
-
-            "environment_id": (
-                self.target.
-                environment_id
-            ),
-
-            "region_name": (
-                self.openstack_config.
-                region_name
-            ),
-
-            "interface": (
-                self.openstack_config.
-                interface
-            ),
-
+            "target_id": (self.target.target_id),
+            "environment_id": (self.target.environment_id),
+            "region_name": (self.openstack_config.region_name),
+            "interface": (self.openstack_config.interface),
             "ready": self.ready,
-
-            "client": (
-                client_summary
-            ),
-
-            "capabilities": [
-                capability.name
-                for capability
-                in self.capabilities()
-            ],
-
-            "mutating_capabilities_advertised": (
-                False
-            ),
-
-            "credential_value_exposed": (
-                False
-            ),
+            "client": (client_summary),
+            "capabilities": [capability.name for capability in self.capabilities()],
+            "mutating_capabilities_advertised": (False),
+            "credential_value_exposed": (False),
         }
 
 
@@ -506,9 +347,7 @@ __all__ = [
     "CAPABILITY_NETWORK_READ",
     "CAPABILITY_IMAGE_READ",
     "CAPABILITY_STORAGE_READ",
-
     "ACTION_LIST",
     "ACTION_GET",
-
     "OpenStackAdapter",
 ]

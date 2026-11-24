@@ -68,19 +68,13 @@ class SignalType(str, Enum):
     METRIC = "metric"
     EVENT = "event"
 
-    RESOURCE_STATE = (
-        "resource_state"
-    )
+    RESOURCE_STATE = "resource_state"
 
-    STATE_CHANGE = (
-        "state_change"
-    )
+    STATE_CHANGE = "state_change"
 
     ALERT = "alert"
 
-    CONFIGURATION = (
-        "configuration"
-    )
+    CONFIGURATION = "configuration"
 
     SECURITY = "security"
 
@@ -88,13 +82,9 @@ class SignalType(str, Enum):
 
     HEALTH = "health"
 
-    RELATIONSHIP = (
-        "relationship"
-    )
+    RELATIONSHIP = "relationship"
 
-    COLLECTOR_STATUS = (
-        "collector_status"
-    )
+    COLLECTOR_STATUS = "collector_status"
 
     UNKNOWN = "unknown"
 
@@ -169,27 +159,17 @@ class RelationshipType(str, Enum):
 
     HOSTS = "hosts"
 
-    CONNECTED_TO = (
-        "connected_to"
-    )
+    CONNECTED_TO = "connected_to"
 
-    ATTACHED_TO = (
-        "attached_to"
-    )
+    ATTACHED_TO = "attached_to"
 
     USES = "uses"
 
-    DEPENDS_ON = (
-        "depends_on"
-    )
+    DEPENDS_ON = "depends_on"
 
-    MANAGED_BY = (
-        "managed_by"
-    )
+    MANAGED_BY = "managed_by"
 
-    PROVISIONED_BY = (
-        "provisioned_by"
-    )
+    PROVISIONED_BY = "provisioned_by"
 
     MEMBER_OF = "member_of"
 
@@ -219,9 +199,7 @@ class Severity(str, Enum):
 
 
 def utc_now() -> str:
-    return datetime.now(
-        timezone.utc
-    ).isoformat()
+    return datetime.now(timezone.utc).isoformat()
 
 
 def normalize_timestamp(
@@ -245,9 +223,7 @@ def normalize_timestamp(
         datetime,
     ):
         if value.tzinfo is None:
-            value = value.replace(
-                tzinfo=timezone.utc
-            )
+            value = value.replace(tzinfo=timezone.utc)
 
         return value.isoformat()
 
@@ -286,9 +262,7 @@ def json_safe(
     """
 
     if depth > maximum_depth:
-        return (
-            "[MAX_DEPTH_REACHED]"
-        )
+        return "[MAX_DEPTH_REACHED]"
 
     if value is None:
         return None
@@ -308,9 +282,7 @@ def json_safe(
         value,
         datetime,
     ):
-        return normalize_timestamp(
-            value
-        )
+        return normalize_timestamp(value)
 
     if isinstance(
         value,
@@ -329,12 +301,9 @@ def json_safe(
             str(key): json_safe(
                 item,
                 depth=depth + 1,
-                maximum_depth=(
-                    maximum_depth
-                ),
+                maximum_depth=(maximum_depth),
             )
-            for key, item
-            in value.items()
+            for key, item in value.items()
         }
 
     if isinstance(
@@ -350,9 +319,7 @@ def json_safe(
             json_safe(
                 item,
                 depth=depth + 1,
-                maximum_depth=(
-                    maximum_depth
-                ),
+                maximum_depth=(maximum_depth),
             )
             for item in value
         ]
@@ -364,9 +331,7 @@ def json_safe(
         return json_safe(
             asdict(value),
             depth=depth + 1,
-            maximum_depth=(
-                maximum_depth
-            ),
+            maximum_depth=(maximum_depth),
         )
 
     return str(value)
@@ -384,13 +349,9 @@ def stable_hash(
             ":",
         ),
         default=str,
-    ).encode(
-        "utf-8"
-    )
+    ).encode("utf-8")
 
-    return hashlib.sha256(
-        encoded
-    ).hexdigest()
+    return hashlib.sha256(encoded).hexdigest()
 
 
 @dataclass
@@ -417,31 +378,21 @@ class ResourceIdentity:
 
     provider_id: str
 
-    canonical_id: Optional[str] = (
-        None
-    )
+    canonical_id: Optional[str] = None
 
-    native_type: Optional[str] = (
-        None
-    )
+    native_type: Optional[str] = None
 
     name: Optional[str] = None
 
-    environment_id: str = (
-        "default"
-    )
+    environment_id: str = "default"
 
     region: Optional[str] = None
 
     zone: Optional[str] = None
 
-    cluster_id: Optional[str] = (
-        None
-    )
+    cluster_id: Optional[str] = None
 
-    namespace: Optional[str] = (
-        None
-    )
+    namespace: Optional[str] = None
 
     host: Optional[str] = None
 
@@ -450,9 +401,7 @@ class ResourceIdentity:
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def effective_id(
         self,
@@ -475,15 +424,10 @@ class ResourceIdentity:
             self.provider_id,
         ]
 
-        return "::".join(
-            str(component)
-            for component in components
-        )
+        return "::".join(str(component) for component in components)
 
     def to_dict(self) -> dict:
-        return json_safe(
-            asdict(self)
-        )
+        return json_safe(asdict(self))
 
 
 @dataclass
@@ -512,17 +456,11 @@ class Signal:
 
     resource_id: str
 
-    environment_id: str = (
-        "default"
-    )
+    environment_id: str = "default"
 
-    signal_name: Optional[str] = (
-        None
-    )
+    signal_name: Optional[str] = None
 
-    severity: str = (
-        Severity.UNKNOWN.value
-    )
+    severity: str = Severity.UNKNOWN.value
 
     value: Any = None
 
@@ -533,18 +471,12 @@ class Signal:
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    source_record_id: Optional[
-        str
-    ] = None
+    source_record_id: Optional[str] = None
 
     def to_dict(self) -> dict:
-        return json_safe(
-            asdict(self)
-        )
+        return json_safe(asdict(self))
 
 
 @dataclass
@@ -562,29 +494,19 @@ class Relationship:
 
     provider: str
 
-    environment_id: str = (
-        "default"
-    )
+    environment_id: str = "default"
 
-    timestamp: str = field(
-        default_factory=utc_now
-    )
+    timestamp: str = field(default_factory=utc_now)
 
-    confidence: Optional[
-        float
-    ] = None
+    confidence: Optional[float] = None
 
     evidence: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
-        return json_safe(
-            asdict(self)
-        )
+        return json_safe(asdict(self))
 
 
 @dataclass
@@ -602,30 +524,18 @@ class TelemetryRecord:
 
     signal: Signal
 
-    relationships: List[
-        Relationship
-    ] = field(
-        default_factory=list
-    )
+    relationships: List[Relationship] = field(default_factory=list)
 
     native: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
-    schema_version: str = (
-        SCHEMA_VERSION
-    )
+    schema_version: str = SCHEMA_VERSION
 
-    normalized_at: str = field(
-        default_factory=utc_now
-    )
+    normalized_at: str = field(default_factory=utc_now)
 
-    record_id: Optional[str] = (
-        None
-    )
+    record_id: Optional[str] = None
 
     def build_record_id(
         self,
@@ -641,25 +551,13 @@ class TelemetryRecord:
         """
 
         body = {
-            "schema_version": (
-                self.schema_version
-            ),
-            "resource": (
-                self.resource.to_dict()
-            ),
-            "signal": (
-                self.signal.to_dict()
-            ),
+            "schema_version": (self.schema_version),
+            "resource": (self.resource.to_dict()),
+            "signal": (self.signal.to_dict()),
             "relationships": [
-                relationship.to_dict()
-                for relationship
-                in self.relationships
+                relationship.to_dict() for relationship in self.relationships
             ],
-            "native": (
-                json_safe(
-                    self.native
-                )
-            ),
+            "native": (json_safe(self.native)),
         }
 
         return stable_hash(body)
@@ -668,9 +566,7 @@ class TelemetryRecord:
         self,
     ) -> "TelemetryRecord":
         if not self.record_id:
-            self.record_id = (
-                self.build_record_id()
-            )
+            self.record_id = self.build_record_id()
 
         return self
 
@@ -678,31 +574,15 @@ class TelemetryRecord:
         self.finalize()
 
         return {
-            "schema_version": (
-                self.schema_version
-            ),
-            "record_id": (
-                self.record_id
-            ),
-            "normalized_at": (
-                self.normalized_at
-            ),
-            "resource": (
-                self.resource.to_dict()
-            ),
-            "signal": (
-                self.signal.to_dict()
-            ),
+            "schema_version": (self.schema_version),
+            "record_id": (self.record_id),
+            "normalized_at": (self.normalized_at),
+            "resource": (self.resource.to_dict()),
+            "signal": (self.signal.to_dict()),
             "relationships": [
-                relationship.to_dict()
-                for relationship
-                in self.relationships
+                relationship.to_dict() for relationship in self.relationships
             ],
-            "native": (
-                json_safe(
-                    self.native
-                )
-            ),
+            "native": (json_safe(self.native)),
         }
 
     def to_json(self) -> str:
@@ -732,9 +612,7 @@ def build_resource(
     namespace: Optional[str] = None,
     host: Optional[str] = None,
     service: Optional[str] = None,
-    attributes: Optional[
-        Mapping[str, Any]
-    ] = None,
+    attributes: Optional[Mapping[str, Any]] = None,
 ) -> ResourceIdentity:
     """
     Convenience constructor used by provider
@@ -742,62 +620,20 @@ def build_resource(
     """
 
     return ResourceIdentity(
-        resource_type=(
-            str(resource_type)
-        ),
+        resource_type=(str(resource_type)),
         provider=str(provider),
-        provider_id=str(
-            provider_id
-        ),
-        canonical_id=(
-            normalize_string(
-                canonical_id
-            )
-        ),
-        native_type=(
-            normalize_string(
-                native_type
-            )
-        ),
-        name=normalize_string(
-            name
-        ),
-        environment_id=(
-            str(
-                environment_id
-                or "default"
-            )
-        ),
-        region=normalize_string(
-            region
-        ),
-        zone=normalize_string(
-            zone
-        ),
-        cluster_id=(
-            normalize_string(
-                cluster_id
-            )
-        ),
-        namespace=(
-            normalize_string(
-                namespace
-            )
-        ),
-        host=normalize_string(
-            host
-        ),
-        service=normalize_string(
-            service
-        ),
-        attributes=(
-            json_safe(
-                dict(
-                    attributes
-                    or {}
-                )
-            )
-        ),
+        provider_id=str(provider_id),
+        canonical_id=(normalize_string(canonical_id)),
+        native_type=(normalize_string(native_type)),
+        name=normalize_string(name),
+        environment_id=(str(environment_id or "default")),
+        region=normalize_string(region),
+        zone=normalize_string(zone),
+        cluster_id=(normalize_string(cluster_id)),
+        namespace=(normalize_string(namespace)),
+        host=normalize_string(host),
+        service=normalize_string(service),
+        attributes=(json_safe(dict(attributes or {}))),
     )
 
 
@@ -809,18 +645,12 @@ def build_signal(
     timestamp: Any = None,
     environment_id: str = "default",
     signal_name: Optional[str] = None,
-    severity: str = (
-        Severity.UNKNOWN.value
-    ),
+    severity: str = (Severity.UNKNOWN.value),
     value: Any = None,
     unit: Optional[str] = None,
     message: Optional[str] = None,
-    attributes: Optional[
-        Mapping[str, Any]
-    ] = None,
-    source_record_id: Optional[
-        str
-    ] = None,
+    attributes: Optional[Mapping[str, Any]] = None,
+    source_record_id: Optional[str] = None,
 ) -> Signal:
     """
     Convenience constructor used by
@@ -828,57 +658,18 @@ def build_signal(
     """
 
     return Signal(
-        signal_type=str(
-            signal_type
-        ),
-        timestamp=(
-            normalize_timestamp(
-                timestamp
-            )
-        ),
+        signal_type=str(signal_type),
+        timestamp=(normalize_timestamp(timestamp)),
         provider=str(provider),
-        resource_id=str(
-            resource_id
-        ),
-        environment_id=(
-            str(
-                environment_id
-                or "default"
-            )
-        ),
-        signal_name=(
-            normalize_string(
-                signal_name
-            )
-        ),
-        severity=str(
-            severity
-            or Severity.UNKNOWN.value
-        ),
-        value=json_safe(
-            value
-        ),
-        unit=normalize_string(
-            unit
-        ),
-        message=(
-            normalize_string(
-                message
-            )
-        ),
-        attributes=(
-            json_safe(
-                dict(
-                    attributes
-                    or {}
-                )
-            )
-        ),
-        source_record_id=(
-            normalize_string(
-                source_record_id
-            )
-        ),
+        resource_id=str(resource_id),
+        environment_id=(str(environment_id or "default")),
+        signal_name=(normalize_string(signal_name)),
+        severity=str(severity or Severity.UNKNOWN.value),
+        value=json_safe(value),
+        unit=normalize_string(unit),
+        message=(normalize_string(message)),
+        attributes=(json_safe(dict(attributes or {}))),
+        source_record_id=(normalize_string(source_record_id)),
     )
 
 
@@ -886,12 +677,8 @@ def build_record(
     *,
     resource: ResourceIdentity,
     signal: Signal,
-    relationships: Optional[
-        List[Relationship]
-    ] = None,
-    native: Optional[
-        Mapping[str, Any]
-    ] = None,
+    relationships: Optional[List[Relationship]] = None,
+    native: Optional[Mapping[str, Any]] = None,
 ) -> TelemetryRecord:
     """
     Construct and finalize one canonical OSHA
@@ -901,16 +688,6 @@ def build_record(
     return TelemetryRecord(
         resource=resource,
         signal=signal,
-        relationships=(
-            relationships
-            or []
-        ),
-        native=(
-            json_safe(
-                dict(
-                    native
-                    or {}
-                )
-            )
-        ),
+        relationships=(relationships or []),
+        native=(json_safe(dict(native or {}))),
     ).finalize()

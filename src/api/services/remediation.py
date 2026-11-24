@@ -112,9 +112,7 @@ from src.api.schema import (
 # Logging
 # ------------------------------------------------------------------
 
-logger = logging.getLogger(
-    __name__
-)
+logger = logging.getLogger(__name__)
 
 
 # ------------------------------------------------------------------
@@ -141,23 +139,18 @@ MAX_IDEMPOTENCY_RECORDS = 10_000
 # Time
 # ------------------------------------------------------------------
 
+
 def utc_now() -> datetime:
-    return datetime.now(
-        timezone.utc
-    )
+    return datetime.now(timezone.utc)
 
 
 def normalize_datetime(
     value: datetime,
 ) -> datetime:
     if value.tzinfo is None:
-        return value.replace(
-            tzinfo=timezone.utc
-        )
+        return value.replace(tzinfo=timezone.utc)
 
-    return value.astimezone(
-        timezone.utc
-    )
+    return value.astimezone(timezone.utc)
 
 
 # ------------------------------------------------------------------
@@ -201,25 +194,15 @@ def safe_mapping(
 
     output: Dict[str, Any] = {}
 
-    for raw_key, item in list(
-        value.items()
-    )[
-        :limit
-    ]:
-        key = str(
-            raw_key
-        ).strip()
+    for raw_key, item in list(value.items())[:limit]:
+        key = str(raw_key).strip()
 
         if not key:
             continue
 
         normalized = key.lower()
 
-        if any(
-            fragment in normalized
-            for fragment
-            in _SENSITIVE_KEY_FRAGMENTS
-        ):
+        if any(fragment in normalized for fragment in _SENSITIVE_KEY_FRAGMENTS):
             continue
 
         if isinstance(
@@ -271,9 +254,7 @@ def safe_mapping(
             continue
 
         output[key] = {
-            "type": type(
-                item
-            ).__name__,
+            "type": type(item).__name__,
         }
 
     return output
@@ -283,12 +264,11 @@ def safe_mapping(
 # Async compatibility
 # ------------------------------------------------------------------
 
+
 async def await_if_needed(
     value: Any,
 ) -> Any:
-    if inspect.isawaitable(
-        value
-    ):
+    if inspect.isawaitable(value):
         return await value
 
     return value
@@ -297,6 +277,7 @@ async def await_if_needed(
 # ------------------------------------------------------------------
 # Operation context
 # ------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class RemediationOperationContext:
@@ -325,6 +306,7 @@ class RemediationOperationContext:
 # ------------------------------------------------------------------
 # Internal step record
 # ------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class RemediationStepRecord:
@@ -363,46 +345,31 @@ class RemediationStepRecord:
     attributes: Mapping[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def validate(
         self,
     ) -> None:
         if not self.step_id.strip():
-            raise ValueError(
-                "step_id cannot be empty"
-            )
+            raise ValueError("step_id cannot be empty")
 
         if not self.action.strip():
-            raise ValueError(
-                "step action cannot be empty"
-            )
+            raise ValueError("step action cannot be empty")
 
         if not self.provider.strip():
-            raise ValueError(
-                "step provider cannot be empty"
-            )
+            raise ValueError("step provider cannot be empty")
 
         if self.timeout_seconds < 1:
-            raise ValueError(
-                "step timeout must be >= 1"
-            )
+            raise ValueError("step timeout must be >= 1")
 
-        if (
-            self.reversible
-            and not self.rollback_action
-        ):
-            raise ValueError(
-                "reversible step requires "
-                "rollback_action"
-            )
+        if self.reversible and not self.rollback_action:
+            raise ValueError("reversible step requires rollback_action")
 
 
 # ------------------------------------------------------------------
 # Internal remediation plan
 # ------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class RemediationPlanRecord:
@@ -456,108 +423,54 @@ class RemediationPlanRecord:
     attributes: Mapping[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def validate(
         self,
     ) -> None:
         if not self.plan_id.strip():
-            raise ValueError(
-                "plan_id cannot be empty"
-            )
+            raise ValueError("plan_id cannot be empty")
 
         if not self.incident_id.strip():
-            raise ValueError(
-                "incident_id cannot be empty"
-            )
+            raise ValueError("incident_id cannot be empty")
 
         if not self.decision_id.strip():
-            raise ValueError(
-                "decision_id cannot be empty"
-            )
+            raise ValueError("decision_id cannot be empty")
 
         if not self.title.strip():
-            raise ValueError(
-                "plan title cannot be empty"
-            )
+            raise ValueError("plan title cannot be empty")
 
-        if (
-            self.risk
-            not in {
-                value.value
-                for value
-                in RemediationRiskAPI
-            }
-        ):
-            raise ValueError(
-                "Unsupported remediation risk: "
-                f"{self.risk}"
-            )
+        if self.risk not in {value.value for value in RemediationRiskAPI}:
+            raise ValueError(f"Unsupported remediation risk: {self.risk}")
 
-        if (
-            self.status
-            not in {
-                value.value
-                for value
-                in RemediationPlanStatusAPI
-            }
-        ):
-            raise ValueError(
-                "Unsupported remediation status: "
-                f"{self.status}"
-            )
+        if self.status not in {value.value for value in RemediationPlanStatusAPI}:
+            raise ValueError(f"Unsupported remediation status: {self.status}")
 
         if self.version < 1:
-            raise ValueError(
-                "plan version must be >= 1"
-            )
+            raise ValueError("plan version must be >= 1")
 
         if not self.steps:
-            raise ValueError(
-                "remediation plan requires "
-                "at least one step"
-            )
+            raise ValueError("remediation plan requires at least one step")
 
-        step_ids = [
-            step.step_id
-            for step in self.steps
-        ]
+        step_ids = [step.step_id for step in self.steps]
 
-        if (
-            len(
-                step_ids
-            )
-            != len(
-                set(
-                    step_ids
-                )
-            )
-        ):
-            raise ValueError(
-                "remediation step IDs must "
-                "be unique"
-            )
+        if len(step_ids) != len(set(step_ids)):
+            raise ValueError("remediation step IDs must be unique")
 
         for step in self.steps:
             step.validate()
 
         if (
-            self.status
-            == RemediationPlanStatusAPI.
-            APPROVED.value
+            self.status == RemediationPlanStatusAPI.APPROVED.value
             and self.approved_at is None
         ):
-            raise ValueError(
-                "approved plan requires "
-                "approved_at"
-            )
+            raise ValueError("approved plan requires approved_at")
 
 
 # ------------------------------------------------------------------
 # Repository protocol
 # ------------------------------------------------------------------
+
 
 @runtime_checkable
 class RemediationRepository(
@@ -566,14 +479,12 @@ class RemediationRepository(
     async def create(
         self,
         plan: RemediationPlanRecord,
-    ) -> RemediationPlanRecord:
-        ...
+    ) -> RemediationPlanRecord: ...
 
     async def get(
         self,
         plan_id: str,
-    ) -> Optional[RemediationPlanRecord]:
-        ...
+    ) -> Optional[RemediationPlanRecord]: ...
 
     async def list(
         self,
@@ -590,38 +501,34 @@ class RemediationRepository(
             ...,
         ],
         int,
-    ]:
-        ...
+    ]: ...
 
     async def update(
         self,
         plan: RemediationPlanRecord,
         *,
         expected_version: int,
-    ) -> RemediationPlanRecord:
-        ...
+    ) -> RemediationPlanRecord: ...
 
     async def find_by_idempotency_key(
         self,
         key: str,
-    ) -> Optional[RemediationPlanRecord]:
-        ...
+    ) -> Optional[RemediationPlanRecord]: ...
 
     async def find_by_execution_key(
         self,
         key: str,
-    ) -> Optional[RemediationPlanRecord]:
-        ...
+    ) -> Optional[RemediationPlanRecord]: ...
 
     async def close(
         self,
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 # ------------------------------------------------------------------
 # Process-local repository
 # ------------------------------------------------------------------
+
 
 class ProcessLocalRemediationRepository:
     """
@@ -657,10 +564,7 @@ class ProcessLocalRemediationRepository:
         self,
     ) -> None:
         if self._closed:
-            raise RuntimeError(
-                "Remediation repository "
-                "is closed."
-            )
+            raise RuntimeError("Remediation repository is closed.")
 
     async def create(
         self,
@@ -673,34 +577,19 @@ class ProcessLocalRemediationRepository:
 
             if plan.plan_id in self._records:
                 raise ResourceConflictError(
-                    "A remediation plan with "
-                    "this ID already exists.",
+                    "A remediation plan with this ID already exists.",
                     details={
                         "plan_id": plan.plan_id,
                     },
                 )
 
             if plan.idempotency_key:
-                existing_id = (
-                    self.
-                    _creation_idempotency.
-                    get(
-                        plan.idempotency_key
-                    )
-                )
+                existing_id = self._creation_idempotency.get(plan.idempotency_key)
 
                 if existing_id:
-                    return deepcopy(
-                        self._records[
-                            existing_id
-                        ]
-                    )
+                    return deepcopy(self._records[existing_id])
 
-            self._records[
-                plan.plan_id
-            ] = deepcopy(
-                plan
-            )
+            self._records[plan.plan_id] = deepcopy(plan)
 
             if plan.idempotency_key:
                 self._bounded_index_insert(
@@ -709,32 +598,20 @@ class ProcessLocalRemediationRepository:
                     plan.plan_id,
                 )
 
-            return deepcopy(
-                plan
-            )
+            return deepcopy(plan)
 
     async def get(
         self,
         plan_id: str,
     ) -> Optional[RemediationPlanRecord]:
-        normalized = str(
-            plan_id
-        ).strip()
+        normalized = str(plan_id).strip()
 
         async with self._lock:
             self._ensure_open()
 
-            plan = self._records.get(
-                normalized
-            )
+            plan = self._records.get(normalized)
 
-            return (
-                deepcopy(
-                    plan
-                )
-                if plan is not None
-                else None
-            )
+            return deepcopy(plan) if plan is not None else None
 
     async def list(
         self,
@@ -752,19 +629,11 @@ class ProcessLocalRemediationRepository:
         ],
         int,
     ]:
-        if (
-            limit < 1
-            or limit > 1000
-        ):
-            raise ValueError(
-                "limit must be between "
-                "1 and 1000"
-            )
+        if limit < 1 or limit > 1000:
+            raise ValueError("limit must be between 1 and 1000")
 
         if offset < 0:
-            raise ValueError(
-                "offset must be >= 0"
-            )
+            raise ValueError("offset must be >= 0")
 
         async with self._lock:
             self._ensure_open()
@@ -772,36 +641,19 @@ class ProcessLocalRemediationRepository:
             output = []
 
             for plan in self._records.values():
-                if (
-                    incident_id is not None
-                    and plan.incident_id
-                    != incident_id
-                ):
+                if incident_id is not None and plan.incident_id != incident_id:
                     continue
 
-                if (
-                    decision_id is not None
-                    and plan.decision_id
-                    != decision_id
-                ):
+                if decision_id is not None and plan.decision_id != decision_id:
                     continue
 
-                if (
-                    status is not None
-                    and plan.status != status
-                ):
+                if status is not None and plan.status != status:
                     continue
 
-                if (
-                    tenant_id is not None
-                    and plan.tenant_id
-                    != tenant_id
-                ):
+                if tenant_id is not None and plan.tenant_id != tenant_id:
                     continue
 
-                output.append(
-                    plan
-                )
+                output.append(plan)
 
             output.sort(
                 key=lambda value: (
@@ -811,21 +663,12 @@ class ProcessLocalRemediationRepository:
                 reverse=True,
             )
 
-            total = len(
-                output
-            )
+            total = len(output)
 
-            selected = output[
-                offset:
-                offset + limit
-            ]
+            selected = output[offset : offset + limit]
 
             return (
-                tuple(
-                    deepcopy(
-                        selected
-                    )
-                ),
+                tuple(deepcopy(selected)),
                 total,
             )
 
@@ -840,9 +683,7 @@ class ProcessLocalRemediationRepository:
         async with self._lock:
             self._ensure_open()
 
-            current = self._records.get(
-                plan.plan_id
-            )
+            current = self._records.get(plan.plan_id)
 
             if current is None:
                 raise RemediationNotFoundAPIError(
@@ -851,29 +692,16 @@ class ProcessLocalRemediationRepository:
                     },
                 )
 
-            if (
-                current.version
-                != expected_version
-            ):
+            if current.version != expected_version:
                 raise RemediationVersionConflictAPIError(
                     details={
                         "plan_id": plan.plan_id,
-
-                        "expected_version": (
-                            expected_version
-                        ),
-
-                        "actual_version": (
-                            current.version
-                        ),
+                        "expected_version": (expected_version),
+                        "actual_version": (current.version),
                     },
                 )
 
-            self._records[
-                plan.plan_id
-            ] = deepcopy(
-                plan
-            )
+            self._records[plan.plan_id] = deepcopy(plan)
 
             if plan.execution_idempotency_key:
                 self._bounded_index_insert(
@@ -882,17 +710,13 @@ class ProcessLocalRemediationRepository:
                     plan.plan_id,
                 )
 
-            return deepcopy(
-                plan
-            )
+            return deepcopy(plan)
 
     async def find_by_idempotency_key(
         self,
         key: str,
     ) -> Optional[RemediationPlanRecord]:
-        normalized = str(
-            key
-        ).strip()
+        normalized = str(key).strip()
 
         if not normalized:
             return None
@@ -900,30 +724,18 @@ class ProcessLocalRemediationRepository:
         async with self._lock:
             self._ensure_open()
 
-            plan_id = (
-                self.
-                _creation_idempotency.
-                get(
-                    normalized
-                )
-            )
+            plan_id = self._creation_idempotency.get(normalized)
 
             if plan_id is None:
                 return None
 
-            return deepcopy(
-                self._records.get(
-                    plan_id
-                )
-            )
+            return deepcopy(self._records.get(plan_id))
 
     async def find_by_execution_key(
         self,
         key: str,
     ) -> Optional[RemediationPlanRecord]:
-        normalized = str(
-            key
-        ).strip()
+        normalized = str(key).strip()
 
         if not normalized:
             return None
@@ -931,22 +743,12 @@ class ProcessLocalRemediationRepository:
         async with self._lock:
             self._ensure_open()
 
-            plan_id = (
-                self.
-                _execution_idempotency.
-                get(
-                    normalized
-                )
-            )
+            plan_id = self._execution_idempotency.get(normalized)
 
             if plan_id is None:
                 return None
 
-            return deepcopy(
-                self._records.get(
-                    plan_id
-                )
-            )
+            return deepcopy(self._records.get(plan_id))
 
     async def close(
         self,
@@ -964,31 +766,21 @@ class ProcessLocalRemediationRepository:
         key: str,
         value: str,
     ) -> None:
-        if (
-            len(
-                index
-            )
-            >= MAX_IDEMPOTENCY_RECORDS
-        ):
-            oldest = next(
-                iter(
-                    index
-                )
-            )
+        if len(index) >= MAX_IDEMPOTENCY_RECORDS:
+            oldest = next(iter(index))
 
             index.pop(
                 oldest,
                 None,
             )
 
-        index[
-            key
-        ] = value
+        index[key] = value
 
 
 # ------------------------------------------------------------------
 # Execution result
 # ------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class RemediationExecutionResult:
@@ -1001,14 +793,13 @@ class RemediationExecutionResult:
     attributes: Mapping[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
 
 # ------------------------------------------------------------------
 # Executor protocol
 # ------------------------------------------------------------------
+
 
 @runtime_checkable
 class RemediationExecutor(
@@ -1022,8 +813,7 @@ class RemediationExecutor(
             str,
             Any,
         ],
-    ) -> RemediationExecutionResult:
-        ...
+    ) -> RemediationExecutionResult: ...
 
     async def execute_step(
         self,
@@ -1033,8 +823,7 @@ class RemediationExecutor(
             str,
             Any,
         ],
-    ) -> RemediationExecutionResult:
-        ...
+    ) -> RemediationExecutionResult: ...
 
     async def rollback_step(
         self,
@@ -1044,18 +833,17 @@ class RemediationExecutor(
             str,
             Any,
         ],
-    ) -> RemediationExecutionResult:
-        ...
+    ) -> RemediationExecutionResult: ...
 
     async def close(
         self,
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 # ------------------------------------------------------------------
 # Safe default executor
 # ------------------------------------------------------------------
+
 
 class DryRunRemediationExecutor:
     """
@@ -1082,14 +870,8 @@ class DryRunRemediationExecutor:
 
         return RemediationExecutionResult(
             success=True,
-
             changed=False,
-
-            message=(
-                "Remediation step passed "
-                "dry-run validation."
-            ),
-
+            message=("Remediation step passed dry-run validation."),
             attributes={
                 "dry_run": True,
                 "provider": step.provider,
@@ -1107,8 +889,7 @@ class DryRunRemediationExecutor:
         ],
     ) -> RemediationExecutionResult:
         raise RemediationExecutionDisabledAPIError(
-            "The default remediation executor "
-            "does not support live execution.",
+            "The default remediation executor does not support live execution.",
             details={
                 "step_id": step.step_id,
                 "provider": step.provider,
@@ -1126,14 +907,8 @@ class DryRunRemediationExecutor:
     ) -> RemediationExecutionResult:
         return RemediationExecutionResult(
             success=True,
-
             changed=False,
-
-            message=(
-                "No live change was made; "
-                "rollback was not required."
-            ),
-
+            message=("No live change was made; rollback was not required."),
             attributes={
                 "dry_run": True,
             },
@@ -1149,36 +924,20 @@ class DryRunRemediationExecutor:
 # Conversion helpers
 # ------------------------------------------------------------------
 
+
 def step_record_from_request(
     request: RemediationStepRequest,
 ) -> RemediationStepRecord:
     record = RemediationStepRecord(
         step_id=request.step_id,
-
         action=request.action,
-
         provider=request.provider,
-
-        target=safe_mapping(
-            request.target
-        ),
-
-        parameters=safe_mapping(
-            request.parameters
-        ),
-
-        timeout_seconds=(
-            request.timeout_seconds
-        ),
-
+        target=safe_mapping(request.target),
+        parameters=safe_mapping(request.parameters),
+        timeout_seconds=(request.timeout_seconds),
         reversible=request.reversible,
-
-        rollback_action=(
-            request.rollback_action
-        ),
-
+        rollback_action=(request.rollback_action),
         state="pending",
-
         attributes={},
     )
 
@@ -1195,14 +954,8 @@ def api_error_from_step(
 
     return APIError(
         code=step.error_code,
-
-        message=(
-            step.error_message
-            or "Remediation step failed."
-        ),
-
+        message=(step.error_message or "Remediation step failed."),
         retryable=False,
-
         details={
             "step_id": step.step_id,
             "provider": step.provider,
@@ -1217,26 +970,14 @@ def step_response(
 
     return RemediationStepResponse(
         step_id=step.step_id,
-
         action=step.action,
-
         provider=step.provider,
-
         state=step.state,
-
         reversible=step.reversible,
-
         started_at=step.started_at,
-
         completed_at=step.completed_at,
-
-        error=api_error_from_step(
-            step
-        ),
-
-        attributes=safe_mapping(
-            step.attributes
-        ),
+        error=api_error_from_step(step),
+        attributes=safe_mapping(step.attributes),
     )
 
 
@@ -1245,74 +986,31 @@ def plan_response(
 ) -> RemediationPlanResponse:
     plan.validate()
 
-    attributes = safe_mapping(
-        plan.attributes
-    )
+    attributes = safe_mapping(plan.attributes)
 
     attributes.update(
         {
-            "execution_id": (
-                plan.execution_id
-            ),
-
-            "correlation_id": (
-                plan.correlation_id
-            ),
+            "execution_id": (plan.execution_id),
+            "correlation_id": (plan.correlation_id),
         }
     )
 
     return RemediationPlanResponse(
         plan_id=plan.plan_id,
-
         version=plan.version,
-
-        incident_id=(
-            plan.incident_id
-        ),
-
-        decision_id=(
-            plan.decision_id
-        ),
-
+        incident_id=(plan.incident_id),
+        decision_id=(plan.decision_id),
         title=plan.title,
-
-        description=(
-            plan.description
-        ),
-
+        description=(plan.description),
         risk=plan.risk,
-
         status=plan.status,
-
         dry_run=plan.dry_run,
-
-        approval_required=(
-            plan.approval_required
-        ),
-
-        approved_by=(
-            plan.approved_by
-        ),
-
-        approved_at=(
-            plan.approved_at
-        ),
-
-        steps=[
-            step_response(
-                step
-            )
-            for step in plan.steps
-        ],
-
-        created_at=(
-            plan.created_at
-        ),
-
-        updated_at=(
-            plan.updated_at
-        ),
-
+        approval_required=(plan.approval_required),
+        approved_by=(plan.approved_by),
+        approved_at=(plan.approved_at),
+        steps=[step_response(step) for step in plan.steps],
+        created_at=(plan.created_at),
+        updated_at=(plan.updated_at),
         attributes=attributes,
     )
 
@@ -1320,6 +1018,7 @@ def plan_response(
 # ------------------------------------------------------------------
 # Decision helpers
 # ------------------------------------------------------------------
+
 
 def _decision_value(
     decision: Any,
@@ -1354,16 +1053,11 @@ async def resolve_decision_record(
         None,
     )
 
-    if not callable(
-        getter
-    ):
+    if not callable(getter):
         raise InternalServerAPIError(
-            "Decision service does not "
-            "support internal record lookup.",
+            "Decision service does not support internal record lookup.",
             details={
-                "resource": (
-                    "decision_service"
-                ),
+                "resource": ("decision_service"),
             },
         )
 
@@ -1402,9 +1096,7 @@ def validate_decision_for_plan(
         raise DecisionDeniedAPIError(
             "The decision has expired.",
             details={
-                "decision_id": (
-                    request.decision_id
-                ),
+                "decision_id": (request.decision_id),
             },
         )
 
@@ -1416,21 +1108,12 @@ def validate_decision_for_plan(
         )
     )
 
-    if (
-        decision_incident_id
-        != request.incident_id
-    ):
+    if decision_incident_id != request.incident_id:
         raise ResourceConflictError(
-            "The decision does not belong "
-            "to the requested incident.",
+            "The decision does not belong to the requested incident.",
             details={
-                "incident_id": (
-                    request.incident_id
-                ),
-
-                "decision_id": (
-                    request.decision_id
-                ),
+                "incident_id": (request.incident_id),
+                "decision_id": (request.decision_id),
             },
         )
 
@@ -1442,37 +1125,21 @@ def validate_decision_for_plan(
         )
     )
 
-    if (
-        status
-        == DecisionStatusAPI.
-        DENIED.value
-    ):
+    if status == DecisionStatusAPI.DENIED.value:
         raise DecisionDeniedAPIError(
             details={
-                "decision_id": (
-                    request.decision_id
-                ),
+                "decision_id": (request.decision_id),
             },
         )
 
-    if (
-        status
-        not in {
-            DecisionStatusAPI.
-            ALLOWED.value,
-
-            DecisionStatusAPI.
-            REQUIRES_APPROVAL.value,
-        }
-    ):
+    if status not in {
+        DecisionStatusAPI.ALLOWED.value,
+        DecisionStatusAPI.REQUIRES_APPROVAL.value,
+    }:
         raise ResourceConflictError(
-            "The decision is not in a state "
-            "that permits remediation planning.",
+            "The decision is not in a state that permits remediation planning.",
             details={
-                "decision_id": (
-                    request.decision_id
-                ),
-
+                "decision_id": (request.decision_id),
                 "state": status,
             },
         )
@@ -1481,8 +1148,7 @@ def validate_decision_for_plan(
         _decision_value(
             decision,
             "risk",
-            RemediationRiskAPI.
-            HIGH.value,
+            RemediationRiskAPI.HIGH.value,
         )
     )
 
@@ -1494,11 +1160,7 @@ def validate_decision_for_plan(
         )
     )
 
-    if (
-        status
-        == DecisionStatusAPI.
-        REQUIRES_APPROVAL.value
-    ):
+    if status == DecisionStatusAPI.REQUIRES_APPROVAL.value:
         approval_required = True
 
     return (
@@ -1515,92 +1177,42 @@ _ALLOWED_PLAN_TRANSITIONS: Dict[
     str,
     Tuple[str, ...],
 ] = {
-    RemediationPlanStatusAPI.
-    DRAFT.value: (
-        RemediationPlanStatusAPI.
-        PROPOSED.value,
-
-        RemediationPlanStatusAPI.
-        PENDING_APPROVAL.value,
-
-        RemediationPlanStatusAPI.
-        CANCELLED.value,
+    RemediationPlanStatusAPI.DRAFT.value: (
+        RemediationPlanStatusAPI.PROPOSED.value,
+        RemediationPlanStatusAPI.PENDING_APPROVAL.value,
+        RemediationPlanStatusAPI.CANCELLED.value,
     ),
-
-    RemediationPlanStatusAPI.
-    PROPOSED.value: (
-        RemediationPlanStatusAPI.
-        PENDING_APPROVAL.value,
-
-        RemediationPlanStatusAPI.
-        APPROVED.value,
-
-        RemediationPlanStatusAPI.
-        REJECTED.value,
-
-        RemediationPlanStatusAPI.
-        CANCELLED.value,
+    RemediationPlanStatusAPI.PROPOSED.value: (
+        RemediationPlanStatusAPI.PENDING_APPROVAL.value,
+        RemediationPlanStatusAPI.APPROVED.value,
+        RemediationPlanStatusAPI.REJECTED.value,
+        RemediationPlanStatusAPI.CANCELLED.value,
     ),
-
-    RemediationPlanStatusAPI.
-    PENDING_APPROVAL.value: (
-        RemediationPlanStatusAPI.
-        APPROVED.value,
-
-        RemediationPlanStatusAPI.
-        REJECTED.value,
-
-        RemediationPlanStatusAPI.
-        CANCELLED.value,
+    RemediationPlanStatusAPI.PENDING_APPROVAL.value: (
+        RemediationPlanStatusAPI.APPROVED.value,
+        RemediationPlanStatusAPI.REJECTED.value,
+        RemediationPlanStatusAPI.CANCELLED.value,
     ),
-
-    RemediationPlanStatusAPI.
-    APPROVED.value: (
-        RemediationPlanStatusAPI.
-        EXECUTING.value,
-
-        RemediationPlanStatusAPI.
-        CANCELLED.value,
+    RemediationPlanStatusAPI.APPROVED.value: (
+        RemediationPlanStatusAPI.EXECUTING.value,
+        RemediationPlanStatusAPI.CANCELLED.value,
     ),
-
-    RemediationPlanStatusAPI.
-    EXECUTING.value: (
-        RemediationPlanStatusAPI.
-        SUCCEEDED.value,
-
-        RemediationPlanStatusAPI.
-        FAILED.value,
-
-        RemediationPlanStatusAPI.
-        ROLLING_BACK.value,
+    RemediationPlanStatusAPI.EXECUTING.value: (
+        RemediationPlanStatusAPI.SUCCEEDED.value,
+        RemediationPlanStatusAPI.FAILED.value,
+        RemediationPlanStatusAPI.ROLLING_BACK.value,
     ),
-
-    RemediationPlanStatusAPI.
-    ROLLING_BACK.value: (
-        RemediationPlanStatusAPI.
-        ROLLED_BACK.value,
-
-        RemediationPlanStatusAPI.
-        FAILED.value,
+    RemediationPlanStatusAPI.ROLLING_BACK.value: (
+        RemediationPlanStatusAPI.ROLLED_BACK.value,
+        RemediationPlanStatusAPI.FAILED.value,
     ),
-
-    RemediationPlanStatusAPI.
-    SUCCEEDED.value: (),
-
-    RemediationPlanStatusAPI.
-    FAILED.value: (
-        RemediationPlanStatusAPI.
-        ROLLING_BACK.value,
+    RemediationPlanStatusAPI.SUCCEEDED.value: (),
+    RemediationPlanStatusAPI.FAILED.value: (
+        RemediationPlanStatusAPI.ROLLING_BACK.value,
     ),
-
-    RemediationPlanStatusAPI.
-    ROLLED_BACK.value: (),
-
-    RemediationPlanStatusAPI.
-    REJECTED.value: (),
-
-    RemediationPlanStatusAPI.
-    CANCELLED.value: (),
+    RemediationPlanStatusAPI.ROLLED_BACK.value: (),
+    RemediationPlanStatusAPI.REJECTED.value: (),
+    RemediationPlanStatusAPI.CANCELLED.value: (),
 }
 
 
@@ -1611,22 +1223,16 @@ def validate_plan_transition(
     if current == target:
         return
 
-    allowed = (
-        _ALLOWED_PLAN_TRANSITIONS.get(
-            current,
-            (),
-        )
+    allowed = _ALLOWED_PLAN_TRANSITIONS.get(
+        current,
+        (),
     )
 
     if target not in allowed:
         raise ResourceConflictError(
-            "The remediation plan status "
-            "transition is not allowed.",
+            "The remediation plan status transition is not allowed.",
             details={
-                "resource": (
-                    "remediation_plan"
-                ),
-
+                "resource": ("remediation_plan"),
                 "state": current,
                 "status": target,
             },
@@ -1636,6 +1242,7 @@ def validate_plan_transition(
 # ------------------------------------------------------------------
 # Remediation service
 # ------------------------------------------------------------------
+
 
 class RemediationService:
     """
@@ -1656,24 +1263,18 @@ class RemediationService:
         self.repository = repository
         self.executor = executor
 
-        self.decision_service = (
-            decision_service
-        )
+        self.decision_service = decision_service
 
         self._closed = False
 
-        self._lifecycle_lock = (
-            asyncio.Lock()
-        )
+        self._lifecycle_lock = asyncio.Lock()
 
         self._plan_locks: Dict[
             str,
             asyncio.Lock,
         ] = {}
 
-        self._plan_locks_guard = (
-            asyncio.Lock()
-        )
+        self._plan_locks_guard = asyncio.Lock()
 
     # ------------------------------------------------------
     # Lifecycle
@@ -1684,67 +1285,46 @@ class RemediationService:
     ) -> None:
         if self._closed:
             raise InternalServerAPIError(
-                "The remediation service "
-                "is closed.",
+                "The remediation service is closed.",
                 details={
-                    "resource": (
-                        REMEDIATION_SERVICE_NAME
-                    ),
+                    "resource": (REMEDIATION_SERVICE_NAME),
                 },
             )
 
     def _require_read_enabled(
         self,
     ) -> None:
-        if not (
-            self.config.features.
-            remediation_read_enabled
-        ):
+        if not (self.config.features.remediation_read_enabled):
             raise FeatureDisabledError(
                 details={
-                    "resource": (
-                        "remediation_read"
-                    ),
+                    "resource": ("remediation_read"),
                 },
             )
 
     def _require_plan_enabled(
         self,
     ) -> None:
-        if not (
-            self.config.features.
-            remediation_plan_creation_enabled
-        ):
+        if not (self.config.features.remediation_plan_creation_enabled):
             raise FeatureDisabledError(
                 details={
-                    "resource": (
-                        "remediation_plan_creation"
-                    ),
+                    "resource": ("remediation_plan_creation"),
                 },
             )
 
     def _require_approval_enabled(
         self,
     ) -> None:
-        if not (
-            self.config.features.
-            remediation_approval_enabled
-        ):
+        if not (self.config.features.remediation_approval_enabled):
             raise FeatureDisabledError(
                 details={
-                    "resource": (
-                        "remediation_approval"
-                    ),
+                    "resource": ("remediation_approval"),
                 },
             )
 
     def _require_execution_enabled(
         self,
     ) -> None:
-        if not (
-            self.config.features.
-            remediation_execution_enabled
-        ):
+        if not (self.config.features.remediation_execution_enabled):
             raise RemediationExecutionDisabledAPIError()
 
     async def close(
@@ -1755,14 +1335,10 @@ class RemediationService:
                 return
 
             try:
-                await await_if_needed(
-                    self.executor.close()
-                )
+                await await_if_needed(self.executor.close())
 
             finally:
-                await await_if_needed(
-                    self.repository.close()
-                )
+                await await_if_needed(self.repository.close())
 
                 self._closed = True
 
@@ -1778,16 +1354,12 @@ class RemediationService:
         plan_id: str,
     ) -> asyncio.Lock:
         async with self._plan_locks_guard:
-            lock = self._plan_locks.get(
-                plan_id
-            )
+            lock = self._plan_locks.get(plan_id)
 
             if lock is None:
                 lock = asyncio.Lock()
 
-                self._plan_locks[
-                    plan_id
-                ] = lock
+                self._plan_locks[plan_id] = lock
 
             return lock
 
@@ -1801,24 +1373,16 @@ class RemediationService:
         *,
         tenant_id: Optional[str] = None,
     ) -> RemediationPlanRecord:
-        normalized = str(
-            plan_id
-        ).strip()
+        normalized = str(plan_id).strip()
 
         if not normalized:
             raise RemediationNotFoundAPIError(
                 details={
-                    "resource": (
-                        "remediation_plan"
-                    ),
+                    "resource": ("remediation_plan"),
                 },
             )
 
-        plan = await await_if_needed(
-            self.repository.get(
-                normalized
-            )
-        )
+        plan = await await_if_needed(self.repository.get(normalized))
 
         if plan is None:
             raise RemediationNotFoundAPIError(
@@ -1827,11 +1391,7 @@ class RemediationService:
                 },
             )
 
-        if (
-            tenant_id is not None
-            and plan.tenant_id
-            != tenant_id
-        ):
+        if tenant_id is not None and plan.tenant_id != tenant_id:
             raise RemediationNotFoundAPIError(
                 details={
                     "plan_id": normalized,
@@ -1848,45 +1408,29 @@ class RemediationService:
         self,
         request: RemediationPlanCreateRequest,
         *,
-        context: Optional[
-            RemediationOperationContext
-        ] = None,
+        context: Optional[RemediationOperationContext] = None,
     ) -> RemediationPlanResponse:
         self._ensure_open()
         self._require_plan_enabled()
 
         existing = await await_if_needed(
-            self.repository.
-            find_by_idempotency_key(
-                request.idempotency_key
-            )
+            self.repository.find_by_idempotency_key(request.idempotency_key)
         )
 
         if existing is not None:
             if (
                 context is not None
-                and context.tenant_id
-                is not None
-                and existing.tenant_id
-                != context.tenant_id
+                and context.tenant_id is not None
+                and existing.tenant_id != context.tenant_id
             ):
                 raise RemediationNotFoundAPIError()
 
-            return plan_response(
-                existing
-            )
+            return plan_response(existing)
 
-        decision = (
-            await resolve_decision_record(
-                self.decision_service,
-                request.decision_id,
-
-                tenant_id=(
-                    context.tenant_id
-                    if context is not None
-                    else None
-                ),
-            )
+        decision = await resolve_decision_record(
+            self.decision_service,
+            request.decision_id,
+            tenant_id=(context.tenant_id if context is not None else None),
         )
 
         (
@@ -1908,15 +1452,12 @@ class RemediationService:
 
         # Never lower the risk supplied by the
         # decision evaluation.
-        if (
-            risk_order.get(
-                decision_risk,
-                2,
-            )
-            > risk_order.get(
-                risk,
-                2,
-            )
+        if risk_order.get(
+            decision_risk,
+            2,
+        ) > risk_order.get(
+            risk,
+            2,
         ):
             risk = decision_risk
 
@@ -1929,97 +1470,35 @@ class RemediationService:
         now = utc_now()
 
         status = (
-            RemediationPlanStatusAPI.
-            PENDING_APPROVAL.value
+            RemediationPlanStatusAPI.PENDING_APPROVAL.value
             if approval_required
-            else RemediationPlanStatusAPI.
-            APPROVED.value
+            else RemediationPlanStatusAPI.APPROVED.value
         )
 
-        approved_at = (
-            None
-            if approval_required
-            else now
-        )
+        approved_at = None if approval_required else now
 
-        approved_by = (
-            None
-            if approval_required
-            else "policy"
-        )
+        approved_by = None if approval_required else "policy"
 
         plan = RemediationPlanRecord(
-            plan_id=(
-                "rem-"
-                + uuid4().hex
-            ),
-
-            incident_id=(
-                request.incident_id
-            ),
-
-            decision_id=(
-                request.decision_id
-            ),
-
+            plan_id=("rem-" + uuid4().hex),
+            incident_id=(request.incident_id),
+            decision_id=(request.decision_id),
             title=request.title,
-
-            description=(
-                request.description
-            ),
-
+            description=(request.description),
             risk=risk,
-
             status=status,
-
-            dry_run=(
-                request.dry_run
-            ),
-
-            approval_required=(
-                approval_required
-            ),
-
-            steps=tuple(
-                step_record_from_request(
-                    step
-                )
-                for step
-                in request.steps
-            ),
-
+            dry_run=(request.dry_run),
+            approval_required=(approval_required),
+            steps=tuple(step_record_from_request(step) for step in request.steps),
             created_at=now,
-
             updated_at=now,
-
             version=1,
-
-            tenant_id=(
-                context.tenant_id
-                if context is not None
-                else None
-            ),
-
-            created_by=(
-                context.actor_id
-                if context is not None
-                else None
-            ),
-
-            correlation_id=(
-                context.correlation_id
-                if context is not None
-                else None
-            ),
-
-            idempotency_key=(
-                request.idempotency_key
-            ),
-
+            tenant_id=(context.tenant_id if context is not None else None),
+            created_by=(context.actor_id if context is not None else None),
+            correlation_id=(context.correlation_id if context is not None else None),
+            idempotency_key=(request.idempotency_key),
             approved_by=approved_by,
-
             approved_at=approved_at,
-
             attributes={
                 "decision_status": (
                     _decision_value(
@@ -2027,63 +1506,33 @@ class RemediationService:
                         "status",
                     )
                 ),
-
-                "decision_risk": (
-                    decision_risk
-                ),
-
+                "decision_risk": (decision_risk),
                 "execution_policy": (
-                    "dry_run"
-                    if request.dry_run
-                    else "live_requested"
+                    "dry_run" if request.dry_run else "live_requested"
                 ),
             },
         )
 
         plan.validate()
 
-        stored = await await_if_needed(
-            self.repository.create(
-                plan
-            )
-        )
+        stored = await await_if_needed(self.repository.create(plan))
 
         logger.info(
             "Remediation plan created",
             extra={
                 "remediation": {
-                    "plan_id": (
-                        stored.plan_id
-                    ),
-
-                    "incident_id": (
-                        stored.incident_id
-                    ),
-
-                    "decision_id": (
-                        stored.decision_id
-                    ),
-
+                    "plan_id": (stored.plan_id),
+                    "incident_id": (stored.incident_id),
+                    "decision_id": (stored.decision_id),
                     "risk": stored.risk,
-
                     "status": stored.status,
-
-                    "dry_run": (
-                        stored.dry_run
-                    ),
-
-                    "request_id": (
-                        context.request_id
-                        if context is not None
-                        else None
-                    ),
+                    "dry_run": (stored.dry_run),
+                    "request_id": (context.request_id if context is not None else None),
                 },
             },
         )
 
-        return plan_response(
-            stored
-        )
+        return plan_response(stored)
 
     # ------------------------------------------------------
     # Read
@@ -2093,26 +1542,17 @@ class RemediationService:
         self,
         plan_id: str,
         *,
-        context: Optional[
-            RemediationOperationContext
-        ] = None,
+        context: Optional[RemediationOperationContext] = None,
     ) -> RemediationPlanResponse:
         self._ensure_open()
         self._require_read_enabled()
 
         plan = await self._get_record(
             plan_id,
-
-            tenant_id=(
-                context.tenant_id
-                if context is not None
-                else None
-            ),
+            tenant_id=(context.tenant_id if context is not None else None),
         )
 
-        return plan_response(
-            plan
-        )
+        return plan_response(plan)
 
     async def list_plans(
         self,
@@ -2122,9 +1562,7 @@ class RemediationService:
         status: Optional[str] = None,
         limit: int = 100,
         offset: int = 0,
-        context: Optional[
-            RemediationOperationContext
-        ] = None,
+        context: Optional[RemediationOperationContext] = None,
     ) -> Tuple[
         Tuple[
             RemediationPlanResponse,
@@ -2135,48 +1573,24 @@ class RemediationService:
         self._ensure_open()
         self._require_read_enabled()
 
-        if (
-            status is not None
-            and status
-            not in {
-                value.value
-                for value
-                in RemediationPlanStatusAPI
-            }
-        ):
-            raise ValueError(
-                "Unsupported remediation status: "
-                f"{status}"
-            )
+        if status is not None and status not in {
+            value.value for value in RemediationPlanStatusAPI
+        }:
+            raise ValueError(f"Unsupported remediation status: {status}")
 
         records, total = await await_if_needed(
             self.repository.list(
                 incident_id=incident_id,
-
                 decision_id=decision_id,
-
                 status=status,
-
-                tenant_id=(
-                    context.tenant_id
-                    if context is not None
-                    else None
-                ),
-
+                tenant_id=(context.tenant_id if context is not None else None),
                 limit=limit,
-
                 offset=offset,
             )
         )
 
         return (
-            tuple(
-                plan_response(
-                    record
-                )
-                for record
-                in records
-            ),
+            tuple(plan_response(record) for record in records),
             total,
         )
 
@@ -2189,121 +1603,68 @@ class RemediationService:
         plan_id: str,
         request: RemediationApprovalRequest,
         *,
-        context: Optional[
-            RemediationOperationContext
-        ] = None,
+        context: Optional[RemediationOperationContext] = None,
     ) -> RemediationPlanResponse:
         self._ensure_open()
         self._require_approval_enabled()
 
-        lock = await self._plan_lock(
-            plan_id
-        )
+        lock = await self._plan_lock(plan_id)
 
         async with lock:
             current = await self._get_record(
                 plan_id,
-
-                tenant_id=(
-                    context.tenant_id
-                    if context is not None
-                    else None
-                ),
+                tenant_id=(context.tenant_id if context is not None else None),
             )
 
-            if (
-                current.version
-                != request.
-                expected_plan_version
-            ):
+            if current.version != request.expected_plan_version:
                 raise RemediationVersionConflictAPIError(
                     details={
-                        "plan_id": (
-                            current.plan_id
-                        ),
-
-                        "expected_version": (
-                            request.
-                            expected_plan_version
-                        ),
-
-                        "actual_version": (
-                            current.version
-                        ),
+                        "plan_id": (current.plan_id),
+                        "expected_version": (request.expected_plan_version),
+                        "actual_version": (current.version),
                     },
                 )
 
             if current.status in {
-                RemediationPlanStatusAPI.
-                APPROVED.value,
-
-                RemediationPlanStatusAPI.
-                REJECTED.value,
+                RemediationPlanStatusAPI.APPROVED.value,
+                RemediationPlanStatusAPI.REJECTED.value,
             }:
                 if (
-                    current.status
-                    == RemediationPlanStatusAPI.
-                    APPROVED.value
+                    current.status == RemediationPlanStatusAPI.APPROVED.value
                     and request.approved
                 ):
-                    return plan_response(
-                        current
-                    )
+                    return plan_response(current)
 
                 if (
-                    current.status
-                    == RemediationPlanStatusAPI.
-                    REJECTED.value
+                    current.status == RemediationPlanStatusAPI.REJECTED.value
                     and not request.approved
                 ):
-                    return plan_response(
-                        current
-                    )
+                    return plan_response(current)
 
                 raise ResourceConflictError(
-                    "The remediation plan already "
-                    "has a final approval result.",
+                    "The remediation plan already has a final approval result.",
                     details={
-                        "plan_id": (
-                            current.plan_id
-                        ),
-
-                        "state": (
-                            current.status
-                        ),
+                        "plan_id": (current.plan_id),
+                        "state": (current.status),
                     },
                 )
 
             identity = (
                 context.approval_identity
-                if (
-                    context is not None
-                    and context.
-                    approval_identity
-                )
-                else (
-                    context.actor_id
-                    if context is not None
-                    else None
-                )
+                if (context is not None and context.approval_identity)
+                else (context.actor_id if context is not None else None)
             )
 
             if not identity:
                 raise RemediationNotApprovedAPIError(
-                    "An approval identity "
-                    "is required.",
+                    "An approval identity is required.",
                     details={
-                        "plan_id": (
-                            current.plan_id
-                        ),
+                        "plan_id": (current.plan_id),
                     },
                 )
 
             if request.approved:
-                target_status = (
-                    RemediationPlanStatusAPI.
-                    APPROVED.value
-                )
+                target_status = RemediationPlanStatusAPI.APPROVED.value
 
                 validate_plan_transition(
                     current.status,
@@ -2312,38 +1673,20 @@ class RemediationService:
 
                 updated = replace(
                     current,
-
                     status=target_status,
-
                     approved_by=identity,
-
                     approved_at=utc_now(),
-
                     rejection_reason=None,
-
                     updated_at=utc_now(),
-
-                    version=(
-                        current.version
-                        + 1
-                    ),
-
+                    version=(current.version + 1),
                     attributes={
-                        **dict(
-                            current.attributes
-                        ),
-
-                        "approval_reason": (
-                            request.reason
-                        ),
+                        **dict(current.attributes),
+                        "approval_reason": (request.reason),
                     },
                 )
 
             else:
-                target_status = (
-                    RemediationPlanStatusAPI.
-                    REJECTED.value
-                )
+                target_status = RemediationPlanStatusAPI.REJECTED.value
 
                 validate_plan_transition(
                     current.status,
@@ -2352,32 +1695,18 @@ class RemediationService:
 
                 updated = replace(
                     current,
-
                     status=target_status,
-
                     approved_by=identity,
-
                     approved_at=utc_now(),
-
-                    rejection_reason=(
-                        request.reason
-                    ),
-
+                    rejection_reason=(request.reason),
                     updated_at=utc_now(),
-
-                    version=(
-                        current.version
-                        + 1
-                    ),
+                    version=(current.version + 1),
                 )
 
             stored = await await_if_needed(
                 self.repository.update(
                     updated,
-
-                    expected_version=(
-                        current.version
-                    ),
+                    expected_version=(current.version),
                 )
             )
 
@@ -2385,30 +1714,17 @@ class RemediationService:
                 "Remediation approval recorded",
                 extra={
                     "remediation": {
-                        "plan_id": (
-                            stored.plan_id
-                        ),
-
-                        "approved": (
-                            request.approved
-                        ),
-
-                        "status": (
-                            stored.status
-                        ),
-
+                        "plan_id": (stored.plan_id),
+                        "approved": (request.approved),
+                        "status": (stored.status),
                         "request_id": (
-                            context.request_id
-                            if context is not None
-                            else None
+                            context.request_id if context is not None else None
                         ),
                     },
                 },
             )
 
-            return plan_response(
-                stored
-            )
+            return plan_response(stored)
 
     # ------------------------------------------------------
     # Execute step
@@ -2439,149 +1755,81 @@ class RemediationService:
             if dry_run:
                 result = await asyncio.wait_for(
                     await_if_needed(
-                        self.executor.
-                        validate_step(
+                        self.executor.validate_step(
                             running,
-                            context=(
-                                execution_context
-                            ),
+                            context=(execution_context),
                         )
                     ),
-                    timeout=(
-                        running.
-                        timeout_seconds
-                    ),
+                    timeout=(running.timeout_seconds),
                 )
 
             else:
                 result = await asyncio.wait_for(
                     await_if_needed(
-                        self.executor.
-                        execute_step(
+                        self.executor.execute_step(
                             running,
-                            context=(
-                                execution_context
-                            ),
+                            context=(execution_context),
                         )
                     ),
-                    timeout=(
-                        running.
-                        timeout_seconds
-                    ),
+                    timeout=(running.timeout_seconds),
                 )
 
             if not isinstance(
                 result,
                 RemediationExecutionResult,
             ):
-                raise TypeError(
-                    "Remediation executor returned "
-                    "an invalid step result."
-                )
+                raise TypeError("Remediation executor returned an invalid step result.")
 
             if not result.success:
                 raise RemediationExecutionAPIError(
-                    result.message
-                    or "Remediation step failed.",
+                    result.message or "Remediation step failed.",
                     details={
-                        "step_id": (
-                            running.step_id
-                        ),
-
-                        "provider": (
-                            running.provider
-                        ),
+                        "step_id": (running.step_id),
+                        "provider": (running.provider),
                     },
                 )
 
             return replace(
                 running,
-
                 state="succeeded",
-
                 completed_at=utc_now(),
-
                 attributes={
-                    **dict(
-                        running.attributes
-                    ),
-
-                    **safe_mapping(
-                        result.attributes
-                    ),
-
-                    "changed": (
-                        result.changed
-                    ),
-
-                    "message": (
-                        result.message
-                    ),
-
-                    "dry_run": (
-                        dry_run
-                    ),
+                    **dict(running.attributes),
+                    **safe_mapping(result.attributes),
+                    "changed": (result.changed),
+                    "message": (result.message),
+                    "dry_run": (dry_run),
                 },
             )
 
         except asyncio.TimeoutError:
             return replace(
                 running,
-
                 state="failed",
-
                 completed_at=utc_now(),
-
-                error_code=(
-                    "remediation_step_timeout"
-                ),
-
-                error_message=(
-                    "Remediation step timed out."
-                ),
+                error_code=("remediation_step_timeout"),
+                error_message=("Remediation step timed out."),
             )
 
         except APIException as exc:
             return replace(
                 running,
-
                 state="failed",
-
                 completed_at=utc_now(),
-
                 error_code=exc.code,
-
-                error_message=(
-                    exc.public_message
-                ),
+                error_message=(exc.public_message),
             )
 
         except Exception as exc:
             return replace(
                 running,
-
                 state="failed",
-
                 completed_at=utc_now(),
-
-                error_code=(
-                    "remediation_step_failed"
-                ),
-
-                error_message=(
-                    "Remediation step failed."
-                ),
-
+                error_code=("remediation_step_failed"),
+                error_message=("Remediation step failed."),
                 attributes={
-                    **dict(
-                        running.attributes
-                    ),
-
-                    "error_type": (
-                        type(
-                            exc
-                        ).__name__
-                    ),
+                    **dict(running.attributes),
+                    "error_type": (type(exc).__name__),
                 },
             )
 
@@ -2591,9 +1839,7 @@ class RemediationService:
 
     async def _rollback_steps(
         self,
-        steps: Sequence[
-            RemediationStepRecord
-        ],
+        steps: Sequence[RemediationStepRecord],
         *,
         execution_context: Mapping[
             str,
@@ -2606,23 +1852,16 @@ class RemediationService:
         ],
         bool,
     ]:
-        output = list(
-            steps
-        )
+        output = list(steps)
 
         rollback_success = True
 
         for index in range(
-            len(
-                output
-            )
-            - 1,
+            len(output) - 1,
             -1,
             -1,
         ):
-            step = output[
-                index
-            ]
+            step = output[index]
 
             if (
                 step.state != "succeeded"
@@ -2634,17 +1873,12 @@ class RemediationService:
             try:
                 result = await asyncio.wait_for(
                     await_if_needed(
-                        self.executor.
-                        rollback_step(
+                        self.executor.rollback_step(
                             step,
-                            context=(
-                                execution_context
-                            ),
+                            context=(execution_context),
                         )
                     ),
-                    timeout=(
-                        step.timeout_seconds
-                    ),
+                    timeout=(step.timeout_seconds),
                 )
 
                 if (
@@ -2658,25 +1892,16 @@ class RemediationService:
 
                     output[index] = replace(
                         step,
-
-                        state=(
-                            "rollback_failed"
-                        ),
-
+                        state=("rollback_failed"),
                         attributes={
-                            **dict(
-                                step.attributes
-                            ),
-
+                            **dict(step.attributes),
                             "rollback_message": (
                                 result.message
                                 if isinstance(
                                     result,
                                     RemediationExecutionResult,
                                 )
-                                else (
-                                    "Invalid rollback result."
-                                )
+                                else ("Invalid rollback result.")
                             ),
                         },
                     )
@@ -2684,21 +1909,11 @@ class RemediationService:
                 else:
                     output[index] = replace(
                         step,
-
                         state="rolled_back",
-
                         attributes={
-                            **dict(
-                                step.attributes
-                            ),
-
-                            **safe_mapping(
-                                result.attributes
-                            ),
-
-                            "rollback_message": (
-                                result.message
-                            ),
+                            **dict(step.attributes),
+                            **safe_mapping(result.attributes),
+                            "rollback_message": (result.message),
                         },
                     )
 
@@ -2707,26 +1922,15 @@ class RemediationService:
 
                 output[index] = replace(
                     step,
-
                     state="rollback_failed",
-
                     attributes={
-                        **dict(
-                            step.attributes
-                        ),
-
-                        "rollback_error_type": (
-                            type(
-                                exc
-                            ).__name__
-                        ),
+                        **dict(step.attributes),
+                        "rollback_error_type": (type(exc).__name__),
                     },
                 )
 
         return (
-            tuple(
-                output
-            ),
+            tuple(output),
             rollback_success,
         )
 
@@ -2739,9 +1943,7 @@ class RemediationService:
         plan_id: str,
         request: RemediationExecutionRequest,
         *,
-        context: Optional[
-            RemediationOperationContext
-        ] = None,
+        context: Optional[RemediationOperationContext] = None,
     ) -> RemediationPlanResponse:
         self._ensure_open()
         self._require_execution_enabled()
@@ -2750,87 +1952,48 @@ class RemediationService:
             raise RemediationConfirmationRequiredAPIError()
 
         cached = await await_if_needed(
-            self.repository.
-            find_by_execution_key(
-                request.idempotency_key
-            )
+            self.repository.find_by_execution_key(request.idempotency_key)
         )
 
         if cached is not None:
             if (
                 context is not None
-                and context.tenant_id
-                is not None
-                and cached.tenant_id
-                != context.tenant_id
+                and context.tenant_id is not None
+                and cached.tenant_id != context.tenant_id
             ):
                 raise RemediationNotFoundAPIError()
 
-            return plan_response(
-                cached
-            )
+            return plan_response(cached)
 
-        lock = await self._plan_lock(
-            plan_id
-        )
+        lock = await self._plan_lock(plan_id)
 
         async with lock:
             current = await self._get_record(
                 plan_id,
-
-                tenant_id=(
-                    context.tenant_id
-                    if context is not None
-                    else None
-                ),
+                tenant_id=(context.tenant_id if context is not None else None),
             )
 
-            if (
-                current.version
-                != request.
-                expected_plan_version
-            ):
+            if current.version != request.expected_plan_version:
                 raise RemediationVersionConflictAPIError(
                     details={
-                        "plan_id": (
-                            current.plan_id
-                        ),
-
-                        "expected_version": (
-                            request.
-                            expected_plan_version
-                        ),
-
-                        "actual_version": (
-                            current.version
-                        ),
+                        "plan_id": (current.plan_id),
+                        "expected_version": (request.expected_plan_version),
+                        "actual_version": (current.version),
                     },
                 )
 
-            if (
-                current.status
-                != RemediationPlanStatusAPI.
-                APPROVED.value
-            ):
+            if current.status != RemediationPlanStatusAPI.APPROVED.value:
                 raise RemediationNotApprovedAPIError(
                     details={
-                        "plan_id": (
-                            current.plan_id
-                        ),
-
-                        "state": (
-                            current.status
-                        ),
+                        "plan_id": (current.plan_id),
+                        "state": (current.status),
                     },
                 )
 
             decision = await resolve_decision_record(
                 self.decision_service,
                 current.decision_id,
-
-                tenant_id=(
-                    current.tenant_id
-                ),
+                tenant_id=(current.tenant_id),
             )
 
             if bool(
@@ -2841,12 +2004,9 @@ class RemediationService:
                 )
             ):
                 raise DecisionDeniedAPIError(
-                    "The authorization decision "
-                    "has expired.",
+                    "The authorization decision has expired.",
                     details={
-                        "decision_id": (
-                            current.decision_id
-                        ),
+                        "decision_id": (current.decision_id),
                     },
                 )
 
@@ -2858,133 +2018,61 @@ class RemediationService:
                 )
             )
 
-            if (
-                decision_status
-                == DecisionStatusAPI.
-                DENIED.value
-            ):
+            if decision_status == DecisionStatusAPI.DENIED.value:
                 raise DecisionDeniedAPIError(
                     details={
-                        "decision_id": (
-                            current.decision_id
-                        ),
+                        "decision_id": (current.decision_id),
                     },
                 )
 
-            requested_dry_run = bool(
-                request.dry_run
-            )
+            requested_dry_run = bool(request.dry_run)
 
-            effective_dry_run = bool(
-                requested_dry_run
-                or current.dry_run
-            )
+            effective_dry_run = bool(requested_dry_run or current.dry_run)
 
             if (
                 not effective_dry_run
-                and not self.config.
-                features.
-                remediation_live_execution_enabled
+                and not self.config.features.remediation_live_execution_enabled
             ):
                 raise RemediationExecutionDisabledAPIError(
-                    "Live remediation execution "
-                    "is disabled.",
+                    "Live remediation execution is disabled.",
                     details={
-                        "plan_id": (
-                            current.plan_id
-                        ),
+                        "plan_id": (current.plan_id),
                     },
                 )
 
-            execution_id = (
-                "exec-"
-                + uuid4().hex
-            )
+            execution_id = "exec-" + uuid4().hex
 
             executing = replace(
                 current,
-
-                status=(
-                    RemediationPlanStatusAPI.
-                    EXECUTING.value
-                ),
-
+                status=(RemediationPlanStatusAPI.EXECUTING.value),
                 updated_at=utc_now(),
-
-                version=(
-                    current.version
-                    + 1
-                ),
-
-                execution_id=(
-                    execution_id
-                ),
-
-                execution_idempotency_key=(
-                    request.idempotency_key
-                ),
-
+                version=(current.version + 1),
+                execution_id=(execution_id),
+                execution_idempotency_key=(request.idempotency_key),
                 attributes={
-                    **dict(
-                        current.attributes
-                    ),
-
-                    "requested_dry_run": (
-                        requested_dry_run
-                    ),
-
-                    "effective_dry_run": (
-                        effective_dry_run
-                    ),
-
-                    "execution_started_at": (
-                        utc_now().isoformat()
-                    ),
+                    **dict(current.attributes),
+                    "requested_dry_run": (requested_dry_run),
+                    "effective_dry_run": (effective_dry_run),
+                    "execution_started_at": (utc_now().isoformat()),
                 },
             )
 
             stored = await await_if_needed(
                 self.repository.update(
                     executing,
-
-                    expected_version=(
-                        current.version
-                    ),
+                    expected_version=(current.version),
                 )
             )
 
             execution_context = {
                 "plan_id": stored.plan_id,
-
                 "execution_id": execution_id,
-
-                "incident_id": (
-                    stored.incident_id
-                ),
-
-                "decision_id": (
-                    stored.decision_id
-                ),
-
-                "tenant_id": (
-                    stored.tenant_id
-                ),
-
-                "actor_id": (
-                    context.actor_id
-                    if context is not None
-                    else None
-                ),
-
-                "request_id": (
-                    context.request_id
-                    if context is not None
-                    else None
-                ),
-
-                "dry_run": (
-                    effective_dry_run
-                ),
+                "incident_id": (stored.incident_id),
+                "decision_id": (stored.decision_id),
+                "tenant_id": (stored.tenant_id),
+                "actor_id": (context.actor_id if context is not None else None),
+                "request_id": (context.request_id if context is not None else None),
+                "dry_run": (effective_dry_run),
             }
 
             step_results = []
@@ -2993,62 +2081,33 @@ class RemediationService:
 
             for step in stored.steps:
                 if failed:
-                    step_results.append(
-                        step
-                    )
+                    step_results.append(step)
 
                     continue
 
                 result = await self._run_step(
                     step,
-
-                    dry_run=(
-                        effective_dry_run
-                    ),
-
-                    execution_context=(
-                        execution_context
-                    ),
+                    dry_run=(effective_dry_run),
+                    execution_context=(execution_context),
                 )
 
-                step_results.append(
-                    result
-                )
+                step_results.append(result)
 
                 if result.state != "succeeded":
                     failed = True
 
-            final_steps = tuple(
-                step_results
-            )
+            final_steps = tuple(step_results)
 
             if not failed:
                 completed = replace(
                     stored,
-
-                    status=(
-                        RemediationPlanStatusAPI.
-                        SUCCEEDED.value
-                    ),
-
+                    status=(RemediationPlanStatusAPI.SUCCEEDED.value),
                     steps=final_steps,
-
                     updated_at=utc_now(),
-
-                    version=(
-                        stored.version
-                        + 1
-                    ),
-
+                    version=(stored.version + 1),
                     attributes={
-                        **dict(
-                            stored.attributes
-                        ),
-
-                        "execution_completed_at": (
-                            utc_now().isoformat()
-                        ),
-
+                        **dict(stored.attributes),
+                        "execution_completed_at": (utc_now().isoformat()),
                         "execution_changed_infrastructure": (
                             any(
                                 bool(
@@ -3057,8 +2116,7 @@ class RemediationService:
                                         False,
                                     )
                                 )
-                                for step
-                                in final_steps
+                                for step in final_steps
                             )
                         ),
                     },
@@ -3067,10 +2125,7 @@ class RemediationService:
                 saved = await await_if_needed(
                     self.repository.update(
                         completed,
-
-                        expected_version=(
-                            stored.version
-                        ),
+                        expected_version=(stored.version),
                     )
                 )
 
@@ -3078,28 +2133,15 @@ class RemediationService:
                     "Remediation execution completed",
                     extra={
                         "remediation": {
-                            "plan_id": (
-                                saved.plan_id
-                            ),
-
-                            "execution_id": (
-                                execution_id
-                            ),
-
-                            "status": (
-                                saved.status
-                            ),
-
-                            "dry_run": (
-                                effective_dry_run
-                            ),
+                            "plan_id": (saved.plan_id),
+                            "execution_id": (execution_id),
+                            "status": (saved.status),
+                            "dry_run": (effective_dry_run),
                         },
                     },
                 )
 
-                return plan_response(
-                    saved
-                )
+                return plan_response(saved)
 
             # Dry runs do not require rollback
             # because no infrastructure mutation
@@ -3107,30 +2149,13 @@ class RemediationService:
             if effective_dry_run:
                 failed_plan = replace(
                     stored,
-
-                    status=(
-                        RemediationPlanStatusAPI.
-                        FAILED.value
-                    ),
-
+                    status=(RemediationPlanStatusAPI.FAILED.value),
                     steps=final_steps,
-
                     updated_at=utc_now(),
-
-                    version=(
-                        stored.version
-                        + 1
-                    ),
-
+                    version=(stored.version + 1),
                     attributes={
-                        **dict(
-                            stored.attributes
-                        ),
-
-                        "execution_completed_at": (
-                            utc_now().isoformat()
-                        ),
-
+                        **dict(stored.attributes),
+                        "execution_completed_at": (utc_now().isoformat()),
                         "rollback_required": False,
                     },
                 )
@@ -3138,42 +2163,24 @@ class RemediationService:
                 saved = await await_if_needed(
                     self.repository.update(
                         failed_plan,
-
-                        expected_version=(
-                            stored.version
-                        ),
+                        expected_version=(stored.version),
                     )
                 )
 
-                return plan_response(
-                    saved
-                )
+                return plan_response(saved)
 
             rolling_back = replace(
                 stored,
-
-                status=(
-                    RemediationPlanStatusAPI.
-                    ROLLING_BACK.value
-                ),
-
+                status=(RemediationPlanStatusAPI.ROLLING_BACK.value),
                 steps=final_steps,
-
                 updated_at=utc_now(),
-
-                version=(
-                    stored.version
-                    + 1
-                ),
+                version=(stored.version + 1),
             )
 
             rolling_back = await await_if_needed(
                 self.repository.update(
                     rolling_back,
-
-                    expected_version=(
-                        stored.version
-                    ),
+                    expected_version=(stored.version),
                 )
             )
 
@@ -3182,56 +2189,32 @@ class RemediationService:
                 rollback_success,
             ) = await self._rollback_steps(
                 rolling_back.steps,
-
-                execution_context=(
-                    execution_context
-                ),
+                execution_context=(execution_context),
             )
 
             final_status = (
-                RemediationPlanStatusAPI.
-                ROLLED_BACK.value
+                RemediationPlanStatusAPI.ROLLED_BACK.value
                 if rollback_success
-                else RemediationPlanStatusAPI.
-                FAILED.value
+                else RemediationPlanStatusAPI.FAILED.value
             )
 
             final_plan = replace(
                 rolling_back,
-
                 status=final_status,
-
                 steps=rolled_back_steps,
-
                 updated_at=utc_now(),
-
-                version=(
-                    rolling_back.version
-                    + 1
-                ),
-
+                version=(rolling_back.version + 1),
                 attributes={
-                    **dict(
-                        rolling_back.attributes
-                    ),
-
-                    "rollback_completed_at": (
-                        utc_now().isoformat()
-                    ),
-
-                    "rollback_success": (
-                        rollback_success
-                    ),
+                    **dict(rolling_back.attributes),
+                    "rollback_completed_at": (utc_now().isoformat()),
+                    "rollback_success": (rollback_success),
                 },
             )
 
             saved = await await_if_needed(
                 self.repository.update(
                     final_plan,
-
-                    expected_version=(
-                        rolling_back.version
-                    ),
+                    expected_version=(rolling_back.version),
                 )
             )
 
@@ -3239,28 +2222,15 @@ class RemediationService:
                 "Remediation execution failed",
                 extra={
                     "remediation": {
-                        "plan_id": (
-                            saved.plan_id
-                        ),
-
-                        "execution_id": (
-                            execution_id
-                        ),
-
-                        "status": (
-                            saved.status
-                        ),
-
-                        "rollback_success": (
-                            rollback_success
-                        ),
+                        "plan_id": (saved.plan_id),
+                        "execution_id": (execution_id),
+                        "status": (saved.status),
+                        "rollback_success": (rollback_success),
                     },
                 },
             )
 
-            return plan_response(
-                saved
-            )
+            return plan_response(saved)
 
     # ------------------------------------------------------
     # Health
@@ -3270,35 +2240,18 @@ class RemediationService:
         self,
     ) -> Dict[str, Any]:
         return {
-            "status": (
-                "unhealthy"
-                if self._closed
-                else "healthy"
-            ),
-
-            "ready": (
-                not self._closed
-            ),
-
-            "repository": type(
-                self.repository
-            ).__name__,
-
-            "executor": type(
-                self.executor
-            ).__name__,
-
+            "status": ("unhealthy" if self._closed else "healthy"),
+            "ready": (not self._closed),
+            "repository": type(self.repository).__name__,
+            "executor": type(self.executor).__name__,
             "persistent": (
                 not isinstance(
                     self.repository,
                     ProcessLocalRemediationRepository,
                 )
             ),
-
             "live_execution_enabled": (
-                self.config.
-                features.
-                remediation_live_execution_enabled
+                self.config.features.remediation_live_execution_enabled
             ),
         }
 
@@ -3310,61 +2263,26 @@ class RemediationService:
         self,
     ) -> Dict[str, Any]:
         return {
-            "service": (
-                REMEDIATION_SERVICE_NAME
-            ),
-
-            "version": (
-                REMEDIATION_SERVICE_VERSION
-            ),
-
+            "service": (REMEDIATION_SERVICE_NAME),
+            "version": (REMEDIATION_SERVICE_VERSION),
             "closed": self._closed,
-
-            "read_enabled": (
-                self.config.
-                features.
-                remediation_read_enabled
-            ),
-
+            "read_enabled": (self.config.features.remediation_read_enabled),
             "plan_creation_enabled": (
-                self.config.
-                features.
-                remediation_plan_creation_enabled
+                self.config.features.remediation_plan_creation_enabled
             ),
-
-            "approval_enabled": (
-                self.config.
-                features.
-                remediation_approval_enabled
-            ),
-
-            "execution_enabled": (
-                self.config.
-                features.
-                remediation_execution_enabled
-            ),
-
+            "approval_enabled": (self.config.features.remediation_approval_enabled),
+            "execution_enabled": (self.config.features.remediation_execution_enabled),
             "live_execution_enabled": (
-                self.config.
-                features.
-                remediation_live_execution_enabled
+                self.config.features.remediation_live_execution_enabled
             ),
-
-            "repository": type(
-                self.repository
-            ).__name__,
-
-            "executor": type(
-                self.executor
-            ).__name__,
-
+            "repository": type(self.repository).__name__,
+            "executor": type(self.executor).__name__,
             "persistent_repository": (
                 not isinstance(
                     self.repository,
                     ProcessLocalRemediationRepository,
                 )
             ),
-
             "default_executor_is_dry_run_only": (
                 isinstance(
                     self.executor,
@@ -3378,33 +2296,19 @@ class RemediationService:
 # Construction
 # ------------------------------------------------------------------
 
+
 def create_remediation_service(
     *,
     config: APIConfig,
     decision_service: Any,
-    repository: Optional[
-        RemediationRepository
-    ] = None,
-    executor: Optional[
-        RemediationExecutor
-    ] = None,
+    repository: Optional[RemediationRepository] = None,
+    executor: Optional[RemediationExecutor] = None,
 ) -> RemediationService:
     return RemediationService(
         config=config,
-
-        decision_service=(
-            decision_service
-        ),
-
-        repository=(
-            repository
-            or ProcessLocalRemediationRepository()
-        ),
-
-        executor=(
-            executor
-            or DryRunRemediationExecutor()
-        ),
+        decision_service=(decision_service),
+        repository=(repository or ProcessLocalRemediationRepository()),
+        executor=(executor or DryRunRemediationExecutor()),
     )
 
 
@@ -3412,15 +2316,12 @@ def create_remediation_service(
 # Dependency registration
 # ------------------------------------------------------------------
 
+
 def register_remediation_service(
     dependencies: Any,
     *,
-    repository: Optional[
-        RemediationRepository
-    ] = None,
-    executor: Optional[
-        RemediationExecutor
-    ] = None,
+    repository: Optional[RemediationRepository] = None,
+    executor: Optional[RemediationExecutor] = None,
     replace: bool = False,
 ) -> RemediationService:
     config = getattr(
@@ -3445,50 +2346,32 @@ def register_remediation_service(
         raise InternalServerAPIError(
             "API configuration is unavailable.",
             details={
-                "resource": (
-                    "api_config"
-                ),
+                "resource": ("api_config"),
             },
         )
 
-    if not callable(
-        register
-    ):
+    if not callable(register):
         raise InternalServerAPIError(
-            "API service registration is "
-            "unavailable.",
+            "API service registration is unavailable.",
             details={
-                "resource": (
-                    "api_dependencies"
-                ),
+                "resource": ("api_dependencies"),
             },
         )
 
-    if not callable(
-        service_lookup
-    ):
+    if not callable(service_lookup):
         raise InternalServerAPIError(
             "API service lookup is unavailable.",
             details={
-                "resource": (
-                    "api_dependencies"
-                ),
+                "resource": ("api_dependencies"),
             },
         )
 
-    decision_service = service_lookup(
-        "decisions"
-    )
+    decision_service = service_lookup("decisions")
 
     service = create_remediation_service(
         config=config,
-
-        decision_service=(
-            decision_service
-        ),
-
+        decision_service=(decision_service),
         repository=repository,
-
         executor=executor,
     )
 
@@ -3508,33 +2391,22 @@ def register_remediation_service(
 __all__ = [
     "REMEDIATION_SERVICE_NAME",
     "REMEDIATION_SERVICE_VERSION",
-
     "RemediationOperationContext",
-
     "RemediationStepRecord",
     "RemediationPlanRecord",
-
     "RemediationRepository",
     "ProcessLocalRemediationRepository",
-
     "RemediationExecutionResult",
-
     "RemediationExecutor",
     "DryRunRemediationExecutor",
-
     "safe_mapping",
     "step_record_from_request",
-
     "step_response",
     "plan_response",
-
     "resolve_decision_record",
     "validate_decision_for_plan",
-
     "validate_plan_transition",
-
     "RemediationService",
-
     "create_remediation_service",
     "register_remediation_service",
 ]

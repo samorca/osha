@@ -1,0 +1,22 @@
+---
+apiVersion: v1
+kind: Namespace
+
+metadata:
+  name: osha
+
+  labels:
+    # Kubernetes recommended application labels.
+    app.kubernetes.io/name: osha
+    app.kubernetes.io/instance: osha
+    app.kubernetes.io/part-of: osha
+    app.kubernetes.io/managed-by: kustomize
+
+    # OSHA-specific classification.
+    osha.atonixcorp.io/system: orchestration-self-healing-ai
+    osha.atonixcorp.io/scope: platform
+
+  annotations:
+    osha.atonixcorp.io/description: >-
+      Namespace for the OSHA orchestration and
+      self-healing infrastructure platform.

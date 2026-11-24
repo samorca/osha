@@ -18,9 +18,7 @@ REDACTED = "[REDACTED]"
 
 DROPPED = "[DROPPED]"
 
-PRIVATE_KEY_REDACTED = (
-    "[REDACTED_PRIVATE_KEY]"
-)
+PRIVATE_KEY_REDACTED = "[REDACTED_PRIVATE_KEY]"
 
 
 # Keys whose values should not survive the
@@ -84,9 +82,7 @@ PRIVATE_KEY_PATTERN = re.compile(
     [^\n-]*
     PRIVATE[ ]KEY-----
     """,
-    re.IGNORECASE
-    | re.DOTALL
-    | re.VERBOSE,
+    re.IGNORECASE | re.DOTALL | re.VERBOSE,
 )
 
 
@@ -217,9 +213,7 @@ class RedactionPolicy:
 
     maximum_depth: int = 20
 
-    maximum_string_length: int = (
-        262_144
-    )
+    maximum_string_length: int = 262_144
 
     hash_keys: tuple[str, ...] = ()
 
@@ -274,20 +268,12 @@ def normalized_key_name(
 def is_sensitive_key(
     key: Any,
 ) -> bool:
-    text = normalized_key_name(
-        key
-    )
+    text = normalized_key_name(key)
 
-    if SENSITIVE_HEADER_PATTERN.match(
-        normalize_key(key).lower()
-    ):
+    if SENSITIVE_HEADER_PATTERN.match(normalize_key(key).lower()):
         return True
 
-    return bool(
-        SENSITIVE_KEY_PATTERN.search(
-            text
-        )
-    )
+    return bool(SENSITIVE_KEY_PATTERN.search(text))
 
 
 def stable_hash(
@@ -305,29 +291,18 @@ def stable_hash(
     Do not use this helper for password storage.
     """
 
-    encoded = (
-        f"{salt}{value}"
-        .encode(
-            "utf-8",
-            errors="replace",
-        )
+    encoded = f"{salt}{value}".encode(
+        "utf-8",
+        errors="replace",
     )
 
-    return (
-        "sha256:"
-        + hashlib.sha256(
-            encoded
-        ).hexdigest()
-    )
+    return "sha256:" + hashlib.sha256(encoded).hexdigest()
 
 
 def redact_text(
     value: str,
     *,
-    maximum_length: int = (
-        DEFAULT_POLICY.
-        maximum_string_length
-    ),
+    maximum_length: int = (DEFAULT_POLICY.maximum_string_length),
 ) -> str:
     """
     Redact common secret material from
@@ -366,27 +341,17 @@ def redact_text(
     )
 
     text = QUERY_SECRET_PATTERN.sub(
-        lambda match: (
-            f"{match.group(1)}"
-            f"{REDACTED}"
-        ),
+        lambda match: f"{match.group(1)}{REDACTED}",
         text,
     )
 
     text = KEY_VALUE_SECRET_PATTERN.sub(
-        lambda match: (
-            f"{match.group(1)}"
-            f"{match.group(2)}"
-            f"{REDACTED}"
-        ),
+        lambda match: f"{match.group(1)}{match.group(2)}{REDACTED}",
         text,
     )
 
     if len(text) > maximum_length:
-        text = (
-            text[:maximum_length]
-            + "[TRUNCATED]"
-        )
+        text = text[:maximum_length] + "[TRUNCATED]"
 
     return text
 
@@ -395,14 +360,9 @@ def should_drop_key(
     key: Any,
     policy: RedactionPolicy,
 ) -> bool:
-    normalized = normalized_key_name(
-        key
-    )
+    normalized = normalized_key_name(key)
 
-    configured = {
-        normalized_key_name(item)
-        for item in policy.drop_keys
-    }
+    configured = {normalized_key_name(item) for item in policy.drop_keys}
 
     return normalized in configured
 
@@ -411,14 +371,9 @@ def should_hash_key(
     key: Any,
     policy: RedactionPolicy,
 ) -> bool:
-    normalized = normalized_key_name(
-        key
-    )
+    normalized = normalized_key_name(key)
 
-    configured = {
-        normalized_key_name(item)
-        for item in policy.hash_keys
-    }
+    configured = {normalized_key_name(item) for item in policy.hash_keys}
 
     return normalized in configured
 
@@ -432,12 +387,8 @@ def redact_mapping(
 ) -> Dict[str, Any]:
     output: Dict[str, Any] = {}
 
-    for raw_key, raw_value in (
-        value.items()
-    ):
-        key = normalize_key(
-            raw_key
-        )
+    for raw_key, raw_value in value.items():
+        key = normalize_key(raw_key)
 
         if should_drop_key(
             key,
@@ -456,10 +407,7 @@ def redact_mapping(
 
             continue
 
-        if (
-            policy.redact_unknown_secrets
-            and is_sensitive_key(key)
-        ):
+        if policy.redact_unknown_secrets and is_sensitive_key(key):
             output[key] = REDACTED
             continue
 
@@ -476,9 +424,7 @@ def redact_mapping(
 def redact(
     value: Any,
     *,
-    policy: RedactionPolicy = (
-        DEFAULT_POLICY
-    ),
+    policy: RedactionPolicy = (DEFAULT_POLICY),
     depth: int = 0,
     hash_salt: str = "",
 ) -> Any:
@@ -515,10 +461,7 @@ def redact(
     ):
         return redact_text(
             value,
-            maximum_length=(
-                policy.
-                maximum_string_length
-            ),
+            maximum_length=(policy.maximum_string_length),
         )
 
     if isinstance(
@@ -532,10 +475,7 @@ def redact(
 
         return redact_text(
             decoded,
-            maximum_length=(
-                policy.
-                maximum_string_length
-            ),
+            maximum_length=(policy.maximum_string_length),
         )
 
     if isinstance(
@@ -585,21 +525,14 @@ def redact(
 
     return redact_text(
         str(value),
-        maximum_length=(
-            policy.
-            maximum_string_length
-        ),
+        maximum_length=(policy.maximum_string_length),
     )
 
 
 def redact_attributes(
-    attributes: Optional[
-        Mapping[str, Any]
-    ],
+    attributes: Optional[Mapping[str, Any]],
     *,
-    policy: RedactionPolicy = (
-        DEFAULT_POLICY
-    ),
+    policy: RedactionPolicy = (DEFAULT_POLICY),
     hash_salt: str = "",
 ) -> Dict[str, Any]:
     """
@@ -628,9 +561,7 @@ def redact_attributes(
 def redact_native_record(
     record: Mapping[str, Any],
     *,
-    policy: RedactionPolicy = (
-        DEFAULT_POLICY
-    ),
+    policy: RedactionPolicy = (DEFAULT_POLICY),
     hash_salt: str = "",
 ) -> Dict[str, Any]:
     """
@@ -675,19 +606,13 @@ def contains_redaction(
         value,
         str,
     ):
-        return any(
-            marker in value
-            for marker in markers
-        )
+        return any(marker in value for marker in markers)
 
     if isinstance(
         value,
         Mapping,
     ):
-        return any(
-            contains_redaction(item)
-            for item in value.values()
-        )
+        return any(contains_redaction(item) for item in value.values())
 
     if isinstance(
         value,
@@ -698,10 +623,7 @@ def contains_redaction(
             frozenset,
         ),
     ):
-        return any(
-            contains_redaction(item)
-            for item in value
-        )
+        return any(contains_redaction(item) for item in value)
 
     return False
 
@@ -709,19 +631,10 @@ def contains_redaction(
 def build_policy(
     *,
     hash_keys: Iterable[str] = (),
-    drop_keys: Iterable[str] = (
-        DEFAULT_POLICY.drop_keys
-    ),
-    maximum_depth: int = (
-        DEFAULT_POLICY.maximum_depth
-    ),
-    maximum_string_length: int = (
-        DEFAULT_POLICY.
-        maximum_string_length
-    ),
-    redact_unknown_secrets: bool = (
-        True
-    ),
+    drop_keys: Iterable[str] = (DEFAULT_POLICY.drop_keys),
+    maximum_depth: int = (DEFAULT_POLICY.maximum_depth),
+    maximum_string_length: int = (DEFAULT_POLICY.maximum_string_length),
+    redact_unknown_secrets: bool = (True),
 ) -> RedactionPolicy:
     """
     Create an immutable policy for a specific
@@ -729,19 +642,9 @@ def build_policy(
     """
 
     return RedactionPolicy(
-        maximum_depth=(
-            maximum_depth
-        ),
-        maximum_string_length=(
-            maximum_string_length
-        ),
-        hash_keys=tuple(
-            hash_keys
-        ),
-        drop_keys=tuple(
-            drop_keys
-        ),
-        redact_unknown_secrets=(
-            redact_unknown_secrets
-        ),
+        maximum_depth=(maximum_depth),
+        maximum_string_length=(maximum_string_length),
+        hash_keys=tuple(hash_keys),
+        drop_keys=tuple(drop_keys),
+        redact_unknown_secrets=(redact_unknown_secrets),
     )

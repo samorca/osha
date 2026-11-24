@@ -50,21 +50,16 @@ TERMINAL_JOB_STATES = {
 # Exceptions
 # ---------------------------------------------------------------
 
-class QueueError(
-    RuntimeError
-):
+
+class QueueError(RuntimeError):
     pass
 
 
-class JobNotFoundError(
-    QueueError
-):
+class JobNotFoundError(QueueError):
     pass
 
 
-class LeaseOwnershipError(
-    QueueError
-):
+class LeaseOwnershipError(QueueError):
     pass
 
 
@@ -72,78 +67,47 @@ class LeaseOwnershipError(
 # Time helpers
 # ---------------------------------------------------------------
 
+
 def as_utc(
-    value: Optional[
-        datetime
-    ] = None,
+    value: Optional[datetime] = None,
 ) -> datetime:
-    current = (
-        value
-        or datetime.now(
-            timezone.utc
-        )
-    )
+    current = value or datetime.now(timezone.utc)
 
     if current.tzinfo is None:
-        current = current.replace(
-            tzinfo=timezone.utc
-        )
+        current = current.replace(tzinfo=timezone.utc)
 
-    return current.astimezone(
-        timezone.utc
-    )
+    return current.astimezone(timezone.utc)
 
 
 def parse_timestamp(
-    value: Optional[
-        str
-    ],
-) -> Optional[
-    datetime
-]:
+    value: Optional[str],
+) -> Optional[datetime]:
     if value is None:
         return None
 
-    text = str(
-        value
-    ).strip()
+    text = str(value).strip()
 
     if not text:
         return None
 
     if text.endswith("Z"):
-        text = (
-            text[:-1]
-            + "+00:00"
-        )
+        text = text[:-1] + "+00:00"
 
     try:
-        parsed = (
-            datetime.fromisoformat(
-                text
-            )
-        )
+        parsed = datetime.fromisoformat(text)
 
     except ValueError as exc:
-        raise QueueError(
-            f"Invalid timestamp: {value}"
-        ) from exc
+        raise QueueError(f"Invalid timestamp: {value}") from exc
 
-    return as_utc(
-        parsed
-    )
+    return as_utc(parsed)
 
 
 def ready_at(
     job: WorkerJob,
 ) -> datetime:
     return (
-        parse_timestamp(
-            job.scheduled_for
-        )
-        or parse_timestamp(
-            job.created_at
-        )
+        parse_timestamp(job.scheduled_for)
+        or parse_timestamp(job.created_at)
         or as_utc()
     )
 
@@ -153,14 +117,9 @@ def job_expired(
     *,
     now: datetime,
 ) -> bool:
-    expires_at = parse_timestamp(
-        job.expires_at
-    )
+    expires_at = parse_timestamp(job.expires_at)
 
-    return bool(
-        expires_at is not None
-        and now >= expires_at
-    )
+    return bool(expires_at is not None and now >= expires_at)
 
 
 def lease_expired(
@@ -168,26 +127,18 @@ def lease_expired(
     *,
     now: datetime,
 ) -> bool:
-    if (
-        job.lease is None
-        or job.lease.state
-        != LeaseState.ACTIVE.value
-    ):
+    if job.lease is None or job.lease.state != LeaseState.ACTIVE.value:
         return False
 
-    expires_at = parse_timestamp(
-        job.lease.expires_at
-    )
+    expires_at = parse_timestamp(job.lease.expires_at)
 
-    return bool(
-        expires_at is not None
-        and now >= expires_at
-    )
+    return bool(expires_at is not None and now >= expires_at)
 
 
 # ---------------------------------------------------------------
 # In-memory queue
 # ---------------------------------------------------------------
+
 
 class InMemoryJobQueue:
     """
@@ -212,36 +163,22 @@ class InMemoryJobQueue:
     def __init__(
         self,
         *,
-        lease_config: Optional[
-            LeaseConfig
-        ] = None,
-        retry_config: Optional[
-            RetryConfig
-        ] = None,
+        lease_config: Optional[LeaseConfig] = None,
+        retry_config: Optional[RetryConfig] = None,
         maximum_jobs: int = 10000,
     ) -> None:
-        self.lease_config = (
-            lease_config
-            or LeaseConfig()
-        )
+        self.lease_config = lease_config or LeaseConfig()
 
-        self.retry_config = (
-            retry_config
-            or RetryConfig()
-        )
+        self.retry_config = retry_config or RetryConfig()
 
         self.lease_config.validate()
 
         self.retry_config.validate()
 
         if maximum_jobs < 1:
-            raise ValueError(
-                "maximum_jobs must be >= 1"
-            )
+            raise ValueError("maximum_jobs must be >= 1")
 
-        self.maximum_jobs = (
-            maximum_jobs
-        )
+        self.maximum_jobs = maximum_jobs
 
         self._jobs: Dict[
             str,
@@ -261,46 +198,21 @@ class InMemoryJobQueue:
         with self._lock:
             job.finalize()
 
-            if (
-                len(
-                    self._jobs
-                )
-                >= self.maximum_jobs
-            ):
-                raise QueueError(
-                    "Queue capacity has "
-                    "been reached"
-                )
+            if len(self._jobs) >= self.maximum_jobs:
+                raise QueueError("Queue capacity has been reached")
 
-            if (
-                job.job_id
-                in self._jobs
-            ):
-                raise QueueError(
-                    "Duplicate job_id: "
-                    f"{job.job_id}"
-                )
+            if job.job_id in self._jobs:
+                raise QueueError(f"Duplicate job_id: {job.job_id}")
 
-            if (
-                job.state
-                != JobState.PENDING.value
-            ):
-                raise QueueError(
-                    "Only pending jobs "
-                    "can be submitted"
-                )
+            if job.state != JobState.PENDING.value:
+                raise QueueError("Only pending jobs can be submitted")
 
             # A job using the schema default can
             # inherit the queue retry policy.
             if job.max_attempts == 1:
-                job.max_attempts = (
-                    self.retry_config.
-                    max_attempts
-                )
+                job.max_attempts = self.retry_config.max_attempts
 
-            self._jobs[
-                job.job_id
-            ] = job
+            self._jobs[job.job_id] = job
 
             self._refresh_job(
                 job,
@@ -316,27 +228,18 @@ class InMemoryJobQueue:
     def get(
         self,
         job_id: str,
-    ) -> Optional[
-        WorkerJob
-    ]:
+    ) -> Optional[WorkerJob]:
         with self._lock:
-            return self._jobs.get(
-                job_id
-            )
+            return self._jobs.get(job_id)
 
     def require(
         self,
         job_id: str,
     ) -> WorkerJob:
-        job = self.get(
-            job_id
-        )
+        job = self.get(job_id)
 
         if job is None:
-            raise JobNotFoundError(
-                "Unknown job_id: "
-                f"{job_id}"
-            )
+            raise JobNotFoundError(f"Unknown job_id: {job_id}")
 
         return job
 
@@ -347,28 +250,15 @@ class InMemoryJobQueue:
     def list(
         self,
         *,
-        states: Optional[
-            Iterable[str]
-        ] = None,
-    ) -> List[
-        WorkerJob
-    ]:
+        states: Optional[Iterable[str]] = None,
+    ) -> List[WorkerJob]:
         with self._lock:
-            allowed = (
-                set(states)
-                if states is not None
-                else None
-            )
+            allowed = set(states) if states is not None else None
 
             jobs = [
                 job
-                for job
-                in self._jobs.values()
-                if (
-                    allowed is None
-                    or job.state
-                    in allowed
-                )
+                for job in self._jobs.values()
+                if (allowed is None or job.state in allowed)
             ]
 
             return sorted(
@@ -377,8 +267,7 @@ class InMemoryJobQueue:
                     ready_at(item),
                     item.priority,
                     item.created_at,
-                    item.job_id
-                    or "",
+                    item.job_id or "",
                 ),
             )
 
@@ -392,10 +281,7 @@ class InMemoryJobQueue:
         *,
         now: datetime,
     ) -> None:
-        if (
-            job.state
-            in TERMINAL_JOB_STATES
-        ):
+        if job.state in TERMINAL_JOB_STATES:
             return
 
         # -----------------------------------------------------
@@ -406,29 +292,17 @@ class InMemoryJobQueue:
             job,
             now=now,
         ):
-            if (
-                job.lease is not None
-                and job.lease.state
-                == LeaseState.ACTIVE.value
-            ):
+            if job.lease is not None and job.lease.state == LeaseState.ACTIVE.value:
                 transition_lease(
                     job.lease,
-                    LeaseState.
-                    EXPIRED.value,
-                    reason=(
-                        "The job expired "
-                        "while its lease "
-                        "was active."
-                    ),
+                    LeaseState.EXPIRED.value,
+                    reason=("The job expired while its lease was active."),
                 )
 
             transition_job(
                 job,
                 JobState.EXPIRED.value,
-                reason=(
-                    "The job expiration "
-                    "time was reached."
-                ),
+                reason=("The job expiration time was reached."),
             )
 
             return
@@ -447,74 +321,41 @@ class InMemoryJobQueue:
             transition_lease(
                 job.lease,
                 LeaseState.EXPIRED.value,
-                reason=(
-                    "The worker lease "
-                    "expired."
-                ),
+                reason=("The worker lease expired."),
             )
 
-            job.attributes[
-                "expired_lease_id"
-            ] = job.lease.lease_id
+            job.attributes["expired_lease_id"] = job.lease.lease_id
 
             job.lease = None
 
             # The job was leased but processing
             # had not started, so it can return
             # directly to READY.
-            if (
-                job.state
-                == JobState.LEASED.value
-            ):
+            if job.state == JobState.LEASED.value:
                 transition_job(
                     job,
                     JobState.READY.value,
                     reason=(
-                        "Expired lease "
-                        "returned the "
-                        "unstarted job to "
-                        "the ready queue."
+                        "Expired lease returned the unstarted job to the ready queue."
                     ),
                 )
 
             # A running job consumed an attempt.
             # It needs retry delay or final
             # failure.
-            elif (
-                job.state
-                == JobState.RUNNING.value
-            ):
-                if (
-                    job.attempt
-                    < job.max_attempts
-                ):
+            elif job.state == JobState.RUNNING.value:
+                if job.attempt < job.max_attempts:
                     transition_job(
                         job,
-                        JobState.
-                        RETRY_WAIT.value,
-                        reason=(
-                            "The active lease "
-                            "expired while "
-                            "the job was "
-                            "running."
-                        ),
-                        error=(
-                            "Worker lease "
-                            "expired during "
-                            "processing."
-                        ),
+                        JobState.RETRY_WAIT.value,
+                        reason=("The active lease expired while the job was running."),
+                        error=("Worker lease expired during processing."),
                     )
 
                     job.scheduled_for = (
                         now
                         + timedelta(
-                            seconds=(
-                                self.
-                                retry_config.
-                                delay_for_attempt(
-                                    job.attempt
-                                )
-                            )
+                            seconds=(self.retry_config.delay_for_attempt(job.attempt))
                         )
                     ).isoformat()
 
@@ -522,17 +363,9 @@ class InMemoryJobQueue:
                     transition_job(
                         job,
                         JobState.FAILED.value,
-                        reason=(
-                            "The lease expired "
-                            "and no retry "
-                            "attempts remain."
-                        ),
+                        reason=("The lease expired and no retry attempts remain."),
                         error=(
-                            "Worker lease "
-                            "expired during "
-                            "the final "
-                            "processing "
-                            "attempt."
+                            "Worker lease expired during the final processing attempt."
                         ),
                     )
 
@@ -542,40 +375,22 @@ class InMemoryJobQueue:
         # Scheduled job readiness
         # -----------------------------------------------------
 
-        scheduled = ready_at(
-            job
-        )
+        scheduled = ready_at(job)
 
-        if (
-            job.state
-            == JobState.PENDING.value
-            and now >= scheduled
-        ):
+        if job.state == JobState.PENDING.value and now >= scheduled:
             transition_job(
                 job,
                 JobState.READY.value,
-                reason=(
-                    "The job reached its "
-                    "scheduled processing "
-                    "time."
-                ),
+                reason=("The job reached its scheduled processing time."),
             )
 
-        elif (
-            job.state
-            == JobState.
-            RETRY_WAIT.value
-            and now >= scheduled
-        ):
+        elif job.state == JobState.RETRY_WAIT.value and now >= scheduled:
             job.lease = None
 
             transition_job(
                 job,
                 JobState.READY.value,
-                reason=(
-                    "The configured retry "
-                    "delay elapsed."
-                ),
+                reason=("The configured retry delay elapsed."),
             )
 
     # ---------------------------------------------------------
@@ -585,20 +400,12 @@ class InMemoryJobQueue:
     def refresh(
         self,
         *,
-        now: Optional[
-            datetime
-        ] = None,
-    ) -> List[
-        WorkerJob
-    ]:
-        current = as_utc(
-            now
-        )
+        now: Optional[datetime] = None,
+    ) -> List[WorkerJob]:
+        current = as_utc(now)
 
         with self._lock:
-            for job in (
-                self._jobs.values()
-            ):
+            for job in self._jobs.values():
                 self._refresh_job(
                     job,
                     now=current,
@@ -613,34 +420,15 @@ class InMemoryJobQueue:
     def ready(
         self,
         *,
-        accepted_job_types: Optional[
-            Iterable[str]
-        ] = None,
-        now: Optional[
-            datetime
-        ] = None,
-    ) -> List[
-        WorkerJob
-    ]:
-        current = as_utc(
-            now
-        )
+        accepted_job_types: Optional[Iterable[str]] = None,
+        now: Optional[datetime] = None,
+    ) -> List[WorkerJob]:
+        current = as_utc(now)
 
-        accepted = (
-            set(
-                accepted_job_types
-            )
-            if (
-                accepted_job_types
-                is not None
-            )
-            else None
-        )
+        accepted = set(accepted_job_types) if (accepted_job_types is not None) else None
 
         with self._lock:
-            for job in (
-                self._jobs.values()
-            ):
+            for job in self._jobs.values():
                 self._refresh_job(
                     job,
                     now=current,
@@ -648,18 +436,8 @@ class InMemoryJobQueue:
 
             return [
                 job
-                for job
-                in self.list(
-                    states=(
-                        JobState.
-                        READY.value,
-                    )
-                )
-                if (
-                    accepted is None
-                    or job.job_type
-                    in accepted
-                )
+                for job in self.list(states=(JobState.READY.value,))
+                if (accepted is None or job.job_type in accepted)
             ]
 
     # ---------------------------------------------------------
@@ -670,15 +448,9 @@ class InMemoryJobQueue:
         self,
         *,
         worker_id: str,
-        accepted_job_types: Optional[
-            Sequence[str]
-        ] = None,
-        now: Optional[
-            datetime
-        ] = None,
-    ) -> Optional[
-        WorkerJob
-    ]:
+        accepted_job_types: Optional[Sequence[str]] = None,
+        now: Optional[datetime] = None,
+    ) -> Optional[WorkerJob]:
         """
         Atomically acquire one ready job within
         this in-memory queue instance.
@@ -689,54 +461,33 @@ class InMemoryJobQueue:
         owner = worker_id.strip()
 
         if not owner:
-            raise QueueError(
-                "worker_id is required "
-                "for lease acquisition"
-            )
+            raise QueueError("worker_id is required for lease acquisition")
 
-        current = as_utc(
-            now
-        )
+        current = as_utc(now)
 
         with self._lock:
             available = self.ready(
-                accepted_job_types=(
-                    accepted_job_types
-                ),
+                accepted_job_types=(accepted_job_types),
                 now=current,
             )
 
             if not available:
                 return None
 
-            job = available[
-                0
-            ]
+            job = available[0]
 
             job.lease = JobLease(
                 worker_id=owner,
-                acquired_at=(
-                    current.isoformat()
-                ),
+                acquired_at=(current.isoformat()),
                 expires_at=(
-                    current
-                    + timedelta(
-                        seconds=(
-                            self.
-                            lease_config.
-                            duration_seconds
-                        )
-                    )
+                    current + timedelta(seconds=(self.lease_config.duration_seconds))
                 ).isoformat(),
             ).finalize()
 
             transition_job(
                 job,
                 JobState.LEASED.value,
-                reason=(
-                    "Job lease acquired "
-                    f"by worker {owner}."
-                ),
+                reason=(f"Job lease acquired by worker {owner}."),
             )
 
             return job
@@ -750,40 +501,21 @@ class InMemoryJobQueue:
         job_id: str,
         *,
         worker_id: str,
-        now: Optional[
-            datetime
-        ] = None,
+        now: Optional[datetime] = None,
     ) -> JobLease:
-        current = as_utc(
-            now
-        )
+        current = as_utc(now)
 
         with self._lock:
-            job = self.require(
-                job_id
-            )
+            job = self.require(job_id)
 
             if job.lease is None:
-                raise LeaseOwnershipError(
-                    "Job has no lease"
-                )
+                raise LeaseOwnershipError("Job has no lease")
 
-            if (
-                job.lease.worker_id
-                != worker_id
-            ):
-                raise LeaseOwnershipError(
-                    "Lease is owned by "
-                    "another worker"
-                )
+            if job.lease.worker_id != worker_id:
+                raise LeaseOwnershipError("Lease is owned by another worker")
 
-            if (
-                job.lease.state
-                != LeaseState.ACTIVE.value
-            ):
-                raise LeaseOwnershipError(
-                    "Lease is not active"
-                )
+            if job.lease.state != LeaseState.ACTIVE.value:
+                raise LeaseOwnershipError("Lease is not active")
 
             if lease_expired(
                 job,
@@ -794,24 +526,13 @@ class InMemoryJobQueue:
                     now=current,
                 )
 
-                raise LeaseOwnershipError(
-                    "Lease has expired"
-                )
+                raise LeaseOwnershipError("Lease has expired")
 
             job.lease.expires_at = (
-                current
-                + timedelta(
-                    seconds=(
-                        self.
-                        lease_config.
-                        duration_seconds
-                    )
-                )
+                current + timedelta(seconds=(self.lease_config.duration_seconds))
             ).isoformat()
 
-            job.attributes[
-                "lease_renewed_at"
-            ] = current.isoformat()
+            job.attributes["lease_renewed_at"] = current.isoformat()
 
             job.finalize()
 
@@ -837,54 +558,28 @@ class InMemoryJobQueue:
         """
 
         with self._lock:
-            job = self.require(
-                job_id
-            )
+            job = self.require(job_id)
 
-            if (
-                job.lease is None
-                or job.lease.worker_id
-                != worker_id
-            ):
-                raise LeaseOwnershipError(
-                    "Lease is not owned by "
-                    "this worker"
-                )
+            if job.lease is None or job.lease.worker_id != worker_id:
+                raise LeaseOwnershipError("Lease is not owned by this worker")
 
-            if (
-                job.lease.state
-                != LeaseState.ACTIVE.value
-            ):
-                raise LeaseOwnershipError(
-                    "Lease is not active"
-                )
+            if job.lease.state != LeaseState.ACTIVE.value:
+                raise LeaseOwnershipError("Lease is not active")
 
-            if (
-                job.state
-                != JobState.LEASED.value
-            ):
+            if job.state != JobState.LEASED.value:
                 raise (
                     InvalidJobTransition(
-                        "Only a leased, "
-                        "unstarted job can "
-                        "be manually released"
+                        "Only a leased, unstarted job can be manually released"
                     )
                 )
 
             transition_lease(
                 job.lease,
-                LeaseState.
-                RELEASED.value,
-                reason=(
-                    "Worker released the "
-                    "job before processing "
-                    "began."
-                ),
+                LeaseState.RELEASED.value,
+                reason=("Worker released the job before processing began."),
             )
 
-            job.attributes[
-                "released_lease_id"
-            ] = job.lease.lease_id
+            job.attributes["released_lease_id"] = job.lease.lease_id
 
             job.lease = None
 
@@ -892,22 +587,14 @@ class InMemoryJobQueue:
                 transition_job(
                     job,
                     JobState.READY.value,
-                    reason=(
-                        "Released job "
-                        "returned to the "
-                        "ready queue."
-                    ),
+                    reason=("Released job returned to the ready queue."),
                 )
 
             else:
                 transition_job(
                     job,
-                    JobState.
-                    CANCELLED.value,
-                    reason=(
-                        "Released job was "
-                        "cancelled."
-                    ),
+                    JobState.CANCELLED.value,
+                    reason=("Released job was cancelled."),
                 )
 
             return job
@@ -920,41 +607,21 @@ class InMemoryJobQueue:
         self,
         job_id: str,
         *,
-        now: Optional[
-            datetime
-        ] = None,
+        now: Optional[datetime] = None,
     ) -> WorkerJob:
-        current = as_utc(
-            now
-        )
+        current = as_utc(now)
 
         with self._lock:
-            job = self.require(
-                job_id
-            )
+            job = self.require(job_id)
 
-            if (
-                job.state
-                != JobState.
-                RETRY_WAIT.value
-            ):
-                raise QueueError(
-                    "Only retry-wait jobs "
-                    "can be scheduled "
-                    "for retry"
-                )
+            if job.state != JobState.RETRY_WAIT.value:
+                raise QueueError("Only retry-wait jobs can be scheduled for retry")
 
-            if (
-                job.attempt
-                >= job.max_attempts
-            ):
+            if job.attempt >= job.max_attempts:
                 transition_job(
                     job,
                     JobState.FAILED.value,
-                    reason=(
-                        "No retry attempts "
-                        "remain."
-                    ),
+                    reason=("No retry attempts remain."),
                 )
 
                 return job
@@ -963,19 +630,10 @@ class InMemoryJobQueue:
 
             job.scheduled_for = (
                 current
-                + timedelta(
-                    seconds=(
-                        self.retry_config.
-                        delay_for_attempt(
-                            job.attempt
-                        )
-                    )
-                )
+                + timedelta(seconds=(self.retry_config.delay_for_attempt(job.attempt)))
             ).isoformat()
 
-            job.attributes[
-                "retry_scheduled_at"
-            ] = current.isoformat()
+            job.attributes["retry_scheduled_at"] = current.isoformat()
 
             job.finalize()
 
@@ -989,48 +647,24 @@ class InMemoryJobQueue:
         self,
         job_id: str,
         *,
-        reason: str = (
-            "Job cancellation requested."
-        ),
+        reason: str = ("Job cancellation requested."),
     ) -> WorkerJob:
         with self._lock:
-            job = self.require(
-                job_id
-            )
+            job = self.require(job_id)
 
-            if (
-                job.state
-                in TERMINAL_JOB_STATES
-            ):
+            if job.state in TERMINAL_JOB_STATES:
+                raise QueueError(f"Job is already terminal: {job.state}")
+
+            if job.state == JobState.RUNNING.value:
                 raise QueueError(
-                    "Job is already "
-                    f"terminal: {job.state}"
+                    "Running jobs must be cancelled by their owning worker"
                 )
 
-            if (
-                job.state
-                == JobState.RUNNING.value
-            ):
-                raise QueueError(
-                    "Running jobs must be "
-                    "cancelled by their "
-                    "owning worker"
-                )
-
-            if (
-                job.lease is not None
-                and job.lease.state
-                == LeaseState.ACTIVE.value
-            ):
+            if job.lease is not None and job.lease.state == LeaseState.ACTIVE.value:
                 transition_lease(
                     job.lease,
-                    LeaseState.
-                    RELEASED.value,
-                    reason=(
-                        "Job was cancelled "
-                        "before processing "
-                        "completed."
-                    ),
+                    LeaseState.RELEASED.value,
+                    reason=("Job was cancelled before processing completed."),
                 )
 
             transition_job(
@@ -1050,22 +684,12 @@ class InMemoryJobQueue:
         job_id: str,
     ) -> WorkerJob:
         with self._lock:
-            job = self.require(
-                job_id
-            )
+            job = self.require(job_id)
 
-            if (
-                job.state
-                not in TERMINAL_JOB_STATES
-            ):
-                raise QueueError(
-                    "Only terminal jobs "
-                    "can be removed"
-                )
+            if job.state not in TERMINAL_JOB_STATES:
+                raise QueueError("Only terminal jobs can be removed")
 
-            return self._jobs.pop(
-                job_id
-            )
+            return self._jobs.pop(job_id)
 
     # ---------------------------------------------------------
     # Summary
@@ -1080,12 +704,8 @@ class InMemoryJobQueue:
                 int,
             ] = {}
 
-            for job in (
-                self._jobs.values()
-            ):
-                states[
-                    job.state
-                ] = (
+            for job in self._jobs.values():
+                states[job.state] = (
                     states.get(
                         job.state,
                         0,
@@ -1094,15 +714,8 @@ class InMemoryJobQueue:
                 )
 
             return {
-                "job_count": len(
-                    self._jobs
-                ),
+                "job_count": len(self._jobs),
                 "states": states,
-                "maximum_jobs": (
-                    self.maximum_jobs
-                ),
-                "lease_duration_seconds": (
-                    self.lease_config.
-                    duration_seconds
-                ),
+                "maximum_jobs": (self.maximum_jobs),
+                "lease_duration_seconds": (self.lease_config.duration_seconds),
             }

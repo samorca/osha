@@ -50,13 +50,9 @@ from src.security.secrets import (
 # Capability names
 # ---------------------------------------------------------------
 
-CAPABILITY_BUCKET_READ = (
-    "bucket.read"
-)
+CAPABILITY_BUCKET_READ = "bucket.read"
 
-CAPABILITY_OBJECT_READ = (
-    "object.read"
-)
+CAPABILITY_OBJECT_READ = "object.read"
 
 
 # ---------------------------------------------------------------
@@ -74,9 +70,8 @@ ACTION_STAT = "stat"
 # MinIO adapter
 # ---------------------------------------------------------------
 
-class MinioAdapter(
-    IntegrationAdapter
-):
+
+class MinioAdapter(IntegrationAdapter):
     """
     Translate OSHA IntegrationOperation objects
     into bounded MinioClient read operations.
@@ -98,25 +93,15 @@ class MinioAdapter(
         self,
         *,
         minio_config: MinioConfig,
-        config: Optional[
-            IntegrationsConfig
-        ] = None,
+        config: Optional[IntegrationsConfig] = None,
     ) -> None:
-        self.minio_config = (
-            minio_config
-        )
+        self.minio_config = minio_config
 
         self.minio_config.validate()
 
         super().__init__(
-            target=(
-                self.minio_config.target()
-            ),
-
-            config=(
-                config
-                or IntegrationsConfig()
-            ),
+            target=(self.minio_config.target()),
+            config=(config or IntegrationsConfig()),
         )
 
     # ---------------------------------------------------------
@@ -125,40 +110,26 @@ class MinioAdapter(
 
     def define_capabilities(
         self,
-    ) -> Iterable[
-        IntegrationCapability
-    ]:
+    ) -> Iterable[IntegrationCapability]:
         capabilities = []
 
         # -----------------------------------------------------
         # Buckets
         # -----------------------------------------------------
 
-        if (
-            self.minio_config.
-            enable_buckets
-        ):
+        if self.minio_config.enable_buckets:
             capabilities.append(
                 IntegrationCapability(
-                    name=(
-                        CAPABILITY_BUCKET_READ
-                    ),
-
+                    name=(CAPABILITY_BUCKET_READ),
                     resource="bucket",
-
                     actions=[
                         ACTION_LIST,
                         ACTION_EXISTS,
                     ],
-
                     read_only=True,
-
                     attributes={
                         "provider": "minio",
-
-                        "protocol": (
-                            "s3-compatible"
-                        ),
+                        "protocol": ("s3-compatible"),
                     },
                 )
             )
@@ -167,35 +138,20 @@ class MinioAdapter(
         # Objects
         # -----------------------------------------------------
 
-        if (
-            self.minio_config.
-            enable_objects
-        ):
+        if self.minio_config.enable_objects:
             capabilities.append(
                 IntegrationCapability(
-                    name=(
-                        CAPABILITY_OBJECT_READ
-                    ),
-
+                    name=(CAPABILITY_OBJECT_READ),
                     resource="object",
-
                     actions=[
                         ACTION_LIST,
                         ACTION_STAT,
                     ],
-
                     read_only=True,
-
                     attributes={
                         "provider": "minio",
-
-                        "protocol": (
-                            "s3-compatible"
-                        ),
-
-                        "object_content_read": (
-                            False
-                        ),
+                        "protocol": ("s3-compatible"),
+                        "object_content_read": (False),
                     },
                 )
             )
@@ -208,15 +164,10 @@ class MinioAdapter(
 
     def connect_client(
         self,
-        credential: Optional[
-            SecretValue
-        ],
+        credential: Optional[SecretValue],
     ) -> MinioClient:
         client = MinioClient(
-            config=(
-                self.minio_config
-            ),
-
+            config=(self.minio_config),
             credential=credential,
         )
 
@@ -263,134 +214,67 @@ class MinioAdapter(
 
         operation.finalize()
 
-        capability = (
-            operation.capability
-        )
+        capability = operation.capability
 
-        action = (
-            operation.action
-        )
+        action = operation.action
 
         # -----------------------------------------------------
         # Bucket list
         # -----------------------------------------------------
 
-        if (
-            capability
-            == CAPABILITY_BUCKET_READ
-            and action
-            == ACTION_LIST
-        ):
-            return {
-                "buckets": (
-                    client.list_buckets()
-                )
-            }
+        if capability == CAPABILITY_BUCKET_READ and action == ACTION_LIST:
+            return {"buckets": (client.list_buckets())}
 
         # -----------------------------------------------------
         # Bucket existence
         # -----------------------------------------------------
 
-        if (
-            capability
-            == CAPABILITY_BUCKET_READ
-            and action
-            == ACTION_EXISTS
-        ):
-            bucket_name = (
-                self._bucket_name(
-                    operation
-                )
-            )
+        if capability == CAPABILITY_BUCKET_READ and action == ACTION_EXISTS:
+            bucket_name = self._bucket_name(operation)
 
             return {
-                "bucket": (
-                    bucket_name
-                ),
-
-                "exists": (
-                    client.bucket_exists(
-                        bucket_name
-                    )
-                ),
+                "bucket": (bucket_name),
+                "exists": (client.bucket_exists(bucket_name)),
             }
 
         # -----------------------------------------------------
         # Object listing
         # -----------------------------------------------------
 
-        if (
-            capability
-            == CAPABILITY_OBJECT_READ
-            and action
-            == ACTION_LIST
-        ):
-            bucket_name = (
-                self._bucket_name(
-                    operation
-                )
-            )
+        if capability == CAPABILITY_OBJECT_READ and action == ACTION_LIST:
+            bucket_name = self._bucket_name(operation)
 
-            prefix = (
-                operation.parameters.get(
-                    "prefix"
-                )
-            )
+            prefix = operation.parameters.get("prefix")
 
             if prefix is not None:
-                prefix = str(
-                    prefix
-                )
+                prefix = str(prefix)
 
-            recursive = (
-                operation.parameters.get(
-                    "recursive",
-                    False,
-                )
+            recursive = operation.parameters.get(
+                "recursive",
+                False,
             )
 
-            recursive = (
-                self._boolean_parameter(
-                    recursive,
-                    name="recursive",
-                )
+            recursive = self._boolean_parameter(
+                recursive,
+                name="recursive",
             )
 
-            limit = (
-                operation.parameters.get(
-                    "limit"
-                )
-            )
+            limit = operation.parameters.get("limit")
 
             if limit is not None:
-                limit = (
-                    self._positive_integer(
-                        limit,
-                        name="limit",
-                    )
+                limit = self._positive_integer(
+                    limit,
+                    name="limit",
                 )
 
             return {
-                "bucket": (
-                    bucket_name
-                ),
-
-                "prefix": (
-                    prefix
-                ),
-
+                "bucket": (bucket_name),
+                "prefix": (prefix),
                 "objects": (
                     client.list_objects(
-                        bucket_name=(
-                            bucket_name
-                        ),
-
+                        bucket_name=(bucket_name),
                         prefix=prefix,
-
-                        recursive=(
-                            recursive
-                        ),
-
+                        recursive=(recursive),
                         limit=limit,
                     )
                 ),
@@ -400,60 +284,27 @@ class MinioAdapter(
         # Object metadata
         # -----------------------------------------------------
 
-        if (
-            capability
-            == CAPABILITY_OBJECT_READ
-            and action
-            == ACTION_STAT
-        ):
-            bucket_name = (
-                self._bucket_name(
-                    operation
-                )
-            )
+        if capability == CAPABILITY_OBJECT_READ and action == ACTION_STAT:
+            bucket_name = self._bucket_name(operation)
 
-            object_name = (
-                self._object_name(
-                    operation
-                )
-            )
+            object_name = self._object_name(operation)
 
-            version_id = (
-                operation.parameters.get(
-                    "version_id"
-                 )
-            )
+            version_id = operation.parameters.get("version_id")
 
             if version_id is not None:
-                version_id = str(
-                    version_id
-                ).strip()
+                version_id = str(version_id).strip()
 
                 if not version_id:
                     version_id = None
 
             return {
-                "bucket": (
-                    bucket_name
-                ),
-
-                "object_name": (
-                    object_name
-                ),
-
+                "bucket": (bucket_name),
+                "object_name": (object_name),
                 "object": (
                     client.stat_object(
-                        bucket_name=(
-                            bucket_name
-                        ),
-
-                        object_name=(
-                            object_name
-                        ),
-
-                        version_id=(
-                            version_id
-                        ),
+                        bucket_name=(bucket_name),
+                        object_name=(object_name),
+                        version_id=(version_id),
                     )
                 ),
             }
@@ -464,9 +315,7 @@ class MinioAdapter(
 
         raise (
             IntegrationCapabilityError(
-                "Unsupported MinIO "
-                "integration operation: "
-                f"{capability}/{action}"
+                f"Unsupported MinIO integration operation: {capability}/{action}"
             )
         )
 
@@ -485,32 +334,15 @@ class MinioAdapter(
         resource_id takes precedence.
         """
 
-        value = (
-            operation.resource_id
-            or operation.parameters.get(
-                "bucket"
-            )
-        )
+        value = operation.resource_id or operation.parameters.get("bucket")
 
         if value is None:
-            raise (
-                IntegrationOperationError(
-                    "MinIO operation "
-                    "requires a bucket."
-                )
-            )
+            raise (IntegrationOperationError("MinIO operation requires a bucket."))
 
-        value = str(
-            value
-        ).strip()
+        value = str(value).strip()
 
         if not value:
-            raise (
-                IntegrationOperationError(
-                    "MinIO bucket cannot "
-                    "be empty."
-                )
-            )
+            raise (IntegrationOperationError("MinIO bucket cannot be empty."))
 
         return value
 
@@ -522,31 +354,15 @@ class MinioAdapter(
     def _object_name(
         operation: IntegrationOperation,
     ) -> str:
-        value = (
-            operation.parameters.get(
-                "object_name"
-            )
-        )
+        value = operation.parameters.get("object_name")
 
         if value is None:
-            raise (
-                IntegrationOperationError(
-                    "MinIO object stat "
-                    "requires object_name."
-                )
-            )
+            raise (IntegrationOperationError("MinIO object stat requires object_name."))
 
-        value = str(
-            value
-        )
+        value = str(value)
 
         if not value:
-            raise (
-                IntegrationOperationError(
-                    "MinIO object_name "
-                    "cannot be empty."
-                )
-            )
+            raise (IntegrationOperationError("MinIO object_name cannot be empty."))
 
         return value
 
@@ -561,28 +377,16 @@ class MinioAdapter(
         name: str,
     ) -> int:
         try:
-            result = int(
-                value
-            )
+            result = int(value)
 
         except (
             TypeError,
             ValueError,
         ) as exc:
-            raise (
-                IntegrationOperationError(
-                    f"{name} must be "
-                    "an integer."
-                )
-            ) from exc
+            raise (IntegrationOperationError(f"{name} must be an integer.")) from exc
 
         if result < 1:
-            raise (
-                IntegrationOperationError(
-                    f"{name} must be "
-                    ">= 1."
-                )
-            )
+            raise (IntegrationOperationError(f"{name} must be >= 1."))
 
         return result
 
@@ -606,10 +410,7 @@ class MinioAdapter(
             value,
             str,
         ):
-            normalized = (
-                value.strip().
-                lower()
-            )
+            normalized = value.strip().lower()
 
             if normalized in {
                 "true",
@@ -627,12 +428,7 @@ class MinioAdapter(
             }:
                 return False
 
-        raise (
-            IntegrationOperationError(
-                f"{name} must be "
-                "a boolean."
-            )
-        )
+        raise (IntegrationOperationError(f"{name} must be a boolean."))
 
     # ---------------------------------------------------------
     # Provider summary
@@ -644,65 +440,26 @@ class MinioAdapter(
         client_summary = None
 
         if self.ready:
-            client = (
-                self.client
-            )
+            client = self.client
 
             if isinstance(
                 client,
                 MinioClient,
             ):
-                client_summary = (
-                    client.summary()
-                )
+                client_summary = client.summary()
 
         return {
             "provider": "minio",
-
-            "environment_id": (
-                self.target.
-                environment_id
-            ),
-
-            "target_id": (
-                self.target.target_id
-            ),
-
-            "endpoint": (
-                self.minio_config.
-                endpoint_url
-            ),
-
-            "secure": (
-                self.minio_config.
-                secure
-            ),
-
-            "ready": (
-                self.ready
-            ),
-
-            "client": (
-                client_summary
-            ),
-
-            "capabilities": [
-                capability.name
-                for capability
-                in self.capabilities()
-            ],
-
-            "object_content_read_enabled": (
-                False
-            ),
-
-            "mutating_capabilities_advertised": (
-                False
-            ),
-
-            "credential_value_exposed": (
-                False
-            ),
+            "environment_id": (self.target.environment_id),
+            "target_id": (self.target.target_id),
+            "endpoint": (self.minio_config.endpoint_url),
+            "secure": (self.minio_config.secure),
+            "ready": (self.ready),
+            "client": (client_summary),
+            "capabilities": [capability.name for capability in self.capabilities()],
+            "object_content_read_enabled": (False),
+            "mutating_capabilities_advertised": (False),
+            "credential_value_exposed": (False),
         }
 
 
@@ -713,10 +470,8 @@ class MinioAdapter(
 __all__ = [
     "CAPABILITY_BUCKET_READ",
     "CAPABILITY_OBJECT_READ",
-
     "ACTION_LIST",
     "ACTION_EXISTS",
     "ACTION_STAT",
-
     "MinioAdapter",
 ]

@@ -54,17 +54,15 @@ from src.security.secrets import (
 # Client error
 # ---------------------------------------------------------------
 
-class CephClientError(
-    IntegrationOperationError
-):
-    default_code = (
-        "ceph_client_error"
-    )
+
+class CephClientError(IntegrationOperationError):
+    default_code = "ceph_client_error"
 
 
 # ---------------------------------------------------------------
 # Ceph client
 # ---------------------------------------------------------------
+
 
 class CephClient:
     """
@@ -85,21 +83,15 @@ class CephClient:
         self,
         *,
         config: CephConfig,
-        credential: Optional[
-            SecretValue
-        ] = None,
+        credential: Optional[SecretValue] = None,
     ) -> None:
         self.config = config
 
         self.config.validate()
 
-        self.credential = (
-            credential
-        )
+        self.credential = credential
 
-        self._token: Optional[
-            str
-        ] = None
+        self._token: Optional[str] = None
 
         self._opener: Any = None
 
@@ -123,22 +115,12 @@ class CephClient:
         self,
     ) -> ssl.SSLContext:
         if not self.config.verify_tls:
-            return (
-                ssl.
-                _create_unverified_context()
-            )
+            return ssl._create_unverified_context()
 
         if self.config.ca_cert_path:
-            return ssl.create_default_context(
-                cafile=(
-                    self.config.
-                    ca_cert_path
-                )
-            )
+            return ssl.create_default_context(cafile=(self.config.ca_cert_path))
 
-        return (
-            ssl.create_default_context()
-        )
+        return ssl.create_default_context()
 
     # ---------------------------------------------------------
     # HTTP opener
@@ -147,13 +129,7 @@ class CephClient:
     def _build_opener(
         self,
     ) -> Any:
-        return build_opener(
-            HTTPSHandler(
-                context=(
-                    self._ssl_context()
-                )
-            )
-        )
+        return build_opener(HTTPSHandler(context=(self._ssl_context())))
 
     # ---------------------------------------------------------
     # Connect/authenticate
@@ -167,23 +143,15 @@ class CephClient:
 
         if not self.config.auth.username:
             raise (
-                IntegrationAuthenticationError(
-                    "Ceph API username is "
-                    "not configured."
-                )
+                IntegrationAuthenticationError("Ceph API username is not configured.")
             )
 
         if self.credential is None:
             raise (
-                IntegrationAuthenticationError(
-                    "Ceph API credential "
-                    "was not resolved."
-                )
+                IntegrationAuthenticationError("Ceph API credential was not resolved.")
             )
 
-        self._opener = (
-            self._build_opener()
-        )
+        self._opener = self._build_opener()
 
         # -----------------------------------------------------
         # Authentication payload
@@ -191,52 +159,27 @@ class CephClient:
 
         payload = json.dumps(
             {
-                "username": (
-                    self.config.
-                    auth.username
-                ),
-
+                "username": (self.config.auth.username),
                 # Reveal only at the provider
                 # authentication boundary.
-                "password": (
-                    self.credential.
-                    reveal()
-                ),
+                "password": (self.credential.reveal()),
             }
-        ).encode(
-            "utf-8"
-        )
+        ).encode("utf-8")
 
         request = Request(
-            (
-                self.config.
-                normalized_api_url
-                + "/auth"
-            ),
-
+            (self.config.normalized_api_url + "/auth"),
             data=payload,
-
             method="POST",
-
             headers={
-                "Accept": (
-                    self.config.
-                    accept_header
-                ),
-
-                "Content-Type": (
-                    "application/json"
-                ),
+                "Accept": (self.config.accept_header),
+                "Content-Type": ("application/json"),
             },
         )
 
         try:
             with self._opener.open(
                 request,
-                timeout=(
-                    self.config.
-                    request_timeout_seconds
-                ),
+                timeout=(self.config.request_timeout_seconds),
             ) as response:
                 body = response.read()
 
@@ -245,17 +188,11 @@ class CephClient:
 
             raise (
                 IntegrationAuthenticationError(
-                    "Ceph API "
-                    "authentication failed.",
+                    "Ceph API authentication failed.",
                     details={
                         "provider": "ceph",
-                        "target_id": (
-                            self.config.
-                            target_id
-                        ),
-                        "status_code": (
-                            exc.code
-                        ),
+                        "target_id": (self.config.target_id),
+                        "status_code": (exc.code),
                     },
                 )
             ) from exc
@@ -269,17 +206,11 @@ class CephClient:
 
             raise (
                 IntegrationUnavailableError(
-                    "Ceph API is "
-                    "unavailable.",
+                    "Ceph API is unavailable.",
                     details={
                         "provider": "ceph",
-                        "target_id": (
-                            self.config.
-                            target_id
-                        ),
-                        "error_type": (
-                            type(exc).__name__
-                        ),
+                        "target_id": (self.config.target_id),
+                        "error_type": (type(exc).__name__),
                     },
                 )
             ) from exc
@@ -290,17 +221,10 @@ class CephClient:
             raise wrap_provider_error(
                 exc,
                 provider="ceph",
-                target_id=(
-                    self.config.target_id
-                ),
-                message=(
-                    "Ceph API connection "
-                    "failed."
-                ),
+                target_id=(self.config.target_id),
+                message=("Ceph API connection failed."),
                 retryable=True,
-                code=(
-                    "ceph_connection_failed"
-                ),
+                code=("ceph_connection_failed"),
             ) from exc
 
         # -----------------------------------------------------
@@ -308,27 +232,19 @@ class CephClient:
         # -----------------------------------------------------
 
         try:
-            result = json.loads(
-                body.decode(
-                    "utf-8"
-                )
-            )
+            result = json.loads(body.decode("utf-8"))
 
         except Exception as exc:
             self._clear()
 
             raise (
                 IntegrationAuthenticationError(
-                    "Ceph API returned an "
-                    "invalid authentication "
-                    "response."
+                    "Ceph API returned an invalid authentication response."
                 )
             ) from exc
 
         token = (
-            result.get(
-                "token"
-            )
+            result.get("token")
             if isinstance(
                 result,
                 Mapping,
@@ -341,15 +257,11 @@ class CephClient:
 
             raise (
                 IntegrationAuthenticationError(
-                    "Ceph API did not "
-                    "return an "
-                    "authentication token."
+                    "Ceph API did not return an authentication token."
                 )
             )
 
-        self._token = str(
-            token
-        )
+        self._token = str(token)
 
         self._connected = True
 
@@ -381,17 +293,8 @@ class CephClient:
         self._require_connected()
 
         return {
-            "Accept": (
-                self.config.
-                accept_header
-            ),
-
-            "Authorization": (
-                "Bearer "
-                + str(
-                    self._token
-                )
-            ),
+            "Accept": (self.config.accept_header),
+            "Authorization": ("Bearer " + str(self._token)),
         }
 
     # ---------------------------------------------------------
@@ -414,45 +317,26 @@ class CephClient:
 
         normalized = path.strip()
 
-        if not normalized.startswith(
-            "/"
-        ):
-            normalized = (
-                "/"
-                + normalized
-            )
+        if not normalized.startswith("/"):
+            normalized = "/" + normalized
 
         request = Request(
-            (
-                self.config.
-                normalized_api_url
-                + normalized
-            ),
-
+            (self.config.normalized_api_url + normalized),
             method="GET",
-
-            headers=(
-                self._headers()
-            ),
+            headers=(self._headers()),
         )
 
         try:
             with self._opener.open(
                 request,
-                timeout=(
-                    self.config.
-                    request_timeout_seconds
-                ),
+                timeout=(self.config.request_timeout_seconds),
             ) as response:
                 body = response.read()
 
         except HTTPError as exc:
             if exc.code == 404:
                 raise (
-                    IntegrationResourceNotFoundError(
-                        "Ceph API resource "
-                        "was not found."
-                    )
+                    IntegrationResourceNotFoundError("Ceph API resource was not found.")
                 ) from exc
 
             if exc.code in {
@@ -461,31 +345,20 @@ class CephClient:
             }:
                 raise (
                     IntegrationAuthenticationError(
-                        "Ceph API rejected "
-                        "the request.",
+                        "Ceph API rejected the request.",
                         details={
-                            "status_code": (
-                                exc.code
-                            ),
-                            "target_id": (
-                                self.config.
-                                target_id
-                            ),
+                            "status_code": (exc.code),
+                            "target_id": (self.config.target_id),
                         },
                     )
                 ) from exc
 
             raise (
                 CephClientError(
-                    "Ceph API request "
-                    "failed.",
+                    "Ceph API request failed.",
                     details={
-                        "status_code": (
-                            exc.code
-                        ),
-                        "path": (
-                            normalized
-                        ),
+                        "status_code": (exc.code),
+                        "path": (normalized),
                     },
                 )
             ) from exc
@@ -497,17 +370,10 @@ class CephClient:
         ) as exc:
             raise (
                 IntegrationUnavailableError(
-                    "Ceph API request "
-                    "could not reach the "
-                     "target.",
+                    "Ceph API request could not reach the target.",
                     etails={
-                        "target_id": (
-                            self.config.
-                            target_id
-                        ),
-                        "error_type": (
-                            type(exc).__name__
-                        ),
+                        "target_id": (self.config.target_id),
+                        "error_type": (type(exc).__name__),
                     },
                 )
             ) from exc
@@ -516,19 +382,10 @@ class CephClient:
             if not body:
                 return None
 
-            return json.loads(
-                body.decode(
-                    "utf-8"
-                )
-            )
+            return json.loads(body.decode("utf-8"))
 
         except Exception as exc:
-            raise (
-                CephClientError(
-                    "Ceph API returned "
-                    "invalid JSON."
-                )
-            ) from exc
+            raise (CephClientError("Ceph API returned invalid JSON.")) from exc
 
     # ---------------------------------------------------------
     # Ping
@@ -545,9 +402,7 @@ class CephClient:
             return False
 
         try:
-            self._get(
-                "/summary"
-            )
+            self._get("/summary")
 
             return True
 
@@ -561,9 +416,7 @@ class CephClient:
     def cluster_summary(
         self,
     ) -> Dict[str, Any]:
-        value = self._get(
-            "/summary"
-        )
+        value = self._get("/summary")
 
         return self._mapping(
             value,
@@ -582,9 +435,7 @@ class CephClient:
             "health",
         )
 
-        return self._get(
-            "/health/full"
-        )
+        return self._get("/health/full")
 
     # ---------------------------------------------------------
     # OSDs
@@ -599,9 +450,7 @@ class CephClient:
         )
 
         return self._list(
-            self._get(
-                "/osd"
-            ),
+            self._get("/osd"),
             "Ceph OSD list",
         )
 
@@ -619,10 +468,7 @@ class CephClient:
             "osd_id",
         )
 
-        return self._get(
-            "/osd/"
-            + osd_id
-        )
+        return self._get("/osd/" + osd_id)
 
     # ---------------------------------------------------------
     # Pools
@@ -637,9 +483,7 @@ class CephClient:
         )
 
         return self._list(
-            self._get(
-                "/pool"
-            ),
+            self._get("/pool"),
             "Ceph pool list",
         )
 
@@ -657,10 +501,7 @@ class CephClient:
             "pool_name",
         )
 
-        return self._get(
-            "/pool/"
-            + pool_name
-        )
+        return self._get("/pool/" + pool_name)
 
     # ---------------------------------------------------------
     # Hosts
@@ -675,9 +516,7 @@ class CephClient:
         )
 
         return self._list(
-            self._get(
-                "/host"
-            ),
+            self._get("/host"),
             "Ceph host list",
         )
 
@@ -689,14 +528,11 @@ class CephClient:
         self,
     ) -> Any:
         self._require_feature(
-            self.config.
-            enable_monitors,
+            self.config.enable_monitors,
             "monitors",
         )
 
-        return self._get(
-            "/monitor"
-        )
+        return self._get("/monitor")
 
     # ---------------------------------------------------------
     # Services
@@ -706,15 +542,12 @@ class CephClient:
         self,
     ) -> List[Any]:
         self._require_feature(
-            self.config.
-            enable_services,
+            self.config.enable_services,
             "services",
         )
 
         return self._list(
-            self._get(
-                "/service"
-            ),
+            self._get("/service"),
             "Ceph service list",
         )
 
@@ -732,9 +565,7 @@ class CephClient:
         if not enabled:
             raise (
                 IntegrationCapabilityError(
-                    "Ceph integration "
-                    "feature is disabled: "
-                    f"{feature}"
+                    f"Ceph integration feature is disabled: {feature}"
                 )
             )
 
@@ -745,17 +576,8 @@ class CephClient:
     def _require_connected(
         self,
     ) -> None:
-        if (
-            not self.connected
-            or self._token is None
-            or self._opener is None
-        ):
-            raise (
-                IntegrationConnectionError(
-                    "Ceph client is not "
-                    "connected."
-                )
-            )
+        if not self.connected or self._token is None or self._opener is None:
+            raise (IntegrationConnectionError("Ceph client is not connected."))
 
     # ---------------------------------------------------------
     # Identifier guard
@@ -771,22 +593,14 @@ class CephClient:
         arbitrary URL-path territory.
         """
 
-        text = str(
-            value
-        ).strip()
+        text = str(value).strip()
 
         if not text:
-            raise (
-                IntegrationOperationError(
-                    f"{name} is required."
-                )
-            )
+            raise (IntegrationOperationError(f"{name} is required."))
 
         if any(
-            character
-            in text
-            for character
-            in (
+            character in text
+            for character in (
                 "/",
                 "\\",
                 "?",
@@ -794,11 +608,7 @@ class CephClient:
             )
         ):
             raise (
-                IntegrationOperationError(
-                    f"{name} contains "
-                    "unsupported "
-                    "characters."
-                )
+                IntegrationOperationError(f"{name} contains unsupported characters.")
             )
 
         return text
@@ -818,12 +628,7 @@ class CephClient:
         ):
             return value
 
-        raise (
-            CephClientError(
-                f"{name} response was "
-                "not a list."
-            )
-        )
+        raise (CephClientError(f"{name} response was not a list."))
 
     @staticmethod
     def _mapping(
@@ -834,16 +639,9 @@ class CephClient:
             value,
             Mapping,
         ):
-            return dict(
-                value
-            )
+            return dict(value)
 
-        raise (
-            CephClientError(
-                f"{name} response was "
-                "not an object."
-            )
-        )
+        raise (CephClientError(f"{name} response was not an object."))
 
     # ---------------------------------------------------------
     # Safe summary
@@ -853,40 +651,15 @@ class CephClient:
         self,
     ) -> Dict[str, Any]:
         return {
-            "connected": (
-                self.connected
-            ),
-
-            "target_id": (
-                self.config.target_id
-            ),
-
-            "api_url": (
-                self.config.
-                normalized_api_url
-            ),
-
-            "api_version": (
-                self.config.api_version
-            ),
-
-            "verify_tls": (
-                self.config.verify_tls
-            ),
-
-            "authenticated": (
-                self._token is not None
-            ),
-
+            "connected": (self.connected),
+            "target_id": (self.config.target_id),
+            "api_url": (self.config.normalized_api_url),
+            "api_version": (self.config.api_version),
+            "verify_tls": (self.config.verify_tls),
+            "authenticated": (self._token is not None),
             "token_exposed": False,
-
-            "credential_value_exposed": (
-                False
-            ),
-
-            "mutating_operations_enabled": (
-                False
-            ),
+            "credential_value_exposed": (False),
+            "mutating_operations_enabled": (False),
         }
 
 
@@ -896,6 +669,5 @@ class CephClient:
 
 __all__ = [
     "CephClientError",
-
     "CephClient",
 ]

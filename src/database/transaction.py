@@ -44,9 +44,8 @@ from src.database.schema import (
 # Transaction adapter
 # ---------------------------------------------------------------
 
-class TransactionAdapter(
-    ABC
-):
+
+class TransactionAdapter(ABC):
     """
     Backend-specific transaction operations
     behind a stable OSHA contract.
@@ -84,9 +83,8 @@ class TransactionAdapter(
 # Memory transaction adapter
 # ---------------------------------------------------------------
 
-class MemoryTransactionAdapter(
-    TransactionAdapter
-):
+
+class MemoryTransactionAdapter(TransactionAdapter):
     """
     Snapshot-based transactions for the
     development memory backend.
@@ -118,10 +116,7 @@ class MemoryTransactionAdapter(
                 False,
             )
         ):
-            raise RuntimeError(
-                "Memory database "
-                "handle is closed."
-            )
+            raise RuntimeError("Memory database handle is closed.")
 
         return {
             "snapshot": deepcopy(
@@ -130,7 +125,6 @@ class MemoryTransactionAdapter(
                     {},
                 )
             ),
-
             "active": True,
         }
 
@@ -149,14 +143,9 @@ class MemoryTransactionAdapter(
             "active",
             False,
         ):
-            raise RuntimeError(
-                "Memory transaction "
-                "is not active."
-            )
+            raise RuntimeError("Memory transaction is not active.")
 
-        transaction_handle[
-            "active"
-        ] = False
+        transaction_handle["active"] = False
 
         transaction_handle.pop(
             "snapshot",
@@ -178,23 +167,16 @@ class MemoryTransactionAdapter(
             "active",
             False,
         ):
-            raise RuntimeError(
-                "Memory transaction "
-                "is not active."
-            )
+            raise RuntimeError("Memory transaction is not active.")
 
-        handle[
-            "store"
-        ] = deepcopy(
+        handle["store"] = deepcopy(
             transaction_handle.get(
                 "snapshot",
                 {},
             )
         )
 
-        transaction_handle[
-            "active"
-        ] = False
+        transaction_handle["active"] = False
 
         transaction_handle.pop(
             "snapshot",
@@ -205,6 +187,7 @@ class MemoryTransactionAdapter(
 # ---------------------------------------------------------------
 # Database transaction
 # ---------------------------------------------------------------
+
 
 class DatabaseTransaction:
     """
@@ -227,9 +210,7 @@ class DatabaseTransaction:
         self,
         *,
         connection: DatabaseConnection,
-        adapter: Optional[
-            TransactionAdapter
-        ] = None,
+        adapter: Optional[TransactionAdapter] = None,
     ) -> None:
         self.connection = connection
 
@@ -242,37 +223,24 @@ class DatabaseTransaction:
                     connection.handle,
                     dict,
                 )
-                and connection.
-                config.backend
-                == "memory"
+                and connection.config.backend == "memory"
             ):
-                adapter = (
-                    MemoryTransactionAdapter()
-                )
+                adapter = MemoryTransactionAdapter()
 
             else:
                 raise (
                     TransactionStateError(
-                        "A transaction adapter "
-                        "is required for this "
-                        "database backend."
+                        "A transaction adapter is required for this database backend."
                     )
                 )
 
         self.adapter = adapter
 
-        self.record = (
-            TransactionRecord(
-                connection_id=(
-                    self.connection.
-                    status.connection_id
-                ),
-            ).finalize()
-        )
+        self.record = TransactionRecord(
+            connection_id=(self.connection.status.connection_id),
+        ).finalize()
 
-        self._transaction_handle: Any = (
-            None
-        )
+        self._transaction_handle: Any = None
 
         self._lock = RLock()
 
@@ -284,11 +252,7 @@ class DatabaseTransaction:
     def active(
         self,
     ) -> bool:
-        return (
-            self.record.state
-            == TransactionState.
-            ACTIVE.value
-        )
+        return self.record.state == TransactionState.ACTIVE.value
 
     # ---------------------------------------------------------
     # Begin
@@ -298,74 +262,40 @@ class DatabaseTransaction:
         self,
     ) -> TransactionRecord:
         with self._lock:
-            if (
-                self.record.state
-                != TransactionState.
-                CREATED.value
-            ):
+            if self.record.state != TransactionState.CREATED.value:
                 raise (
                     TransactionStateError(
-                        "Transaction cannot "
-                        "begin from state "
-                        f"{self.record.state}."
+                        f"Transaction cannot begin from state {self.record.state}."
                     )
                 )
 
             if not self.connection.ready:
-                raise (
-                    TransactionStateError(
-                        "Database connection "
-                        "must be ready."
-                    )
-                )
+                raise (TransactionStateError("Database connection must be ready."))
 
         try:
-            transaction_handle = (
-                self.adapter.begin(
-                    self.connection.handle
-                )
-            )
+            transaction_handle = self.adapter.begin(self.connection.handle)
 
         except Exception as exc:
             with self._lock:
-                self.record.state = (
-                    TransactionState.
-                    FAILED.value
-                )
+                self.record.state = TransactionState.FAILED.value
 
-                self.record.error_type = (
-                    type(exc).__name__
-                )
+                self.record.error_type = type(exc).__name__
 
-                self.record.completed_at = (
-                    utc_now()
-                )
+                self.record.completed_at = utc_now()
 
             raise wrap_driver_error(
                 exc,
-                message=(
-                    "Database transaction "
-                    "begin failed."
-                ),
+                message=("Database transaction begin failed."),
                 retryable=False,
-                code=(
-                    "transaction_begin_failed"
-                ),
+                code=("transaction_begin_failed"),
             ) from exc
 
         with self._lock:
-            self._transaction_handle = (
-                transaction_handle
-            )
+            self._transaction_handle = transaction_handle
 
-            self.record.state = (
-                TransactionState.
-                ACTIVE.value
-            )
+            self.record.state = TransactionState.ACTIVE.value
 
-            self.record.started_at = (
-                utc_now()
-            )
+            self.record.started_at = utc_now()
 
             return self.record.finalize()
 
@@ -377,22 +307,14 @@ class DatabaseTransaction:
         self,
     ) -> TransactionRecord:
         with self._lock:
-            if (
-                self.record.state
-                != TransactionState.
-                ACTIVE.value
-            ):
+            if self.record.state != TransactionState.ACTIVE.value:
                 raise (
                     TransactionStateError(
-                        "Transaction cannot "
-                        "commit from state "
-                        f"{self.record.state}."
+                        f"Transaction cannot commit from state {self.record.state}."
                     )
                 )
 
-            transaction_handle = (
-                self._transaction_handle
-            )
+            transaction_handle = self._transaction_handle
 
         try:
             self.adapter.commit(
@@ -402,45 +324,26 @@ class DatabaseTransaction:
 
         except Exception as exc:
             with self._lock:
-                self.record.state = (
-                    TransactionState.
-                    FAILED.value
-                )
+                self.record.state = TransactionState.FAILED.value
 
-                self.record.error_type = (
-                    type(exc).__name__
-                )
+                self.record.error_type = type(exc).__name__
 
-                self.record.completed_at = (
-                    utc_now()
-                )
+                self.record.completed_at = utc_now()
 
             raise TransactionCommitError(
-                "Database transaction "
-                "commit failed.",
+                "Database transaction commit failed.",
                 details={
-                    "error_type": (
-                        type(exc).__name__
-                    ),
-                    "error_module": (
-                        type(exc).__module__
-                    ),
+                    "error_type": (type(exc).__name__),
+                    "error_module": (type(exc).__module__),
                 },
             ) from exc
 
         with self._lock:
-            self._transaction_handle = (
-                None
-            )
+            self._transaction_handle = None
 
-            self.record.state = (
-                TransactionState.
-                COMMITTED.value
-            )
+            self.record.state = TransactionState.COMMITTED.value
 
-            self.record.completed_at = (
-                utc_now()
-            )
+            self.record.completed_at = utc_now()
 
             return self.record.finalize()
 
@@ -451,27 +354,17 @@ class DatabaseTransaction:
     def rollback(
         self,
         *,
-        reason: Optional[
-            str
-        ] = None,
+        reason: Optional[str] = None,
     ) -> TransactionRecord:
         with self._lock:
-            if (
-                self.record.state
-                != TransactionState.
-                ACTIVE.value
-            ):
+            if self.record.state != TransactionState.ACTIVE.value:
                 raise (
                     TransactionStateError(
-                        "Transaction cannot "
-                        "roll back from state "
-                        f"{self.record.state}."
+                        f"Transaction cannot roll back from state {self.record.state}."
                     )
                 )
 
-            transaction_handle = (
-                self._transaction_handle
-            )
+            transaction_handle = self._transaction_handle
 
         try:
             self.adapter.rollback(
@@ -481,51 +374,30 @@ class DatabaseTransaction:
 
         except Exception as exc:
             with self._lock:
-                self.record.state = (
-                    TransactionState.
-                    FAILED.value
-                )
+                self.record.state = TransactionState.FAILED.value
 
-                self.record.error_type = (
-                    type(exc).__name__
-                )
+                self.record.error_type = type(exc).__name__
 
-                self.record.completed_at = (
-                    utc_now()
-                )
+                self.record.completed_at = utc_now()
 
             raise (
                 TransactionRollbackError(
-                    "Database transaction "
-                    "rollback failed.",
+                    "Database transaction rollback failed.",
                     details={
-                        "error_type": (
-                            type(exc).__name__
-                        ),
-                        "error_module": (
-                            type(exc).__module__
-                        ),
+                        "error_type": (type(exc).__name__),
+                        "error_module": (type(exc).__module__),
                     },
                 )
             ) from exc
 
         with self._lock:
-            self._transaction_handle = (
-                None
-            )
+            self._transaction_handle = None
 
-            self.record.state = (
-                TransactionState.
-                ROLLED_BACK.value
-            )
+            self.record.state = TransactionState.ROLLED_BACK.value
 
-            self.record.rollback_reason = (
-                reason
-            )
+            self.record.rollback_reason = reason
 
-            self.record.completed_at = (
-                utc_now()
-            )
+            self.record.completed_at = utc_now()
 
             return self.record.finalize()
 
@@ -553,13 +425,7 @@ class DatabaseTransaction:
             self.commit()
 
         else:
-            self.rollback(
-                reason=(
-                    "Transaction scope "
-                    "exited with an "
-                    "exception."
-                )
-            )
+            self.rollback(reason=("Transaction scope exited with an exception."))
 
         # The original application exception
         # must continue outward after rollback.
@@ -573,19 +439,9 @@ class DatabaseTransaction:
         self,
     ) -> Dict[str, Any]:
         return {
-            "transaction": (
-                self.record.to_dict()
-            ),
-
-            "active": (
-                self.active
-            ),
-
-            "adapter": (
-                type(
-                    self.adapter
-                ).__name__
-            ),
+            "transaction": (self.record.to_dict()),
+            "active": (self.active),
+            "adapter": (type(self.adapter).__name__),
         }
 
 
@@ -595,8 +451,6 @@ class DatabaseTransaction:
 
 __all__ = [
     "TransactionAdapter",
-
     "MemoryTransactionAdapter",
-
     "DatabaseTransaction",
 ]

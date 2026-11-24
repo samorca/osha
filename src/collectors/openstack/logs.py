@@ -70,9 +70,7 @@ SECRET_ASSIGNMENT_PATTERN = re.compile(
     r"""(?:"[^"]*"|'[^']*'|[^\s,;]+)"""
 )
 
-BEARER_PATTERN = re.compile(
-    r"(?i)\bBearer\s+[^\s,;]+"
-)
+BEARER_PATTERN = re.compile(r"(?i)\bBearer\s+[^\s,;]+")
 
 PRIVATE_KEY_PATTERN = re.compile(
     r"-----BEGIN [A-Z ]*PRIVATE KEY-----",
@@ -109,9 +107,7 @@ def redact_log_message(message: str) -> str:
 def journal_timestamp(
     entry: dict[str, Any],
 ) -> str | None:
-    raw = entry.get(
-        "__REALTIME_TIMESTAMP"
-    )
+    raw = entry.get("__REALTIME_TIMESTAMP")
 
     if raw is None:
         return None
@@ -146,9 +142,7 @@ def run_command(
             args=command,
             returncode=124,
             stdout="",
-            stderr=(
-                f"Command timed out after {timeout} seconds"
-            ),
+            stderr=(f"Command timed out after {timeout} seconds"),
         )
     except OSError as exc:
         return subprocess.CompletedProcess(
@@ -164,9 +158,7 @@ def _failure_record(
     operation: str,
     message: str,
 ) -> dict:
-    safe_message = redact_log_message(
-        message
-    )
+    safe_message = redact_log_message(message)
 
     return error(
         "logs",
@@ -209,8 +201,7 @@ def _openstack_units(
             _failure_record(
                 ctx,
                 "list_openstack_units",
-                result.stderr.strip()
-                or "Unable to list systemd services",
+                result.stderr.strip() or "Unable to list systemd services",
             )
         ]
 
@@ -231,12 +222,8 @@ def _openstack_units(
 
         lowered = unit.lower()
 
-        if (
-            unit.endswith(".service")
-            and any(
-                token in lowered
-                for token in OPENSTACK_UNIT_TOKENS
-            )
+        if unit.endswith(".service") and any(
+            token in lowered for token in OPENSTACK_UNIT_TOKENS
         ):
             units.add(unit)
 
@@ -275,8 +262,7 @@ def collect_journal_unit(
             _failure_record(
                 ctx,
                 f"read_journal:{unit}",
-                result.stderr.strip()
-                or f"Unable to read journal for {unit}",
+                result.stderr.strip() or f"Unable to read journal for {unit}",
             )
         ]
 
@@ -302,39 +288,21 @@ def collect_journal_unit(
             continue
 
         raw_message = entry.get("MESSAGE", "")
-        message = (
-            raw_message
-            if isinstance(raw_message, str)
-            else str(raw_message)
-        )
+        message = raw_message if isinstance(raw_message, str) else str(raw_message)
 
-        priority = str(
-            entry.get("PRIORITY", "")
-        )
+        priority = str(entry.get("PRIORITY", ""))
 
         payload = {
             "systemd_unit": unit,
-            "message": redact_log_message(
-                message
-            ),
+            "message": redact_log_message(message),
             "priority": priority,
-            "severity": PRIORITY_NAMES.get(
-                priority
-            ),
-            "hostname": entry.get(
-                "_HOSTNAME"
-            ),
-            "process_ess_name": entry.get(
-                "_COMM"
-            ),
+            "severity": PRIORITY_NAMES.get(priority),
+            "hostname": entry.get("_HOSTNAME"),
+            "process_ess_name": entry.get("_COMM"),
             "executable": entry.get("_EXE"),
             "pid": entry.get("_PID"),
-            "syslog_identifier": entry.get(
-                "SYSLOG_IDENTIFIER"
-            ),
-            "transport": entry.get(
-                "_TRANSPORT"
-            ),
+            "syslog_identifier": entry.get("SYSLOG_IDENTIFIER"),
+            "transport": entry.get("_TRANSPORT"),
             "boot_id": entry.get("_BOOT_ID"),
         }
 
@@ -369,9 +337,7 @@ def _log_files(
                 if (
                     path.is_symlink()
                     or not path.is_file()
-                    or not LOG_FILE_PATTERN.search(
-                        path.name
-                    )
+                    or not LOG_FILE_PATTERN.search(path.name)
                 ):
                     continue
 
@@ -435,9 +401,7 @@ def collect_log_files(
                     "log",
                     {
                         "file_path": str(path),
-                        "message": redact_log_message(
-                            message
-                        ),
+                        "message": redact_log_message(message),
                     },
                     cloud_id=ctx.cloud_id,
                     region=ctx.region,
@@ -459,19 +423,13 @@ def collect(
     since: str | None = None,
 ) -> list[dict]:
     if lines_per_unit < 1:
-        raise ValueError(
-            "lines_per_unit must be positive"
-        )
+        raise ValueError("lines_per_unit must be positive")
 
     if lines_per_file < 1:
-        raise ValueError(
-            "lines_per_file must be positive"
-        )
+        raise ValueError("lines_per_file must be positive")
 
     if maximum_files < 0:
-        raise ValueError(
-            "maximum_files cannot be negative"
-        )
+        raise ValueError("maximum_files cannot be negative")
 
     records = []
 

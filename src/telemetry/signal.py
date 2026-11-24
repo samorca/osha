@@ -34,17 +34,14 @@ SIGNAL_TYPE_ALIASES = {
     "log": SignalType.LOG.value,
     "journal": SignalType.LOG.value,
     "journal_log": SignalType.LOG.value,
-
     # Metrics
     "metric": SignalType.METRIC.value,
     "measurement": SignalType.METRIC.value,
     "metric_measurement": SignalType.METRIC.value,
-
     # Events
     "event": SignalType.EVENT.value,
     "openstack_event": SignalType.EVENT.value,
     "kubernetes_event": SignalType.EVENT.value,
-
     # Resource state
     "resource_state": SignalType.RESOURCE_STATE.value,
     "service_state": SignalType.RESOURCE_STATE.value,
@@ -79,23 +76,18 @@ SIGNAL_TYPE_ALIASES = {
     "node_state": SignalType.RESOURCE_STATE.value,
     "pod_state": SignalType.RESOURCE_STATE.value,
     "deployment_state": SignalType.RESOURCE_STATE.value,
-
     # State change
     "state_change": SignalType.STATE_CHANGE.value,
-
     # Alerts
     "alert": SignalType.ALERT.value,
     "alarm": SignalType.ALERT.value,
-
     # Configuration
     "configuration": SignalType.CONFIGURATION.value,
     "configuration_state": SignalType.CONFIGURATION.value,
-
     # Security
     "security": SignalType.SECURITY.value,
     "security_posture": SignalType.SECURITY.value,
     "security_identity": SignalType.SECURITY.value,
-
     # Inventory
     "inventory": SignalType.INVENTORY.value,
     "block_device": SignalType.INVENTORY.value,
@@ -112,13 +104,10 @@ SIGNAL_TYPE_ALIASES = {
     "volume_type": SignalType.INVENTORY.value,
     "metric_resource": SignalType.INVENTORY.value,
     "metric_definition": SignalType.INVENTORY.value,
-
     # Health
     "health": SignalType.HEALTH.value,
-
     # Relationships
     "relationship": SignalType.RELATIONSHIP.value,
-
     # Collector state
     "collector_status": SignalType.COLLECTOR_STATUS.value,
     "collector_error": SignalType.COLLECTOR_STATUS.value,
@@ -141,7 +130,6 @@ SEVERITY_ALIASES = {
     "trace": Severity.TRACE.value,
     "verbose": Severity.DEBUG.value,
     "debug": Severity.DEBUG.value,
-
     # Informational
     "info": Severity.INFO.value,
     "information": Severity.INFO.value,
@@ -149,29 +137,23 @@ SEVERITY_ALIASES = {
     "notice": Severity.NOTICE.value,
     "normal": Severity.INFO.value,
     "ok": Severity.INFO.value,
-
     # Warning
     "warn": Severity.WARNING.value,
     "warning": Severity.WARNING.value,
     "minor": Severity.WARNING.value,
-
     # Error
     "err": Severity.ERROR.value,
     "error": Severity.ERROR.value,
     "failed": Severity.ERROR.value,
     "failure": Severity.ERROR.value,
     "major": Severity.ERROR.value,
-
     # Critical
     "crit": Severity.CRITICAL.value,
     "critical": Severity.CRITICAL.value,
     "fatal": Severity.CRITICAL.value,
-
     "alert": Severity.ALERT.value,
-
     "emerg": Severity.EMERGENCY.value,
     "emergency": Severity.EMERGENCY.value,
-
     "unknown": Severity.UNKNOWN.value,
 }
 
@@ -191,6 +173,7 @@ JOURNAL_PRIORITY_SEVERITY = {
 # ---------------------------------------------------------------
 # Generic helpers
 # ---------------------------------------------------------------
+
 
 def optional_string(
     value: Any,
@@ -228,26 +211,18 @@ def normalized_name(
     if not text:
         return None
 
-    return (
-        text.lower()
-        .replace("-", "_")
-        .replace(" ", "_")
-    )
+    return text.lower().replace("-", "_").replace(" ", "_")
 
 
 def map_signal_type(
     native_signal_type: Any,
 ) -> str:
-    normalized = normalized_name(
-        native_signal_type
-    )
+    normalized = normalized_name(native_signal_type)
 
     if not normalized:
         return SignalType.UNKNOWN.value
 
-    mapped = SIGNAL_TYPE_ALIASES.get(
-        normalized
-    )
+    mapped = SIGNAL_TYPE_ALIASES.get(normalized)
 
     if mapped:
         return mapped
@@ -278,9 +253,7 @@ def map_signal_type(
 def normalize_severity(
     value: Any,
     *,
-    payload: Optional[
-        Mapping[str, Any]
-    ] = None,
+    payload: Optional[Mapping[str, Any]] = None,
 ) -> str:
     """
     Normalize provider/native severity values.
@@ -292,47 +265,28 @@ def normalize_severity(
     text = optional_string(value)
 
     if text:
-        normalized = normalized_name(
-            text
-        )
+        normalized = normalized_name(text)
 
         if normalized in SEVERITY_ALIASES:
-            return SEVERITY_ALIASES[
-                normalized
-            ]
+            return SEVERITY_ALIASES[normalized]
 
         if text in JOURNAL_PRIORITY_SEVERITY:
-            return JOURNAL_PRIORITY_SEVERITY[
-                text
-            ]
+            return JOURNAL_PRIORITY_SEVERITY[text]
 
     if payload:
-        priority = optional_string(
-            payload.get("priority")
-        )
+        priority = optional_string(payload.get("priority"))
 
-        if (
-            priority
-            in JOURNAL_PRIORITY_SEVERITY
-        ):
-            return JOURNAL_PRIORITY_SEVERITY[
-                priority
-            ]
+        if priority in JOURNAL_PRIORITY_SEVERITY:
+            return JOURNAL_PRIORITY_SEVERITY[priority]
 
-        healthy = payload.get(
-            "healthy"
-        )
+        healthy = payload.get("healthy")
 
         if healthy is False:
             return Severity.ERROR.value
 
-        status = normalized_name(
-            payload.get("status")
-        )
+        status = normalized_name(payload.get("status"))
 
-        state = normalized_name(
-            payload.get("state")
-        )
+        state = normalized_name(payload.get("state"))
 
         if status in {
             "error",
@@ -505,23 +459,13 @@ def collector_status_value(
     payload: Mapping[str, Any],
 ) -> Any:
     if "available" in payload:
-        return payload.get(
-            "available"
-        )
+        return payload.get("available")
 
     if "successful" in payload:
-        return payload.get(
-            "successful"
-        )
+        return payload.get("successful")
 
     if "collector_error_count" in payload:
-        return {
-            "collector_error_count": (
-                payload.get(
-                    "collector_error_count"
-                )
-            )
-        }
+        return {"collector_error_count": (payload.get("collector_error_count"))}
 
     return state_value(payload)
 
@@ -541,10 +485,7 @@ def signal_value(
     }:
         return state_value(payload)
 
-    if (
-        common_type
-        == SignalType.ALERT.value
-    ):
+    if common_type == SignalType.ALERT.value:
         return first_value(
             payload,
             "state",
@@ -553,13 +494,8 @@ def signal_value(
             "threshold",
         )
 
-    if (
-        common_type
-        == SignalType.COLLECTOR_STATUS.value
-    ):
-        return collector_status_value(
-            payload
-        )
+    if common_type == SignalType.COLLECTOR_STATUS.value:
+        return collector_status_value(payload)
 
     return None
 
@@ -578,34 +514,12 @@ def base_attributes(
     """
 
     attributes = {
-        "native_signal_type": (
-            native_signal_type
-        ),
-        "record_type": (
-            record_data.get(
-                "record_type"
-            )
-        ),
-        "service": (
-            record_data.get(
-                "service"
-            )
-        ),
-        "source": (
-            record_data.get(
-                "source"
-            )
-        ),
-        "region": (
-            record_data.get(
-                "region"
-            )
-        ),
-        "host_name": (
-            record_data.get(
-                "host_name"
-            )
-        ),
+        "native_signal_type": (native_signal_type),
+        "record_type": (record_data.get("record_type")),
+        "service": (record_data.get("service")),
+        "source": (record_data.get("source")),
+        "region": (record_data.get("region")),
+        "host_name": (record_data.get("host_name")),
     }
 
     selected_payload_keys = (
@@ -638,21 +552,15 @@ def base_attributes(
 
     for key in selected_payload_keys:
         if key in payload:
-            attributes[key] = (
-                payload.get(key)
-            )
+            attributes[key] = payload.get(key)
 
-    return {
-        key: value
-        for key, value
-        in attributes.items()
-        if value is not None
-    }
+    return {key: value for key, value in attributes.items() if value is not None}
 
 
 # ---------------------------------------------------------------
 # Provider-specific signal enrichment
 # ---------------------------------------------------------------
+
 
 def linux_signal_attributes(
     native_signal_type: Optional[str],
@@ -677,9 +585,7 @@ def linux_signal_attributes(
             "swap_free_bytes",
         ):
             if key in payload:
-                attributes[key] = (
-                    payload.get(key)
-                )
+                attributes[key] = payload.get(key)
 
     elif native_signal_type == "process_state":
         for key in (
@@ -692,9 +598,7 @@ def linux_signal_attributes(
             "virtual_memory_bytes",
         ):
             if key in payload:
-                attributes[key] = (
-                    payload.get(key)
-                )
+                attributes[key] = payload.get(key)
 
     elif native_signal_type == "service_state":
         for key in (
@@ -706,9 +610,7 @@ def linux_signal_attributes(
             "restart_count",
         ):
             if key in payload:
-                attributes[key] = (
-                    payload.get(key)
-                )
+                attributes[key] = payload.get(key)
 
     elif native_signal_type == "listening_socket":
         for key in (
@@ -720,9 +622,7 @@ def linux_signal_attributes(
             "pid",
         ):
             if key in payload:
-                attributes[key] = (
-                    payload.get(key)
-                )
+                attributes[key] = payload.get(key)
 
     return attributes
 
@@ -750,9 +650,7 @@ def kubernetes_signal_attributes(
         "restart_count",
     ):
         if key in payload:
-            attributes[key] = (
-                payload.get(key)
-            )
+            attributes[key] = payload.get(key)
 
     return attributes
 
@@ -785,9 +683,7 @@ def openstack_signal_attributes(
         "availability_zone",
     ):
         if key in payload:
-            attributes[key] = (
-                payload.get(key)
-            )
+            attributes[key] = payload.get(key)
 
     return attributes
 
@@ -822,13 +718,12 @@ def provider_attributes(
 # Public API
 # ---------------------------------------------------------------
 
+
 def signal_from_record(
     record_data: Mapping[str, Any],
     resource: ResourceIdentity,
     *,
-    policy: RedactionPolicy = (
-        DEFAULT_POLICY
-    ),
+    policy: RedactionPolicy = (DEFAULT_POLICY),
 ) -> Signal:
     """
     Convert one provider-native collector record
@@ -838,19 +733,9 @@ def signal_from_record(
     before this function is called.
     """
 
-    provider = (
-        optional_string(
-            record_data.get(
-                "provider"
-            )
-        )
-        or Provider.OTHER.value
-    )
+    provider = optional_string(record_data.get("provider")) or Provider.OTHER.value
 
-    raw_payload = (
-        record_data.get("payload")
-        or {}
-    )
+    raw_payload = record_data.get("payload") or {}
 
     if isinstance(
         raw_payload,
@@ -863,19 +748,9 @@ def signal_from_record(
     else:
         payload = {}
 
-    native_signal_type = (
-        optional_string(
-            record_data.get(
-                "signal_type"
-            )
-        )
-    )
+    native_signal_type = optional_string(record_data.get("signal_type"))
 
-    common_signal_type = (
-        map_signal_type(
-            native_signal_type
-        )
-    )
+    common_signal_type = map_signal_type(native_signal_type)
 
     native_severity = first_value(
         payload,
@@ -905,11 +780,9 @@ def signal_from_record(
         )
     )
 
-    safe_attributes = (
-        redact_attributes(
-            attributes,
-            policy=policy,
-        )
+    safe_attributes = redact_attributes(
+        attributes,
+        policy=policy,
     )
 
     message = extract_message(
@@ -919,19 +792,13 @@ def signal_from_record(
 
     return build_signal(
         provider=provider,
-        resource_id=(
-            resource.effective_id()
-        ),
-        signal_type=(
-            common_signal_type
-        ),
+        resource_id=(resource.effective_id()),
+        signal_type=(common_signal_type),
         timestamp=signal_timestamp(
             record_data,
             payload,
         ),
-        environment_id=(
-            resource.environment_id
-        ),
+        environment_id=(resource.environment_id),
         signal_name=signal_name(
             native_signal_type,
             payload,
@@ -941,18 +808,10 @@ def signal_from_record(
             common_signal_type,
             payload,
         ),
-        unit=metric_unit(
-            payload
-        ),
+        unit=metric_unit(payload),
         message=message,
-        attributes=(
-            safe_attributes
-        ),
-        source_record_id=(
-            source_record_id(
-                record_data
-            )
-        ),
+        attributes=(safe_attributes),
+        source_record_id=(source_record_id(record_data)),
     )
 
 
@@ -970,37 +829,25 @@ def signal_is_error(
 def signal_is_warning(
     signal: Signal,
 ) -> bool:
-    return (
-        signal.severity
-        == Severity.WARNING.value
-    )
+    return signal.severity == Severity.WARNING.value
 
 
 def signal_is_metric(
     signal: Signal,
 ) -> bool:
-    return (
-        signal.signal_type
-        == SignalType.METRIC.value
-    )
+    return signal.signal_type == SignalType.METRIC.value
 
 
 def signal_is_event(
     signal: Signal,
 ) -> bool:
-    return (
-        signal.signal_type
-        == SignalType.EVENT.value
-    )
+    return signal.signal_type == SignalType.EVENT.value
 
 
 def signal_is_log(
     signal: Signal,
 ) -> bool:
-    return (
-        signal.signal_type
-        == SignalType.LOG.value
-    )
+    return signal.signal_type == SignalType.LOG.value
 
 
 def signal_is_state(
@@ -1022,25 +869,11 @@ def signal_context(
     """
 
     return {
-        "resource_id": (
-            signal.resource_id
-        ),
-        "provider": (
-            signal.provider
-        ),
-        "environment_id": (
-            signal.environment_id
-        ),
-        "signal_type": (
-            signal.signal_type
-        ),
-        "signal_name": (
-            signal.signal_name
-        ),
-        "timestamp": (
-            signal.timestamp
-        ),
-        "severity": (
-            signal.severity
-        ),
+        "resource_id": (signal.resource_id),
+        "provider": (signal.provider),
+        "environment_id": (signal.environment_id),
+        "signal_type": (signal.signal_type),
+        "signal_name": (signal.signal_name),
+        "timestamp": (signal.timestamp),
+        "severity": (signal.severity),
     }

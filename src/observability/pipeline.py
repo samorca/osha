@@ -52,9 +52,7 @@ from src.observability.tracing import (
 # ---------------------------------------------------------------
 
 Exporter = Callable[
-    [
-        ObservabilityBatch
-    ],
+    [ObservabilityBatch],
     Any,
 ]
 
@@ -62,6 +60,7 @@ Exporter = Callable[
 # ---------------------------------------------------------------
 # Export result
 # ---------------------------------------------------------------
+
 
 @dataclass
 class ExportResult:
@@ -79,42 +78,29 @@ class ExportResult:
 
     exported_count: int = 0
 
-    error_type: Optional[
-        str
-    ] = None
+    error_type: Optional[str] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def to_dict(
         self,
     ) -> Dict[str, Any]:
         return {
-            "attempted": (
-                self.attempted
-            ),
-            "success": (
-                self.success
-            ),
-            "exported_count": (
-                self.exported_count
-            ),
-            "error_type": (
-                self.error_type
-            ),
-            "attributes": dict(
-                self.attributes
-            ),
+            "attempted": (self.attempted),
+            "success": (self.success),
+            "exported_count": (self.exported_count),
+            "error_type": (self.error_type),
+            "attributes": dict(self.attributes),
         }
 
 
 # ---------------------------------------------------------------
 # Observability pipeline
 # ---------------------------------------------------------------
+
 
 class ObservabilityPipeline:
     """
@@ -136,60 +122,30 @@ class ObservabilityPipeline:
     def __init__(
         self,
         *,
-        config: Optional[
-            ObservabilityConfig
-        ] = None,
-        exporter: Optional[
-            Exporter
-        ] = None,
+        config: Optional[ObservabilityConfig] = None,
+        exporter: Optional[Exporter] = None,
     ) -> None:
-        self.config = (
-            config
-            or ObservabilityConfig()
-        )
+        self.config = config or ObservabilityConfig()
 
         self.config.validate()
 
-        self.events = EventBuffer(
-            config=(
-                self.config.events
-            )
-        )
+        self.events = EventBuffer(config=(self.config.events))
 
-        self.metrics = MetricsRegistry(
-            config=(
-                self.config.metrics
-            )
-        )
+        self.metrics = MetricsRegistry(config=(self.config.metrics))
 
         self.logs = LogBuffer(
-            config=(
-                self.config.logging
-            ),
-            redact_sensitive=(
-                self.config.
-                redact_sensitive
-            ),
+            config=(self.config.logging),
+            redact_sensitive=(self.config.redact_sensitive),
         )
 
         self.traces = TraceBuffer(
-            config=(
-                self.config.tracing
-            ),
-            redact_sensitive=(
-                self.config.
-                redact_sensitive
-            ),
+            config=(self.config.tracing),
+            redact_sensitive=(self.config.redact_sensitive),
         )
 
         self.health = HealthRegistry(
-            config=(
-                self.config.health
-            ),
-            redact_sensitive=(
-                self.config.
-                redact_sensitive
-            ),
+            config=(self.config.health),
+            redact_sensitive=(self.config.redact_sensitive),
         )
 
         self.exporter = exporter
@@ -201,9 +157,7 @@ class ObservabilityPipeline:
     def health_check(
         self,
     ) -> HealthReport:
-        return (
-            self.health.check_all()
-        )
+        return self.health.check_all()
 
     # ---------------------------------------------------------
     # Non-destructive snapshot
@@ -218,27 +172,13 @@ class ObservabilityPipeline:
         """
 
         return ObservabilityBatch(
-            events=(
-                self.events.list()
-            ),
-            logs=(
-                self.logs.list()
-            ),
-            metrics=(
-                self.metrics.samples()
-            ),
-            spans=(
-                self.traces.spans()
-            ),
-            health=(
-                self.health.
-                observations()
-            ),
+            events=(self.events.list()),
+            logs=(self.logs.list()),
+            metrics=(self.metrics.samples()),
+            spans=(self.traces.spans()),
+            health=(self.health.observations()),
             attributes={
-                "scope": (
-                    "osha_application_"
-                    "observability"
-                ),
+                "scope": ("osha_application_observability"),
                 "destructive": False,
             },
         ).finalize()
@@ -250,9 +190,7 @@ class ObservabilityPipeline:
     def drain(
         self,
         *,
-        limit_per_signal: Optional[
-            int
-        ] = None,
+        limit_per_signal: Optional[int] = None,
     ) -> ObservabilityBatch:
         """
         Remove a batch of currently buffered
@@ -266,51 +204,25 @@ class ObservabilityPipeline:
         export.
         """
 
-        if (
-            limit_per_signal
-            is not None
-            and limit_per_signal < 1
-        ):
-            raise ValueError(
-                "limit_per_signal "
-                "must be >= 1"
-            )
+        if limit_per_signal is not None and limit_per_signal < 1:
+            raise ValueError("limit_per_signal must be >= 1")
 
-        events = self.events.drain(
-            limit=limit_per_signal
-        )
+        events = self.events.drain(limit=limit_per_signal)
 
-        logs = self.logs.drain(
-            limit=limit_per_signal
-        )
+        logs = self.logs.drain(limit=limit_per_signal)
 
-        metrics = (
-            self.metrics.drain(
-                limit=limit_per_signal
-            )
-        )
+        metrics = self.metrics.drain(limit=limit_per_signal)
 
-        spans = self.traces.drain(
-            limit=limit_per_signal
-        )
+        spans = self.traces.drain(limit=limit_per_signal)
 
-        health = (
-            self.health.drain()
-        )
+        health = self.health.drain()
 
         # health.py currently exposes a full drain
         # rather than a bounded drain. Avoid
         # silently pretending its semantics match
         # the other buffers.
-        if (
-            limit_per_signal
-            is not None
-            and len(health)
-            > limit_per_signal
-        ):
-            health = health[
-                :limit_per_signal
-            ]
+        if limit_per_signal is not None and len(health) > limit_per_signal:
+            health = health[:limit_per_signal]
 
         return ObservabilityBatch(
             events=events,
@@ -319,10 +231,7 @@ class ObservabilityPipeline:
             spans=spans,
             health=health,
             attributes={
-                "scope": (
-                    "osha_application_"
-                    "observability"
-                ),
+                "scope": ("osha_application_observability"),
                 "destructive": True,
             },
         ).finalize()
@@ -338,21 +247,11 @@ class ObservabilityPipeline:
         batch.finalize()
 
         return (
-            len(
-                batch.events
-            )
-            + len(
-                batch.logs
-            )
-            + len(
-                batch.metrics
-            )
-            + len(
-                batch.spans
-            )
-            + len(
-                batch.health
-            )
+            len(batch.events)
+            + len(batch.logs)
+            + len(batch.metrics)
+            + len(batch.spans)
+            + len(batch.health)
         )
 
     # ---------------------------------------------------------
@@ -361,9 +260,7 @@ class ObservabilityPipeline:
 
     def export(
         self,
-        batch: Optional[
-            ObservabilityBatch
-        ] = None,
+        batch: Optional[ObservabilityBatch] = None,
     ) -> ExportResult:
         """
         Export through the explicitly injected
@@ -373,17 +270,12 @@ class ObservabilityPipeline:
         signals.
         """
 
-        if not (
-            self.config.
-            export.enabled
-        ):
+        if not (self.config.export.enabled):
             return ExportResult(
                 attempted=False,
                 success=False,
                 attributes={
-                    "reason": (
-                        "export_disabled"
-                    ),
+                    "reason": ("export_disabled"),
                 },
             )
 
@@ -392,25 +284,16 @@ class ObservabilityPipeline:
                 attempted=False,
                 success=False,
                 attributes={
-                    "reason": (
-                        "exporter_not_registered"
-                    ),
+                    "reason": ("exporter_not_registered"),
                 },
             )
 
-        value = (
-            batch
-            or self.snapshot()
-        )
+        value = batch or self.snapshot()
 
-        count = self.signal_count(
-            value
-        )
+        count = self.signal_count(value)
 
         try:
-            self.exporter(
-                value
-            )
+            self.exporter(value)
 
             return ExportResult(
                 attempted=True,
@@ -423,13 +306,9 @@ class ObservabilityPipeline:
                 attempted=True,
                 success=False,
                 exported_count=0,
-                error_type=(
-                    type(exc).__name__
-                ),
+                error_type=(type(exc).__name__),
                 attributes={
-                    "reason": (
-                        "export_failed"
-                    ),
+                    "reason": ("export_failed"),
                 },
             )
 
@@ -447,17 +326,12 @@ class ObservabilityPipeline:
         fails.
         """
 
-        if not (
-            self.config.
-            export.enabled
-        ):
+        if not (self.config.export.enabled):
             return ExportResult(
                 attempted=False,
                 success=False,
                 attributes={
-                    "reason": (
-                        "export_disabled"
-                    ),
+                    "reason": ("export_disabled"),
                 },
             )
 
@@ -466,17 +340,13 @@ class ObservabilityPipeline:
                 attempted=False,
                 success=False,
                 attributes={
-                    "reason": (
-                        "exporter_not_registered"
-                    ),
+                    "reason": ("exporter_not_registered"),
                 },
             )
 
         batch = self.snapshot()
 
-        result = self.export(
-            batch
-        )
+        result = self.export(batch)
 
         if result.success:
             self.events.drain()
@@ -495,51 +365,18 @@ class ObservabilityPipeline:
         self,
     ) -> Dict[str, Any]:
         return {
-            "events": (
-                self.events.summary()
-            ),
-
-            "logs": (
-                self.logs.summary()
-            ),
-
-            "metrics": (
-                self.metrics.summary()
-            ),
-
-            "traces": (
-                self.traces.summary()
-            ),
-
-            "health": (
-                self.health.summary()
-            ),
-
+            "events": (self.events.summary()),
+            "logs": (self.logs.summary()),
+            "metrics": (self.metrics.summary()),
+            "traces": (self.traces.summary()),
+            "health": (self.health.summary()),
             "export": {
-                "enabled": (
-                    self.config.
-                    export.enabled
-                ),
-
-                "exporter": (
-                    self.config.
-                    export.exporter
-                ),
-
-                "registered": (
-                    self.exporter
-                    is not None
-                ),
+                "enabled": (self.config.export.enabled),
+                "exporter": (self.config.export.exporter),
+                "registered": (self.exporter is not None),
             },
-
-            "scope": (
-                "osha_application_"
-                "observability"
-            ),
-
-            "external_infrastructure_health_claimed": (
-                False
-            ),
+            "scope": ("osha_application_observability"),
+            "external_infrastructure_health_claimed": (False),
         }
 
 
@@ -549,8 +386,6 @@ class ObservabilityPipeline:
 
 __all__ = [
     "Exporter",
-
     "ExportResult",
-
     "ObservabilityPipeline",
 ]

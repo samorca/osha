@@ -84,10 +84,7 @@ def _serialize_value(value: Any) -> Any:
         return value.value
 
     if isinstance(value, Mapping):
-        return {
-            str(key): _serialize_value(item)
-            for key, item in value.items()
-        }
+        return {str(key): _serialize_value(item) for key, item in value.items()}
 
     if isinstance(value, (list, tuple, set)):
         return [_serialize_value(item) for item in value]
@@ -127,9 +124,7 @@ class DatasetRecord:
             raise DatasetValidationError("record_id cannot be empty.")
 
         if not isinstance(self.data, dict):
-            raise DatasetValidationError(
-                "DatasetRecord.data must be a dictionary."
-            )
+            raise DatasetValidationError("DatasetRecord.data must be a dictionary.")
 
         if self.timestamp.tzinfo is None:
             raise DatasetValidationError(
@@ -149,9 +144,7 @@ class DatasetRecord:
 
         return {
             "record_id": self.record_id,
-            "timestamp": self.timestamp.astimezone(
-                timezone.utc
-            ).isoformat(),
+            "timestamp": self.timestamp.astimezone(timezone.utc).isoformat(),
             "source": self.source,
             "data": _serialize_value(self.data),
             "labels": dict(self.labels),
@@ -183,15 +176,9 @@ class DatasetRecord:
             timestamp = utc_now()
 
         record = cls(
-            record_id=str(
-                value.get("record_id") or uuid4()
-            ),
+            record_id=str(value.get("record_id") or uuid4()),
             timestamp=timestamp.astimezone(timezone.utc),
-            source=(
-                str(value["source"])
-                if value.get("source") is not None
-                else None
-            ),
+            source=(str(value["source"]) if value.get("source") is not None else None),
             data=dict(value.get("data") or {}),
             labels=dict(value.get("labels") or {}),
             metadata=dict(value.get("metadata") or {}),
@@ -215,14 +202,10 @@ class DatasetStats:
         return {
             "record_count": self.record_count,
             "first_timestamp": (
-                self.first_timestamp.isoformat()
-                if self.first_timestamp
-                else None
+                self.first_timestamp.isoformat() if self.first_timestamp else None
             ),
             "last_timestamp": (
-                self.last_timestamp.isoformat()
-                if self.last_timestamp
-                else None
+                self.last_timestamp.isoformat() if self.last_timestamp else None
             ),
             "source_count": self.source_count,
             "label_count": self.label_count,
@@ -276,42 +259,28 @@ class Dataset:
         """Validate dataset invariants."""
 
         if not self.dataset_id.strip():
-            raise DatasetValidationError(
-                "dataset_id cannot be empty."
-            )
+            raise DatasetValidationError("dataset_id cannot be empty.")
 
         if not self.name.strip():
-            raise DatasetValidationError(
-                "Dataset name cannot be empty."
-            )
+            raise DatasetValidationError("Dataset name cannot be empty.")
 
         if not self.version.strip():
-            raise DatasetValidationError(
-                "Dataset version cannot be empty."
-            )
+            raise DatasetValidationError("Dataset version cannot be empty.")
 
         if self.created_at.tzinfo is None:
-            raise DatasetValidationError(
-                "created_at must be timezone-aware."
-            )
+            raise DatasetValidationError("created_at must be timezone-aware.")
 
         if self.updated_at.tzinfo is None:
-            raise DatasetValidationError(
-                "updated_at must be timezone-aware."
-            )
+            raise DatasetValidationError("updated_at must be timezone-aware.")
 
         if self.updated_at < self.created_at:
-            raise DatasetValidationError(
-                "updated_at cannot occur before created_at."
-            )
+            raise DatasetValidationError("updated_at cannot occur before created_at.")
 
         if self.source is not None:
             try:
                 self.source.validate()
             except ManifestError as exc:
-                raise DatasetValidationError(
-                    f"Invalid dataset source: {exc}"
-                ) from exc
+                raise DatasetValidationError(f"Invalid dataset source: {exc}") from exc
 
         for key, value in self.labels.items():
             if not isinstance(key, str) or not isinstance(
@@ -319,8 +288,7 @@ class Dataset:
                 str,
             ):
                 raise DatasetValidationError(
-                    "Dataset labels must contain string "
-                    "keys and values."
+                    "Dataset labels must contain string keys and values."
                 )
 
         seen_ids: set[str] = set()
@@ -334,9 +302,7 @@ class Dataset:
             record.validate()
 
             if record.record_id in seen_ids:
-                raise DatasetValidationError(
-                    f"Duplicate record_id: {record.record_id}"
-                )
+                raise DatasetValidationError(f"Duplicate record_id: {record.record_id}")
 
             seen_ids.add(record.record_id)
 
@@ -371,9 +337,7 @@ class Dataset:
 
     def _ensure_mutable(self) -> None:
         if self.state == DatasetState.ARCHIVED:
-            raise DatasetStateError(
-                "Archived datasets cannot be modified."
-            )
+            raise DatasetStateError("Archived datasets cannot be modified.")
 
     def add(
         self,
@@ -384,16 +348,12 @@ class Dataset:
         self._ensure_mutable()
 
         if not isinstance(record, DatasetRecord):
-            raise TypeError(
-                "record must be a DatasetRecord instance."
-            )
+            raise TypeError("record must be a DatasetRecord instance.")
 
         record.validate()
 
         if self.get(record.record_id) is not None:
-            raise DatasetValidationError(
-                f"Duplicate record_id: {record.record_id}"
-            )
+            raise DatasetValidationError(f"Duplicate record_id: {record.record_id}")
 
         self.records.append(record)
         self.touch()
@@ -434,28 +394,18 @@ class Dataset:
 
         new_records = list(records)
 
-        existing_ids = {
-            record.record_id
-            for record in self.records
-        }
+        existing_ids = {record.record_id for record in self.records}
 
         batch_ids: set[str] = set()
 
         for record in new_records:
             if not isinstance(record, DatasetRecord):
-                raise TypeError(
-                    "records must contain DatasetRecord instances."
-                )
+                raise TypeError("records must contain DatasetRecord instances.")
 
             record.validate()
 
-            if (
-                record.record_id in existing_ids
-                or record.record_id in batch_ids
-            ):
-                raise DatasetValidationError(
-                    f"Duplicate record_id: {record.record_id}"
-                )
+            if record.record_id in existing_ids or record.record_id in batch_ids:
+                raise DatasetValidationError(f"Duplicate record_id: {record.record_id}")
 
             batch_ids.add(record.record_id)
 
@@ -487,9 +437,7 @@ class Dataset:
         record = self.get(record_id)
 
         if record is None:
-            raise KeyError(
-                f"Dataset record not found: {record_id}"
-            )
+            raise KeyError(f"Dataset record not found: {record_id}")
 
         return record
 
@@ -507,9 +455,7 @@ class Dataset:
                 self.touch()
                 return removed
 
-        raise KeyError(
-            f"Dataset record not found: {record_id}"
-        )
+        raise KeyError(f"Dataset record not found: {record_id}")
 
     def clear(self) -> None:
         """Remove all records."""
@@ -572,8 +518,7 @@ class Dataset:
 
             if not isinstance(result, DatasetRecord):
                 raise DatasetValidationError(
-                    "Dataset transform must return "
-                    "DatasetRecord instances."
+                    "Dataset transform must return DatasetRecord instances."
                 )
 
             result.validate()
@@ -602,20 +547,14 @@ class Dataset:
             return DatasetStats(
                 record_count=0,
                 first_timestamp=None,
-                last        source_count=0,
+                last_timestamp=None,
+                source_count=0,
                 label_count=0,
             )
 
-        timestamps = [
-            record.timestamp
-            for record in self.records
-        ]
+        timestamps = [record.timestamp for record in self.records]
 
-        sources = {
-            record.source
-            for record in self.records
-            if record.source
-        }
+        sources = {record.source for record in self.records if record.source}
 
         label_names: set[str] = set()
 
@@ -639,10 +578,7 @@ class Dataset:
         its current lifecycle state.
         """
 
-        payload = [
-            record.to_dict()
-            for record in self.records
-        ]
+        payload = [record.to_dict() for record in self.records]
 
         encoded = json.dumps(
             payload,
@@ -715,28 +651,17 @@ class Dataset:
             "description": self.description,
             "version": self.version,
             "state": self.state.value,
-            "source": (
-                self.source.to_dict()
-                if self.source
-                else None
-            ),
+            "source": (self.source.to_dict() if self.source else None),
             "schema_name": self.schema_name,
             "schema_version": self.schema_version,
-            "created_at": self.created_at.astimezone(
-                timezone.utc
-            ).isoformat(),
-            "updated_at": self.updated_at.astimezone(
-                timezone.utc
-            ).isoformat(),
+            "created_at": self.created_at.astimezone(timezone.utc).isoformat(),
+            "updated_at": self.updated_at.astimezone(timezone.utc).isoformat(),
             "labels": dict(self.labels),
             "metadata": _serialize_value(self.metadata),
         }
 
         if include_records:
-            result["records"] = [
-                record.to_dict()
-                for record in self.records
-            ]
+            result["records"] = [record.to_dict() for record in self.records]
 
         return result
 
@@ -768,45 +693,32 @@ class Dataset:
             source_data = value.get("source")
 
             created_at = datetime.fromisoformat(
-                str(
-                    value.get("created_at")
-                    or utc_now().isoformat()
-                ).replace("Z", "+00:00")
+                str(value.get("created_at") or utc_now().isoformat()).replace(
+                    "Z", "+00:00"
+                )
             )
 
             updated_at = datetime.fromisoformat(
-                str(
-                    value.get("updated_at")
-                    or created_at.isoformat()
-                ).replace("Z", "+00:00")
+                str(value.get("updated_at") or created_at.isoformat()).replace(
+                    "Z", "+00:00"
+                )
             )
 
             if created_at.tzinfo is None:
-                created_at = created_at.replace(
-                    tzinfo=timezone.utc
-                )
+                created_at = created_at.replace(tzinfo=timezone.utc)
 
             if updated_at.tzinfo is None:
-                updated_at = updated_at.replace(
-                    tzinfo=timezone.utc
-                )
+                updated_at = updated_at.replace(tzinfo=timezone.utc)
 
             records_value = value.get("records") or []
 
             if not isinstance(records_value, Sequence):
-                raise DatasetValidationError(
-                    "records must be a sequence."
-                )
+                raise DatasetValidationError("records must be a sequence.")
 
-            records = [
-                DatasetRecord.from_dict(record)
-                for record in records_value
-            ]
+            records = [DatasetRecord.from_dict(record) for record in records_value]
 
             dataset = cls(
-                dataset_id=str(
-                    value.get("dataset_id") or uuid4()
-                ),
+                dataset_id=str(value.get("dataset_id") or uuid4()),
                 name=str(value["name"]),
                 description=value.get("description"),
                 version=str(value.get("version", "1")),
@@ -817,25 +729,13 @@ class Dataset:
                     )
                 ),
                 records=records,
-                source=(
-                    ArtifactSource.from_dict(source_data)
-                    if source_data
-                    else None
-                ),
+                source=(ArtifactSource.from_dict(source_data) if source_data else None),
                 schema_name=value.get("schema_name"),
-                schema_version=value.get(
-                    "schema_version"
-                ),
-                created_at=created_at.astimezone(
-                    timezone.utc
-                ),
-                updated_at=updated_at.astimezone(
-                    timezone.utc
-                ),
+                schema_version=value.get("schema_version"),
+                created_at=created_at.astimezone(timezone.utc),
+                updated_at=updated_at.astimezone(timezone.utc),
                 labels=dict(value.get("labels") or {}),
-                metadata=dict(
-                    value.get("metadata") or {}
-                ),
+                metadata=dict(value.get("metadata") or {}),
             )
 
         except (
@@ -844,9 +744,7 @@ class Dataset:
             ValueError,
             ManifestError,
         ) as exc:
-            raise DatasetValidationError(
-                f"Invalid dataset data: {exc}"
-            ) from exc
+            raise DatasetValidationError(f"Invalid dataset data: {exc}") from exc
 
         dataset.validate()
         return dataset
@@ -861,14 +759,10 @@ class Dataset:
         try:
             value = json.loads(payload)
         except json.JSONDecodeError as exc:
-            raise DatasetValidationError(
-                "Dataset contains invalid JSON."
-            ) from exc
+            raise DatasetValidationError("Dataset contains invalid JSON.") from exc
 
         if not isinstance(value, dict):
-            raise DatasetValidationError(
-                "Dataset JSON root must be an object."
-            )
+            raise DatasetValidationError("Dataset JSON root must be an object.")
 
         return cls.from_dict(value)
 

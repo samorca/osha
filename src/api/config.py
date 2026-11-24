@@ -103,6 +103,7 @@ DEFAULT_PORT = 8000
 # Enums
 # ------------------------------------------------------------------
 
+
 class APIEnvironment(
     str,
     Enum,
@@ -128,6 +129,7 @@ class LogLevel(
 # Parsing helpers
 # ------------------------------------------------------------------
 
+
 def _environment_value(
     environment: Mapping[
         str,
@@ -137,22 +139,14 @@ def _environment_value(
     prefix: str,
     name: str,
 ) -> Optional[str]:
-    value = environment.get(
-        prefix + name
-    )
+    value = environment.get(prefix + name)
 
     if value is None:
         return None
 
-    text = str(
-        value
-    ).strip()
+    text = str(value).strip()
 
-    return (
-        text
-        if text
-        else None
-    )
+    return text if text else None
 
 
 def parse_bool(
@@ -166,9 +160,7 @@ def parse_bool(
     ):
         return value
 
-    text = str(
-        value
-    ).strip().lower()
+    text = str(value).strip().lower()
 
     if text in {
         "1",
@@ -188,58 +180,36 @@ def parse_bool(
     }:
         return False
 
-    raise ValueError(
-        f"{name} must be a boolean"
-    )
+    raise ValueError(f"{name} must be a boolean")
 
 
 def parse_int(
     value: Any,
     *,
     name: str,
-    minimum: Optional[
-        int
-    ] = None,
-    maximum: Optional[
-        int
-    ] = None,
+    minimum: Optional[int] = None,
+    maximum: Optional[int] = None,
 ) -> int:
     if isinstance(
         value,
         bool,
     ):
-        raise ValueError(
-            f"{name} must be an integer"
-        )
+        raise ValueError(f"{name} must be an integer")
 
     try:
-        result = int(
-            value
-        )
+        result = int(value)
 
     except (
         TypeError,
         ValueError,
     ) as exc:
-        raise ValueError(
-            f"{name} must be an integer"
-        ) from exc
+        raise ValueError(f"{name} must be an integer") from exc
 
-    if (
-        minimum is not None
-        and result < minimum
-    ):
-        raise ValueError(
-            f"{name} must be >= {minimum}"
-        )
+    if minimum is not None and result < minimum:
+        raise ValueError(f"{name} must be >= {minimum}")
 
-    if (
-        maximum is not None
-        and result > maximum
-    ):
-        raise ValueError(
-            f"{name} must be <= {maximum}"
-        )
+    if maximum is not None and result > maximum:
+        raise ValueError(f"{name} must be <= {maximum}")
 
     return result
 
@@ -248,49 +218,29 @@ def parse_float(
     value: Any,
     *,
     name: str,
-    minimum: Optional[
-        float
-    ] = None,
-    maximum: Optional[
-        float
-    ] = None,
+    minimum: Optional[float] = None,
+    maximum: Optional[float] = None,
 ) -> float:
     if isinstance(
         value,
         bool,
     ):
-        raise ValueError(
-            f"{name} must be numeric"
-        )
+        raise ValueError(f"{name} must be numeric")
 
     try:
-        result = float(
-            value
-        )
+        result = float(value)
 
     except (
         TypeError,
         ValueError,
     ) as exc:
-        raise ValueError(
-            f"{name} must be numeric"
-        ) from exc
+        raise ValueError(f"{name} must be numeric") from exc
 
-    if (
-        minimum is not None
-        and result < minimum
-    ):
-        raise ValueError(
-            f"{name} must be >= {minimum}"
-        )
+    if minimum is not None and result < minimum:
+        raise ValueError(f"{name} must be >= {minimum}")
 
-    if (
-        maximum is not None
-        and result > maximum
-    ):
-        raise ValueError(
-            f"{name} must be <= {maximum}"
-        )
+    if maximum is not None and result > maximum:
+        raise ValueError(f"{name} must be <= {maximum}")
 
     return result
 
@@ -301,13 +251,13 @@ def parse_csv(
     if value is None:
         return ()
 
+    source: Iterable[Any]
+
     if isinstance(
         value,
         str,
     ):
-        source = value.split(
-            ","
-        )
+        source = value.split(",")
 
     elif isinstance(
         value,
@@ -316,17 +266,13 @@ def parse_csv(
         source = value
 
     else:
-        source = (
-            value,
-        )
+        source = (value,)
 
-    output = []
+    output: list[str] = []
     seen = set()
 
     for item in source:
-        text = str(
-            item
-        ).strip()
+        text = str(item).strip()
 
         if not text:
             continue
@@ -334,17 +280,11 @@ def parse_csv(
         if text in seen:
             continue
 
-        seen.add(
-            text
-        )
+        seen.add(text)
 
-        output.append(
-            text
-        )
+        output.append(text)
 
-    return tuple(
-        output
-    )
+    return tuple(output)
 
 
 def parse_json_mapping(
@@ -359,35 +299,21 @@ def parse_json_mapping(
         value,
         Mapping,
     ):
-        return dict(
-            value
-        )
+        return dict(value)
 
     try:
-        parsed = json.loads(
-            str(
-                value
-            )
-        )
+        parsed = json.loads(str(value))
 
     except json.JSONDecodeError as exc:
-        raise ValueError(
-            f"{name} must contain "
-            "valid JSON"
-        ) from exc
+        raise ValueError(f"{name} must contain valid JSON") from exc
 
     if not isinstance(
         parsed,
         Mapping,
     ):
-        raise ValueError(
-            f"{name} must contain "
-            "a JSON object"
-        )
+        raise ValueError(f"{name} must contain a JSON object")
 
-    return dict(
-        parsed
-    )
+    return dict(parsed)
 
 
 def normalize_path_prefix(
@@ -395,37 +321,19 @@ def normalize_path_prefix(
     *,
     name: str,
 ) -> str:
-    text = str(
-        value
-    ).strip()
+    text = str(value).strip()
 
     if not text:
-        raise ValueError(
-            f"{name} cannot be empty"
-        )
+        raise ValueError(f"{name} cannot be empty")
 
-    if not text.startswith(
-        "/"
-    ):
-        text = (
-            "/"
-            + text
-        )
+    if not text.startswith("/"):
+        text = "/" + text
 
-    if (
-        len(text) > 1
-        and text.endswith(
-            "/"
-        )
-    ):
-        text = text[
-            :-1
-        ]
+    if len(text) > 1 and text.endswith("/"):
+        text = text[:-1]
 
     if "//" in text:
-        raise ValueError(
-            f"{name} cannot contain //"
-        )
+        raise ValueError(f"{name} cannot contain //")
 
     return text
 
@@ -433,16 +341,12 @@ def normalize_path_prefix(
 def validate_origin(
     value: str,
 ) -> str:
-    origin = str(
-        value
-    ).strip()
+    origin = str(value).strip()
 
     if origin == "*":
         return origin
 
-    parsed = urlparse(
-        origin
-    )
+    parsed = urlparse(origin)
 
     if (
         parsed.scheme
@@ -452,11 +356,7 @@ def validate_origin(
         }
         or not parsed.netloc
     ):
-        raise ValueError(
-            "CORS origin must be '*' "
-            "or an absolute http/https "
-            "origin"
-        )
+        raise ValueError("CORS origin must be '*' or an absolute http/https origin")
 
     if (
         parsed.path
@@ -468,49 +368,27 @@ def validate_origin(
         or parsed.query
         or parsed.fragment
     ):
-        raise ValueError(
-            "CORS origin must not "
-            "contain a path, query, "
-            "or fragment"
-        )
+        raise ValueError("CORS origin must not contain a path, query, or fragment")
 
-    return origin.rstrip(
-        "/"
-    )
+    return origin.rstrip("/")
 
 
 def validate_host_pattern(
     value: str,
 ) -> str:
-    host = str(
-        value
-    ).strip()
+    host = str(value).strip()
 
     if not host:
-        raise ValueError(
-            "trusted host cannot be empty"
-        )
+        raise ValueError("trusted host cannot be empty")
 
-    if any(
-        character.isspace()
-        for character in host
-    ):
-        raise ValueError(
-            "trusted host cannot "
-            "contain whitespace"
-        )
+    if any(character.isspace() for character in host):
+        raise ValueError("trusted host cannot contain whitespace")
 
     if "://" in host:
-        raise ValueError(
-            "trusted host must be a "
-            "hostname pattern, not a URL"
-        )
+        raise ValueError("trusted host must be a hostname pattern, not a URL")
 
     if "/" in host:
-        raise ValueError(
-            "trusted host cannot "
-            "contain a path"
-        )
+        raise ValueError("trusted host cannot contain a path")
 
     return host
 
@@ -518,6 +396,7 @@ def validate_host_pattern(
 # ------------------------------------------------------------------
 # Server config
 # ------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class APIServerConfig:
@@ -545,12 +424,8 @@ class APIServerConfig:
     def validate(
         self,
     ) -> None:
-        if not str(
-            self.host
-        ).strip():
-            raise ValueError(
-                "API host cannot be empty"
-            )
+        if not str(self.host).strip():
+            raise ValueError("API host cannot be empty")
 
         parse_int(
             self.port,
@@ -579,9 +454,7 @@ class APIServerConfig:
 
         parse_int(
             self.graceful_shutdown_seconds,
-            name=(
-                "graceful_shutdown_seconds"
-            ),
+            name=("graceful_shutdown_seconds"),
             minimum=1,
         )
 
@@ -591,14 +464,8 @@ class APIServerConfig:
                 name="root_path",
             )
 
-        if (
-            self.forwarded_allow_ips
-            and not self.proxy_headers
-        ):
-            raise ValueError(
-                "forwarded_allow_ips requires "
-                "proxy_headers=true"
-            )
+        if self.forwarded_allow_ips and not self.proxy_headers:
+            raise ValueError("forwarded_allow_ips requires proxy_headers=true")
 
     def to_dict(
         self,
@@ -607,39 +474,21 @@ class APIServerConfig:
 
         return {
             "host": self.host,
-
             "port": self.port,
-
             "workers": self.workers,
-
             "backlog": self.backlog,
-
-            "keep_alive_seconds": (
-                self.keep_alive_seconds
-            ),
-
-            "graceful_shutdown_seconds": (
-                self.
-                graceful_shutdown_seconds
-            ),
-
-            "proxy_headers": (
-                self.proxy_headers
-            ),
-
-            "forwarded_allow_ips": list(
-                self.forwarded_allow_ips
-            ),
-
-            "root_path": (
-                self.root_path
-            ),
+            "keep_alive_seconds": (self.keep_alive_seconds),
+            "graceful_shutdown_seconds": (self.graceful_shutdown_seconds),
+            "proxy_headers": (self.proxy_headers),
+            "forwarded_allow_ips": list(self.forwarded_allow_ips),
+            "root_path": (self.root_path),
         }
 
 
 # ------------------------------------------------------------------
 # Documentation config
 # ------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class APIDocumentationConfig:
@@ -671,23 +520,12 @@ class APIDocumentationConfig:
             normalized.append(
                 normalize_path_prefix(
                     path,
-                    name=(
-                        "documentation path"
-                    ),
+                    name=("documentation path"),
                 )
             )
 
-        if len(
-            set(
-                normalized
-            )
-        ) != len(
-            normalized
-        ):
-            raise ValueError(
-                "documentation paths "
-                "must be unique"
-            )
+        if len(set(normalized)) != len(normalized):
+            raise ValueError("documentation paths must be unique")
 
     def to_dict(
         self,
@@ -696,35 +534,17 @@ class APIDocumentationConfig:
 
         return {
             "enabled": self.enabled,
-
-            "docs_path": (
-                self.docs_path
-                if self.enabled
-                else None
-            ),
-
-            "redoc_path": (
-                self.redoc_path
-                if self.enabled
-                else None
-            ),
-
-            "openapi_path": (
-                self.openapi_path
-                if self.enabled
-                else None
-            ),
-
-            "include_internal_routes": (
-                self.
-                include_internal_routes
-            ),
+            "docs_path": (self.docs_path if self.enabled else None),
+            "redoc_path": (self.redoc_path if self.enabled else None),
+            "openapi_path": (self.openapi_path if self.enabled else None),
+            "include_internal_routes": (self.include_internal_routes),
         }
 
 
 # ------------------------------------------------------------------
 # CORS config
 # ------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class APICORSConfig:
@@ -761,9 +581,7 @@ class APICORSConfig:
     exposed_headers: Tuple[
         str,
         ...,
-    ] = (
-        "X-Request-ID",
-    )
+    ] = ("X-Request-ID",)
 
     allow_credentials: bool = False
 
@@ -778,38 +596,16 @@ class APICORSConfig:
             minimum=0,
         )
 
-        origins = tuple(
-            validate_origin(
-                origin
-            )
-            for origin
-            in self.allowed_origins
-        )
+        origins = tuple(validate_origin(origin) for origin in self.allowed_origins)
 
-        if (
-            self.enabled
-            and not origins
-        ):
-            raise ValueError(
-                "CORS is enabled but no "
-                "allowed origins are configured"
-            )
+        if self.enabled and not origins:
+            raise ValueError("CORS is enabled but no allowed origins are configured")
 
-        if (
-            "*"
-            in origins
-            and self.allow_credentials
-        ):
-            raise ValueError(
-                "Wildcard CORS origin cannot "
-                "be used with credentials"
-            )
+        if "*" in origins and self.allow_credentials:
+            raise ValueError("Wildcard CORS origin cannot be used with credentials")
 
         if not self.allowed_methods:
-            raise ValueError(
-                "CORS allowed_methods "
-                "cannot be empty"
-            )
+            raise ValueError("CORS allowed_methods cannot be empty")
 
     def to_dict(
         self,
@@ -818,36 +614,19 @@ class APICORSConfig:
 
         return {
             "enabled": self.enabled,
-
-            "allowed_origins": list(
-                self.allowed_origins
-            ),
-
-            "allowed_methods": list(
-                self.allowed_methods
-            ),
-
-            "allowed_headers": list(
-                self.allowed_headers
-            ),
-
-            "exposed_headers": list(
-                self.exposed_headers
-            ),
-
-            "allow_credentials": (
-                self.allow_credentials
-            ),
-
-            "max_age_seconds": (
-                self.max_age_seconds
-            ),
+            "allowed_origins": list(self.allowed_origins),
+            "allowed_methods": list(self.allowed_methods),
+            "allowed_headers": list(self.allowed_headers),
+            "exposed_headers": list(self.exposed_headers),
+            "allow_credentials": (self.allow_credentials),
+            "max_age_seconds": (self.max_age_seconds),
         }
 
 
 # ------------------------------------------------------------------
 # Host / transport security
 # ------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class APITransportSecurityConfig:
@@ -874,32 +653,19 @@ class APITransportSecurityConfig:
         self,
     ) -> None:
         if not self.trusted_hosts:
-            raise ValueError(
-                "At least one trusted host "
-                "must be configured"
-            )
+            raise ValueError("At least one trusted host must be configured")
 
         for host in self.trusted_hosts:
-            validate_host_pattern(
-                host
-            )
+            validate_host_pattern(host)
 
         parse_int(
             self.hsts_max_age_seconds,
-            name=(
-                "hsts_max_age_seconds"
-            ),
+            name=("hsts_max_age_seconds"),
             minimum=0,
         )
 
-        if (
-            self.hsts_enabled
-            and not self.enforce_https
-        ):
-            raise ValueError(
-                "HSTS requires HTTPS "
-                "enforcement"
-            )
+        if self.hsts_enabled and not self.enforce_https:
+            raise ValueError("HSTS requires HTTPS enforcement")
 
     def to_dict(
         self,
@@ -907,30 +673,12 @@ class APITransportSecurityConfig:
         self.validate()
 
         return {
-            "trusted_hosts": list(
-                self.trusted_hosts
-            ),
-
-            "enforce_https": (
-                self.enforce_https
-            ),
-
-            "hsts_enabled": (
-                self.hsts_enabled
-            ),
-
-            "hsts_max_age_seconds": (
-                self.hsts_max_age_seconds
-            ),
-
-            "hsts_include_subdomains": (
-                self.
-                hsts_include_subdomains
-            ),
-
-            "hsts_preload": (
-                self.hsts_preload
-            ),
+            "trusted_hosts": list(self.trusted_hosts),
+            "enforce_https": (self.enforce_https),
+            "hsts_enabled": (self.hsts_enabled),
+            "hsts_max_age_seconds": (self.hsts_max_age_seconds),
+            "hsts_include_subdomains": (self.hsts_include_subdomains),
+            "hsts_preload": (self.hsts_preload),
         }
 
 
@@ -938,12 +686,10 @@ class APITransportSecurityConfig:
 # Request/resource limits
 # ------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class APIRequestLimitsConfig:
-    maximum_body_bytes: int = (
-        2
-        * 1024**2
-    )
+    maximum_body_bytes: int = 2 * 1024**2
 
     maximum_json_depth: int = 32
 
@@ -977,8 +723,7 @@ class APIRequestLimitsConfig:
             ),
             (
                 "maximum_query_parameters",
-                self.
-                maximum_query_parameters,
+                self.maximum_query_parameters,
             ),
             (
                 "maximum_header_count",
@@ -994,23 +739,19 @@ class APIRequestLimitsConfig:
             ),
             (
                 "maximum_batch_inference_items",
-                self.
-                maximum_batch_inference_items,
+                self.maximum_batch_inference_items,
             ),
             (
                 "maximum_concurrent_requests",
-                self.
-                maximum_concurrent_requests,
+                self.maximum_concurrent_requests,
             ),
             (
                 "maximum_concurrent_inference_requests",
-                self.
-                maximum_concurrent_inference_requests,
+                self.maximum_concurrent_inference_requests,
             ),
             (
                 "maximum_concurrent_model_operations",
-                self.
-                maximum_concurrent_model_operations,
+                self.maximum_concurrent_model_operations,
             ),
         ):
             parse_int(
@@ -1020,13 +761,11 @@ class APIRequestLimitsConfig:
             )
 
         if (
-            self.
-            maximum_concurrent_inference_requests
+            self.maximum_concurrent_inference_requests
             > self.maximum_concurrent_requests
         ):
             raise ValueError(
-                "Inference concurrency cannot "
-                "exceed total request concurrency"
+                "Inference concurrency cannot exceed total request concurrency"
             )
 
     def to_dict(
@@ -1035,49 +774,19 @@ class APIRequestLimitsConfig:
         self.validate()
 
         return {
-            "maximum_body_bytes": (
-                self.maximum_body_bytes
-            ),
-
-            "maximum_json_depth": (
-                self.maximum_json_depth
-            ),
-
-            "maximum_query_parameters": (
-                self.
-                maximum_query_parameters
-            ),
-
-            "maximum_header_count": (
-                self.maximum_header_count
-            ),
-
-            "maximum_header_bytes": (
-                self.maximum_header_bytes
-            ),
-
-            "maximum_path_length": (
-                self.maximum_path_length
-            ),
-
-            "maximum_batch_inference_items": (
-                self.
-                maximum_batch_inference_items
-            ),
-
-            "maximum_concurrent_requests": (
-                self.
-                maximum_concurrent_requests
-            ),
-
+            "maximum_body_bytes": (self.maximum_body_bytes),
+            "maximum_json_depth": (self.maximum_json_depth),
+            "maximum_query_parameters": (self.maximum_query_parameters),
+            "maximum_header_count": (self.maximum_header_count),
+            "maximum_header_bytes": (self.maximum_header_bytes),
+            "maximum_path_length": (self.maximum_path_length),
+            "maximum_batch_inference_items": (self.maximum_batch_inference_items),
+            "maximum_concurrent_requests": (self.maximum_concurrent_requests),
             "maximum_concurrent_inference_requests": (
-                self.
-                maximum_concurrent_inference_requests
+                self.maximum_concurrent_inference_requests
             ),
-
             "maximum_concurrent_model_operations": (
-                self.
-                maximum_concurrent_model_operations
+                self.maximum_concurrent_model_operations
             ),
         }
 
@@ -1085,6 +794,7 @@ class APIRequestLimitsConfig:
 # ------------------------------------------------------------------
 # Timeout config
 # ------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class APITimeoutConfig:
@@ -1122,8 +832,7 @@ class APITimeoutConfig:
             ),
             (
                 "accelerator_operation_seconds",
-                self.
-                accelerator_operation_seconds,
+                self.accelerator_operation_seconds,
             ),
             (
                 "health_seconds",
@@ -1135,13 +844,11 @@ class APITimeoutConfig:
             ),
             (
                 "remediation_plan_seconds",
-                self.
-                remediation_plan_seconds,
+                self.remediation_plan_seconds,
             ),
             (
                 "remediation_execution_seconds",
-                self.
-                remediation_execution_seconds,
+                self.remediation_execution_seconds,
             ),
         ):
             parse_float(
@@ -1156,45 +863,21 @@ class APITimeoutConfig:
         self.validate()
 
         return {
-            "request_seconds": (
-                self.request_seconds
-            ),
-
-            "inference_seconds": (
-                self.inference_seconds
-            ),
-
-            "model_operation_seconds": (
-                self.model_operation_seconds
-            ),
-
-            "accelerator_operation_seconds": (
-                self.
-                accelerator_operation_seconds
-            ),
-
-            "health_seconds": (
-                self.health_seconds
-            ),
-
-            "decision_seconds": (
-                self.decision_seconds
-            ),
-
-            "remediation_plan_seconds": (
-                self.remediation_plan_seconds
-            ),
-
-            "remediation_execution_seconds": (
-                self.
-                remediation_execution_seconds
-            ),
+            "request_seconds": (self.request_seconds),
+            "inference_seconds": (self.inference_seconds),
+            "model_operation_seconds": (self.model_operation_seconds),
+            "accelerator_operation_seconds": (self.accelerator_operation_seconds),
+            "health_seconds": (self.health_seconds),
+            "decision_seconds": (self.decision_seconds),
+            "remediation_plan_seconds": (self.remediation_plan_seconds),
+            "remediation_execution_seconds": (self.remediation_execution_seconds),
         }
 
 
 # ------------------------------------------------------------------
 # Feature configuration
 # ------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class APIFeatureConfig:
@@ -1233,33 +916,26 @@ class APIFeatureConfig:
     ) -> None:
         if (
             self.remediation_live_execution_enabled
-            and not self.
-            remediation_execution_enabled
+            and not self.remediation_execution_enabled
         ):
             raise ValueError(
-                "Live remediation requires "
-                "remediation execution to "
-                "be enabled"
+                "Live remediation requires remediation execution to be enabled"
             )
 
         if (
             self.remediation_execution_enabled
-            and not self.
-            remediation_plan_creation_enabled
+            and not self.remediation_plan_creation_enabled
         ):
             raise ValueError(
-                "Remediation execution requires "
-                "plan creation to be enabled"
+                "Remediation execution requires plan creation to be enabled"
             )
 
         if (
             self.remediation_approval_enabled
-            and not self.
-            remediation_plan_creation_enabled
+            and not self.remediation_plan_creation_enabled
         ):
             raise ValueError(
-                "Remediation approval requires "
-                "plan creation to be enabled"
+                "Remediation approval requires plan creation to be enabled"
             )
 
     def to_dict(
@@ -1268,71 +944,24 @@ class APIFeatureConfig:
         self.validate()
 
         return {
-            "health_enabled": (
-                self.health_enabled
-            ),
-
-            "inference_enabled": (
-                self.inference_enabled
-            ),
-
-            "accelerator_read_enabled": (
-                self.
-                accelerator_read_enabled
-            ),
-
-            "accelerator_optimization_enabled": (
-                self.
-                accelerator_optimization_enabled
-            ),
-
-            "model_read_enabled": (
-                self.model_read_enabled
-            ),
-
-            "model_load_operations_enabled": (
-                self.
-                model_load_operations_enabled
-            ),
-
-            "incident_read_enabled": (
-                self.incident_read_enabled
-            ),
-
-            "incident_create_enabled": (
-                self.incident_create_enabled
-            ),
-
-            "decision_read_enabled": (
-                self.decision_read_enabled
-            ),
-
-            "decision_evaluation_enabled": (
-                self.decision_evaluation_enabled
-            ),
-
-            "remediation_read_enabled": (
-                self.remediation_read_enabled
-            ),
-
+            "health_enabled": (self.health_enabled),
+            "inference_enabled": (self.inference_enabled),
+            "accelerator_read_enabled": (self.accelerator_read_enabled),
+            "accelerator_optimization_enabled": (self.accelerator_optimization_enabled),
+            "model_read_enabled": (self.model_read_enabled),
+            "model_load_operations_enabled": (self.model_load_operations_enabled),
+            "incident_read_enabled": (self.incident_read_enabled),
+            "incident_create_enabled": (self.incident_create_enabled),
+            "decision_read_enabled": (self.decision_read_enabled),
+            "decision_evaluation_enabled": (self.decision_evaluation_enabled),
+            "remediation_read_enabled": (self.remediation_read_enabled),
             "remediation_plan_creation_enabled": (
-                self.
-                remediation_plan_creation_enabled
+                self.remediation_plan_creation_enabled
             ),
-
-            "remediation_approval_enabled": (
-                self.
-                remediation_approval_enabled
-            ),
-
-            "remediation_execution_enabled": (
-                self.
-                remediation_execution_enabled
-            ),
-
+            "remediation_approval_enabled": (self.remediation_approval_enabled),
+            "remediation_execution_enabled": (self.remediation_execution_enabled),
             "remediation_live_execution_enabled": (
-                self.
-                remediation_live_execution_enabled
+                self.remediation_live_execution_enabled
             ),
         }
 
@@ -1341,19 +970,16 @@ class APIFeatureConfig:
 # Observability
 # ------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class APIObservabilityConfig:
-    log_level: str = (
-        LogLevel.INFO.value
-    )
+    log_level: str = LogLevel.INFO.value
 
     access_log_enabled: bool = True
 
     request_id_enabled: bool = True
 
-    request_id_header: str = (
-        "X-Request-ID"
-    )
+    request_id_header: str = "X-Request-ID"
 
     server_timing_enabled: bool = False
 
@@ -1370,26 +996,11 @@ class APIObservabilityConfig:
     def validate(
         self,
     ) -> None:
-        if (
-            self.log_level
-            not in {
-                item.value
-                for item
-                in LogLevel
-            }
-        ):
-            raise ValueError(
-                "Unsupported API log level: "
-                f"{self.log_level}"
-            )
+        if self.log_level not in {item.value for item in LogLevel}:
+            raise ValueError(f"Unsupported API log level: {self.log_level}")
 
-        if not str(
-            self.request_id_header
-        ).strip():
-            raise ValueError(
-                "request_id_header cannot "
-                "be empty"
-            )
+        if not str(self.request_id_header).strip():
+            raise ValueError("request_id_header cannot be empty")
 
         normalize_path_prefix(
             self.metrics_path,
@@ -1402,48 +1013,16 @@ class APIObservabilityConfig:
         self.validate()
 
         return {
-            "log_level": (
-                self.log_level
-            ),
-
-            "access_log_enabled": (
-                self.access_log_enabled
-            ),
-
-            "request_id_enabled": (
-                self.request_id_enabled
-            ),
-
-            "request_id_header": (
-                self.request_id_header
-            ),
-
-            "server_timing_enabled": (
-                self.server_timing_enabled
-            ),
-
-            "metrics_enabled": (
-                self.metrics_enabled
-            ),
-
-            "metrics_path": (
-                self.metrics_path
-            ),
-
-            "include_health_access_logs": (
-                self.
-                include_health_access_logs
-            ),
-
-            "include_request_body_in_logs": (
-                self.
-                include_request_body_in_logs
-            ),
-
-            "include_response_body_in_logs": (
-                self.
-                include_response_body_in_logs
-            ),
+            "log_level": (self.log_level),
+            "access_log_enabled": (self.access_log_enabled),
+            "request_id_enabled": (self.request_id_enabled),
+            "request_id_header": (self.request_id_header),
+            "server_timing_enabled": (self.server_timing_enabled),
+            "metrics_enabled": (self.metrics_enabled),
+            "metrics_path": (self.metrics_path),
+            "include_health_access_logs": (self.include_health_access_logs),
+            "include_request_body_in_logs": (self.include_request_body_in_logs),
+            "include_response_body_in_logs": (self.include_response_body_in_logs),
         }
 
 
@@ -1451,114 +1030,67 @@ class APIObservabilityConfig:
 # Top-level API configuration
 # ------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class APIConfig:
     enabled: bool = True
 
-    service_name: str = (
-        DEFAULT_SERVICE_NAME
-    )
+    service_name: str = DEFAULT_SERVICE_NAME
 
-    environment: str = (
-        APIEnvironment.DEVELOPMENT.value
-    )
+    environment: str = APIEnvironment.DEVELOPMENT.value
 
-    api_prefix: str = (
-        DEFAULT_API_PREFIX
-    )
+    api_prefix: str = DEFAULT_API_PREFIX
 
-    api_version: str = (
-        DEFAULT_API_VERSION
-    )
+    api_version: str = DEFAULT_API_VERSION
 
-    server: APIServerConfig = field(
-        default_factory=APIServerConfig
-    )
+    server: APIServerConfig = field(default_factory=APIServerConfig)
 
     documentation: APIDocumentationConfig = field(
-        default_factory=(
-            APIDocumentationConfig
-        )
+        default_factory=(APIDocumentationConfig)
     )
 
-    cors: APICORSConfig = field(
-        default_factory=APICORSConfig
-    )
+    cors: APICORSConfig = field(default_factory=APICORSConfig)
 
     transport_security: APITransportSecurityConfig = field(
-        default_factory=(
-            APITransportSecurityConfig
-        )
+        default_factory=(APITransportSecurityConfig)
     )
 
-    limits: APIRequestLimitsConfig = field(
-        default_factory=(
-            APIRequestLimitsConfig
-        )
-    )
+    limits: APIRequestLimitsConfig = field(default_factory=(APIRequestLimitsConfig))
 
-    timeouts: APITimeoutConfig = field(
-        default_factory=APITimeoutConfig
-    )
+    timeouts: APITimeoutConfig = field(default_factory=APITimeoutConfig)
 
-    features: APIFeatureConfig = field(
-        default_factory=APIFeatureConfig
-    )
+    features: APIFeatureConfig = field(default_factory=APIFeatureConfig)
 
     observability: APIObservabilityConfig = field(
-        default_factory=(
-            APIObservabilityConfig
-        )
+        default_factory=(APIObservabilityConfig)
     )
 
     attributes: Mapping[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def validate(
         self,
     ) -> None:
-        if not str(
-            self.service_name
-        ).strip():
-            raise ValueError(
-                "service_name cannot be empty"
-            )
+        if not str(self.service_name).strip():
+            raise ValueError("service_name cannot be empty")
 
-        if (
-            self.environment
-            not in {
-                item.value
-                for item
-                in APIEnvironment
-            }
-        ):
-            raise ValueError(
-                "Unsupported API environment: "
-                f"{self.environment}"
-            )
+        if self.environment not in {item.value for item in APIEnvironment}:
+            raise ValueError(f"Unsupported API environment: {self.environment}")
 
         api_prefix = normalize_path_prefix(
             self.api_prefix,
             name="api_prefix",
         )
 
-        version = str(
-            self.api_version
-        ).strip()
+        version = str(self.api_version).strip()
 
         if not version:
-            raise ValueError(
-                "api_version cannot be empty"
-            )
+            raise ValueError("api_version cannot be empty")
 
         if "/" in version:
-            raise ValueError(
-                "api_version cannot contain /"
-            )
+            raise ValueError("api_version cannot contain /")
 
         self.server.validate()
         self.documentation.validate()
@@ -1569,63 +1101,32 @@ class APIConfig:
         self.features.validate()
         self.observability.validate()
 
-        if (
-            self.environment
-            == APIEnvironment.PRODUCTION.value
-        ):
+        if self.environment == APIEnvironment.PRODUCTION.value:
             if (
                 self.documentation.enabled
-                and self.documentation.
-                include_internal_routes
+                and self.documentation.include_internal_routes
             ):
                 raise ValueError(
-                    "Production documentation "
-                    "cannot expose internal routes"
+                    "Production documentation cannot expose internal routes"
                 )
 
-            if (
-                "*"
-                in self.transport_security.
-                trusted_hosts
-            ):
-                raise ValueError(
-                    "Production trusted hosts "
-                    "cannot contain '*'"
-                )
+            if "*" in self.transport_security.trusted_hosts:
+                raise ValueError("Production trusted hosts cannot contain '*'")
 
-            if (
-                self.cors.enabled
-                and "*"
-                in self.cors.allowed_origins
-            ):
-                raise ValueError(
-                    "Production CORS origins "
-                    "must be explicit"
-                )
+            if self.cors.enabled and "*" in self.cors.allowed_origins:
+                raise ValueError("Production CORS origins must be explicit")
 
-            if (
-                self.observability.
-                include_request_body_in_logs
-            ):
-                raise ValueError(
-                    "Production request-body "
-                    "logging must remain disabled"
-                )
+            if self.observability.include_request_body_in_logs:
+                raise ValueError("Production request-body logging must remain disabled")
 
-            if (
-                self.observability.
-                include_response_body_in_logs
-            ):
+            if self.observability.include_response_body_in_logs:
                 raise ValueError(
-                    "Production response-body "
-                    "logging must remain disabled"
+                    "Production response-body logging must remain disabled"
                 )
 
         if (
-            self.features.
-            remediation_live_execution_enabled
-            and self.environment
-            != APIEnvironment.PRODUCTION.value
+            self.features.remediation_live_execution_enabled
+            and self.environment != APIEnvironment.PRODUCTION.value
         ):
             # Live mutation outside production may
             # still be useful in dedicated test
@@ -1633,8 +1134,7 @@ class APIConfig:
             # explicit code/config change rather
             # than an accidental environment flag.
             raise ValueError(
-                "Live remediation execution "
-                "requires production environment"
+                "Live remediation execution requires production environment"
             )
 
         _ = api_prefix
@@ -1656,19 +1156,13 @@ class APIConfig:
     def production(
         self,
     ) -> bool:
-        return (
-            self.environment
-            == APIEnvironment.PRODUCTION.value
-        )
+        return self.environment == APIEnvironment.PRODUCTION.value
 
     @property
     def development(
         self,
     ) -> bool:
-        return (
-            self.environment
-            == APIEnvironment.DEVELOPMENT.value
-        )
+        return self.environment == APIEnvironment.DEVELOPMENT.value
 
     def to_dict(
         self,
@@ -1676,69 +1170,22 @@ class APIConfig:
         self.validate()
 
         return {
-            "config_version": (
-                API_CONFIG_VERSION
-            ),
-
+            "config_version": (API_CONFIG_VERSION),
             "enabled": self.enabled,
-
-            "service_name": (
-                self.service_name
-            ),
-
-            "environment": (
-                self.environment
-            ),
-
-            "api_prefix": (
-                self.api_prefix
-            ),
-
-            "api_version": (
-                self.api_version
-            ),
-
-            "versioned_prefix": (
-                self.versioned_prefix
-            ),
-
-            "server": (
-                self.server.to_dict()
-            ),
-
-            "documentation": (
-                self.documentation.
-                to_dict()
-            ),
-
-            "cors": (
-                self.cors.to_dict()
-            ),
-
-            "transport_security": (
-                self.transport_security.
-                to_dict()
-            ),
-
-            "limits": (
-                self.limits.to_dict()
-            ),
-
-            "timeouts": (
-                self.timeouts.to_dict()
-            ),
-
-            "features": (
-                self.features.to_dict()
-            ),
-
-            "observability": (
-                self.observability.to_dict()
-            ),
-
-            "attributes": dict(
-                self.attributes
-            ),
+            "service_name": (self.service_name),
+            "environment": (self.environment),
+            "api_prefix": (self.api_prefix),
+            "api_version": (self.api_version),
+            "versioned_prefix": (self.versioned_prefix),
+            "server": (self.server.to_dict()),
+            "documentation": (self.documentation.to_dict()),
+            "cors": (self.cors.to_dict()),
+            "transport_security": (self.transport_security.to_dict()),
+            "limits": (self.limits.to_dict()),
+            "timeouts": (self.timeouts.to_dict()),
+            "features": (self.features.to_dict()),
+            "observability": (self.observability.to_dict()),
+            "attributes": dict(self.attributes),
         }
 
 
@@ -1746,15 +1193,14 @@ class APIConfig:
 # Mapping loader
 # ------------------------------------------------------------------
 
+
 def from_mapping(
     mapping: Mapping[
         str,
         Any,
     ],
     *,
-    base: Optional[
-        APIConfig
-    ] = None,
+    base: Optional[APIConfig] = None,
 ) -> APIConfig:
     """
     Build APIConfig from a nested mapping.
@@ -1763,14 +1209,9 @@ def from_mapping(
     configuration sections.
     """
 
-    source = dict(
-        mapping
-    )
+    source = dict(mapping)
 
-    config = (
-        base
-        or APIConfig()
-    )
+    config = base or APIConfig()
 
     known = {
         "enabled",
@@ -1789,30 +1230,17 @@ def from_mapping(
         "attributes",
     }
 
-    unknown = (
-        set(
-            source
-        )
-        - known
-    )
+    unknown = set(source) - known
 
     if unknown:
         raise ValueError(
-            "Unknown API configuration "
-            "keys: "
-            + ", ".join(
-                sorted(
-                    unknown
-                )
-            )
+            "Unknown API configuration keys: " + ", ".join(sorted(unknown))
         )
 
     def section(
         name: str,
     ) -> Dict[str, Any]:
-        value = source.get(
-            name
-        )
+        value = source.get(name)
 
         if value is None:
             return {}
@@ -1821,118 +1249,80 @@ def from_mapping(
             value,
             Mapping,
         ):
-            raise ValueError(
-                f"{name} must be a mapping"
-            )
+            raise ValueError(f"{name} must be a mapping")
 
-        return dict(
-            value
-        )
+        return dict(value)
 
     server = replace(
         config.server,
-        **section(
-            "server"
-        ),
+        **section("server"),
     )
 
     documentation = replace(
         config.documentation,
-        **section(
-            "documentation"
-        ),
+        **section("documentation"),
     )
 
     cors = replace(
         config.cors,
-        **section(
-            "cors"
-        ),
+        **section("cors"),
     )
 
     transport = replace(
         config.transport_security,
-        **section(
-            "transport_security"
-        ),
+        **section("transport_security"),
     )
 
     limits = replace(
         config.limits,
-        **section(
-            "limits"
-        ),
+        **section("limits"),
     )
 
     timeouts = replace(
         config.timeouts,
-        **section(
-            "timeouts"
-        ),
+        **section("timeouts"),
     )
 
     features = replace(
         config.features,
-        **section(
-            "features"
-        ),
+        **section("features"),
     )
 
     observability = replace(
         config.observability,
-        **section(
-            "observability"
-        ),
+        **section("observability"),
     )
 
     result = replace(
         config,
-
         enabled=source.get(
             "enabled",
             config.enabled,
         ),
-
         service_name=source.get(
             "service_name",
             config.service_name,
         ),
-
         environment=source.get(
             "environment",
             config.environment,
         ),
-
         api_prefix=source.get(
             "api_prefix",
             config.api_prefix,
         ),
-
         api_version=source.get(
             "api_version",
             config.api_version,
         ),
-
         server=server,
-
         documentation=documentation,
-
         cors=cors,
-
-        transport_security=(
-            transport
-        ),
-
+        transport_security=(transport),
         limits=limits,
-
         timeouts=timeouts,
-
         features=features,
-
-        observability=(
-            observability
-        ),
-
+        observability=(observability),
         attributes=dict(
             source.get(
                 "attributes",
@@ -1950,6 +1340,7 @@ def from_mapping(
 # Environment loader
 # ------------------------------------------------------------------
 
+
 def from_environment(
     *,
     prefix: str = DEFAULT_ENV_PREFIX,
@@ -1959,9 +1350,7 @@ def from_environment(
             str,
         ]
     ] = None,
-    base: Optional[
-        APIConfig
-    ] = None,
+    base: Optional[APIConfig] = None,
 ) -> APIConfig:
     """
     Load production-facing API settings from
@@ -1971,20 +1360,9 @@ def from_environment(
     environment configuration are loaded here.
     """
 
-    env = (
-        dict(
-            os.environ
-        )
-        if environment is None
-        else dict(
-            environment
-        )
-    )
+    env = dict(os.environ) if environment is None else dict(environment)
 
-    config = (
-        base
-        or APIConfig()
-    )
+    config = base or APIConfig()
 
     top: Dict[
         str,
@@ -1998,9 +1376,7 @@ def from_environment(
     )
 
     if raw is not None:
-        top[
-            "enabled"
-        ] = parse_bool(
+        top["enabled"] = parse_bool(
             raw,
             name="ENABLED",
         )
@@ -2030,9 +1406,7 @@ def from_environment(
         )
 
         if raw is not None:
-            top[
-                key
-            ] = raw
+            top[key] = raw
 
     # ------------------------------------------------------
     # Server
@@ -2060,9 +1434,7 @@ def from_environment(
         )
 
         if raw is not None:
-            server[
-                key
-            ] = raw
+            server[key] = raw
 
     for env_name, key, minimum, maximum in (
         (
@@ -2103,9 +1475,7 @@ def from_environment(
         )
 
         if raw is not None:
-            server[
-                key
-            ] = parse_int(
+            server[key] = parse_int(
                 raw,
                 name=env_name,
                 minimum=minimum,
@@ -2119,9 +1489,7 @@ def from_environment(
     )
 
     if raw is not None:
-        server[
-            "proxy_headers"
-        ] = parse_bool(
+        server["proxy_headers"] = parse_bool(
             raw,
             name="PROXY_HEADERS",
         )
@@ -2133,11 +1501,7 @@ def from_environment(
     )
 
     if raw is not None:
-        server[
-            "forwarded_allow_ips"
-        ] = parse_csv(
-            raw
-        )
+        server["forwarded_allow_ips"] = parse_csv(raw)
 
     # ------------------------------------------------------
     # Documentation
@@ -2155,9 +1519,7 @@ def from_environment(
     )
 
     if raw is not None:
-        documentation[
-            "enabled"
-        ] = parse_bool(
+        documentation["enabled"] = parse_bool(
             raw,
             name="DOCS_ENABLED",
         )
@@ -2178,9 +1540,7 @@ def from_environment(
     )
 
     if raw is not None:
-        cors[
-            "enabled"
-        ] = parse_bool(
+        cors["enabled"] = parse_bool(
             raw,
             name="CORS_ENABLED",
         )
@@ -2192,16 +1552,8 @@ def from_environment(
     )
 
     if raw is not None:
-        cors[
-            "allowed_origins"
-        ] = tuple(
-            validate_origin(
-                origin
-            )
-            for origin
-            in parse_csv(
-                raw
-            )
+        cors["allowed_origins"] = tuple(
+            validate_origin(origin) for origin in parse_csv(raw)
         )
 
     raw = _environment_value(
@@ -2211,13 +1563,9 @@ def from_environment(
     )
 
     if raw is not None:
-        cors[
-            "allow_credentials"
-        ] = parse_bool(
+        cors["allow_credentials"] = parse_bool(
             raw,
-            name=(
-                "CORS_ALLOW_CREDENTIALS"
-            ),
+            name=("CORS_ALLOW_CREDENTIALS"),
         )
 
     # ------------------------------------------------------
@@ -2236,16 +1584,8 @@ def from_environment(
     )
 
     if raw is not None:
-        transport[
-            "trusted_hosts"
-        ] = tuple(
-            validate_host_pattern(
-                host
-            )
-            for host
-            in parse_csv(
-                raw
-            )
+        transport["trusted_hosts"] = tuple(
+            validate_host_pattern(host) for host in parse_csv(raw)
         )
 
     for env_name, key in (
@@ -2265,9 +1605,7 @@ def from_environment(
         )
 
         if raw is not None:
-            transport[
-                key
-            ] = parse_bool(
+            transport[key] = parse_bool(
                 raw,
                 name=env_name,
             )
@@ -2296,17 +1634,11 @@ def from_environment(
         ),
         (
             "MAX_CONCURRENT_INFERENCE_REQUESTS",
-            (
-                "maximum_concurrent_"
-                "inference_requests"
-            ),
+            ("maximum_concurrent_inference_requests"),
         ),
         (
             "MAX_CONCURRENT_MODEL_OPERATIONS",
-            (
-                "maximum_concurrent_"
-                "model_operations"
-            ),
+            ("maximum_concurrent_model_operations"),
         ),
     ):
         raw = _environment_value(
@@ -2316,9 +1648,7 @@ def from_environment(
         )
 
         if raw is not None:
-            limits[
-                key
-            ] = parse_int(
+            limits[key] = parse_int(
                 raw,
                 name=env_name,
                 minimum=1,
@@ -2358,9 +1688,7 @@ def from_environment(
         )
 
         if raw is not None:
-            timeouts[
-                key
-            ] = parse_float(
+            timeouts[key] = parse_float(
                 raw,
                 name=env_name,
                 minimum=0.001,
@@ -2376,47 +1704,18 @@ def from_environment(
     ] = {}
 
     feature_environment_names = {
-        "ENABLE_INFERENCE": (
-            "inference_enabled"
-        ),
-
-        "ENABLE_ACCELERATOR_OPTIMIZATION": (
-            "accelerator_optimization_enabled"
-        ),
-
-        "ENABLE_MODEL_LOAD_OPERATIONS": (
-            "model_load_operations_enabled"
-        ),
-
-        "ENABLE_INCIDENT_CREATE": (
-            "incident_create_enabled"
-        ),
-
-        "ENABLE_DECISION_EVALUATION": (
-            "decision_evaluation_enabled"
-        ),
-
-        "ENABLE_REMEDIATION_PLAN_CREATION": (
-            "remediation_plan_creation_enabled"
-        ),
-
-        "ENABLE_REMEDIATION_APPROVAL": (
-            "remediation_approval_enabled"
-        ),
-
-        "ENABLE_REMEDIATION_EXECUTION": (
-            "remediation_execution_enabled"
-        ),
-
-        "ENABLE_LIVE_REMEDIATION": (
-            "remediation_live_execution_enabled"
-        ),
+        "ENABLE_INFERENCE": ("inference_enabled"),
+        "ENABLE_ACCELERATOR_OPTIMIZATION": ("accelerator_optimization_enabled"),
+        "ENABLE_MODEL_LOAD_OPERATIONS": ("model_load_operations_enabled"),
+        "ENABLE_INCIDENT_CREATE": ("incident_create_enabled"),
+        "ENABLE_DECISION_EVALUATION": ("decision_evaluation_enabled"),
+        "ENABLE_REMEDIATION_PLAN_CREATION": ("remediation_plan_creation_enabled"),
+        "ENABLE_REMEDIATION_APPROVAL": ("remediation_approval_enabled"),
+        "ENABLE_REMEDIATION_EXECUTION": ("remediation_execution_enabled"),
+        "ENABLE_LIVE_REMEDIATION": ("remediation_live_execution_enabled"),
     }
 
-    for env_name, key in (
-        feature_environment_names.
-        items()
-    ):
+    for env_name, key in feature_environment_names.items():
         raw = _environment_value(
             env,
             prefix=prefix,
@@ -2424,9 +1723,7 @@ def from_environment(
         )
 
         if raw is not None:
-            features[
-                key
-            ] = parse_bool(
+            features[key] = parse_bool(
                 raw,
                 name=env_name,
             )
@@ -2447,9 +1744,7 @@ def from_environment(
     )
 
     if raw is not None:
-        observability[
-            "log_level"
-        ] = raw.lower()
+        observability["log_level"] = raw.lower()
 
     for env_name, key in (
         (
@@ -2472,9 +1767,7 @@ def from_environment(
         )
 
         if raw is not None:
-            observability[
-                key
-            ] = parse_bool(
+            observability[key] = parse_bool(
                 raw,
                 name=env_name,
             )
@@ -2521,9 +1814,7 @@ def from_environment(
         ),
     ):
         if value:
-            mapping[
-                key
-            ] = value
+            mapping[key] = value
 
     return from_mapping(
         mapping,
@@ -2535,14 +1826,11 @@ def from_environment(
 # Production helper
 # ------------------------------------------------------------------
 
+
 def production_config(
     *,
-    trusted_hosts: Iterable[
-        str
-    ],
-    cors_origins: Iterable[
-        str
-    ] = (),
+    trusted_hosts: Iterable[str],
+    cors_origins: Iterable[str] = (),
     enable_docs: bool = False,
 ) -> APIConfig:
     """
@@ -2551,48 +1839,28 @@ def production_config(
     Live remediation remains disabled.
     """
 
-    hosts = tuple(
-        validate_host_pattern(
-            host
-        )
-        for host
-        in trusted_hosts
-    )
+    hosts = tuple(validate_host_pattern(host) for host in trusted_hosts)
 
-    origins = tuple(
-        validate_origin(
-            origin
-        )
-        for origin
-        in cors_origins
-    )
+    origins = tuple(validate_origin(origin) for origin in cors_origins)
 
     config = APIConfig(
-        environment=(
-            APIEnvironment.PRODUCTION.value
-        ),
-
+        environment=(APIEnvironment.PRODUCTION.value),
         server=APIServerConfig(
             host="0.0.0.0",
             port=DEFAULT_PORT,
             workers=1,
         ),
-
         documentation=(
             APIDocumentationConfig(
                 enabled=enable_docs,
                 include_internal_routes=False,
             )
         ),
-
         cors=APICORSConfig(
-            enabled=bool(
-                origins
-            ),
+            enabled=bool(origins),
             allowed_origins=origins,
             allow_credentials=False,
         ),
-
         transport_security=(
             APITransportSecurityConfig(
                 trusted_hosts=hosts,
@@ -2600,7 +1868,6 @@ def production_config(
                 hsts_enabled=False,
             )
         ),
-
         features=APIFeatureConfig(
             health_enabled=True,
             inference_enabled=True,
@@ -2618,12 +1885,9 @@ def production_config(
             remediation_execution_enabled=False,
             remediation_live_execution_enabled=False,
         ),
-
         observability=(
             APIObservabilityConfig(
-                log_level=(
-                    LogLevel.INFO.value
-                ),
+                log_level=(LogLevel.INFO.value),
                 access_log_enabled=True,
                 metrics_enabled=True,
                 include_request_body_in_logs=False,
@@ -2641,6 +1905,7 @@ def production_config(
 # Safe summary
 # ------------------------------------------------------------------
 
+
 def safe_config_summary(
     config: APIConfig,
 ) -> Dict[str, Any]:
@@ -2652,96 +1917,32 @@ def safe_config_summary(
     config.validate()
 
     return {
-        "config_version": (
-            API_CONFIG_VERSION
-        ),
-
+        "config_version": (API_CONFIG_VERSION),
         "enabled": config.enabled,
-
-        "service_name": (
-            config.service_name
-        ),
-
-        "environment": (
-            config.environment
-        ),
-
-        "versioned_prefix": (
-            config.versioned_prefix
-        ),
-
+        "service_name": (config.service_name),
+        "environment": (config.environment),
+        "versioned_prefix": (config.versioned_prefix),
         "server": {
             "host": config.server.host,
-
             "port": config.server.port,
-
-            "workers": (
-                config.server.workers
-            ),
-
-            "proxy_headers": (
-                config.server.
-                proxy_headers
-            ),
+            "workers": (config.server.workers),
+            "proxy_headers": (config.server.proxy_headers),
         },
-
-        "documentation": (
-            config.documentation.
-            to_dict()
-        ),
-
+        "documentation": (config.documentation.to_dict()),
         "cors": {
-            "enabled": (
-                config.cors.enabled
-            ),
-
-            "origin_count": len(
-                config.cors.
-                allowed_origins
-            ),
-
-            "allow_credentials": (
-                config.cors.
-                allow_credentials
-            ),
+            "enabled": (config.cors.enabled),
+            "origin_count": len(config.cors.allowed_origins),
+            "allow_credentials": (config.cors.allow_credentials),
         },
-
         "transport_security": {
-            "trusted_host_count": len(
-                config.
-                transport_security.
-                trusted_hosts
-            ),
-
-            "enforce_https": (
-                config.
-                transport_security.
-                enforce_https
-            ),
-
-            "hsts_enabled": (
-                config.
-                transport_security.
-                hsts_enabled
-            ),
+            "trusted_host_count": len(config.transport_security.trusted_hosts),
+            "enforce_https": (config.transport_security.enforce_https),
+            "hsts_enabled": (config.transport_security.hsts_enabled),
         },
-
-        "limits": (
-            config.limits.to_dict()
-        ),
-
-        "timeouts": (
-            config.timeouts.to_dict()
-        ),
-
-        "features": (
-            config.features.to_dict()
-        ),
-
-        "observability": (
-            config.observability.
-            to_dict()
-        ),
+        "limits": (config.limits.to_dict()),
+        "timeouts": (config.timeouts.to_dict()),
+        "features": (config.features.to_dict()),
+        "observability": (config.observability.to_dict()),
     }
 
 
@@ -2752,26 +1953,21 @@ def safe_config_summary(
 __all__ = [
     "API_CONFIG_VERSION",
     "DEFAULT_ENV_PREFIX",
-
     "DEFAULT_SERVICE_NAME",
     "DEFAULT_API_PREFIX",
     "DEFAULT_API_VERSION",
     "DEFAULT_HOST",
     "DEFAULT_PORT",
-
     "APIEnvironment",
     "LogLevel",
-
     "parse_bool",
     "parse_int",
     "parse_float",
     "parse_csv",
     "parse_json_mapping",
-
     "normalize_path_prefix",
     "validate_origin",
     "validate_host_pattern",
-
     "APIServerConfig",
     "APIDocumentationConfig",
     "APICORSConfig",
@@ -2780,13 +1976,9 @@ __all__ = [
     "APITimeoutConfig",
     "APIFeatureConfig",
     "APIObservabilityConfig",
-
     "APIConfig",
-
     "from_mapping",
     "from_environment",
-
     "production_config",
-
     "safe_config_summary",
 ]

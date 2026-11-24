@@ -12,14 +12,11 @@ from typing import (
 
 from src.core.constants import (
     APPLICATION_NAMESPACE,
-
     ID_PREFIX_ORCHESTRATOR_CONTEXT,
     ID_PREFIX_ORCHESTRATOR_RUN,
     ID_PREFIX_ORCHESTRATOR_SCHEDULE,
-
     ID_PREFIX_RUNTIME_CONTEXT,
     ID_PREFIX_RUNTIME_INSTANCE,
-
     ID_PREFIX_WORKER_JOB,
     ID_PREFIX_WORKER_LEASE,
 )
@@ -43,51 +40,37 @@ _TOKEN_RE = re.compile(
     r"[a-zA-Z0-9._-]*$"
 )
 
-_HEX_RE = re.compile(
-    r"^[0-9a-f]+$"
-)
+_HEX_RE = re.compile(r"^[0-9a-f]+$")
 
 
 # ---------------------------------------------------------------
 # Standard identifier kinds
 # ---------------------------------------------------------------
 
+
 class IdentifierKind(
     str,
     Enum,
 ):
-    RUNTIME_CONTEXT = (
-        ID_PREFIX_RUNTIME_CONTEXT
-    )
+    RUNTIME_CONTEXT = ID_PREFIX_RUNTIME_CONTEXT
 
-    RUNTIME_INSTANCE = (
-        ID_PREFIX_RUNTIME_INSTANCE
-    )
+    RUNTIME_INSTANCE = ID_PREFIX_RUNTIME_INSTANCE
 
-    ORCHESTRATOR_CONTEXT = (
-        ID_PREFIX_ORCHESTRATOR_CONTEXT
-    )
+    ORCHESTRATOR_CONTEXT = ID_PREFIX_ORCHESTRATOR_CONTEXT
 
-    ORCHESTRATOR_RUN = (
-        ID_PREFIX_ORCHESTRATOR_RUN
-    )
+    ORCHESTRATOR_RUN = ID_PREFIX_ORCHESTRATOR_RUN
 
-    ORCHESTRATOR_SCHEDULE = (
-        ID_PREFIX_ORCHESTRATOR_SCHEDULE
-    )
+    ORCHESTRATOR_SCHEDULE = ID_PREFIX_ORCHESTRATOR_SCHEDULE
 
-    WORKER_JOB = (
-        ID_PREFIX_WORKER_JOB
-    )
+    WORKER_JOB = ID_PREFIX_WORKER_JOB
 
-    WORKER_LEASE = (
-        ID_PREFIX_WORKER_LEASE
-    )
+    WORKER_LEASE = ID_PREFIX_WORKER_LEASE
 
 
 # ---------------------------------------------------------------
 # Canonical serialization for hashing
 # ---------------------------------------------------------------
+
 
 def canonical_json(
     value: Any,
@@ -117,15 +100,14 @@ def canonical_json(
         ValueError,
     ) as exc:
         raise IdentifierError(
-            "Value cannot be "
-            "canonicalized for "
-            "identifier hashing."
+            "Value cannot be canonicalized for identifier hashing."
         ) from exc
 
 
 # ---------------------------------------------------------------
 # Stable hash
 # ---------------------------------------------------------------
+
 
 def stable_hash(
     value: Any,
@@ -140,27 +122,17 @@ def stable_hash(
     provenance and deduplication keys.
     """
 
-    encoded = canonical_json(
-        value
-    ).encode(
-        "utf-8"
-    )
+    encoded = canonical_json(value).encode("utf-8")
 
     try:
-        digest = hashlib.new(
-            algorithm
-        )
+        digest = hashlib.new(algorithm)
 
     except ValueError as exc:
         raise IdentifierError(
-            "Unsupported identifier "
-            "hash algorithm: "
-            f"{algorithm}"
+            f"Unsupported identifier hash algorithm: {algorithm}"
         ) from exc
 
-    digest.update(
-        encoded
-    )
+    digest.update(encoded)
 
     return digest.hexdigest()
 
@@ -169,25 +141,17 @@ def stable_hash(
 # Prefix validation
 # ---------------------------------------------------------------
 
+
 def validate_prefix(
     prefix: str,
 ) -> str:
-    normalized = str(
-        prefix
-    ).strip().lower()
+    normalized = str(prefix).strip().lower()
 
     if not normalized:
-        raise IdentifierError(
-            "Identifier prefix is required."
-        )
+        raise IdentifierError("Identifier prefix is required.")
 
-    if not _PREFIX_RE.fullmatch(
-        normalized
-    ):
-        raise IdentifierError(
-            "Invalid identifier prefix: "
-            f"{prefix}"
-        )
+    if not _PREFIX_RE.fullmatch(normalized):
+        raise IdentifierError(f"Invalid identifier prefix: {prefix}")
 
     return normalized
 
@@ -196,25 +160,17 @@ def validate_prefix(
 # Token validation
 # ---------------------------------------------------------------
 
+
 def validate_token(
     token: str,
 ) -> str:
-    normalized = str(
-        token
-    ).strip()
+    normalized = str(token).strip()
 
     if not normalized:
-        raise IdentifierError(
-            "Identifier token is required."
-        )
+        raise IdentifierError("Identifier token is required.")
 
-    if not _TOKEN_RE.fullmatch(
-        normalized
-    ):
-        raise IdentifierError(
-            "Identifier token contains "
-            "unsupported characters."
-        )
+    if not _TOKEN_RE.fullmatch(normalized):
+        raise IdentifierError("Identifier token contains unsupported characters.")
 
     return normalized
 
@@ -222,6 +178,7 @@ def validate_token(
 # ---------------------------------------------------------------
 # Prefix + token
 # ---------------------------------------------------------------
+
 
 def prefixed_id(
     prefix: str,
@@ -233,24 +190,20 @@ def prefixed_id(
         prefix:token
     """
 
-    return (
-        f"{validate_prefix(prefix)}:"
-        f"{validate_token(token)}"
-    )
+    return f"{validate_prefix(prefix)}:{validate_token(token)}"
 
 
 # ---------------------------------------------------------------
 # Deterministic identifier
 # ---------------------------------------------------------------
 
+
 def deterministic_id(
     prefix: str,
     value: Any,
     *,
     algorithm: str = "sha256",
-    digest_length: Optional[
-        int
-    ] = None,
+    digest_length: Optional[int] = None,
 ) -> str:
     """
     Create a deterministic ID from content.
@@ -270,24 +223,12 @@ def deterministic_id(
 
     if digest_length is not None:
         if digest_length < 8:
-            raise IdentifierError(
-                "digest_length must "
-                "be >= 8 when truncating "
-                "a hash."
-            )
+            raise IdentifierError("digest_length must be >= 8 when truncating a hash.")
 
-        if (
-            digest_length
-            > len(digest)
-        ):
-            raise IdentifierError(
-                "digest_length exceeds "
-                "the hash digest length."
-            )
+        if digest_length > len(digest):
+            raise IdentifierError("digest_length exceeds the hash digest length.")
 
-        digest = digest[
-            :digest_length
-        ]
+        digest = digest[:digest_length]
 
     return prefixed_id(
         prefix,
@@ -298,6 +239,7 @@ def deterministic_id(
 # ---------------------------------------------------------------
 # Random identifier
 # ---------------------------------------------------------------
+
 
 def random_id(
     prefix: str,
@@ -312,21 +254,18 @@ def random_id(
     """
 
     if entropy_bytes < 8:
-        raise IdentifierError(
-            "entropy_bytes must be >= 8."
-        )
+        raise IdentifierError("entropy_bytes must be >= 8.")
 
     return prefixed_id(
         prefix,
-        secrets.token_hex(
-            entropy_bytes
-        ),
+        secrets.token_hex(entropy_bytes),
     )
 
 
 # ---------------------------------------------------------------
 # Parse identifier
 # ---------------------------------------------------------------
+
 
 def parse_identifier(
     identifier: str,
@@ -346,15 +285,10 @@ def parse_identifier(
         ("worker:job", "abc123")
     """
 
-    text = str(
-        identifier
-    ).strip()
+    text = str(identifier).strip()
 
     if ":" not in text:
-        raise IdentifierError(
-            "Identifier must contain "
-            "a namespace prefix and token."
-        )
+        raise IdentifierError("Identifier must contain a namespace prefix and token.")
 
     prefix, token = text.rsplit(
         ":",
@@ -362,12 +296,8 @@ def parse_identifier(
     )
 
     return (
-        validate_prefix(
-            prefix
-        ),
-        validate_token(
-            token
-        ),
+        validate_prefix(prefix),
+        validate_token(token),
     )
 
 
@@ -375,12 +305,11 @@ def parse_identifier(
 # Validate complete identifier
 # ---------------------------------------------------------------
 
+
 def validate_identifier(
     identifier: str,
     *,
-    expected_prefix: Optional[
-        str
-    ] = None,
+    expected_prefix: Optional[str] = None,
     require_hex_token: bool = False,
 ) -> str:
     """
@@ -388,52 +317,30 @@ def validate_identifier(
     enforce its namespace.
     """
 
-    prefix, token = (
-        parse_identifier(
-            identifier
-        )
-    )
+    prefix, token = parse_identifier(identifier)
 
-    if (
-        expected_prefix
-        is not None
-        and prefix
-        != validate_prefix(
-            expected_prefix
-        )
-    ):
+    if expected_prefix is not None and prefix != validate_prefix(expected_prefix):
         raise IdentifierError(
             f"Identifier prefix {prefix} "
             "does not match expected "
             f"prefix {expected_prefix}."
         )
 
-    if (
-        require_hex_token
-        and not _HEX_RE.fullmatch(
-            token.lower()
-        )
-    ):
-        raise IdentifierError(
-            "Identifier token must be "
-            "hexadecimal."
-        )
+    if require_hex_token and not _HEX_RE.fullmatch(token.lower()):
+        raise IdentifierError("Identifier token must be hexadecimal.")
 
-    return (
-        f"{prefix}:{token}"
-    )
+    return f"{prefix}:{token}"
 
 
 # ---------------------------------------------------------------
 # Predicate
 # ---------------------------------------------------------------
 
+
 def is_identifier(
     identifier: Any,
     *,
-    expected_prefix: Optional[
-        str
-    ] = None,
+    expected_prefix: Optional[str] = None,
 ) -> bool:
     """
     Boolean validation helper.
@@ -442,9 +349,7 @@ def is_identifier(
     try:
         validate_identifier(
             str(identifier),
-            expected_prefix=(
-                expected_prefix
-            ),
+            expected_prefix=(expected_prefix),
         )
 
         return True
@@ -461,13 +366,12 @@ def is_identifier(
 # Identifier-kind helper
 # ---------------------------------------------------------------
 
+
 def id_for(
     kind: IdentifierKind | str,
     value: Any,
     *,
-    digest_length: Optional[
-        int
-    ] = None,
+    digest_length: Optional[int] = None,
 ) -> str:
     """
     Create a deterministic identifier using a
@@ -486,15 +390,14 @@ def id_for(
     return deterministic_id(
         prefix,
         value,
-        digest_length=(
-            digest_length
-        ),
+        digest_length=(digest_length),
     )
 
 
 # ---------------------------------------------------------------
 # Application namespace
 # ---------------------------------------------------------------
+
 
 def application_id(
     token: str,
@@ -517,21 +420,16 @@ def application_id(
 
 __all__ = [
     "IdentifierKind",
-
     "canonical_json",
     "stable_hash",
-
     "validate_prefix",
     "validate_token",
-
     "prefixed_id",
     "deterministic_id",
     "random_id",
-
     "parse_identifier",
     "validate_identifier",
     "is_identifier",
-
     "id_for",
     "application_id",
 ]

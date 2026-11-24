@@ -60,6 +60,7 @@ from src.ai.schema import (
 # Route result
 # ---------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class AIRoute:
     """
@@ -81,32 +82,19 @@ class AIRoute:
     def validate(
         self,
     ) -> None:
-        if not str(
-            self.request_id
-        ).strip():
-            raise AIModelStateError(
-                "AI route requires "
-                "request_id."
-            )
+        if not str(self.request_id).strip():
+            raise AIModelStateError("AI route requires request_id.")
 
         self.descriptor.finalize()
 
-        if not str(
-            self.reason
-        ).strip():
-            raise AIModelStateError(
-                "AI route requires a "
-                "selection reason."
-            )
+        if not str(self.reason).strip():
+            raise AIModelStateError("AI route requires a selection reason.")
 
     @property
     def model_id(
         self,
     ) -> str:
-        return (
-            self.descriptor.
-            identity.model_id
-        )
+        return self.descriptor.identity.model_id
 
     def to_dict(
         self,
@@ -114,26 +102,11 @@ class AIRoute:
         self.validate()
 
         return {
-            "request_id": (
-                self.request_id
-            ),
-
-            "model_id": (
-                self.model_id
-            ),
-
-            "reason": (
-                self.reason
-            ),
-
-            "fallback_used": (
-                self.fallback_used
-            ),
-
-            "descriptor": (
-                self.descriptor.
-                to_dict()
-            ),
+            "request_id": (self.request_id),
+            "model_id": (self.model_id),
+            "reason": (self.reason),
+            "fallback_used": (self.fallback_used),
+            "descriptor": (self.descriptor.to_dict()),
         }
 
 
@@ -141,9 +114,7 @@ class AIRoute:
 # Version ordering
 # ---------------------------------------------------------------
 
-_VERSION_TOKEN = re.compile(
-    r"\d+|[A-Za-z]+"
-)
+_VERSION_TOKEN = re.compile(r"\d+|[A-Za-z]+")
 
 
 def version_key(
@@ -172,9 +143,7 @@ def version_key(
     predictable ordering for OSHA model versions.
     """
 
-    text = str(
-        version
-    ).strip()
+    text = str(version).strip()
 
     if not text:
         return (
@@ -184,9 +153,7 @@ def version_key(
             ),
         )
 
-    tokens = _VERSION_TOKEN.findall(
-        text
-    )
+    tokens = _VERSION_TOKEN.findall(text)
 
     if not tokens:
         return (
@@ -208,9 +175,7 @@ def version_key(
             output.append(
                 (
                     0,
-                    int(
-                        token
-                    ),
+                    int(token),
                 )
             )
 
@@ -222,14 +187,13 @@ def version_key(
                 )
             )
 
-    return tuple(
-        output
-    )
+    return tuple(output)
 
 
 # ---------------------------------------------------------------
 # Routable states
 # ---------------------------------------------------------------
+
 
 def entry_routable(
     entry: AIModelRegistryEntry,
@@ -242,48 +206,30 @@ def entry_routable(
     selected.
     """
 
-    return (
-        entry.descriptor.state
-        in {
-            AIModelState.
-            REGISTERED.value,
-
-            AIModelState.
-            READY.value,
-
-            AIModelState.
-            UNLOADED.value,
-
-            AIModelState.
-            DEGRADED.value,
-        }
-    )
+    return entry.descriptor.state in {
+        AIModelState.REGISTERED.value,
+        AIModelState.READY.value,
+        AIModelState.UNLOADED.value,
+        AIModelState.DEGRADED.value,
+    }
 
 
 # ---------------------------------------------------------------
 # Select latest entry
 # ---------------------------------------------------------------
 
+
 def latest_entry(
-    entries: List[
-        AIModelRegistryEntry
-    ],
+    entries: List[AIModelRegistryEntry],
 ) -> AIModelRegistryEntry:
     if not entries:
-        raise AIModelRouteNotFoundError(
-            "No AI models are available "
-            "for routing."
-        )
+        raise AIModelRouteNotFoundError("No AI models are available for routing.")
 
     return max(
         entries,
         key=lambda item: (
-            version_key(
-                item.descriptor.
-                identity.version
-            ),
-            item.descriptor.
-            identity.model_id,
+            version_key(item.descriptor.identity.version),
+            item.descriptor.identity.model_id,
         ),
     )
 
@@ -291,6 +237,7 @@ def latest_entry(
 # ---------------------------------------------------------------
 # Router
 # ---------------------------------------------------------------
+
 
 class AIModelRouter:
     """
@@ -304,26 +251,14 @@ class AIModelRouter:
     def __init__(
         self,
         *,
-        config: Optional[
-            AIConfig
-        ] = None,
-        registry: Optional[
-            AIModelRegistry
-        ] = None,
+        config: Optional[AIConfig] = None,
+        registry: Optional[AIModelRegistry] = None,
     ) -> None:
-        self.config = (
-            config
-            or AIConfig()
-        )
+        self.config = config or AIConfig()
 
         self.config.validate()
 
-        self.registry = (
-            registry
-            or AIModelRegistry(
-                config=self.config
-            )
-        )
+        self.registry = registry or AIModelRegistry(config=self.config)
 
     # ---------------------------------------------------------
     # Family guard
@@ -335,39 +270,22 @@ class AIModelRouter:
     ) -> str:
         request.finalize()
 
-        family = str(
-            request.family
-        ).strip().lower()
+        family = str(request.family).strip().lower()
 
-        if (
-            family
-            not in {
-                item.value
-                for item
-                in AIModelFamily
-            }
-        ):
+        if family not in {item.value for item in AIModelFamily}:
             raise AIFamilyNotAllowedError(
-                "Inference request has an "
-                "unsupported model family.",
+                "Inference request has an unsupported model family.",
                 details={
-                    "request_id": (
-                        request.request_id
-                    ),
+                    "request_id": (request.request_id),
                     "family": family,
                 },
             )
 
-        if not self.config.family_allowed(
-            family
-        ):
+        if not self.config.family_allowed(family):
             raise AIFamilyNotAllowedError(
-                "Requested AI model family "
-                "is disabled.",
+                "Requested AI model family is disabled.",
                 details={
-                    "request_id": (
-                        request.request_id
-                    ),
+                    "request_id": (request.request_id),
                     "family": family,
                 },
             )
@@ -382,29 +300,16 @@ class AIModelRouter:
         self,
         *,
         family: str,
-        model_name: Optional[
-            str
-        ] = None,
-        version: Optional[
-            str
-        ] = None,
-    ) -> List[
-        AIModelRegistryEntry
-    ]:
+        model_name: Optional[str] = None,
+        version: Optional[str] = None,
+    ) -> List[AIModelRegistryEntry]:
         entries = self.registry.find(
             family=family,
             model_name=model_name,
             version=version,
         )
 
-        return [
-            entry
-            for entry
-            in entries
-            if entry_routable(
-                entry
-            )
-        ]
+        return [entry for entry in entries if entry_routable(entry)]
 
     # ---------------------------------------------------------
     # Configured fallback name
@@ -414,27 +319,11 @@ class AIModelRouter:
         self,
         family: str,
     ) -> Optional[str]:
-        if (
-            family
-            == AIModelFamily.
-            EVENT.value
-        ):
-            return (
-                self.config.
-                routing.
-                fallback_event_model
-            )
+        if family == AIModelFamily.EVENT.value:
+            return self.config.routing.fallback_event_model
 
-        if (
-            family
-            == AIModelFamily.
-            ANOMALY.value
-        ):
-            return (
-                self.config.
-                routing.
-                fallback_anomaly_model
-            )
+        if family == AIModelFamily.ANOMALY.value:
+            return self.config.routing.fallback_anomaly_model
 
         return None
 
@@ -458,55 +347,31 @@ class AIModelRouter:
 
         if not entries:
             raise AIVersionNotFoundError(
-                "Requested AI model "
-                "version is not "
-                "registered or routable.",
+                "Requested AI model version is not registered or routable.",
                 details={
-                    "request_id": (
-                        request.request_id
-                    ),
+                    "request_id": (request.request_id),
                     "family": family,
-                    "model_name": (
-                        model_name
-                    ),
+                    "model_name": (model_name),
                     "version": version,
                 },
             )
 
-        if len(
-            entries
-        ) != 1:
+        if len(entries) != 1:
             raise AIAmbiguousRouteError(
-                "Multiple registered AI "
-                "models match the exact "
-                "route.",
+                "Multiple registered AI models match the exact route.",
                 details={
-                    "request_id": (
-                        request.request_id
-                    ),
+                    "request_id": (request.request_id),
                     "family": family,
-                    "model_name": (
-                        model_name
-                    ),
+                    "model_name": (model_name),
                     "version": version,
-                    "match_count": len(
-                        entries
-                    ),
+                    "match_count": len(entries),
                 },
             )
 
         return AIRoute(
-            request_id=str(
-                request.request_id
-            ),
-            descriptor=(
-                entries[
-                    0
-                ].descriptor
-            ),
-            reason=(
-                "explicit_model_version"
-            ),
+            request_id=str(request.request_id),
+            descriptor=(entries[0].descriptor),
+            reason=("explicit_model_version"),
             fallback_used=False,
         )
 
@@ -529,27 +394,17 @@ class AIModelRouter:
 
         if not entries:
             raise AIModelRouteNotFoundError(
-                "Requested AI model has "
-                "no registered routable "
-                "version.",
+                "Requested AI model has no registered routable version.",
                 details={
-                    "request_id": (
-                        request.request_id
-                    ),
+                    "request_id": (request.request_id),
                     "family": family,
-                    "model_name": (
-                        model_name
-                    ),
+                    "model_name": (model_name),
                 },
             )
 
         if (
-            len(
-                entries
-            ) > 1
-            and not self.config.
-            routing.
-            use_latest_version_when_unspecified
+            len(entries) > 1
+            and not self.config.routing.use_latest_version_when_unspecified
         ):
             raise AIAmbiguousRouteError(
                 "Multiple model versions "
@@ -557,49 +412,26 @@ class AIModelRouter:
                 "version routing is "
                 "disabled.",
                 details={
-                    "request_id": (
-                        request.request_id
-                    ),
+                    "request_id": (request.request_id),
                     "family": family,
-                    "model_name": (
-                        model_name
-                    ),
+                    "model_name": (model_name),
                     "versions": [
-                        entry.descriptor.
-                        identity.version
-                        for entry
-                        in entries
+                        entry.descriptor.identity.version for entry in entries
                     ],
                 },
             )
 
-        entry = (
-            latest_entry(
-                entries
-            )
-            if len(
-                entries
-            ) > 1
-            else entries[
-                0
-            ]
-        )
+        entry = latest_entry(entries) if len(entries) > 1 else entries[0]
 
         return AIRoute(
-            request_id=str(
-                request.request_id
-            ),
-            descriptor=(
-                entry.descriptor
-            ),
+            request_id=str(request.request_id),
+            descriptor=(entry.descriptor),
             reason=(
                 "configured_fallback_latest"
                 if fallback_used
                 else "explicit_model_latest"
             ),
-            fallback_used=(
-                fallback_used
-            ),
+            fallback_used=(fallback_used),
         )
 
     # ---------------------------------------------------------
@@ -612,75 +444,43 @@ class AIModelRouter:
         request: InferenceRequest,
         family: str,
     ) -> AIRoute:
-        entries = self._entries(
-            family=family
-        )
+        entries = self._entries(family=family)
 
         if not entries:
             raise AIModelRouteNotFoundError(
-                "No routable AI model is "
-                "registered for the "
-                "requested family.",
+                "No routable AI model is registered for the requested family.",
                 details={
-                    "request_id": (
-                        request.request_id
-                    ),
+                    "request_id": (request.request_id),
                     "family": family,
                 },
             )
 
         model_names = sorted(
-            {
-                entry.descriptor.
-                identity.model_name
-                for entry
-                in entries
-            }
+            {entry.descriptor.identity.model_name for entry in entries}
         )
 
-        if len(
-            model_names
-        ) == 1:
+        if len(model_names) == 1:
             return self._named_latest(
                 request=request,
                 family=family,
-                model_name=(
-                    model_names[
-                        0
-                    ]
-                ),
+                model_name=(model_names[0]),
             )
 
-        if (
-            self.config.
-            routing.
-            allow_fallback_model
-        ):
-            fallback_name = (
-                self.
-                _fallback_model_name(
-                    family
-                )
-            )
+        if self.config.routing.allow_fallback_model:
+            fallback_name = self._fallback_model_name(family)
 
             if fallback_name:
                 return self._named_latest(
                     request=request,
                     family=family,
-                    model_name=(
-                        fallback_name
-                    ),
+                    model_name=(fallback_name),
                     fallback_used=True,
                 )
 
         raise AIAmbiguousRouteError(
-            "Multiple model names are "
-            "registered for the requested "
-            "family.",
+            "Multiple model names are registered for the requested family.",
             details={
-                "request_id": (
-                    request.request_id
-                ),
+                "request_id": (request.request_id),
                 "family": family,
                 "models": model_names,
             },
@@ -702,40 +502,23 @@ class AIModelRouter:
 
         request.finalize()
 
-        family = self._family(
-            request
-        )
+        family = self._family(request)
 
         model_name = (
-            str(
-                request.model_name
-            ).strip()
-            if request.model_name
-            is not None
-            else None
+            str(request.model_name).strip() if request.model_name is not None else None
         )
 
         version = (
-            str(
-                request.model_version
-            ).strip()
-            if request.model_version
-            is not None
+            str(request.model_version).strip()
+            if request.model_version is not None
             else None
         )
 
-        if (
-            version
-            and not model_name
-        ):
+        if version and not model_name:
             raise AIModelRouteNotFoundError(
-                "A model version cannot "
-                "be routed without a "
-                "model name.",
+                "A model version cannot be routed without a model name.",
                 details={
-                    "request_id": (
-                        request.request_id
-                    ),
+                    "request_id": (request.request_id),
                     "family": family,
                     "version": version,
                 },
@@ -745,10 +528,7 @@ class AIModelRouter:
         # Exact requested version
         # -----------------------------------------------------
 
-        if (
-            model_name
-            and version
-        ):
+        if model_name and version:
             route = self._exact(
                 request=request,
                 family=family,
@@ -779,39 +559,21 @@ class AIModelRouter:
         # Configured fallback model
         # -----------------------------------------------------
 
-        if (
-            self.config.
-            routing.
-            allow_fallback_model
-        ):
-            fallback_name = (
-                self.
-                _fallback_model_name(
-                    family
-                )
-            )
+        if self.config.routing.allow_fallback_model:
+            fallback_name = self._fallback_model_name(family)
 
             if fallback_name:
-                fallback_entries = (
-                    self._entries(
-                        family=family,
-                        model_name=(
-                            fallback_name
-                        ),
-                    )
+                fallback_entries = self._entries(
+                    family=family,
+                    model_name=(fallback_name),
                 )
 
                 if fallback_entries:
-                    route = (
-                        self.
-                        _named_latest(
-                            request=request,
-                            family=family,
-                            model_name=(
-                                fallback_name
-                            ),
-                            fallback_used=True,
-                        )
+                    route = self._named_latest(
+                        request=request,
+                        family=family,
+                        model_name=(fallback_name),
+                        fallback_used=True,
                     )
 
                     route.validate()
@@ -840,9 +602,7 @@ class AIModelRouter:
         request: InferenceRequest,
     ) -> bool:
         try:
-            self.route(
-                request
-            )
+            self.route(request)
 
         except (
             AIFamilyNotAllowedError,
@@ -861,78 +621,36 @@ class AIModelRouter:
     def available_routes(
         self,
         *,
-        family: Optional[
-            str
-        ] = None,
-    ) -> List[
-        Dict[str, Any]
-    ]:
-        entries = self.registry.find(
-            family=family
-        )
+        family: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        entries = self.registry.find(family=family)
 
-        routes: List[
-            Dict[str, Any]
-        ] = []
+        routes: List[Dict[str, Any]] = []
 
         for entry in entries:
-            if not entry_routable(
-                entry
-            ):
+            if not entry_routable(entry):
                 continue
 
-            identity = (
-                entry.descriptor.
-                identity
-            )
+            identity = entry.descriptor.identity
 
             routes.append(
                 {
-                    "model_id": (
-                        identity.model_id
-                    ),
-
-                    "family": (
-                        identity.family
-                    ),
-
-                    "model_name": (
-                        identity.model_name
-                    ),
-
-                    "version": (
-                        identity.version
-                    ),
-
-                    "state": (
-                        entry.descriptor.
-                        state
-                    ),
-
-                    "loaded": (
-                        entry.loaded
-                    ),
-
-                    "ready": (
-                        entry.ready
-                    ),
+                    "model_id": (identity.model_id),
+                    "family": (identity.family),
+                    "model_name": (identity.model_name),
+                    "version": (identity.version),
+                    "state": (entry.descriptor.state),
+                    "loaded": (entry.loaded),
+                    "ready": (entry.ready),
                 }
             )
 
         return sorted(
             routes,
             key=lambda item: (
-                item[
-                    "family"
-                ],
-                item[
-                    "model_name"
-                ],
-                version_key(
-                    item[
-                        "version"
-                    ]
-                ),
+                item["family"],
+                item["model_name"],
+                version_key(item["version"]),
             ),
         )
 
@@ -943,9 +661,7 @@ class AIModelRouter:
     def summary(
         self,
     ) -> Dict[str, Any]:
-        routes = (
-            self.available_routes()
-        )
+        routes = self.available_routes()
 
         by_family: Dict[
             str,
@@ -953,15 +669,9 @@ class AIModelRouter:
         ] = {}
 
         for route in routes:
-            family = str(
-                route[
-                    "family"
-                ]
-            )
+            family = str(route["family"])
 
-            by_family[
-                family
-            ] = (
+            by_family[family] = (
                 by_family.get(
                     family,
                     0,
@@ -970,45 +680,16 @@ class AIModelRouter:
             )
 
         return {
-            "route_count": len(
-                routes
-            ),
-
-            "by_family": (
-                by_family
-            ),
-
+            "route_count": len(routes),
+            "by_family": (by_family),
             "use_latest_version_when_unspecified": (
-                self.config.
-                routing.
-                use_latest_version_when_unspecified
+                self.config.routing.use_latest_version_when_unspecified
             ),
-
-            "allow_fallback_model": (
-                self.config.
-                routing.
-                allow_fallback_model
-            ),
-
-            "fallback_event_model": (
-                self.config.
-                routing.
-                fallback_event_model
-            ),
-
-            "fallback_anomaly_model": (
-                self.config.
-                routing.
-                fallback_anomaly_model
-            ),
-
-            "routing_loads_models": (
-                False
-            ),
-
-            "routing_executes_inference": (
-                False
-            ),
+            "allow_fallback_model": (self.config.routing.allow_fallback_model),
+            "fallback_event_model": (self.config.routing.fallback_event_model),
+            "fallback_anomaly_model": (self.config.routing.fallback_anomaly_model),
+            "routing_loads_models": (False),
+            "routing_executes_inference": (False),
         }
 
 
@@ -1018,10 +699,8 @@ class AIModelRouter:
 
 __all__ = [
     "AIRoute",
-
     "version_key",
     "entry_routable",
     "latest_entry",
-
     "AIModelRouter",
 ]

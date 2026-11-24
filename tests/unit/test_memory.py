@@ -35,15 +35,17 @@ from src.memory.schemas import (
 class MemoryTests(unittest.TestCase):
     def test_ingestion_pipeline_redacts_and_normalizes(self):
         pipeline = TelemetryIngestionPipeline()
-        record = pipeline.process({
-            "metric": "cpu_usage",
-            "value": 42.5,
-            "source_id": "node-1",
-            "source_type": "node",
-            "labels": {"region": "eu"},
-            "metadata": {"api_token": "secret-value"},
-            "timestamp": "2026-11-19T10:00:00Z",
-        })
+        record = pipeline.process(
+            {
+                "metric": "cpu_usage",
+                "value": 42.5,
+                "source_id": "node-1",
+                "source_type": "node",
+                "labels": {"region": "eu"},
+                "metadata": {"api_token": "secret-value"},
+                "timestamp": "2026-11-19T10:00:00Z",
+            }
+        )
         self.assertEqual(record.metric, "cpu_usage")
         self.assertEqual(record.value, 42.5)
         self.assertEqual(record.metadata["api_token"], "[REDACTED]")
@@ -72,12 +74,17 @@ class MemoryTests(unittest.TestCase):
 
     def test_event_correlation_and_recent_context(self):
         now = datetime.now(timezone.utc)
-        event_a = Event("warning", "node-a", "node", "A",
-                        timestamp=now - timedelta(minutes=5),
-                        correlation_id="incident-1")
-        event_b = Event("error", "node-b", "node", "B",
-                        timestamp=now,
-                        correlation_id="incident-1")
+        event_a = Event(
+            "warning",
+            "node-a",
+            "node",
+            "A",
+            timestamp=now - timedelta(minutes=5),
+            correlation_id="incident-1",
+        )
+        event_b = Event(
+            "error", "node-b", "node", "B", timestamp=now, correlation_id="incident-1"
+        )
         groups = correlate_events([event_a, event_b])
         self.assertEqual(groups["incident-1"], [event_a, event_b])
         self.assertEqual(recent_context([event_a, event_b], 1)[0], event_b)
@@ -98,8 +105,7 @@ class MemoryTests(unittest.TestCase):
             reward=0.8,
         )
         self.assertEqual(
-            incident_search([incident], query="pool", severity="high",
-                            status="open"),
+            incident_search([incident], query="pool", severity="high", status="open"),
             [incident],
         )
         self.assertEqual(
@@ -130,8 +136,9 @@ class MemoryTests(unittest.TestCase):
 
     def test_retention_compaction_and_deletion(self):
         now = datetime.now(timezone.utc)
-        old = Event("warning", "old", "node", "old",
-                    timestamp=now - timedelta(days=100))
+        old = Event(
+            "warning", "old", "node", "old", timestamp=now - timedelta(days=100)
+        )
         new = Event("info", "new", "node", "new", timestamp=now)
         kept = apply_retention(
             [old, new],

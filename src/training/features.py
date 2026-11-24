@@ -70,6 +70,7 @@ from src.training.schema import (
 # Feature types
 # ---------------------------------------------------------------
 
+
 class FeatureKind(
     str,
     Enum,
@@ -85,6 +86,7 @@ class FeatureKind(
 # Missing-value strategy
 # ---------------------------------------------------------------
 
+
 class MissingValueStrategy(
     str,
     Enum,
@@ -99,6 +101,7 @@ class MissingValueStrategy(
 # ---------------------------------------------------------------
 # Feature specification
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class FeatureSpec:
@@ -126,28 +129,15 @@ class FeatureSpec:
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def validate(
         self,
     ) -> None:
-        if not str(
-            self.name
-        ).strip():
-            raise FeatureValidationError(
-                "Feature name cannot be empty."
-            )
+        if not str(self.name).strip():
+            raise FeatureValidationError("Feature name cannot be empty.")
 
-        if (
-            self.kind
-            not in {
-                item.value
-                for item
-                in FeatureKind
-            }
-        ):
+        if self.kind not in {item.value for item in FeatureKind}:
             raise FeatureValidationError(
                 "Unknown feature kind.",
                 details={
@@ -156,11 +146,7 @@ class FeatureSpec:
                 },
             )
 
-        if not math.isfinite(
-            float(
-                self.mean
-            )
-        ):
+        if not math.isfinite(float(self.mean)):
             raise FeatureValidationError(
                 "Feature mean must be finite.",
                 details={
@@ -168,11 +154,7 @@ class FeatureSpec:
                 },
             )
 
-        if not math.isfinite(
-            float(
-                self.scale
-            )
-        ):
+        if not math.isfinite(float(self.scale)):
             raise FeatureValidationError(
                 "Feature scale must be finite.",
                 details={
@@ -180,9 +162,7 @@ class FeatureSpec:
                 },
             )
 
-        if float(
-            self.scale
-        ) < 0:
+        if float(self.scale) < 0:
             raise FeatureValidationError(
                 "Feature scale must be >= 0.",
                 details={
@@ -190,14 +170,9 @@ class FeatureSpec:
                 },
             )
 
-        if not math.isfinite(
-            float(
-                self.missing_value
-            )
-        ):
+        if not math.isfinite(float(self.missing_value)):
             raise FeatureValidationError(
-                "Feature missing value must "
-                "be finite.",
+                "Feature missing value must be finite.",
                 details={
                     "feature": self.name,
                 },
@@ -219,29 +194,18 @@ class FeatureSpec:
         return {
             "name": self.name,
             "kind": self.kind,
-            "mean": float(
-                self.mean
-            ),
-            "scale": float(
-                self.scale
-            ),
-            "missing_value": float(
-                self.missing_value
-            ),
-            "category_buckets": (
-                self.category_buckets
-            ),
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
+            "mean": float(self.mean),
+            "scale": float(self.scale),
+            "missing_value": float(self.missing_value),
+            "category_buckets": (self.category_buckets),
+            "attributes": (to_json_safe(self.attributes)),
         }
 
 
 # ---------------------------------------------------------------
 # Feature schema
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class FeatureSchema:
@@ -261,28 +225,17 @@ class FeatureSchema:
 
     version: str = "1"
 
-    schema_id: Optional[
-        str
-    ] = None
+    schema_id: Optional[str] = None
 
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def validate(
         self,
     ) -> None:
-        if (
-            self.task
-            not in {
-                item.value
-                for item
-                in TrainingTask
-            }
-        ):
+        if self.task not in {item.value for item in TrainingTask}:
             raise FeatureValidationError(
                 "Unknown feature-schema task.",
                 details={
@@ -290,18 +243,11 @@ class FeatureSchema:
                 },
             )
 
-        if not str(
-            self.version
-        ).strip():
-            raise FeatureValidationError(
-                "Feature schema version "
-                "cannot be empty."
-            )
+        if not str(self.version).strip():
+            raise FeatureValidationError("Feature schema version cannot be empty.")
 
         if not self.features:
-            raise FeatureValidationError(
-                "Feature schema cannot be empty."
-            )
+            raise FeatureValidationError("Feature schema cannot be empty.")
 
         names = set()
 
@@ -310,36 +256,25 @@ class FeatureSchema:
 
             if feature.name in names:
                 raise FeatureValidationError(
-                    "Feature schema contains "
-                    "a duplicate feature.",
+                    "Feature schema contains a duplicate feature.",
                     details={
-                        "feature": (
-                            feature.name
-                        ),
+                        "feature": (feature.name),
                     },
                 )
 
-            names.add(
-                feature.name
-            )
+            names.add(feature.name)
 
     @property
     def feature_names(
         self,
     ) -> List[str]:
-        return [
-            feature.name
-            for feature
-            in self.features
-        ]
+        return [feature.name for feature in self.features]
 
     @property
     def dimension(
         self,
     ) -> int:
-        return len(
-            self.features
-        )
+        return len(self.features)
 
     @property
     def effective_schema_id(
@@ -352,11 +287,7 @@ class FeatureSchema:
             {
                 "task": self.task,
                 "version": self.version,
-                "features": [
-                    feature.to_dict()
-                    for feature
-                    in self.features
-                ],
+                "features": [feature.to_dict() for feature in self.features],
             },
             ensure_ascii=False,
             sort_keys=True,
@@ -364,16 +295,9 @@ class FeatureSchema:
                 ",",
                 ":",
             ),
-        ).encode(
-            "utf-8"
-        )
+        ).encode("utf-8")
 
-        return (
-            "feature-schema-"
-            + hashlib.sha256(
-                material
-            ).hexdigest()
-        )
+        return "feature-schema-" + hashlib.sha256(material).hexdigest()
 
     def to_dict(
         self,
@@ -381,33 +305,20 @@ class FeatureSchema:
         self.validate()
 
         return {
-            "schema_id": (
-                self.effective_schema_id
-            ),
+            "schema_id": (self.effective_schema_id),
             "version": self.version,
             "task": self.task,
-            "dimension": (
-                self.dimension
-            ),
-            "feature_names": (
-                self.feature_names
-            ),
-            "features": [
-                feature.to_dict()
-                for feature
-                in self.features
-            ],
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
+            "dimension": (self.dimension),
+            "feature_names": (self.feature_names),
+            "features": [feature.to_dict() for feature in self.features],
+            "attributes": (to_json_safe(self.attributes)),
         }
 
 
 # ---------------------------------------------------------------
 # Encoded training example
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class EncodedTrainingExample:
@@ -424,13 +335,9 @@ class EncodedTrainingExample:
 
     feature_schema_id: str
 
-    group_id: Optional[
-        str
-    ] = None
+    group_id: Optional[str] = None
 
-    source_id: Optional[
-        str
-    ] = None
+    source_id: Optional[str] = None
 
     reference_ids: Tuple[
         str,
@@ -440,46 +347,26 @@ class EncodedTrainingExample:
     attributes: Dict[
         str,
         Any,
-    ] = field(
-        default_factory=dict
-    )
+    ] = field(default_factory=dict)
 
     def validate(
         self,
     ) -> None:
         if not self.example_id:
-            raise FeatureValidationError(
-                "Encoded example requires "
-                "example_id."
-            )
+            raise FeatureValidationError("Encoded example requires example_id.")
 
         if not self.feature_schema_id:
-            raise FeatureValidationError(
-                "Encoded example requires "
-                "feature_schema_id."
-            )
+            raise FeatureValidationError("Encoded example requires feature_schema_id.")
 
         if not self.values:
-            raise FeatureValidationError(
-                "Encoded feature vector "
-                "cannot be empty."
-            )
+            raise FeatureValidationError("Encoded feature vector cannot be empty.")
 
-        for index, value in enumerate(
-            self.values
-        ):
-            if not math.isfinite(
-                float(
-                    value
-                )
-            ):
+        for index, value in enumerate(self.values):
+            if not math.isfinite(float(value)):
                 raise FeatureValidationError(
-                    "Encoded feature value "
-                    "must be finite.",
+                    "Encoded feature value must be finite.",
                     details={
-                        "example_id": (
-                            self.example_id
-                        ),
+                        "example_id": (self.example_id),
                         "index": index,
                     },
                 )
@@ -490,41 +377,22 @@ class EncodedTrainingExample:
         self.validate()
 
         return {
-            "example_id": (
-                self.example_id
-            ),
+            "example_id": (self.example_id),
             "task": self.task,
-            "values": [
-                float(
-                    value
-                )
-                for value
-                in self.values
-            ],
-            "label": (
-                to_json_safe(
-                    self.label
-                )
-            ),
-            "feature_schema_id": (
-                self.feature_schema_id
-            ),
+            "values": [float(value) for value in self.values],
+            "label": (to_json_safe(self.label)),
+            "feature_schema_id": (self.feature_schema_id),
             "group_id": self.group_id,
             "source_id": self.source_id,
-            "reference_ids": list(
-                self.reference_ids
-            ),
-            "attributes": (
-                to_json_safe(
-                    self.attributes
-                )
-            ),
+            "reference_ids": list(self.reference_ids),
+            "attributes": (to_json_safe(self.attributes)),
         }
 
 
 # ---------------------------------------------------------------
 # Feature build result
 # ---------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class FeatureBuildResult:
@@ -546,28 +414,14 @@ class FeatureBuildResult:
         include_examples: bool = False,
     ) -> Dict[str, Any]:
         result = {
-            "schema": (
-                self.schema.to_dict()
-            ),
-            "example_count": len(
-                self.examples
-            ),
-            "rejected_example_count": len(
-                self.rejected_example_ids
-            ),
-            "rejected_example_ids": list(
-                self.rejected_example_ids
-            ),
+            "schema": (self.schema.to_dict()),
+            "example_count": len(self.examples),
+            "rejected_example_count": len(self.rejected_example_ids),
+            "rejected_example_ids": list(self.rejected_example_ids),
         }
 
         if include_examples:
-            result[
-                "examples"
-            ] = [
-                example.to_dict()
-                for example
-                in self.examples
-            ]
+            result["examples"] = [example.to_dict() for example in self.examples]
 
         return result
 
@@ -577,9 +431,7 @@ class FeatureBuildResult:
 # ---------------------------------------------------------------
 
 FeatureExtractor = Callable[
-    [
-        TrainingExample
-    ],
+    [TrainingExample],
     Dict[
         str,
         Any,
@@ -590,6 +442,7 @@ FeatureExtractor = Callable[
 # ---------------------------------------------------------------
 # Stable categorical encoding
 # ---------------------------------------------------------------
+
 
 def categorical_hash(
     value: Any,
@@ -605,16 +458,11 @@ def categorical_hash(
     """
 
     if buckets < 2:
-        raise FeatureValidationError(
-            "Categorical bucket count "
-            "must be >= 2."
-        )
+        raise FeatureValidationError("Categorical bucket count must be >= 2.")
 
     try:
         serialized = json.dumps(
-            to_json_safe(
-                value
-            ),
+            to_json_safe(value),
             ensure_ascii=False,
             sort_keys=True,
             separators=(
@@ -625,47 +473,29 @@ def categorical_hash(
 
     except Exception as exc:
         raise FeatureExtractionError(
-            "Categorical feature could not "
-            "be serialized.",
+            "Categorical feature could not be serialized.",
             details={
-                "error_type": (
-                    type(exc).__name__
-                ),
+                "error_type": (type(exc).__name__),
             },
         ) from exc
 
-    digest = hashlib.sha256(
-        serialized.encode(
-            "utf-8"
-        )
-    ).digest()
+    digest = hashlib.sha256(serialized.encode("utf-8")).digest()
 
     integer_value = int.from_bytes(
-        digest[
-            :8
-        ],
+        digest[:8],
         byteorder="big",
         signed=False,
     )
 
-    bucket = (
-        integer_value
-        % buckets
-    )
+    bucket = integer_value % buckets
 
-    return (
-        float(
-            bucket
-        )
-        / float(
-            buckets - 1
-        )
-    )
+    return float(bucket) / float(buckets - 1)
 
 
 # ---------------------------------------------------------------
 # Flatten structured features
 # ---------------------------------------------------------------
+
 
 def flatten_features(
     value: Mapping[
@@ -691,28 +521,16 @@ def flatten_features(
 
     for key in sorted(
         value,
-        key=lambda item: str(
-            item
-        ),
+        key=lambda item: str(item),
     ):
-        name = str(
-            key
-        ).strip()
+        name = str(key).strip()
 
         if not name:
             continue
 
-        qualified = (
-            prefix
-            + separator
-            + name
-            if prefix
-            else name
-        )
+        qualified = prefix + separator + name if prefix else name
 
-        item = value[
-            key
-        ]
+        item = value[key]
 
         if isinstance(
             item,
@@ -727,9 +545,7 @@ def flatten_features(
             )
 
         else:
-            output[
-                qualified
-            ] = item
+            output[qualified] = item
 
     return output
 
@@ -738,41 +554,28 @@ def flatten_features(
 # Feature-kind inference
 # ---------------------------------------------------------------
 
+
 def infer_feature_kind(
-    values: Sequence[
-        Any
-    ],
+    values: Sequence[Any],
 ) -> str:
     """
     Infer one stable feature kind from observed
     non-missing values.
     """
 
-    present = [
-        value
-        for value
-        in values
-        if value is not None
-    ]
+    present = [value for value in values if value is not None]
 
     if not present:
-        return (
-            FeatureKind.
-            NUMERIC.value
-        )
+        return FeatureKind.NUMERIC.value
 
     if all(
         isinstance(
             value,
             bool,
         )
-        for value
-        in present
+        for value in present
     ):
-        return (
-            FeatureKind.
-            BOOLEAN.value
-        )
+        return FeatureKind.BOOLEAN.value
 
     if all(
         isinstance(
@@ -786,28 +589,20 @@ def infer_feature_kind(
             value,
             bool,
         )
-        for value
-        in present
+        for value in present
     ):
-        return (
-            FeatureKind.
-            NUMERIC.value
-        )
+        return FeatureKind.NUMERIC.value
 
-    return (
-        FeatureKind.
-        CATEGORICAL.value
-    )
+    return FeatureKind.CATEGORICAL.value
 
 
 # ---------------------------------------------------------------
 # Numeric statistics
 # ---------------------------------------------------------------
 
+
 def numeric_statistics(
-    values: Sequence[
-        Any
-    ],
+    values: Sequence[Any],
 ) -> Tuple[
     float,
     float,
@@ -821,11 +616,8 @@ def numeric_statistics(
     """
 
     numeric_values = [
-        float(
-            value
-        )
-        for value
-        in values
+        float(value)
+        for value in values
         if (
             value is not None
             and not isinstance(
@@ -839,11 +631,7 @@ def numeric_statistics(
                     float,
                 ),
             )
-            and math.isfinite(
-                float(
-                    value
-                )
-            )
+            and math.isfinite(float(value))
         )
     ]
 
@@ -853,33 +641,15 @@ def numeric_statistics(
             1.0,
         )
 
-    mean = sum(
-        numeric_values
-    ) / len(
-        numeric_values
-    )
+    mean = sum(numeric_values) / len(numeric_values)
 
-    variance = sum(
-        (
-            value - mean
-        )
-        ** 2
-        for value
-        in numeric_values
-    ) / len(
+    variance = sum((value - mean) ** 2 for value in numeric_values) / len(
         numeric_values
     )
 
-    scale = math.sqrt(
-        variance
-    )
+    scale = math.sqrt(variance)
 
-    if (
-        not math.isfinite(
-            scale
-        )
-        or scale == 0.0
-    ):
+    if not math.isfinite(scale) or scale == 0.0:
         scale = 1.0
 
     return (
@@ -892,34 +662,25 @@ def numeric_statistics(
 # Default extractor
 # ---------------------------------------------------------------
 
+
 def default_feature_extractor(
     example: TrainingExample,
 ) -> Dict[str, Any]:
     example.finalize()
 
-    flattened = flatten_features(
-        example.features
-    )
+    flattened = flatten_features(example.features)
 
     # Add bounded context fields that are often
     # useful across event/anomaly training.
     context = {
-        "context.provider": (
-            example.provider
-        ),
-        "context.environment_id": (
-            example.environment_id
-        ),
-        "context.resource_type": (
-            example.resource_type
-        ),
+        "context.provider": (example.provider),
+        "context.environment_id": (example.environment_id),
+        "context.resource_type": (example.resource_type),
     }
 
     for key, value in context.items():
         if value is not None:
-            flattened[
-                key
-            ] = value
+            flattened[key] = value
 
     return flattened
 
@@ -927,6 +688,7 @@ def default_feature_extractor(
 # ---------------------------------------------------------------
 # Extractor registry
 # ---------------------------------------------------------------
+
 
 class FeatureExtractorRegistry:
     """
@@ -954,18 +716,9 @@ class FeatureExtractorRegistry:
         extractor: FeatureExtractor,
         replace: bool = False,
     ) -> None:
-        task_name = str(
-            task
-        ).strip().lower()
+        task_name = str(task).strip().lower()
 
-        if (
-            task_name
-            not in {
-                item.value
-                for item
-                in TrainingTask
-            }
-        ):
+        if task_name not in {item.value for item in TrainingTask}:
             raise FeatureValidationError(
                 "Unknown extractor task.",
                 details={
@@ -973,59 +726,37 @@ class FeatureExtractorRegistry:
                 },
             )
 
-        if not callable(
-            extractor
-        ):
-            raise FeatureValidationError(
-                "Feature extractor must "
-                "be callable."
-            )
+        if not callable(extractor):
+            raise FeatureValidationError("Feature extractor must be callable.")
 
         with self._lock:
-            if (
-                task_name
-                in self._extractors
-                and not replace
-            ):
+            if task_name in self._extractors and not replace:
                 raise FeatureValidationError(
-                    "Feature extractor is "
-                    "already registered.",
+                    "Feature extractor is already registered.",
                     details={
                         "task": task_name,
                     },
                 )
 
-            self._extractors[
-                task_name
-            ] = extractor
+            self._extractors[task_name] = extractor
 
     def resolve(
         self,
         task: str,
-    ) -> Optional[
-        FeatureExtractor
-    ]:
-        task_name = str(
-            task
-        ).strip().lower()
+    ) -> Optional[FeatureExtractor]:
+        task_name = str(task).strip().lower()
 
         with self._lock:
-            return self._extractors.get(
-                task_name
-            )
+            return self._extractors.get(task_name)
 
     def summary(
         self,
     ) -> Dict[str, Any]:
         with self._lock:
-            tasks = sorted(
-                self._extractors
-            )
+            tasks = sorted(self._extractors)
 
         return {
-            "extractor_count": len(
-                tasks
-            ),
+            "extractor_count": len(tasks),
             "tasks": tasks,
         }
 
@@ -1033,6 +764,7 @@ class FeatureExtractorRegistry:
 # ---------------------------------------------------------------
 # Feature builder
 # ---------------------------------------------------------------
+
 
 class FeatureBuilder:
     """
@@ -1054,56 +786,29 @@ class FeatureBuilder:
     def __init__(
         self,
         *,
-        registry: Optional[
-            FeatureExtractorRegistry
-        ] = None,
-        missing_strategy: str = (
-            MissingValueStrategy.
-            ZERO.value
-        ),
+        registry: Optional[FeatureExtractorRegistry] = None,
+        missing_strategy: str = (MissingValueStrategy.ZERO.value),
         category_buckets: int = 1024,
         reject_invalid: bool = True,
     ) -> None:
-        if (
-            missing_strategy
-            not in {
-                item.value
-                for item
-                in MissingValueStrategy
-            }
-        ):
+        if missing_strategy not in {item.value for item in MissingValueStrategy}:
             raise FeatureValidationError(
-                "Unknown missing-value "
-                "strategy.",
+                "Unknown missing-value strategy.",
                 details={
-                    "strategy": (
-                        missing_strategy
-                    ),
+                    "strategy": (missing_strategy),
                 },
             )
 
         if category_buckets < 2:
-            raise FeatureValidationError(
-                "category_buckets must "
-                "be >= 2."
-            )
+            raise FeatureValidationError("category_buckets must be >= 2.")
 
-        self.registry = (
-            registry
-            or FeatureExtractorRegistry()
-        )
+        self.registry = registry or FeatureExtractorRegistry()
 
-        self.missing_strategy = (
-            missing_strategy
-        )
+        self.missing_strategy = missing_strategy
 
-        self.category_buckets = int(
-            category_buckets
-        )
+        self.category_buckets = int(category_buckets)
 
-        self.reject_invalid = bool(
-            reject_invalid
-        )
+        self.reject_invalid = bool(reject_invalid)
 
     # ---------------------------------------------------------
     # Extract
@@ -1115,17 +820,10 @@ class FeatureBuilder:
     ) -> Dict[str, Any]:
         example.finalize()
 
-        extractor = (
-            self.registry.resolve(
-                example.task
-            )
-            or default_feature_extractor
-        )
+        extractor = self.registry.resolve(example.task) or default_feature_extractor
 
         try:
-            values = extractor(
-                example
-            )
+            values = extractor(example)
 
         except (
             FeatureExtractionError,
@@ -1137,16 +835,10 @@ class FeatureBuilder:
             raise FeatureExtractionError(
                 "Feature extractor failed.",
                 details={
-                    "example_id": (
-                        example.example_id
-                    ),
+                    "example_id": (example.example_id),
                     "task": example.task,
-                    "error_type": (
-                        type(exc).__name__
-                    ),
-                    "error_module": (
-                        type(exc).__module__
-                    ),
+                    "error_type": (type(exc).__name__),
+                    "error_module": (type(exc).__module__),
                 },
             ) from exc
 
@@ -1155,12 +847,9 @@ class FeatureBuilder:
             dict,
         ):
             raise FeatureExtractionError(
-                "Feature extractor did not "
-                "return a dictionary.",
+                "Feature extractor did not return a dictionary.",
                 details={
-                    "example_id": (
-                        example.example_id
-                    ),
+                    "example_id": (example.example_id),
                 },
             )
 
@@ -1172,34 +861,17 @@ class FeatureBuilder:
 
     def fit(
         self,
-        examples: Iterable[
-            TrainingExample
-        ],
+        examples: Iterable[TrainingExample],
         *,
-        task: Optional[
-            str
-        ] = None,
+        task: Optional[str] = None,
         version: str = "1",
     ) -> FeatureSchema:
-        values = list(
-            examples
-        )
+        values = list(examples)
 
         if not values:
-            raise FeatureValidationError(
-                "Cannot fit a feature "
-                "schema on no examples."
-            )
+            raise FeatureValidationError("Cannot fit a feature schema on no examples.")
 
-        task_name = (
-            str(
-                task
-            ).strip().lower()
-            if task
-            else values[
-                0
-            ].task
-        )
+        task_name = str(task).strip().lower() if task else values[0].task
 
         extracted: List[
             Dict[
@@ -1215,65 +887,34 @@ class FeatureBuilder:
 
             if example.task != task_name:
                 raise FeatureSchemaMismatchError(
-                    "Training examples contain "
-                    "multiple tasks."
+                    "Training examples contain multiple tasks."
                 )
 
-            features = self.extract(
-                example
-            )
+            features = self.extract(example)
 
-            extracted.append(
-                features
-            )
+            extracted.append(features)
 
-            names.update(
-                features
-            )
+            names.update(features)
 
-        specs: List[
-            FeatureSpec
-        ] = []
+        specs: List[FeatureSpec] = []
 
-        for name in sorted(
-            names
-        ):
-            observed = [
-                feature_values.get(
-                    name
-                )
-                for feature_values
-                in extracted
-            ]
+        for name in sorted(names):
+            observed = [feature_values.get(name) for feature_values in extracted]
 
-            kind = infer_feature_kind(
-                observed
-            )
+            kind = infer_feature_kind(observed)
 
             mean = 0.0
             scale = 1.0
             missing_value = 0.0
 
-            if (
-                kind
-                == FeatureKind.
-                NUMERIC.value
-            ):
+            if kind == FeatureKind.NUMERIC.value:
                 (
                     mean,
                     scale,
-                ) = numeric_statistics(
-                    observed
-                )
+                ) = numeric_statistics(observed)
 
-                if (
-                    self.missing_strategy
-                    == MissingValueStrategy.
-                    MEAN.value
-                ):
-                    missing_value = (
-                        mean
-                    )
+                if self.missing_strategy == MissingValueStrategy.MEAN.value:
+                    missing_value = mean
 
             specs.append(
                 FeatureSpec(
@@ -1281,20 +922,11 @@ class FeatureBuilder:
                     kind=kind,
                     mean=mean,
                     scale=scale,
-                    missing_value=(
-                        missing_value
-                    ),
-                    category_buckets=(
-                        self.
-                        category_buckets
-                    ),
+                    missing_value=(missing_value),
+                    category_buckets=(self.category_buckets),
                     attributes={
                         "observed_count": sum(
-                            1
-                            for value
-                            in observed
-                            if value
-                            is not None
+                            1 for value in observed if value is not None
                         ),
                     },
                 )
@@ -1302,20 +934,12 @@ class FeatureBuilder:
 
         schema = FeatureSchema(
             task=task_name,
-            features=tuple(
-                specs
-            ),
+            features=tuple(specs),
             version=version,
             attributes={
-                "missing_strategy": (
-                    self.missing_strategy
-                ),
-                "category_buckets": (
-                    self.category_buckets
-                ),
-                "fit_example_count": len(
-                    values
-                ),
+                "missing_strategy": (self.missing_strategy),
+                "category_buckets": (self.category_buckets),
+                "fit_example_count": len(values),
             },
         )
 
@@ -1333,59 +957,37 @@ class FeatureBuilder:
         spec: FeatureSpec,
     ) -> float:
         if value is None:
-            if (
-                self.missing_strategy
-                == MissingValueStrategy.
-                ERROR.value
-            ):
+            if self.missing_strategy == MissingValueStrategy.ERROR.value:
                 raise FeatureValidationError(
-                    "Required feature is "
-                    "missing.",
+                    "Required feature is missing.",
                     details={
-                        "feature": (
-                            spec.name
-                        ),
+                        "feature": (spec.name),
                     },
                 )
 
             value = spec.missing_value
 
-        if (
-            spec.kind
-            == FeatureKind.
-            BOOLEAN.value
-        ):
+        if spec.kind == FeatureKind.BOOLEAN.value:
             if isinstance(
                 value,
                 bool,
             ):
-                return (
-                    1.0
-                    if value
-                    else 0.0
-                )
+                return 1.0 if value else 0.0
 
             if value in {
                 0,
                 1,
             }:
-                return float(
-                    value
-                )
+                return float(value)
 
             raise FeatureValidationError(
-                "Boolean feature contains "
-                "an invalid value.",
+                "Boolean feature contains an invalid value.",
                 details={
                     "feature": spec.name,
                 },
             )
 
-        if (
-            spec.kind
-            == FeatureKind.
-            NUMERIC.value
-        ):
+        if spec.kind == FeatureKind.NUMERIC.value:
             if isinstance(
                 value,
                 bool,
@@ -1397,46 +999,27 @@ class FeatureBuilder:
                 ),
             ):
                 raise FeatureValidationError(
-                    "Numeric feature contains "
-                    "a non-numeric value.",
+                    "Numeric feature contains a non-numeric value.",
                     details={
-                        "feature": (
-                            spec.name
-                        ),
+                        "feature": (spec.name),
                     },
                 )
 
-            numeric = float(
-                value
-            )
+            numeric = float(value)
 
-            if not math.isfinite(
-                numeric
-            ):
+            if not math.isfinite(numeric):
                 raise FeatureValidationError(
-                    "Numeric feature must "
-                    "be finite.",
+                    "Numeric feature must be finite.",
                     details={
-                        "feature": (
-                            spec.name
-                        ),
+                        "feature": (spec.name),
                     },
                 )
 
-            return (
-                numeric
-                - spec.mean
-            ) / (
-                spec.scale
-                if spec.scale != 0.0
-                else 1.0
-            )
+            return (numeric - spec.mean) / (spec.scale if spec.scale != 0.0 else 1.0)
 
         return categorical_hash(
             value,
-            buckets=(
-                spec.category_buckets
-            ),
+            buckets=(spec.category_buckets),
         )
 
     # ---------------------------------------------------------
@@ -1454,78 +1037,40 @@ class FeatureBuilder:
 
         if example.task != schema.task:
             raise FeatureSchemaMismatchError(
-                "Training example task "
-                "does not match feature "
-                "schema task.",
+                "Training example task does not match feature schema task.",
                 details={
-                    "example_task": (
-                        example.task
-                    ),
-                    "schema_task": (
-                        schema.task
-                    ),
+                    "example_task": (example.task),
+                    "schema_task": (schema.task),
                 },
             )
 
-        extracted = self.extract(
-            example
-        )
+        extracted = self.extract(example)
 
         encoded = tuple(
             self._encode_value(
-                extracted.get(
-                    spec.name
-                ),
+                extracted.get(spec.name),
                 spec,
             )
-            for spec
-            in schema.features
+            for spec in schema.features
         )
 
         result = EncodedTrainingExample(
-            example_id=str(
-                example.example_id
-            ),
+            example_id=str(example.example_id),
             task=example.task,
             values=encoded,
             label=example.label,
-            feature_schema_id=(
-                schema.
-                effective_schema_id
-            ),
-            group_id=(
-                example.group_id
-            ),
-            source_id=(
-                example.source_id
-            ),
-            reference_ids=tuple(
-                example.reference_ids
-            ),
+            feature_schema_id=(schema.effective_schema_id),
+            group_id=(example.group_id),
+            source_id=(example.source_id),
+            reference_ids=tuple(example.reference_ids),
             attributes={
-                "provider": (
-                    example.provider
-                ),
-                "environment_id": (
-                    example.
-                    environment_id
-                ),
-                "resource_type": (
-                    example.
-                    resource_type
-                ),
-                "resource_id": (
-                    example.resource_id
-                ),
-                "incident_id": (
-                    example.incident_id
-                ),
-                "timestamp": (
-                    example.timestamp
-                ),
-                "feature_stage": (
-                    "encoded"
-                ),
+                "provider": (example.provider),
+                "environment_id": (example.environment_id),
+                "resource_type": (example.resource_type),
+                "resource_id": (example.resource_id),
+                "incident_id": (example.incident_id),
+                "timestamp": (example.timestamp),
+                "feature_stage": ("encoded"),
             },
         )
 
@@ -1539,15 +1084,11 @@ class FeatureBuilder:
 
     def transform(
         self,
-        examples: Iterable[
-            TrainingExample
-        ],
+        examples: Iterable[TrainingExample],
         *,
         schema: FeatureSchema,
     ) -> FeatureBuildResult:
-        encoded: List[
-            EncodedTrainingExample
-        ] = []
+        encoded: List[EncodedTrainingExample] = []
 
         rejected: List[str] = []
 
@@ -1568,27 +1109,17 @@ class FeatureBuilder:
                 if not self.reject_invalid:
                     raise
 
-                rejected.append(
-                    str(
-                        example.example_id
-                    )
-                )
+                rejected.append(str(example.example_id))
 
         if not encoded:
             raise FeatureValidationError(
-                "Feature transformation "
-                "produced no usable "
-                "examples."
+                "Feature transformation produced no usable examples."
             )
 
         return FeatureBuildResult(
             schema=schema,
-            examples=tuple(
-                encoded
-            ),
-            rejected_example_ids=tuple(
-                rejected
-            ),
+            examples=tuple(encoded),
+            rejected_example_ids=tuple(rejected),
         )
 
     # ---------------------------------------------------------
@@ -1622,21 +1153,11 @@ class FeatureBuilder:
         self,
     ) -> Dict[str, Any]:
         return {
-            "missing_strategy": (
-                self.missing_strategy
-            ),
-            "category_buckets": (
-                self.category_buckets
-            ),
-            "reject_invalid": (
-                self.reject_invalid
-            ),
-            "registry": (
-                self.registry.summary()
-            ),
-            "framework_specific_tensors": (
-                False
-            ),
+            "missing_strategy": (self.missing_strategy),
+            "category_buckets": (self.category_buckets),
+            "reject_invalid": (self.reject_invalid),
+            "registry": (self.registry.summary()),
+            "framework_specific_tensors": (False),
         }
 
 
@@ -1647,23 +1168,16 @@ class FeatureBuilder:
 __all__ = [
     "FeatureKind",
     "MissingValueStrategy",
-
     "FeatureSpec",
     "FeatureSchema",
-
     "EncodedTrainingExample",
     "FeatureBuildResult",
-
     "FeatureExtractor",
-
     "categorical_hash",
-
     "flatten_features",
     "infer_feature_kind",
     "numeric_statistics",
-
     "default_feature_extractor",
-
     "FeatureExtractorRegistry",
     "FeatureBuilder",
 ]

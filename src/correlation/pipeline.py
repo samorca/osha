@@ -78,16 +78,10 @@ class LoadIssue:
     def to_dict(self) -> dict:
         return {
             "source": self.source,
-            "line_number": (
-                self.line_number
-            ),
-            "error_type": (
-                self.error_type
-            ),
+            "line_number": (self.line_number),
+            "error_type": (self.error_type),
             "message": self.message,
-            "raw_line": (
-                self.raw_line
-            ),
+            "raw_line": (self.raw_line),
         }
 
 
@@ -103,17 +97,9 @@ class PipelineOutput:
 
     topology: TopologyGraph
 
-    validation_results: List[
-        ValidationResult
-    ] = field(
-        default_factory=list
-    )
+    validation_results: List[ValidationResult] = field(default_factory=list)
 
-    load_issues: List[
-        LoadIssue
-    ] = field(
-        default_factory=list
-    )
+    load_issues: List[LoadIssue] = field(default_factory=list)
 
     input_record_count: int = 0
 
@@ -137,58 +123,28 @@ class PipelineOutput:
         )
 
         return {
-            "input_record_count": (
-                self.input_record_count
-            ),
-            "valid_record_count": (
-                self.valid_record_count
-            ),
-            "rejected_record_count": (
-                self.rejected_record_count
-            ),
-            "load_issue_count": len(
-                self.load_issues
-            ),
+            "input_record_count": (self.input_record_count),
+            "valid_record_count": (self.valid_record_count),
+            "rejected_record_count": (self.rejected_record_count),
+            "load_issue_count": len(self.load_issues),
             "elapsed_seconds": (
                 round(
                     self.elapsed_seconds,
                     6,
                 )
             ),
-            "registry": (
-                self.registry.
-                stats().to_dict()
-            ),
-            "relationships": (
-                relationship_summary(
-                    self.topology.
-                    relationships()
-                )
-            ),
-            "topology": (
-                self.topology.summary()
-            ),
-            "validation": (
-                validation_summary(
-                    self.validation_results
-                )
-            ),
-            "correlation": (
-                metadata_summary
-            ),
+            "registry": (self.registry.stats().to_dict()),
+            "relationships": (relationship_summary(self.topology.relationships())),
+            "topology": (self.topology.summary()),
+            "validation": (validation_summary(self.validation_results)),
+            "correlation": (metadata_summary),
         }
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "summary": self.summary(),
-            "correlation": (
-                self.result.to_dict()
-            ),
-            "load_issues": [
-                issue.to_dict()
-                for issue
-                in self.load_issues
-            ],
+            "correlation": (self.result.to_dict()),
+            "load_issues": [issue.to_dict() for issue in self.load_issues],
         }
 
 
@@ -231,6 +187,7 @@ def list_or_empty(
 # Canonical telemetry reconstruction
 # ---------------------------------------------------------------
 
+
 def resource_from_dict(
     value: Mapping[str, Any],
 ) -> ResourceIdentity:
@@ -253,23 +210,9 @@ def resource_from_dict(
                 "unknown-resource",
             )
         ),
-        canonical_id=(
-            optional_string(
-                value.get(
-                    "canonical_id"
-                )
-            )
-        ),
-        native_type=(
-            optional_string(
-                value.get(
-                    "native_type"
-                )
-            )
-        ),
-        name=optional_string(
-            value.get("name")
-        ),
+        canonical_id=(optional_string(value.get("canonical_id"))),
+        native_type=(optional_string(value.get("native_type"))),
+        name=optional_string(value.get("name")),
         environment_id=str(
             value.get(
                 "environment_id",
@@ -277,39 +220,13 @@ def resource_from_dict(
             )
             or "default"
         ),
-        region=optional_string(
-            value.get("region")
-        ),
-        zone=optional_string(
-            value.get("zone")
-        ),
-        cluster_id=(
-            optional_string(
-                value.get(
-                    "cluster_id"
-                )
-            )
-        ),
-        namespace=(
-            optional_string(
-                value.get(
-                    "namespace"
-                )
-            )
-        ),
-        host=optional_string(
-            value.get("host")
-        ),
-        service=optional_string(
-            value.get("service")
-        ),
-        attributes=(
-            mapping_or_empty(
-                value.get(
-                    "attributes"
-                )
-            )
-        ),
+        region=optional_string(value.get("region")),
+        zone=optional_string(value.get("zone")),
+        cluster_id=(optional_string(value.get("cluster_id"))),
+        namespace=(optional_string(value.get("namespace"))),
+        host=optional_string(value.get("host")),
+        service=optional_string(value.get("service")),
+        attributes=(mapping_or_empty(value.get("attributes"))),
     )
 
 
@@ -348,13 +265,7 @@ def signal_from_dict(
             )
             or "default"
         ),
-        signal_name=(
-            optional_string(
-                value.get(
-                    "signal_name"
-                )
-            )
-        ),
+        signal_name=(optional_string(value.get("signal_name"))),
         severity=str(
             value.get(
                 "severity",
@@ -362,41 +273,21 @@ def signal_from_dict(
             )
         ),
         value=value.get("value"),
-        unit=optional_string(
-            value.get("unit")
-        ),
-        message=optional_string(
-            value.get("message")
-        ),
-        attributes=(
-            mapping_or_empty(
-                value.get(
-                    "attributes"
-                )
-            )
-        ),
-        source_record_id=(
-            optional_string(
-                value.get(
-                    "source_record_id"
-                )
-            )
-        ),
+        unit=optional_string(value.get("unit")),
+        message=optional_string(value.get("message")),
+        attributes=(mapping_or_empty(value.get("attributes"))),
+        source_record_id=(optional_string(value.get("source_record_id"))),
     )
 
 
 def relationship_from_dict(
     value: Mapping[str, Any],
 ) -> Relationship:
-    confidence = value.get(
-        "confidence"
-    )
+    confidence = value.get("confidence")
 
     if confidence is not None:
         try:
-            confidence = float(
-                confidence
-            )
+            confidence = float(confidence)
         except (
             TypeError,
             ValueError,
@@ -442,13 +333,7 @@ def relationship_from_dict(
             )
         ),
         confidence=confidence,
-        evidence=(
-            mapping_or_empty(
-                value.get(
-                    "evidence"
-                )
-            )
-        ),
+        evidence=(mapping_or_empty(value.get("evidence"))),
     )
 
 
@@ -460,66 +345,38 @@ def telemetry_from_dict(
     normalized JSON.
     """
 
-    resource_data = value.get(
-        "resource"
-    )
+    resource_data = value.get("resource")
 
-    signal_data = value.get(
-        "signal"
-    )
+    signal_data = value.get("signal")
 
     if not isinstance(
         resource_data,
         Mapping,
     ):
-        raise ValueError(
-            "Telemetry record has no "
-            "resource object"
-        )
+        raise ValueError("Telemetry record has no resource object")
 
     if not isinstance(
         signal_data,
         Mapping,
     ):
-        raise ValueError(
-            "Telemetry record has no "
-            "signal object"
-        )
+        raise ValueError("Telemetry record has no signal object")
 
     relationships = []
 
-    for item in list_or_empty(
-        value.get(
-            "relationships"
-        )
-    ):
+    for item in list_or_empty(value.get("relationships")):
         if not isinstance(
             item,
             Mapping,
         ):
             continue
 
-        relationshipsships.append(
-            relationship_dict(
-                item
-            )
-        )
+        relationshipsships.append(relationship_dict(item))
 
     telemetry = TelemetryRecord(
-        resource=resource_from_dict(
-            resource_data
-        ),
-        signal=signal_from_dict(
-            signal_data
-        ),
+        resource=resource_from_dict(resource_data),
+        signal=signal_from_dict(signal_data),
         relationships=relationships,
-        native=(
-            mapping_or_empty(
-                value.get(
-                    "native"
-                )
-            )
-        ),
+        native=(mapping_or_empty(value.get("native"))),
         schema_version=str(
             value.get(
                 "schema_version",
@@ -532,13 +389,7 @@ def telemetry_from_dict(
                 "",
             )
         ),
-        record_id=(
-            optional_string(
-                value.get(
-                    "record_id"
-                )
-            )
-        ),
+        record_id=(optional_string(value.get("record_id"))),
     )
 
     return telemetry.finalize()
@@ -547,6 +398,7 @@ def telemetry_from_dict(
 # ---------------------------------------------------------------
 # JSONL loading
 # ---------------------------------------------------------------
+
 
 def read_jsonl(
     path: Path,
@@ -569,18 +421,13 @@ def read_jsonl(
             if not text:
                 continue
 
-            value = json.loads(
-                text
-            )
+            value = json.loads(text)
 
             if not isinstance(
                 value,
                 Mapping,
             ):
-                raise TypeError(
-                    "JSONL record must be "
-                    "an object"
-                )
+                raise TypeError("JSONL record must be an object")
 
             yield (
                 line_number,
@@ -594,13 +441,9 @@ def load_telemetry_file(
     List[TelemetryRecord],
     List[LoadIssue],
 ]:
-    records: List[
-        TelemetryRecord
-    ] = []
+    records: List[TelemetryRecord] = []
 
-    issues: List[
-        LoadIssue
-    ] = []
+    issues: List[LoadIssue] = []
 
     try:
         source = path.open(
@@ -613,9 +456,7 @@ def load_telemetry_file(
             LoadIssue(
                 source=str(path),
                 line_number=0,
-                error_type=(
-                    type(exc).__name__
-                ),
+                error_type=(type(exc).__name__),
                 message=str(exc),
             )
         )
@@ -639,39 +480,24 @@ def load_telemetry_file(
                 continue
 
             try:
-                value = json.loads(
-                    text
-                )
+                value = json.loads(text)
 
                 if not isinstance(
                     value,
                     Mapping,
                 ):
-                    raise TypeError(
-                        "JSONL record must "
-                        "be an object"
-                    )
+                    raise TypeError("JSONL record must be an object")
 
-                records.append(
-                    telemetry_from_dict(
-                        value
-                    )
-                )
+                records.append(telemetry_from_dict(value))
 
             except Exception as exc:
                 issues.append(
                     LoadIssue(
                         source=str(path),
-                        line_number=(
-                            line_number
-                        ),
-                        error_type=(
-                            type(exc).__name__
-                        ),
+                        line_number=(line_number),
+                        error_type=(type(exc).__name__),
                         message=str(exc),
-                        raw_line=(
-                            text[:4096]
-                        ),
+                        raw_line=(text[:4096]),
                     )
                 )
 
@@ -687,26 +513,16 @@ def load_telemetry_files(
     List[TelemetryRecord],
     List[LoadIssue],
 ]:
-    records: List[
-        TelemetryRecord
-    ] = []
+    records: List[TelemetryRecord] = []
 
-    issues: List[
-        LoadIssue
-    ] = []
+    issues: List[LoadIssue] = []
 
     seen_record_ids = set()
 
     for path in paths:
-        loaded, file_issues = (
-            load_telemetry_file(
-                path
-            )
-        )
+        loaded, file_issues = load_telemetry_file(path)
 
-        issues.extend(
-            file_issues
-        )
+        issues.extend(file_issues)
 
         for telemetry in loaded:
             telemetry.finalize()
@@ -714,19 +530,12 @@ def load_telemetry_files(
             if not telemetry.record_id:
                 continue
 
-            if (
-                telemetry.record_id
-                in seen_record_ids
-            ):
+            if telemetry.record_id in seen_record_ids:
                 continue
 
-            seen_record_ids.add(
-                telemetry.record_id
-            )
+            seen_record_ids.add(telemetry.record_id)
 
-            records.append(
-                telemetry
-            )
+            records.append(telemetry)
 
     return (
         records,
@@ -738,10 +547,9 @@ def load_telemetry_files(
 # Pipeline execution
 # ---------------------------------------------------------------
 
+
 def validate_records(
-    records: Iterable[
-        TelemetryRecord
-    ],
+    records: Iterable[TelemetryRecord],
     *,
     include_invalid: bool = False,
 ) -> tuple[
@@ -756,23 +564,15 @@ def validate_records(
     rejected = 0
 
     for telemetry in records:
-        result = validate_record(
-            telemetry
-        )
+        result = validate_record(telemetry)
 
-        results.append(
-            result
-        )
+        results.append(result)
 
         if result.valid:
-            accepted.append(
-                telemetry
-            )
+            accepted.append(telemetry)
 
         elif include_invalid:
-            accepted.append(
-                telemetry
-            )
+            accepted.append(telemetry)
 
         else:
             rejected += 1
@@ -785,9 +585,7 @@ def validate_records(
 
 
 def collect_embedded_relationships(
-    records: Iterable[
-        TelemetryRecord
-    ],
+    records: Iterable[TelemetryRecord],
 ) -> List[Relationship]:
     """
     Preserve relationships already present in
@@ -799,16 +597,11 @@ def collect_embedded_relationships(
     seen = set()
 
     for telemetry in records:
-        for relationship in (
-            telemetry.relationships
-        ):
+        for relationship in telemetry.relationships:
             key = (
-                relationship.
-                source_resource_id,
-                relationship.
-                target_resource_id,
-                relationship.
-                relationship_type,
+                relationship.source_resource_id,
+                relationship.target_resource_id,
+                relationship.relationship_type,
             )
 
             if key in seen:
@@ -816,36 +609,24 @@ def collect_embedded_relationships(
 
             seen.add(key)
 
-            output.append(
-                relationship
-            )
+            output.append(relationship)
 
     return output
 
 
 def run_pipeline(
-    records: Iterable[
-        TelemetryRecord
-    ],
+    records: Iterable[TelemetryRecord],
     *,
     window_mode: str = "sliding",
     window_seconds: float = 60.0,
     step_seconds: float = 30.0,
     cross_provider_only: bool = False,
-    maximum_pairs_per_window: int = (
-        100_000
-    ),
-    include_rejected_candidates: bool = (
-        False
-    ),
+    maximum_pairs_per_window: int = (100_000),
+    include_rejected_candidates: bool = (False),
     include_weak_in_groups: bool = False,
     include_invalid_records: bool = False,
-    scoring_config: Optional[
-        ScoringConfig
-    ] = None,
-    load_issues: Optional[
-        List[LoadIssue]
-    ] = None,
+    scoring_config: Optional[ScoringConfig] = None,
+    load_issues: Optional[List[LoadIssue]] = None,
 ) -> PipelineOutput:
     """
     Execute the complete correlation pipeline.
@@ -861,9 +642,7 @@ def run_pipeline(
 
     started = time.monotonic()
 
-    input_records = list(
-        records
-    )
+    input_records = list(records)
 
     (
         valid_records,
@@ -871,32 +650,18 @@ def run_pipeline(
         rejected_count,
     ) = validate_records(
         input_records,
-        include_invalid=(
-            include_invalid_records
-        ),
+        include_invalid=(include_invalid_records),
     )
 
     registry = ResourceRegistry()
 
-    registry.register_many(
-        valid_records
-    )
+    registry.register_many(valid_records)
 
-    extractor = RelationshipExtractor(
-        registry
-    )
+    extractor = RelationshipExtractor(registry)
 
-    extracted_relationships = (
-        extractor.extract_many(
-            valid_records
-        )
-    )
+    extracted_relationships = extractor.extract_many(valid_records)
 
-    embedded_relationships = (
-        collect_embedded_relationships(
-            valid_records
-        )
-    )
+    embedded_relationships = collect_embedded_relationships(valid_records)
 
     all_relationships = [
         *embedded_relationships,
@@ -908,72 +673,32 @@ def run_pipeline(
         all_relationships,
     )
 
-    configuration = (
-        scoring_config
-        or ScoringConfig()
-    )
+    configuration = scoring_config or ScoringConfig()
 
     engine = CorrelationEngine(
         topology=topology,
-        scoring_config=(
-            configuration
-        ),
+        scoring_config=(configuration),
         window_mode=window_mode,
-        window_seconds=(
-            window_seconds
-        ),
-        step_seconds=(
-            step_seconds
-        ),
-        cross_provider_only=(
-            cross_provider_only
-        ),
-        maximum_pairs_per_window=(
-            maximum_pairs_per_window
-        ),
-        include_rejected=(
-            include_rejected_candidates
-        ),
-        include_weak_in_groups=(
-            include_weak_in_groups
-        ),
+        window_seconds=(window_seconds),
+        step_seconds=(step_seconds),
+        cross_provider_only=(cross_provider_only),
+        maximum_pairs_per_window=(maximum_pairs_per_window),
+        include_rejected=(include_rejected_candidates),
+        include_weak_in_groups=(include_weak_in_groups),
     )
 
-    result = engine.correlate(
-        valid_records
-    )
+    result = engine.correlate(valid_records)
 
-    elapsed = (
-        time.monotonic()
-        - started
-    )
+    elapsed = time.monotonic() - started
 
-    result.metadata[
-        "pipeline"
-    ] = {
-        "input_record_count": (
-            len(input_records)
-        ),
-        "valid_record_count": (
-            len(valid_records)
-        ),
-        "rejected_record_count": (
-            rejected_count
-        ),
-        "load_issue_count": len(
-            load_issues or []
-        ),
-        "registry": (
-            registry.stats().to_dict()
-        ),
-        "topology": (
-            topology.summary()
-        ),
-        "relationships": (
-            relationship_summary(
-                topology.relationships()
-            )
-        ),
+    result.metadata["pipeline"] = {
+        "input_record_count": (len(input_records)),
+        "valid_record_count": (len(valid_records)),
+        "rejected_record_count": (rejected_count),
+        "load_issue_count": len(load_issues or []),
+        "registry": (registry.stats().to_dict()),
+        "topology": (topology.summary()),
+        "relationships": (relationship_summary(topology.relationships())),
         "elapsed_seconds": (
             round(
                 elapsed,
@@ -986,21 +711,11 @@ def run_pipeline(
         result=result,
         registry=registry,
         topology=topology,
-        validation_results=(
-            validation_results
-        ),
-        load_issues=list(
-            load_issues or []
-        ),
-        input_record_count=(
-            len(input_records)
-        ),
-        valid_record_count=(
-            len(valid_records)
-        ),
-        rejected_record_count=(
-            rejected_count
-        ),
+        validation_results=(validation_results),
+        load_issues=list(load_issues or []),
+        input_record_count=(len(input_records)),
+        valid_record_count=(len(valid_records)),
+        rejected_record_count=(rejected_count),
         elapsed_seconds=elapsed,
     )
 
@@ -1008,6 +723,7 @@ def run_pipeline(
 # ---------------------------------------------------------------
 # Output writers
 # ---------------------------------------------------------------
+
 
 def write_json(
     path: Path,
@@ -1048,9 +764,7 @@ def write_candidates_jsonl(
         "w",
         encoding="utf-8",
     ) as output:
-        for candidate in (
-            result.candidates
-        ):
+        for candidate in result.candidates:
             output.write(
                 json.dumps(
                     candidate.to_dict(),
@@ -1118,9 +832,7 @@ def write_relationships_jsonl(
         "w",
         encoding="utf-8",
     ) as output:
-        for relationship in (
-            topology.relationships()
-        ):
+        for relationship in topology.relationships():
             output.write(
                 json.dumps(
                     relationship.to_dict(),
@@ -1141,9 +853,7 @@ def write_relationships_jsonl(
 
 def write_load_issues_jsonl(
     path: Path,
-    issues: Iterable[
-        LoadIssue
-    ],
+    issues: Iterable[LoadIssue],
 ) -> int:
     path.parent.mkdir(
         parents=True,
@@ -1179,12 +889,10 @@ def write_load_issues_jsonl(
 # CLI
 # ---------------------------------------------------------------
 
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description=(
-            "Run OSHA correlation over "
-            "normalized telemetry JSONL."
-        )
+        description=("Run OSHA correlation over normalized telemetry JSONL.")
     )
 
     parser.add_argument(
@@ -1200,44 +908,27 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument(
         "--output",
-        default=(
-            "orchestration-ai-data/"
-            "correlated/result.json"
-        ),
+        default=("orchestration-ai-data/correlated/result.json"),
     )
 
     parser.add_argument(
         "--groups-output",
-        default=(
-            "orchestration-ai-data/"
-            "correlated/groups.jsonl"
-        ),
+        default=("orchestration-ai-data/correlated/groups.jsonl"),
     )
 
     parser.add_argument(
         "--candidates-output",
-        default=(
-            "orchestration-ai-data/"
-            "correlated/candidates.jsonl"
-        ),
+        default=("orchestration-ai-data/correlated/candidates.jsonl"),
     )
 
     parser.add_argument(
         "--relationships-output",
-        default=(
-            "orchestration-ai-data/"
-            "correlated/"
-            "relationships.jsonl"
-        ),
+        default=("orchestration-ai-data/correlated/relationships.jsonl"),
     )
 
     parser.add_argument(
         "--load-errors-output",
-        default=(
-            "orchestration-ai-data/"
-            "quarantine/"
-            "correlation-load-errors.jsonl"
-        ),
+        default=("orchestration-ai-data/quarantine/correlation-load-errors.jsonl"),
     )
 
     parser.add_argument(
@@ -1285,11 +976,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--include-invalid-records",
         action="store_true",
-        help=(
-            "Development/debug option. "
-            "Invalid telemetry is normally "
-            "excluded."
-        ),
+        help=("Development/debug option. Invalid telemetry is normally excluded."),
     )
 
     parser.add_argument(
@@ -1322,33 +1009,16 @@ def validate_cli_args(
     args: argparse.Namespace,
 ) -> None:
     if args.window_seconds <= 0:
-        raise ValueError(
-            "--window-seconds must be > 0"
-        )
+        raise ValueError("--window-seconds must be > 0")
 
     if args.step_seconds <= 0:
-        raise ValueError(
-            "--step-seconds must be > 0"
-        )
+        raise ValueError("--step-seconds must be > 0")
 
-    if (
-        args.window_mode == "sliding"
-        and args.step_seconds
-        > args.window_seconds
-    ):
-        raise ValueError(
-            "--step-seconds must not exceed "
-            "--window-seconds"
-        )
+    if args.window_mode == "sliding" and args.step_seconds > args.window_seconds:
+        raise ValueError("--step-seconds must not exceed --window-seconds")
 
-    if (
-        args.maximum_pairs_per_window
-        < 1
-    ):
-        raise ValueError(
-            "--maximum-pairs-per-window "
-            "must be >= 1"
-        )
+    if args.maximum_pairs_per_window < 1:
+        raise ValueError("--maximum-pairs-per-window must be >= 1")
 
     thresholds = (
         args.weak_threshold,
@@ -1356,24 +1026,13 @@ def validate_cli_args(
         args.correlated_threshold,
     )
 
-    if any(
-        value < 0.0 or value > 1.0
-        for value in thresholds
-    ):
-        raise ValueError(
-            "Correlation thresholds must "
-            "be between 0 and 1"
-        )
+    if any(value < 0.0 or value > 1.0 for value in thresholds):
+        raise ValueError("Correlation thresholds must be between 0 and 1")
 
     if not (
-        args.weak_threshold
-        <= args.candidate_threshold
-        <= args.correlated_threshold
+        args.weak_threshold <= args.candidate_threshold <= args.correlated_threshold
     ):
-        raise ValueError(
-            "Threshold order must be: "
-            "weak <= candidate <= correlated"
-        )
+        raise ValueError("Threshold order must be: weak <= candidate <= correlated")
 
 
 def main() -> int:
@@ -1390,224 +1049,115 @@ def main() -> int:
 
         return 2
 
-    input_paths = [
-        Path(value)
-        for value in args.input
-    ]
+    input_paths = [Path(value) for value in args.input]
 
-    missing = [
-        path
-        for path in input_paths
-        if not path.is_file()
-    ]
+    missing = [path for path in input_paths if not path.is_file()]
 
     if missing:
         for path in missing:
             print(
-                (
-                    "Input file does not "
-                    f"exist: {path}"
-                ),
+                (f"Input file does not exist: {path}"),
                 file=sys.stderr,
             )
 
         return 2
 
-    records, load_issues = (
-        load_telemetry_files(
-            input_paths
-        )
-    )
+    records, load_issues = load_telemetry_files(input_paths)
 
     scoring_config = ScoringConfig(
-        correlated_threshold=(
-            args.correlated_threshold
-        ),
-        candidate_threshold=(
-            args.candidate_threshold
-        ),
-        weak_threshold=(
-            args.weak_threshold
-        ),
+        correlated_threshold=(args.correlated_threshold),
+        candidate_threshold=(args.candidate_threshold),
+        weak_threshold=(args.weak_threshold),
     )
 
     try:
         pipeline_output = run_pipeline(
             records,
-            window_mode=(
-                args.window_mode
-            ),
-            window_seconds=(
-                args.window_seconds
-            ),
-            step_seconds=(
-                args.step_seconds
-            ),
-            cross_provider_only=(
-                args.cross_provider_only
-            ),
-            maximum_pairs_per_window=(
-                args.
-                maximum_pairs_per_window
-            ),
-            include_rejected_candidates=(
-                args.
-                include_rejected_candidates
-            ),
-            include_weak_in_groups=(
-                args.
-                include_weak_in_groups
-            ),
-            include_invalid_records=(
-                args.
-                include_invalid_records
-            ),
-            scoring_config=(
-                scoring_config
-            ),
+            window_mode=(args.window_mode),
+            window_seconds=(args.window_seconds),
+            step_seconds=(args.step_seconds),
+            cross_provider_only=(args.cross_provider_only),
+            maximum_pairs_per_window=(args.maximum_pairs_per_window),
+            include_rejected_candidates=(args.include_rejected_candidates),
+            include_weak_in_groups=(args.include_weak_in_groups),
+            include_invalid_records=(args.include_invalid_records),
+            scoring_config=(scoring_config),
             load_issues=load_issues,
         )
 
     except Exception as exc:
         print(
-            (
-                "Correlation pipeline "
-                "failed: "
-                f"{type(exc).__name__}: "
-                f"{exc}"
-            ),
+            (f"Correlation pipeline failed: {type(exc).__name__}: {exc}"),
             file=sys.stderr,
         )
 
         return 1
 
-    output_path = Path(
-        args.output
-    )
+    output_path = Path(args.output)
 
-    groups_path = Path(
-        args.groups_output
-    )
+    groups_path = Path(args.groups_output)
 
-    candidates_path = Path(
-        args.candidates_output
-    )
+    candidates_path = Path(args.candidates_output)
 
-    relationships_path = Path(
-        args.relationships_output
-    )
+    relationships_path = Path(args.relationships_output)
 
-    errors_path = Path(
-        args.load_errors_output
-    )
+    errors_path = Path(args.load_errors_output)
 
     write_json(
         output_path,
         pipeline_output.to_dict(),
     )
 
-    groups_written = (
-        write_groups_jsonl(
-            groups_path,
-            pipeline_output.result,
-        )
+    groups_written = write_groups_jsonl(
+        groups_path,
+        pipeline_output.result,
     )
 
-    candidates_written = (
-        write_candidates_jsonl(
-            candidates_path,
-            pipeline_output.result,
-        )
+    candidates_written = write_candidates_jsonl(
+        candidates_path,
+        pipeline_output.result,
     )
 
-    relationships_written = (
-        write_relationships_jsonl(
-            relationships_path,
-            pipeline_output.topology,
-        )
+    relationships_written = write_relationships_jsonl(
+        relationships_path,
+        pipeline_output.topology,
     )
 
-    issues_written = (
-        write_load_issues_jsonl(
-            errors_path,
-            pipeline_output.load_issues,
-        )
+    issues_written = write_load_issues_jsonl(
+        errors_path,
+        pipeline_output.load_issues,
     )
 
-    summary = (
-        pipeline_output.summary()
-    )
+    summary = pipeline_output.summary()
 
-    print(
-        "Correlation pipeline complete."
-    )
+    print("Correlation pipeline complete.")
 
-    print(
-        "Input records: "
-        f"{summary['input_record_count']}"
-    )
+    print(f"Input records: {summary['input_record_count']}")
 
-    print(
-        "Valid records: "
-        f"{summary['valid_record_count']}"
-    )
+    print(f"Valid records: {summary['valid_record_count']}")
 
-    print(
-        "Rejected records: "
-        f"{summary['rejected_record_count']}"
-    )
+    print(f"Rejected records: {summary['rejected_record_count']}")
 
-    print(
-        "Resources: "
-        f"{summary['registry']['resources']}"
-    )
+    print(f"Resources: {summary['registry']['resources']}")
 
-    print(
-        "Topology edges: "
-        f"{summary['topology']['edge_count']}"
-    )
+    print(f"Topology edges: {summary['topology']['edge_count']}")
 
-    print(
-        "Candidates: "
-        f"{candidates_written}"
-    )
+    print(f"Candidates: {candidates_written}")
 
-    print(
-        "Groups: "
-        f"{groups_written}"
-    )
+    print(f"Groups: {groups_written}")
 
-    print(
-        "Relationships: "
-        f"{relationships_written}"
-    )
+    print(f"Relationships: {relationships_written}")
 
-    print(
-        "Load issues: "
-        f"{issues_written}"
-    )
+    print(f"Load issues: {issues_written}")
 
-    print(
-        f"Result: {output_path}"
-    )
+    print(f"Result: {output_path}")
 
-    print(
-        f"Groups: {groups_path}"
-    )
+    print(f"Groups: {groups_path}")
 
-    print(
-        f"Candidates: {candidates_path}"
-    )
+    print(f"Candidates: {candidates_path}")
 
-    if (
-        args.fail_on_invalid
-        and (
-            pipeline_output.
-            rejected_record_count
-            > 0
-            or pipeline_output.
-            load_issues
-        )
+    if args.fail_on_invalid and (
+        pipeline_output.rejected_record_count > 0 or pipeline_output.load_issues
     ):
         return 3
 
@@ -1615,6 +1165,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(
-        main()
-    )
+    raise SystemExit(main())

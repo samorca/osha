@@ -13,9 +13,7 @@ from typing import Any, Mapping
 
 SCHEMA_VERSION = "1"
 
-RECORD_TYPE = (
-    "openstack_telemetry"
-)
+RECORD_TYPE = "openstack_telemetry"
 
 PROVIDER = "openstack"
 
@@ -57,9 +55,7 @@ def utc_now() -> str:
     Stored timestamps use ISO 8601.
     """
 
-    return datetime.now(
-        timezone.utc
-    ).isoformat()
+    return datetime.now(timezone.utc).isoformat()
 
 
 def stringify_timestamp(
@@ -81,9 +77,7 @@ def stringify_timestamp(
         datetime,
     ):
         if value.tzinfo is None:
-            value = value.replace(
-                tzinfo=timezone.utc
-            )
+            value = value.replace(tzinfo=timezone.utc)
 
         return value.isoformat()
 
@@ -110,11 +104,7 @@ def sensitive_key(
     if key is None:
         return False
 
-    return bool(
-        SENSITIVE_KEY_PATTERN.search(
-            str(key)
-        )
-    )
+    return bool(SENSITIVE_KEY_PATTERN.search(str(key)))
 
 
 def redact_string(
@@ -128,9 +118,7 @@ def redact_string(
     should primarily be removed by key name.
     """
 
-    if PRIVATE_KEY_PATTERN.search(
-        value
-    ):
+    if PRIVATE_KEY_PATTERN.search(value):
         return "[REDACTED_PRIVATE_KEY]"
 
     value = BEARER_PATTERN.sub(
@@ -177,9 +165,7 @@ def sanitize(
         value,
         str,
     ):
-        return redact_string(
-            value
-        )
+        return redact_string(value)
 
     if isinstance(
         value,
@@ -188,19 +174,15 @@ def sanitize(
             date,
         ),
     ):
-        return stringify_timestamp(
-            value
-        )
+        return stringify_timestamp(value)
 
     if isinstance(
         value,
         bytes,
     ):
-        return (
-            value.decode(
-                "utf-8",
-                errors="replace",
-            )
+        return value.decode(
+            "utf-8",
+            errors="replace",
         )
 
     if isinstance(
@@ -209,27 +191,17 @@ def sanitize(
     ):
         output = {}
 
-        for key, item in (
-            value.items()
-        ):
+        for key, item in value.items():
             key_text = str(key)
 
-            if sensitive_key(
-                key_text
-            ):
-                output[
-                    key_text
-                ] = "[REDACTED]"
+            if sensitive_key(key_text):
+                output[key_text] = "[REDACTED]"
                 continue
 
-            output[
-                key_text
-            ] = sanitize(
+            output[key_text] = sanitize(
                 item,
                 depth=depth + 1,
-                maximum_depth=(
-                    maximum_depth
-                ),
+                maximum_depth=(maximum_depth),
             )
 
         return output
@@ -247,9 +219,7 @@ def sanitize(
             sanitize(
                 item,
                 depth=depth + 1,
-                maximum_depth=(
-                    maximum_depth
-                ),
+                maximum_depth=(maximum_depth),
             )
             for item in value
         ]
@@ -264,9 +234,7 @@ def sanitize(
 
     if callable(to_dict):
         try:
-            converted = to_dict(
-                computed=False
-            )
+            converted = to_dict(computed=False)
         except TypeError:
             try:
                 converted = to_dict()
@@ -279,14 +247,10 @@ def sanitize(
             return sanitize(
                 converted,
                 depth=depth + 1,
-                maximum_depth=(
-                    maximum_depth
-                ),
+                maximum_depth=(maximum_depth),
             )
 
-    return redact_string(
-        str(value)
-    )
+    return redact_string(str(value))
 
 
 def as_dict(
@@ -304,9 +268,7 @@ def as_dict(
         resource,
         Mapping,
     ):
-        value = sanitize(
-            resource
-        )
+        value = sanitize(resource)
 
         return (
             value
@@ -325,18 +287,14 @@ def as_dict(
 
     if callable(to_dict):
         try:
-            value = to_dict(
-                computed=False
-            )
+            value = to_dict(computed=False)
         except TypeError:
             value = to_dict()
         except Exception:
             value = None
 
         if value is not None:
-            result = sanitize(
-                value
-            )
+            result = sanitize(value)
 
             if isinstance(
                 result,
@@ -362,17 +320,10 @@ def as_dict(
                 None,
             )
         ),
-        "value": sanitize(
-            str(resource)
-        ),
+        "value": sanitize(str(resource)),
     }
 
-    return {
-        key: value
-        for key, value
-        in result.items()
-        if value is not None
-    }
+    return {key: value for key, value in result.items() if value is not None}
 
 
 def normalized_identifier(
@@ -419,15 +370,9 @@ def derive_resource_id(
     )
 
     for key in candidate_keys:
-        candidate = payload.get(
-            key
-        )
+        candidate = payload.get(key)
 
-        identifier = (
-            normalized_identifier(
-                candidate
-            )
-        )
+        identifier = normalized_identifier(candidate)
 
         if identifier:
             return identifier
@@ -451,8 +396,7 @@ def build_record_id(
 
     identity = {
         key: value
-        for key, value
-        in record_body.items()
+        for key, value in record_body.items()
         if key
         not in {
             "record_id",
@@ -469,13 +413,9 @@ def build_record_id(
             ":",
         ),
         default=str,
-    ).encode(
-        "utf-8"
-    )
+    ).encode("utf-8")
 
-    return hashlib.sha256(
-        encoded
-    ).hexdigest()
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def record(
@@ -499,9 +439,7 @@ def record(
     structures independently.
     """
 
-    safe_payload = sanitize(
-        dict(payload)
-    )
+    safe_payload = sanitize(dict(payload))
 
     if not isinstance(
         safe_payload,
@@ -509,73 +447,29 @@ def record(
     ):
         safe_payload = {}
 
-    resolved_resource_id = (
-        normalized_identifier(
-            resource_id
-        )
-        or derive_resource_id(
-            safe_payload
-        )
+    resolved_resource_id = normalized_identifier(resource_id) or derive_resource_id(
+        safe_payload
     )
 
-    observed_at = (
-        stringify_timestamp(
-            timestamp
-        )
-        or utc_now()
-    )
+    observed_at = stringify_timestamp(timestamp) or utc_now()
 
     body = {
-        "schema_version": (
-            SCHEMA_VERSION
-        ),
-        "record_type": (
-            RECORD_TYPE
-        ),
+        "schema_version": (SCHEMA_VERSION),
+        "record_type": (RECORD_TYPE),
         "provider": PROVIDER,
-        "service": str(
-            service
-        ),
-        "signal_type": str(
-            signal_type
-        ),
-        "timestamp": (
-            observed_at
-        ),
-        "collected_at": (
-            utc_now()
-        ),
-        "environment_id": (
-            str(
-                environment_id
-                or "default"
-            )
-        ),
-        "cloud_id": str(
-            cloud_id
-            or "openstack-default"
-        ),
-        "region": (
-            normalized_identifier(
-                region
-            )
-        ),
-        "resource_id": (
-            resolved_resource_id
-        ),
-        "source": (
-            normalized_identifier(
-                source
-            )
-        ),
+        "service": str(service),
+        "signal_type": str(signal_type),
+        "timestamp": (observed_at),
+        "collected_at": (utc_now()),
+        "environment_id": (str(environment_id or "default")),
+        "cloud_id": str(cloud_id or "openstack-default"),
+        "region": (normalized_identifier(region)),
+        "resource_id": (resolved_resource_id),
+        "source": (normalized_identifier(source)),
         "payload": safe_payload,
     }
 
-    body["record_id"] = (
-        build_record_id(
-            body
-        )
-    )
+    body["record_id"] = build_record_id(body)
 
     return body
 
@@ -601,12 +495,8 @@ def error(
 
     payload = {
         "collector": service,
-        "operation": (
-            operation
-        ),
-        "error_type": (
-            type(exc).__name__
-        ),
+        "operation": (operation),
+        "error_type": (type(exc).__name__),
         "message": str(exc),
     }
 
@@ -617,9 +507,7 @@ def error(
         cloud_id=cloud_id,
         region=region,
         resource_id=resource_id,
-        environment_id=(
-            environment_id
-        ),
+        environment_id=(environment_id),
         source="collector",
     )
 
@@ -647,9 +535,7 @@ def unavailable(
         },
         cloud_id=cloud_id,
         region=region,
-        environment_id=(
-            environment_id
-        ),
+        environment_id=(environment_id),
         source="collector",
     )
 
@@ -676,11 +562,7 @@ def available(
     }
 
     if details:
-        payload.update(
-            sanitize(
-                dict(details)
-            )
-        )
+        payload.update(sanitize(dict(details)))
 
     return record(
         service,
@@ -688,8 +570,6 @@ def available(
         payload,
         cloud_id=cloud_id,
         region=region,
-        environment_id=(
-            environment_id
-        ),
+        environment_id=(environment_id),
         source="collector",
     )

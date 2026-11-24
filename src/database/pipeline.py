@@ -61,6 +61,7 @@ from src.security.secrets import (
 # Database pipeline
 # ---------------------------------------------------------------
 
+
 class DatabasePipeline:
     """
     Unified lifecycle facade for OSHA persistence
@@ -83,24 +84,13 @@ class DatabasePipeline:
     def __init__(
         self,
         *,
-        config: Optional[
-            DatabaseConfig
-        ] = None,
-        secrets: Optional[
-            SecretManager
-        ] = None,
-        adapter: Optional[
-            DatabaseAdapter
-        ] = None,
-        transaction_adapter: Optional[
-            TransactionAdapter
-        ] = None,
+        config: Optional[DatabaseConfig] = None,
+        secrets: Optional[SecretManager] = None,
+        adapter: Optional[DatabaseAdapter] = None,
+        transaction_adapter: Optional[TransactionAdapter] = None,
         degraded_latency_seconds: float = 1.0,
     ) -> None:
-        self.config = (
-            config
-            or DatabaseConfig()
-        )
+        self.config = config or DatabaseConfig()
 
         self.config.validate()
 
@@ -114,43 +104,31 @@ class DatabasePipeline:
         # Connection
         # -----------------------------------------------------
 
-        self.connection = (
-            DatabaseConnection(
-                config=self.config,
-                adapter=adapter,
-                secrets=secrets,
-            )
+        self.connection = DatabaseConnection(
+            config=self.config,
+            adapter=adapter,
+            secrets=secrets,
         )
 
         # -----------------------------------------------------
         # Transaction adapter
         # -----------------------------------------------------
 
-        self.transaction_adapter = (
-            transaction_adapter
-        )
+        self.transaction_adapter = transaction_adapter
 
         # -----------------------------------------------------
         # Migrations
         # -----------------------------------------------------
 
-        self.migrations = (
-            MigrationRegistry()
-        )
+        self.migrations = MigrationRegistry()
 
         # -----------------------------------------------------
         # Health
         # -----------------------------------------------------
 
-        self.health = (
-            DatabaseHealthChecker(
-                connection=(
-                    self.connection
-                ),
-                degraded_latency_seconds=(
-                    degraded_latency_seconds
-                ),
-            )
+        self.health = DatabaseHealthChecker(
+            connection=(self.connection),
+            degraded_latency_seconds=(degraded_latency_seconds),
         )
 
         # -----------------------------------------------------
@@ -172,9 +150,7 @@ class DatabasePipeline:
     def ready(
         self,
     ) -> bool:
-        return (
-            self.connection.ready
-        )
+        return self.connection.ready
 
     # ---------------------------------------------------------
     # Start
@@ -201,56 +177,29 @@ class DatabasePipeline:
             migrations.apply_on_startup
         """
 
-        status = (
-            self.connection.open()
-        )
+        status = self.connection.open()
 
         migration_records = []
 
-        if (
-            self.config.
-            migrations.enabled
-            and self.config.
-            migrations.
-            apply_on_startup
-        ):
-            runner = (
-                self.migration_runner()
-            )
+        if self.config.migrations.enabled and self.config.migrations.apply_on_startup:
+            runner = self.migration_runner()
 
-            migration_records = (
-                runner.apply_pending()
-            )
+            migration_records = runner.apply_pending()
 
-        health = (
-            self.health.check()
-        )
+        health = self.health.check()
 
-        if (
-            health.status
-            == "unhealthy"
-        ):
+        if health.status == "unhealthy":
             raise (
                 DatabaseConnectionError(
-                    "Database pipeline "
-                    "failed its startup "
-                    "health check."
+                    "Database pipeline failed its startup health check."
                 )
             )
 
         return {
-            "connection": (
-                status.to_dict()
-            ),
-
-            "health": (
-                health.to_dict()
-            ),
-
+            "connection": (status.to_dict()),
+            "health": (health.to_dict()),
             "applied_startup_migrations": [
-                item.to_dict()
-                for item
-                in migration_records
+                item.to_dict() for item in migration_records
             ],
         }
 
@@ -261,20 +210,11 @@ class DatabasePipeline:
     def stop(
         self,
     ) -> Dict[str, Any]:
-        status = (
-            self.connection.close()
-        )
+        status = self.connection.close()
 
         return {
-            "connection": (
-                status.to_dict()
-            ),
-
-            "repository_count": (
-                len(
-                    self._repositories
-                )
-            ),
+            "connection": (status.to_dict()),
+            "repository_count": (len(self._repositories)),
         }
 
     # ---------------------------------------------------------
@@ -294,21 +234,11 @@ class DatabasePipeline:
         """
 
         if not self.connection.ready:
-            raise (
-                DatabaseConnectionError(
-                    "Database pipeline is "
-                    "not ready."
-                )
-            )
+            raise (DatabaseConnectionError("Database pipeline is not ready."))
 
         return DatabaseTransaction(
-            connection=(
-                self.connection
-            ),
-            adapter=(
-                self.
-                transaction_adapter
-            ),
+            connection=(self.connection),
+            adapter=(self.transaction_adapter),
         )
 
     # ---------------------------------------------------------
@@ -319,9 +249,7 @@ class DatabasePipeline:
         self,
         migration: Migration,
     ) -> Migration:
-        return self.migrations.register(
-            migration
-        )
+        return self.migrations.register(migration)
 
     # ---------------------------------------------------------
     # Migration runner
@@ -333,23 +261,14 @@ class DatabasePipeline:
         if not self.connection.ready:
             raise (
                 DatabaseConnectionError(
-                    "Database pipeline "
-                    "must be started "
-                    "before migrations "
-                    "run."
+                    "Database pipeline must be started before migrations run."
                 )
             )
 
         return MigrationRunner(
-            connection=(
-                self.connection
-            ),
-            registry=(
-                self.migrations
-            ),
-            config=(
-                self.config.migrations
-            ),
+            connection=(self.connection),
+            registry=(self.migrations),
+            config=(self.config.migrations),
         )
 
     # ---------------------------------------------------------
@@ -374,18 +293,9 @@ class DatabasePipeline:
         """
 
         if not self.connection.ready:
-            raise (
-                DatabaseConnectionError(
-                    "Database pipeline is "
-                    "not ready."
-                )
-            )
+            raise (DatabaseConnectionError("Database pipeline is not ready."))
 
-        if (
-            self.config.backend
-            != DatabaseBackend.
-            MEMORY.value
-        ):
+        if self.config.backend != DatabaseBackend.MEMORY.value:
             raise (
                 RepositoryValidationError(
                     "Generic repository "
@@ -396,25 +306,15 @@ class DatabasePipeline:
             )
 
         with self._lock:
-            repository = (
-                self._repositories.get(
-                    name
-                )
-            )
+            repository = self._repositories.get(name)
 
             if repository is None:
-                repository = (
-                    MemoryRepository(
-                        connection=(
-                            self.connection
-                        ),
-                        name=name,
-                    )
+                repository = MemoryRepository(
+                    connection=(self.connection),
+                    name=name,
                 )
 
-                self._repositories[
-                    name
-                ] = repository
+                self._repositories[name] = repository
 
             return repository
 
@@ -463,87 +363,35 @@ class DatabasePipeline:
 
         with self._lock:
             repositories = {
-                name: (
-                    repository.
-                    summary()
-                )
+                name: (repository.summary())
                 for (
                     name,
                     repository,
-                )
-                in sorted(
-                    self._repositories.
-                    items()
-                )
+                ) in sorted(self._repositories.items())
             }
 
         # Applied migration state requires an
         # active connection. Don't implicitly
         # connect merely to produce a summary.
         if self.connection.ready:
-            migration_summary = (
-                self.migration_runner().
-                summary()
-            )
+            migration_summary = self.migration_runner().summary()
 
         else:
             migration_summary = {
-                "enabled": (
-                    self.config.
-                    migrations.enabled
-                ),
-
-                "apply_on_startup": (
-                    self.config.
-                    migrations.
-                    apply_on_startup
-                ),
-
-                "registered_migrations": (
-                    len(
-                        self.migrations.
-                        list()
-                    )
-                ),
-
-                "connection_required_for_applied_state": (
-                    True
-                ),
+                "enabled": (self.config.migrations.enabled),
+                "apply_on_startup": (self.config.migrations.apply_on_startup),
+                "registered_migrations": (len(self.migrations.list())),
+                "connection_required_for_applied_state": (True),
             }
 
         return {
-            "config": (
-                safe_config_summary(
-                    self.config
-                )
-            ),
-
-            "connection": (
-                self.connection.
-                summary()
-            ),
-
-            "health": (
-                self.health.summary()
-            ),
-
-            "migrations": (
-                migration_summary
-            ),
-
-            "repositories": (
-                repositories
-            ),
-
-            "repository_count": (
-                len(
-                    repositories
-                )
-            ),
-
-            "credential_value_exposed": (
-                False
-            ),
+            "config": (safe_config_summary(self.config)),
+            "connection": (self.connection.summary()),
+            "health": (self.health.summary()),
+            "migrations": (migration_summary),
+            "repositories": (repositories),
+            "repository_count": (len(repositories)),
+            "credential_value_exposed": (False),
         }
 
 

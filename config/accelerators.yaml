@@ -1,0 +1,36 @@
+schema_version: "1"
+
+accelerators:
+  discovery:
+    cpu: true
+    cuda: true
+    rocm: true
+
+  selection:
+    preferred: "auto"
+    allow_cpu_fallback: true
+
+  cpu:
+    enabled: true
+
+  cuda:
+    enabled: true
+
+  rocm:
+    enabled: true
+
+  memory:
+    minimum_free_gb: 0.0
+
+  training:
+    mixed_precision: false
+
+  inference:
+    mixed_precision: false
+
+  diagnostics:
+    smoke_test_on_startup: false
+
+    # Accelerator diagnostics should observe
+    # hardware rather than modify it.
+    read_only: true

@@ -48,6 +48,7 @@ from src.data.schema import (
 # Split result
 # ---------------------------------------------------------------
 
+
 @dataclass
 class SplitResult:
     """
@@ -56,17 +57,11 @@ class SplitResult:
 
     dataset_id: str
 
-    train: List[
-        DatasetRecord
-    ]
+    train: List[DatasetRecord]
 
-    validation: List[
-        DatasetRecord
-    ]
+    validation: List[DatasetRecord]
 
-    test: List[
-        DatasetRecord
-    ]
+    test: List[DatasetRecord]
 
     seed: int
 
@@ -74,9 +69,7 @@ class SplitResult:
 
     def all_records(
         self,
-    ) -> List[
-        DatasetRecord
-    ]:
+    ) -> List[DatasetRecord]:
         return [
             *self.train,
             *self.validation,
@@ -87,96 +80,49 @@ class SplitResult:
     def total_count(
         self,
     ) -> int:
-        return (
-            len(
-                self.train
-            )
-            + len(
-                self.validation
-            )
-            + len(
-                self.test
-            )
-        )
+        return len(self.train) + len(self.validation) + len(self.test)
 
     def metadata(
         self,
-    ) -> List[
-        DatasetSplit
-    ]:
+    ) -> List[DatasetSplit]:
         return [
             DatasetSplit(
-                dataset_id=(
-                    self.dataset_id
-                ),
-                name=(
-                    SplitName.
-                    TRAIN.value
-                ),
+                dataset_id=(self.dataset_id),
+                name=(SplitName.TRAIN.value),
                 record_ids=[
                     record.record_id
-                    for record
-                    in self.train
-                    if record.record_id
-                    is not None
+                    for record in self.train
+                    if record.record_id is not None
                 ],
                 attributes={
-                    "seed": (
-                        self.seed
-                    ),
-                    "shuffled": (
-                        self.shuffled
-                    ),
+                    "seed": (self.seed),
+                    "shuffled": (self.shuffled),
                 },
             ).finalize(),
-
             DatasetSplit(
-                dataset_id=(
-                    self.dataset_id
-                ),
-                name=(
-                    SplitName.
-                    VALIDATION.value
-                ),
+                dataset_id=(self.dataset_id),
+                name=(SplitName.VALIDATION.value),
                 record_ids=[
                     record.record_id
-                    for record
-                    in self.validation
-                    if record.record_id
-                    is not None
+                    for record in self.validation
+                    if record.record_id is not None
                 ],
                 attributes={
-                    "seed": (
-                        self.seed
-                    ),
-                    "shuffled": (
-                        self.shuffled
-                    ),
+                    "seed": (self.seed),
+                    "shuffled": (self.shuffled),
                 },
             ).finalize(),
-
             DatasetSplit(
-                dataset_id=(
-                    self.dataset_id
-                ),
-                name=(
-                    SplitName.
-                    TEST.value
-                ),
+                dataset_id=(self.dataset_id),
+                name=(SplitName.TEST.value),
                 record_ids=[
                     record.record_id
-                    for record
-                    in self.test
-                    if record.record_id
-                    is not None
+                    for record in self.test
+                    if record.record_id is not None
                 ],
                 attributes={
-                    "seed": (
-                        self.seed
-                    ),
-                    "shuffled": (
-                        self.shuffled
-                    ),
+                    "seed": (self.seed),
+                    "shuffled": (self.shuffled),
                 },
             ).finalize(),
         ]
@@ -187,60 +133,21 @@ class SplitResult:
         include_records: bool = False,
     ) -> Dict[str, Any]:
         result = {
-            "dataset_id": (
-                self.dataset_id
-            ),
-
-            "total_count": (
-                self.total_count
-            ),
-
-            "train_count": len(
-                self.train
-            ),
-
-            "validation_count": len(
-                self.validation
-            ),
-
-            "test_count": len(
-                self.test
-            ),
-
+            "dataset_id": (self.dataset_id),
+            "total_count": (self.total_count),
+            "train_count": len(self.train),
+            "validation_count": len(self.validation),
+            "test_count": len(self.test),
             "seed": self.seed,
-
-            "shuffled": (
-                self.shuffled
-            ),
-
-            "splits": [
-                item.to_dict()
-                for item
-                in self.metadata()
-            ],
+            "shuffled": (self.shuffled),
+            "splits": [item.to_dict() for item in self.metadata()],
         }
 
         if include_records:
-            result[
-                "records"
-            ] = {
-                "train": [
-                    record.to_dict()
-                    for record
-                    in self.train
-                ],
-
-                "validation": [
-                    record.to_dict()
-                    for record
-                    in self.validation
-                ],
-
-                "test": [
-                    record.to_dict()
-                    for record
-                    in self.test
-                ],
+            result["records"] = {
+                "train": [record.to_dict() for record in self.train],
+                "validation": [record.to_dict() for record in self.validation],
+                "test": [record.to_dict() for record in self.test],
             }
 
         return result
@@ -250,10 +157,9 @@ class SplitResult:
 # Record validation
 # ---------------------------------------------------------------
 
+
 def _validate_records(
-    records: Sequence[
-        DatasetRecord
-    ],
+    records: Sequence[DatasetRecord],
 ) -> str:
     """
     Ensure all records belong to the same dataset
@@ -263,10 +169,7 @@ def _validate_records(
     """
 
     if not records:
-        raise DataSplitError(
-            "Cannot split an empty "
-            "dataset."
-        )
+        raise DataSplitError("Cannot split an empty dataset.")
 
     dataset_ids = set()
 
@@ -278,66 +181,41 @@ def _validate_records(
             DatasetRecord,
         ):
             raise DataSplitError(
-                "Dataset split input "
-                "contains a non-"
-                "DatasetRecord value."
+                "Dataset split input contains a non-DatasetRecord value."
             )
 
         record.finalize()
 
-        dataset_ids.add(
-            record.dataset_id
-        )
+        dataset_ids.add(record.dataset_id)
 
         if not record.record_id:
-            raise DataSplitError(
-                "DatasetRecord requires "
-                "record_id before "
-                "splitting."
-            )
+            raise DataSplitError("DatasetRecord requires record_id before splitting.")
 
-        if (
-            record.record_id
-            in record_ids
-        ):
+        if record.record_id in record_ids:
             raise DataSplitError(
-                "Duplicate DatasetRecord "
-                "record_id detected.",
+                "Duplicate DatasetRecord record_id detected.",
                 details={
-                    "record_id": (
-                        record.record_id
-                    ),
+                    "record_id": (record.record_id),
                 },
             )
 
-        record_ids.add(
-            record.record_id
-        )
+        record_ids.add(record.record_id)
 
-    if len(
-        dataset_ids
-    ) != 1:
+    if len(dataset_ids) != 1:
         raise DataSplitError(
-            "Dataset split input "
-            "contains records from "
-            "multiple datasets.",
+            "Dataset split input contains records from multiple datasets.",
             details={
-                "dataset_ids": sorted(
-                    dataset_ids
-                ),
+                "dataset_ids": sorted(dataset_ids),
             },
         )
 
-    return next(
-        iter(
-            dataset_ids
-        )
-    )
+    return next(iter(dataset_ids))
 
 
 # ---------------------------------------------------------------
 # Split counts
 # ---------------------------------------------------------------
+
 
 def calculate_split_counts(
     total: int,
@@ -354,68 +232,38 @@ def calculate_split_counts(
     config.validate()
 
     if total < 1:
-        raise DataSplitError(
-            "Split total must be >= 1."
-        )
+        raise DataSplitError("Split total must be >= 1.")
 
-    validation_count = int(
-        total
-        * config.validation_ratio
-    )
+    validation_count = int(total * config.validation_ratio)
 
-    test_count = int(
-        total
-        * config.test_ratio
-    )
+    test_count = int(total * config.test_ratio)
 
-    train_count = (
-        total
-        - validation_count
-        - test_count
-    )
+    train_count = total - validation_count - test_count
 
     if train_count < 1:
         raise (
             DataSplitConfigurationError(
-                "Split configuration "
-                "produces an empty "
-                "training set.",
+                "Split configuration produces an empty training set.",
                 details={
-                    "total_records": (
-                        total
-                    ),
-                    "train_count": (
-                        train_count
-                    ),
-                    "validation_count": (
-                        validation_count
-                    ),
-                    "test_count": (
-                        test_count
-                    ),
+                    "total_records": (total),
+                    "train_count": (train_count),
+                    "validation_count": (validation_count),
+                    "test_count": (test_count),
                 },
             )
         )
 
     return {
-        SplitName.TRAIN.value: (
-            train_count
-        ),
-
-        SplitName.
-        VALIDATION.value: (
-            validation_count
-        ),
-
-        SplitName.TEST.value: (
-            test_count
-        ),
+        SplitName.TRAIN.value: (train_count),
+        SplitName.VALIDATION.value: (validation_count),
+        SplitName.TEST.value: (test_count),
     }
 
 
 # ---------------------------------------------------------------
 # Overlap verification
 # ---------------------------------------------------------------
+
 
 def verify_no_overlap(
     result: SplitResult,
@@ -425,41 +273,23 @@ def verify_no_overlap(
     partitions.
     """
 
-    train_ids = {
-        record.record_id
-        for record
-        in result.train
-    }
+    train_ids = {record.record_id for record in result.train}
 
-    validation_ids = {
-        record.record_id
-        for record
-        in result.validation
-    }
+    validation_ids = {record.record_id for record in result.validation}
 
-    test_ids = {
-        record.record_id
-        for record
-        in result.test
-    }
+    test_ids = {record.record_id for record in result.test}
 
     return not (
-        train_ids.intersection(
-            validation_ids
-        )
-        or train_ids.intersection(
-            test_ids
-        )
-        or validation_ids.
-        intersection(
-            test_ids
-        )
+        train_ids.intersection(validation_ids)
+        or train_ids.intersection(test_ids)
+        or validation_ids.intersection(test_ids)
     )
 
 
 # ---------------------------------------------------------------
 # Record splitter
 # ---------------------------------------------------------------
+
 
 class DatasetSplitter:
     """
@@ -472,14 +302,9 @@ class DatasetSplitter:
     def __init__(
         self,
         *,
-        config: Optional[
-            SplitConfig
-        ] = None,
+        config: Optional[SplitConfig] = None,
     ) -> None:
-        self.config = (
-            config
-            or SplitConfig()
-        )
+        self.config = config or SplitConfig()
 
         self.config.validate()
 
@@ -489,106 +314,52 @@ class DatasetSplitter:
 
     def split(
         self,
-        records: Iterable[
-            DatasetRecord
-        ],
+        records: Iterable[DatasetRecord],
     ) -> SplitResult:
-        values = list(
-            records
-        )
+        values = list(records)
 
-        dataset_id = (
-            _validate_records(
-                values
-            )
-        )
+        dataset_id = _validate_records(values)
 
-        working = list(
-            values
-        )
+        working = list(values)
 
         if self.config.shuffle:
-            randomizer = random.Random(
-                self.config.
-                random_seed
-            )
+            randomizer = random.Random(self.config.random_seed)
 
-            randomizer.shuffle(
-                working
-            )
+            randomizer.shuffle(working)
 
-        counts = (
-            calculate_split_counts(
-                len(
-                    working
-                ),
-                self.config,
-            )
+        counts = calculate_split_counts(
+            len(working),
+            self.config,
         )
 
-        train_end = counts[
-            SplitName.TRAIN.value
-        ]
+        train_end = counts[SplitName.TRAIN.value]
 
-        validation_end = (
-            train_end
-            + counts[
-                SplitName.
-                VALIDATION.value
-            ]
-        )
+        validation_end = train_end + counts[SplitName.VALIDATION.value]
 
-        train = working[
-            :train_end
-        ]
+        train = working[:train_end]
 
-        validation = working[
-            train_end:
-            validation_end
-        ]
+        validation = working[train_end:validation_end]
 
-        test = working[
-            validation_end:
-        ]
+        test = working[validation_end:]
 
         result = SplitResult(
-            dataset_id=(
-                dataset_id
-            ),
+            dataset_id=(dataset_id),
             train=train,
             validation=validation,
             test=test,
-            seed=(
-                self.config.
-                random_seed
-            ),
-            shuffled=(
-                self.config.shuffle
-            ),
+            seed=(self.config.random_seed),
+            shuffled=(self.config.shuffle),
         )
 
         # -----------------------------------------------------
         # Internal invariants
         # -----------------------------------------------------
 
-        if (
-            result.total_count
-            != len(
-                values
-            )
-        ):
-            raise DataSplitError(
-                "Dataset split lost or "
-                "duplicated records."
-            )
+        if result.total_count != len(values):
+            raise DataSplitError("Dataset split lost or duplicated records.")
 
-        if not verify_no_overlap(
-            result
-        ):
-            raise DataSplitError(
-                "Dataset split contains "
-                "overlapping records."
-            )
+        if not verify_no_overlap(result):
+            raise DataSplitError("Dataset split contains overlapping records.")
 
         return result
 
@@ -598,9 +369,7 @@ class DatasetSplitter:
 
     def split_ordered(
         self,
-        records: Iterable[
-            DatasetRecord
-        ],
+        records: Iterable[DatasetRecord],
     ) -> SplitResult:
         """
         Split records in the existing order,
@@ -611,30 +380,14 @@ class DatasetSplitter:
         """
 
         config = SplitConfig(
-            train_ratio=(
-                self.config.
-                train_ratio
-            ),
-            validation_ratio=(
-                self.config.
-                validation_ratio
-            ),
-            test_ratio=(
-                self.config.
-                test_ratio
-            ),
-            random_seed=(
-                self.config.
-                random_seed
-            ),
+            train_ratio=(self.config.train_ratio),
+            validation_ratio=(self.config.validation_ratio),
+            test_ratio=(self.config.test_ratio),
+            random_seed=(self.config.random_seed),
             shuffle=False,
         )
 
-        return DatasetSplitter(
-            config=config
-        ).split(
-            records
-        )
+        return DatasetSplitter(config=config).split(records)
 
     # ---------------------------------------------------------
     # Summary
@@ -644,37 +397,13 @@ class DatasetSplitter:
         self,
     ) -> Dict[str, Any]:
         return {
-            "train_ratio": (
-                self.config.
-                train_ratio
-            ),
-
-            "validation_ratio": (
-                self.config.
-                validation_ratio
-            ),
-
-            "test_ratio": (
-                self.config.
-                test_ratio
-            ),
-
-            "random_seed": (
-                self.config.
-                random_seed
-            ),
-
-            "shuffle": (
-                self.config.shuffle
-            ),
-
-            "duplicate_record_ids_allowed": (
-                False
-            ),
-
-            "split_overlap_allowed": (
-                False
-            ),
+            "train_ratio": (self.config.train_ratio),
+            "validation_ratio": (self.config.validation_ratio),
+            "test_ratio": (self.config.test_ratio),
+            "random_seed": (self.config.random_seed),
+            "shuffle": (self.config.shuffle),
+            "duplicate_record_ids_allowed": (False),
+            "split_overlap_allowed": (False),
         }
 
 
@@ -682,18 +411,15 @@ class DatasetSplitter:
 # Group-aware deterministic split
 # ---------------------------------------------------------------
 
+
 def split_by_group(
-    records: Iterable[
-        DatasetRecord
-    ],
+    records: Iterable[DatasetRecord],
     groups: Mapping[
         str,
         str,
     ],
     *,
-    config: Optional[
-        SplitConfig
-    ] = None,
+    config: Optional[SplitConfig] = None,
 ) -> SplitResult:
     """
     Keep records belonging to the same group in
@@ -709,190 +435,96 @@ def split_by_group(
     group.
     """
 
-    values = list(
-        records
-    )
+    values = list(records)
 
-    dataset_id = (
-        _validate_records(
-            values
-        )
-    )
+    dataset_id = _validate_records(values)
 
-    split_config = (
-        config
-        or SplitConfig()
-    )
+    split_config = config or SplitConfig()
 
     split_config.validate()
 
     grouped: Dict[
         str,
-        List[
-            DatasetRecord
-        ],
+        List[DatasetRecord],
     ] = {}
 
     for record in values:
-        record_id = (
-            record.record_id
-        )
+        record_id = record.record_id
 
-        if (
-            record_id
-            not in groups
-        ):
+        if record_id not in groups:
             raise DataSplitError(
-                "Dataset record has no "
-                "group assignment.",
+                "Dataset record has no group assignment.",
                 details={
-                    "record_id": (
-                        record_id
-                    ),
+                    "record_id": (record_id),
                 },
             )
 
-        group_id = str(
-            groups[
-                record_id
-            ]
-        ).strip()
+        group_id = str(groups[record_id]).strip()
 
         if not group_id:
             raise DataSplitError(
-                "Dataset record group ID "
-                "cannot be empty.",
+                "Dataset record group ID cannot be empty.",
                 details={
-                    "record_id": (
-                        record_id
-                    ),
+                    "record_id": (record_id),
                 },
             )
 
         grouped.setdefault(
             group_id,
             [],
-        ).append(
-            record
-        )
+        ).append(record)
 
-    group_ids = sorted(
-        grouped
-    )
+    group_ids = sorted(grouped)
 
     if split_config.shuffle:
-        randomizer = random.Random(
-            split_config.
-            random_seed
-        )
+        randomizer = random.Random(split_config.random_seed)
 
-        randomizer.shuffle(
-            group_ids
-        )
+        randomizer.shuffle(group_ids)
 
     counts = calculate_split_counts(
-        len(
-            group_ids
-        ),
+        len(group_ids),
         split_config,
     )
 
-    train_group_end = counts[
-        SplitName.TRAIN.value
-    ]
+    train_group_end = counts[SplitName.TRAIN.value]
 
-    validation_group_end = (
-        train_group_end
-        + counts[
-            SplitName.
-            VALIDATION.value
-        ]
-    )
+    validation_group_end = train_group_end + counts[SplitName.VALIDATION.value]
 
-    train_groups = set(
-        group_ids[
-            :train_group_end
-        ]
-    )
+    train_groups = set(group_ids[:train_group_end])
 
-    validation_groups = set(
-        group_ids[
-            train_group_end:
-            validation_group_end
-        ]
-    )
+    validation_groups = set(group_ids[train_group_end:validation_group_end])
 
-    test_groups = set(
-        group_ids[
-            validation_group_end:
-        ]
-    )
+    test_groups = set(group_ids[validation_group_end:])
 
-    train: List[
-        DatasetRecord
-    ] = []
+    train: List[DatasetRecord] = []
 
-    validation: List[
-        DatasetRecord
-    ] = []
+    validation: List[DatasetRecord] = []
 
-    test: List[
-        DatasetRecord
-    ] = []
+    test: List[DatasetRecord] = []
 
     for group_id in group_ids:
         target = (
             train
-            if group_id
-            in train_groups
-            else (
-                validation
-                if group_id
-                in validation_groups
-                else test
-            )
+            if group_id in train_groups
+            else (validation if group_id in validation_groups else test)
         )
 
-        target.extend(
-            grouped[
-                group_id
-            ]
-        )
+        target.extend(grouped[group_id])
 
     result = SplitResult(
-        dataset_id=(
-            dataset_id
-        ),
+        dataset_id=(dataset_id),
         train=train,
         validation=validation,
         test=test,
-        seed=(
-            split_config.random_seed
-        ),
-        shuffled=(
-            split_config.shuffle
-        ),
+        seed=(split_config.random_seed),
+        shuffled=(split_config.shuffle),
     )
 
-    if (
-        result.total_count
-        != len(
-            values
-        )
-    ):
-        raise DataSplitError(
-            "Grouped dataset split "
-            "lost or duplicated records."
-        )
+    if result.total_count != len(values):
+        raise DataSplitError("Grouped dataset split lost or duplicated records.")
 
-    if not verify_no_overlap(
-        result
-    ):
-        raise DataSplitError(
-            "Grouped dataset split "
-            "contains overlapping "
-            "records."
-        )
+    if not verify_no_overlap(result):
+        raise DataSplitError("Grouped dataset split contains overlapping records.")
 
     return result
 
@@ -903,11 +535,8 @@ def split_by_group(
 
 __all__ = [
     "SplitResult",
-
     "calculate_split_counts",
     "verify_no_overlap",
-
     "DatasetSplitter",
-
     "split_by_group",
 ]

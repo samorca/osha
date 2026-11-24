@@ -16,6 +16,9 @@ The DataPipeline coordinates:
 Model training remains in src/training/.
 """
 
+import argparse
+import json
+
 from pathlib import Path
 
 from typing import (
@@ -83,6 +86,7 @@ from src.data.validate import (
 # Data pipeline
 # ---------------------------------------------------------------
 
+
 class DataPipeline:
     """
     Unified data-engineering facade for OSHA.
@@ -109,20 +113,11 @@ class DataPipeline:
     def __init__(
         self,
         *,
-        config: Optional[
-            DataConfig
-        ] = None,
-        manifests: Optional[
-            ManifestRegistry
-        ] = None,
-        normalizers: Optional[
-            NormalizerRegistry
-        ] = None,
+        config: Optional[DataConfig] = None,
+        manifests: Optional[ManifestRegistry] = None,
+        normalizers: Optional[NormalizerRegistry] = None,
     ) -> None:
-        self.config = (
-            config
-            or DataConfig()
-        )
+        self.config = config or DataConfig()
 
         self.config.validate()
 
@@ -130,57 +125,27 @@ class DataPipeline:
         # Registries
         # -----------------------------------------------------
 
-        self.manifests = (
-            manifests
-            or ManifestRegistry()
-        )
+        self.manifests = manifests or ManifestRegistry()
 
-        self.normalizers = (
-            normalizers
-            or NormalizerRegistry()
-        )
+        self.normalizers = normalizers or NormalizerRegistry()
 
         # -----------------------------------------------------
         # Services
         # -----------------------------------------------------
 
-        self.fetcher = DataFetcher(
-            config=self.config
-        )
+        self.fetcher = DataFetcher(config=self.config)
 
-        self.validator = (
-            DatasetValidator(
-                config=self.config
-            )
-        )
+        self.validator = DatasetValidator(config=self.config)
 
-        self.normalizer = (
-            DatasetNormalizer(
-                registry=(
-                    self.normalizers
-                )
-            )
-        )
+        self.normalizer = DatasetNormalizer(registry=(self.normalizers))
 
-        self.splitter = (
-            DatasetSplitter(
-                config=(
-                    self.config.split
-                )
-            )
-        )
+        self.splitter = DatasetSplitter(config=(self.config.split))
 
         self.preparer = CorpusPreparer(
             config=self.config,
-            validator=(
-                self.validator
-            ),
-            normalizer=(
-                self.normalizer
-            ),
-            splitter=(
-                self.splitter
-            ),
+            validator=(self.validator),
+            normalizer=(self.normalizer),
+            splitter=(self.splitter),
         )
 
     # ---------------------------------------------------------
@@ -191,10 +156,7 @@ class DataPipeline:
         self,
     ) -> None:
         if not self.config.enabled:
-            raise DataError(
-                "Data pipeline is "
-                "disabled."
-            )
+            raise DataError("Data pipeline is disabled.")
 
     # ---------------------------------------------------------
     # Paths
@@ -204,10 +166,7 @@ class DataPipeline:
     def paths(
         self,
     ) -> Dict[str, str]:
-        return (
-            self.config.
-            paths.resolved()
-        )
+        return self.config.paths.resolved()
 
     # ---------------------------------------------------------
     # Initialize directories
@@ -227,25 +186,17 @@ class DataPipeline:
         paths = self.paths
 
         try:
-            for path in (
-                paths.values()
-            ):
-                Path(
-                    path
-                ).mkdir(
+            for path in paths.values():
+                Path(path).mkdir(
                     parents=True,
                     exist_ok=True,
                 )
 
         except OSError as exc:
             raise DataPreparationError(
-                "Data directory layout "
-                "could not be "
-                "initialized.",
+                "Data directory layout could not be initialized.",
                 details={
-                    "error_type": (
-                        type(exc).__name__
-                    ),
+                    "error_type": (type(exc).__name__),
                 },
             ) from exc
 
@@ -267,30 +218,16 @@ class DataPipeline:
         manifest.finalize()
 
         if overwrite:
-            registered = (
-                self.manifests.
-                upsert(
-                    manifest
-                )
-            )
+            registered = self.manifests.upsert(manifest)
 
         else:
-            registered = (
-                self.manifests.
-                register(
-                    manifest
-                )
-            )
+            registered = self.manifests.register(manifest)
 
         if persist:
             save_manifest(
                 registered,
-                self.paths[
-                    "manifests"
-                ],
-                overwrite=(
-                    overwrite
-                ),
+                self.paths["manifests"],
+                overwrite=(overwrite),
             )
 
         return registered
@@ -308,20 +245,14 @@ class DataPipeline:
     ) -> DatasetManifest:
         self._require_enabled()
 
-        manifest = load_manifest(
-            path
-        )
+        manifest = load_manifest(path)
 
         if register:
             if replace:
-                self.manifests.upsert(
-                    manifest
-                )
+                self.manifests.upsert(manifest)
 
             else:
-                self.manifests.register(
-                    manifest
-                )
+                self.manifests.register(manifest)
 
         return manifest
 
@@ -350,17 +281,13 @@ class DataPipeline:
         *,
         record_type: str,
         normalizer: RecordNormalizer,
-        provider: Optional[
-            str
-        ] = None,
+        provider: Optional[str] = None,
         replace: bool = False,
     ) -> None:
         self._require_enabled()
 
         self.normalizers.register(
-            record_type=(
-                record_type
-            ),
+            record_type=(record_type),
             normalizer=normalizer,
             provider=provider,
             replace=replace,
@@ -375,12 +302,8 @@ class DataPipeline:
         dataset_id: str,
         version: str,
         *,
-        overwrite: Optional[
-            bool
-        ] = None,
-    ) -> List[
-        FetchResult
-    ]:
+        overwrite: Optional[bool] = None,
+    ) -> List[FetchResult]:
         self._require_enabled()
 
         manifest = self.manifest(
@@ -388,12 +311,9 @@ class DataPipeline:
             version,
         )
 
-        return (
-            self.fetcher.
-            fetch_manifest(
-                manifest,
-                overwrite=overwrite,
-            )
+        return self.fetcher.fetch_manifest(
+            manifest,
+            overwrite=overwrite,
         )
 
     # ---------------------------------------------------------
@@ -406,9 +326,7 @@ class DataPipeline:
         version: str,
         *,
         raise_on_mismatch: bool = True,
-    ) -> List[
-        FileIntegrityResult
-    ]:
+    ) -> List[FileIntegrityResult]:
         self._require_enabled()
 
         manifest = self.manifest(
@@ -416,38 +334,19 @@ class DataPipeline:
             version,
         )
 
-        results = (
-            verify_manifest_files(
-                manifest,
-                self.paths[
-                    "raw"
-                ],
-                config=(
-                    self.config.
-                    integrity
-                ),
-                raise_on_mismatch=(
-                    raise_on_mismatch
-                ),
-            )
+        results = verify_manifest_files(
+            manifest,
+            self.paths["raw"],
+            config=(self.config.integrity),
+            raise_on_mismatch=(raise_on_mismatch),
         )
 
-        if (
-            raise_on_mismatch
-            and not manifest_integrity_ok(
-                results
-            )
-        ):
+        if raise_on_mismatch and not manifest_integrity_ok(results):
             raise DataIntegrityError(
-                "Dataset integrity "
-                "verification failed.",
+                "Dataset integrity verification failed.",
                 details={
-                    "dataset_id": (
-                        dataset_id
-                    ),
-                    "version": (
-                        version
-                    ),
+                    "dataset_id": (dataset_id),
+                    "version": (version),
                 },
             )
 
@@ -462,9 +361,7 @@ class DataPipeline:
         dataset_id: str,
         version: str,
         *,
-        record_validator: Optional[
-            RecordValidator
-        ] = None,
+        record_validator: Optional[RecordValidator] = None,
     ) -> ValidationResult:
         self._require_enabled()
 
@@ -473,13 +370,9 @@ class DataPipeline:
             version,
         )
 
-        return (
-            self.validator.validate(
-                manifest,
-                record_validator=(
-                    record_validator
-                ),
-            )
+        return self.validator.validate(
+            manifest,
+            record_validator=(record_validator),
         )
 
     # ---------------------------------------------------------
@@ -491,9 +384,7 @@ class DataPipeline:
         dataset_id: str,
         version: str,
         *,
-        record_validator: Optional[
-            RecordValidator
-        ] = None,
+        record_validator: Optional[RecordValidator] = None,
     ) -> PreparationResult:
         """
         Prepare an already-fetched dataset.
@@ -512,9 +403,7 @@ class DataPipeline:
 
         return self.preparer.prepare(
             manifest,
-            record_validator=(
-                record_validator
-            ),
+            record_validator=(record_validator),
         )
 
     # ---------------------------------------------------------
@@ -526,12 +415,8 @@ class DataPipeline:
         dataset_id: str,
         version: str,
         *,
-        fetch_overwrite: Optional[
-            bool
-        ] = None,
-        record_validator: Optional[
-            RecordValidator
-        ] = None,
+        fetch_overwrite: Optional[bool] = None,
+        record_validator: Optional[RecordValidator] = None,
     ) -> PreparationResult:
         """
         Convenience workflow for a registered
@@ -552,16 +437,10 @@ class DataPipeline:
         self.fetch(
             dataset_id,
             version,
-            overwrite=(
-                fetch_overwrite
-            ),
+            overwrite=(fetch_overwrite),
         )
 
-        if (
-            self.config.
-            integrity.
-            verify_after_fetch
-        ):
+        if self.config.integrity.verify_after_fetch:
             self.verify_integrity(
                 dataset_id,
                 version,
@@ -571,9 +450,7 @@ class DataPipeline:
         return self.prepare(
             dataset_id,
             version,
-            record_validator=(
-                record_validator
-            ),
+            record_validator=(record_validator),
         )
 
     # ---------------------------------------------------------
@@ -596,10 +473,7 @@ class DataPipeline:
                 "initialized": False,
             }
 
-        paths = (
-            self.
-            initialize_directories()
-        )
+        paths = self.initialize_directories()
 
         return {
             "enabled": True,
@@ -653,45 +527,15 @@ class DataPipeline:
         self,
     ) -> Dict[str, Any]:
         return {
-            "config": (
-                safe_config_summary(
-                    self.config
-                )
-            ),
-
-            "manifests": (
-                self.manifests.
-                summary()
-            ),
-
-            "normalizers": (
-                self.normalizers.
-                summary()
-            ),
-
-            "fetcher": (
-                self.fetcher.summary()
-            ),
-
-            "validator": (
-                self.validator.summary()
-            ),
-
-            "normalizer": (
-                self.normalizer.summary()
-            ),
-
-            "splitter": (
-                self.splitter.summary()
-            ),
-
-            "preparer": (
-                self.preparer.summary()
-            ),
-
-            "training_performed": (
-                False
-            ),
+            "config": (safe_config_summary(self.config)),
+            "manifests": (self.manifests.summary()),
+            "normalizers": (self.normalizers.summary()),
+            "fetcher": (self.fetcher.summary()),
+            "validator": (self.validator.summary()),
+            "normalizer": (self.normalizer.summary()),
+            "splitter": (self.splitter.summary()),
+            "preparer": (self.preparer.summary()),
+            "training_performed": (False),
         }
 
 
@@ -702,3 +546,85 @@ class DataPipeline:
 __all__ = [
     "DataPipeline",
 ]
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="OSHA data engineering pipeline",
+    )
+    parser.add_argument(
+        "--wrapper-info",
+        action="store_true",
+        help="Print pipeline subsystem information.",
+    )
+    parser.add_argument(
+        "--initialize",
+        action="store_true",
+        help="Create configured data directories.",
+    )
+    parser.add_argument(
+        "--manifest",
+        help="Path to a JSON dataset manifest.",
+    )
+    parser.add_argument(
+        "--register",
+        action="store_true",
+        help="Register the manifest in the in-memory registry.",
+    )
+    arguments = parser.parse_args()
+
+    pipeline = DataPipeline()
+
+    if arguments.wrapper_info:
+        print(
+            json.dumps(
+                {
+                    "module": "src.data.pipeline",
+                    "training_performed": False,
+                },
+                sort_keys=True,
+            )
+        )
+        return
+
+    if arguments.initialize:
+        print(
+            json.dumps(
+                pipeline.initialize_directories(),
+                sort_keys=True,
+            )
+        )
+        return
+
+    if arguments.manifest:
+        manifest = load_manifest(arguments.manifest)
+
+        if arguments.register:
+            pipeline.manifests.register(manifest)
+
+        validation = pipeline.validator.validate(manifest)
+        print(
+            json.dumps(
+                {
+                    "manifest": manifest.to_dict(),
+                    "validation": validation.to_dict(),
+                    "registered": arguments.register,
+                },
+                sort_keys=True,
+            )
+        )
+
+        if not validation.valid:
+            raise SystemExit(1)
+        return
+
+    print(
+        json.dumps(
+            pipeline.summary(),
+            sort_keys=True,
+        )
+    )
+
+
+if __name__ == "__main__":
+    main()

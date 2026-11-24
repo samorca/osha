@@ -38,21 +38,19 @@ WILDCARD = "*"
 # Errors
 # ---------------------------------------------------------------
 
-class PolicyErrorBase(
-    RuntimeError
-):
+
+class PolicyErrorBase(RuntimeError):
     pass
 
 
-class PolicyConflictError(
-    PolicyErrorBase
-):
+class PolicyConflictError(PolicyErrorBase):
     pass
 
 
 # ---------------------------------------------------------------
 # Generic list/value matching
 # ---------------------------------------------------------------
+
 
 def _matches_value(
     allowed: List[str],
@@ -87,6 +85,7 @@ def _matches_value(
 # Policy matching
 # ---------------------------------------------------------------
 
+
 def policy_matches(
     policy: SecurityPolicy,
     request: AuthorizationRequest,
@@ -118,28 +117,18 @@ def policy_matches(
     # Resource
     # ---------------------------------------------------------
 
-    if (
-        policy.resource
-        not in {
-            WILDCARD,
-            request.permission.resource,
-        }
-    ):
+    if policy.resource not in {
+        WILDCARD,
+        request.permission.resource,
+    }:
         return False
 
     # ---------------------------------------------------------
     # Action
     # ---------------------------------------------------------
 
-    if (
-        policy.actions
-        and WILDCARD
-        not in policy.actions
-    ):
-        if (
-            request.permission.action
-            not in policy.actions
-        ):
+    if policy.actions and WILDCARD not in policy.actions:
+        if request.permission.action not in policy.actions:
             return False
 
     # ---------------------------------------------------------
@@ -148,8 +137,7 @@ def policy_matches(
 
     if not _matches_value(
         policy.environments,
-        request.permission.
-        environment_id,
+        request.permission.environment_id,
     ):
         return False
 
@@ -158,29 +146,12 @@ def policy_matches(
     # ---------------------------------------------------------
 
     if policy.roles:
-        principal_roles = {
-            normalize_role(
-                role
-            )
-            for role
-            in request.principal.roles
-        }
+        principal_roles = {normalize_role(role) for role in request.principal.roles}
 
-        required_roles = {
-            normalize_role(
-                role
-            )
-            for role
-            in policy.roles
-        }
+        required_roles = {normalize_role(role) for role in policy.roles}
 
-        if (
-            WILDCARD
-            not in required_roles
-            and not principal_roles.
-            intersection(
-                required_roles
-            )
+        if WILDCARD not in required_roles and not principal_roles.intersection(
+            required_roles
         ):
             return False
 
@@ -190,6 +161,7 @@ def policy_matches(
 # ---------------------------------------------------------------
 # Policy set
 # ---------------------------------------------------------------
+
 
 class PolicySet:
     """
@@ -229,19 +201,12 @@ class PolicySet:
         policy.finalize()
 
         with self._lock:
-            if (
-                policy.policy_id
-                in self._policies
-            ):
+            if policy.policy_id in self._policies:
                 raise PolicyConflictError(
-                    "Policy already "
-                    "registered: "
-                    f"{policy.policy_id}"
+                    f"Policy already registered: {policy.policy_id}"
                 )
 
-            self._policies[
-                policy.policy_id
-            ] = policy
+            self._policies[policy.policy_id] = policy
 
         return policy
 
@@ -256,9 +221,7 @@ class PolicySet:
         policy.finalize()
 
         with self._lock:
-            self._policies[
-                policy.policy_id
-            ] = policy
+            self._policies[policy.policy_id] = policy
 
         return policy
 
@@ -269,9 +232,7 @@ class PolicySet:
     def remove(
         self,
         policy_id: str,
-    ) -> Optional[
-        SecurityPolicy
-    ]:
+    ) -> Optional[SecurityPolicy]:
         with self._lock:
             return self._policies.pop(
                 policy_id,
@@ -286,21 +247,12 @@ class PolicySet:
         self,
         *,
         enabled_only: bool = False,
-    ) -> List[
-        SecurityPolicy
-    ]:
+    ) -> List[SecurityPolicy]:
         with self._lock:
-            values = list(
-                self._policies.values()
-            )
+            values = list(self._policies.values())
 
         if enabled_only:
-            values = [
-                value
-                for value
-                in values
-                if value.enabled
-            ]
+            values = [value for value in values if value.enabled]
 
         # Lower priority numbers are evaluated
         # first for deterministic ordering.
@@ -319,17 +271,12 @@ class PolicySet:
     def matching(
         self,
         request: AuthorizationRequest,
-    ) -> List[
-        SecurityPolicy
-    ]:
+    ) -> List[SecurityPolicy]:
         request.finalize()
 
         return [
             policy
-            for policy
-            in self.list(
-                enabled_only=True
-            )
+            for policy in self.list(enabled_only=True)
             if policy_matches(
                 policy,
                 request,
@@ -343,9 +290,7 @@ class PolicySet:
     def evaluate(
         self,
         request: AuthorizationRequest,
-    ) -> Optional[
-        AuthorizationResult
-    ]:
+    ) -> Optional[AuthorizationResult]:
         """
         Evaluate all applicable policies.
 
@@ -358,44 +303,23 @@ class PolicySet:
             ALLOW
         """
 
-        matches = self.matching(
-            request
-        )
+        matches = self.matching(request)
 
         if not matches:
             return None
 
         denies = [
-            policy
-            for policy
-            in matches
-            if (
-                policy.effect
-                == PolicyEffect.
-                DENY.value
-            )
+            policy for policy in matches if (policy.effect == PolicyEffect.DENY.value)
         ]
 
         approvals = [
             policy
-            for policy
-            in matches
-            if (
-                policy.effect
-                == PolicyEffect.
-                REQUIRE_APPROVAL.value
-            )
+            for policy in matches
+            if (policy.effect == PolicyEffect.REQUIRE_APPROVAL.value)
         ]
 
         allows = [
-            policy
-            for policy
-            in matches
-            if (
-                policy.effect
-                == PolicyEffect.
-                ALLOW.value
-            )
+            policy for policy in matches if (policy.effect == PolicyEffect.ALLOW.value)
         ]
 
         # -----------------------------------------------------
@@ -405,16 +329,9 @@ class PolicySet:
         if denies:
             selected = denies
 
-            decision = (
-                AuthorizationDecision.
-                DENY.value
-            )
+            decision = AuthorizationDecision.DENY.value
 
-            reason = (
-                "A matching security "
-                "policy denied the "
-                "request."
-            )
+            reason = "A matching security policy denied the request."
 
         # -----------------------------------------------------
         # Approval requirement wins over allow
@@ -423,16 +340,9 @@ class PolicySet:
         elif approvals:
             selected = approvals
 
-            decision = (
-                AuthorizationDecision.
-                REQUIRE_APPROVAL.value
-            )
+            decision = AuthorizationDecision.REQUIRE_APPROVAL.value
 
-            reason = (
-                "A matching security "
-                "policy requires "
-                "approval."
-            )
+            reason = "A matching security policy requires approval."
 
         # -----------------------------------------------------
         # Allow
@@ -441,16 +351,9 @@ class PolicySet:
         elif allows:
             selected = allows
 
-            decision = (
-                AuthorizationDecision.
-                ALLOW.value
-            )
+            decision = AuthorizationDecision.ALLOW.value
 
-            reason = (
-                "A matching security "
-                "policy allowed the "
-                "request."
-            )
+            reason = "A matching security policy allowed the request."
 
         else:
             return None
@@ -458,11 +361,7 @@ class PolicySet:
         # Keep all matching policies for
         # provenance, not merely the selected
         # effect category.
-        policy_ids = [
-            policy.policy_id
-            for policy
-            in matches
-        ]
+        policy_ids = [policy.policy_id for policy in matches]
 
         # For an approval decision, policy roles
         # describe possible approval-role
@@ -471,61 +370,35 @@ class PolicySet:
         required_approval_roles = (
             sorted(
                 {
-                    normalize_role(
-                        role
-                    )
-                    for policy
-                    in selected
-                    for role
-                    in policy.roles
-                    if role
-                    != WILDCARD
+                    normalize_role(role)
+                    for policy in selected
+                    for role in policy.roles
+                    if role != WILDCARD
                 }
             )
-            if (
-                decision
-                == AuthorizationDecision.
-                REQUIRE_APPROVAL.value
-            )
+            if (decision == AuthorizationDecision.REQUIRE_APPROVAL.value)
             else []
         )
 
-        return (
-            AuthorizationResult(
-                decision=decision,
-                request_id=(
-                    request.request_id
+        return AuthorizationResult(
+            decision=decision,
+            request_id=(request.request_id),
+            reason=reason,
+            policy_ids=policy_ids,
+            required_approval_roles=(required_approval_roles),
+            attributes={
+                "matching_policy_count": (len(matches)),
+                "selected_effect": (
+                    PolicyEffect.DENY.value
+                    if denies
+                    else (
+                        PolicyEffect.REQUIRE_APPROVAL.value
+                        if approvals
+                        else (PolicyEffect.ALLOW.value)
+                    )
                 ),
-                reason=reason,
-                policy_ids=policy_ids,
-                required_approval_roles=(
-                    required_approval_roles
-                ),
-                attributes={
-                    "matching_policy_count": (
-                        len(
-                            matches
-                        )
-                    ),
-
-                    "selected_effect": (
-                        PolicyEffect.
-                        DENY.value
-                        if denies
-                        else (
-                            PolicyEffect.
-                            REQUIRE_APPROVAL.
-                            value
-                            if approvals
-                            else (
-                                PolicyEffect.
-                                ALLOW.value
-                            )
-                        )
-                    ),
-                },
-            ).finalize()
-        )
+            },
+        ).finalize()
 
     # ---------------------------------------------------------
     # Summary
@@ -542,12 +415,8 @@ class PolicySet:
 
             enabled = 0
 
-            for policy in (
-                self._policies.values()
-            ):
-                effects[
-                    policy.effect
-                ] = (
+            for policy in self._policies.values():
+                effects[policy.effect] = (
                     effects.get(
                         policy.effect,
                         0,
@@ -559,19 +428,9 @@ class PolicySet:
                     enabled += 1
 
             return {
-                "policy_count": (
-                    len(
-                        self._policies
-                    )
-                ),
-
-                "enabled_policy_count": (
-                    enabled
-                ),
-
-                "policies_by_effect": (
-                    effects
-                ),
+                "policy_count": (len(self._policies)),
+                "enabled_policy_count": (enabled),
+                "policies_by_effect": (effects),
             }
 
 
@@ -581,11 +440,8 @@ class PolicySet:
 
 __all__ = [
     "WILDCARD",
-
     "PolicyErrorBase",
     "PolicyConflictError",
-
     "policy_matches",
-
     "PolicySet",
 ]

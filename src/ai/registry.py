@@ -65,6 +65,7 @@ from src.ai.schema import (
 # Registry entry
 # ---------------------------------------------------------------
 
+
 class AIModelRegistryEntry:
     """
     One descriptor plus optional runtime adapter.
@@ -74,9 +75,7 @@ class AIModelRegistryEntry:
         self,
         descriptor: AIModelDescriptor,
         *,
-        adapter: Optional[
-            AIModelAdapter
-        ] = None,
+        adapter: Optional[AIModelAdapter] = None,
     ) -> None:
         descriptor.finalize()
 
@@ -100,10 +99,7 @@ class AIModelRegistryEntry:
     def model_id(
         self,
     ) -> str:
-        return (
-            self.descriptor.
-            identity.model_id
-        )
+        return self.descriptor.identity.model_id
 
     # ---------------------------------------------------------
     # Runtime status
@@ -113,19 +109,13 @@ class AIModelRegistryEntry:
     def loaded(
         self,
     ) -> bool:
-        return bool(
-            self.adapter is not None
-            and self.adapter.loaded
-        )
+        return bool(self.adapter is not None and self.adapter.loaded)
 
     @property
     def ready(
         self,
     ) -> bool:
-        return bool(
-            self.adapter is not None
-            and self.adapter.ready
-        )
+        return bool(self.adapter is not None and self.adapter.ready)
 
     # ---------------------------------------------------------
     # Access tracking
@@ -134,9 +124,7 @@ class AIModelRegistryEntry:
     def touch(
         self,
     ) -> None:
-        self.last_access_monotonic = (
-            time.monotonic()
-        )
+        self.last_access_monotonic = time.monotonic()
 
         self.access_count += 1
 
@@ -148,36 +136,19 @@ class AIModelRegistryEntry:
         self,
     ) -> Dict[str, Any]:
         return {
-            "model_id": (
-                self.model_id
-            ),
-
-            "descriptor": (
-                self.descriptor.
-                to_dict()
-            ),
-
-            "adapter_created": (
-                self.adapter is not None
-            ),
-
-            "loaded": (
-                self.loaded
-            ),
-
-            "ready": (
-                self.ready
-            ),
-
-            "access_count": (
-                self.access_count
-            ),
+            "model_id": (self.model_id),
+            "descriptor": (self.descriptor.to_dict()),
+            "adapter_created": (self.adapter is not None),
+            "loaded": (self.loaded),
+            "ready": (self.ready),
+            "access_count": (self.access_count),
         }
 
 
 # ---------------------------------------------------------------
 # Model registry
 # ---------------------------------------------------------------
+
 
 class AIModelRegistry:
     """
@@ -193,14 +164,9 @@ class AIModelRegistry:
     def __init__(
         self,
         *,
-        config: Optional[
-            AIConfig
-        ] = None,
+        config: Optional[AIConfig] = None,
     ) -> None:
-        self.config = (
-            config
-            or AIConfig()
-        )
+        self.config = config or AIConfig()
 
         self.config.validate()
 
@@ -211,12 +177,10 @@ class AIModelRegistry:
 
         # Ordered from least recently used to most
         # recently used.
-        self._loaded_order: (
-            OrderedDict[
-                str,
-                None,
-            ]
-        ) = OrderedDict()
+        self._loaded_order: OrderedDict[
+            str,
+            None,
+        ] = OrderedDict()
 
         self._lock = RLock()
 
@@ -230,10 +194,7 @@ class AIModelRegistry:
     ) -> str:
         descriptor.finalize()
 
-        return (
-            descriptor.identity.
-            model_id
-        )
+        return descriptor.identity.model_id
 
     # ---------------------------------------------------------
     # Register descriptor
@@ -261,108 +222,58 @@ class AIModelRegistry:
 
         descriptor.finalize()
 
-        if not self.config.family_allowed(
-            descriptor.identity.family
-        ):
+        if not self.config.family_allowed(descriptor.identity.family):
             raise AIModelReplacementError(
-                "Model family is not "
-                "enabled by AI "
-                "configuration.",
+                "Model family is not enabled by AI configuration.",
                 details={
-                    "family": (
-                        descriptor.
-                        identity.family
-                    ),
-                    "model_id": (
-                        descriptor.
-                        identity.model_id
-                    ),
+                    "family": (descriptor.identity.family),
+                    "model_id": (descriptor.identity.model_id),
                 },
             )
 
-        model_id = self._model_id(
-            descriptor
-        )
+        model_id = self._model_id(descriptor)
 
         with self._lock:
-            existing = (
-                self._entries.get(
-                    model_id
-                )
-            )
+            existing = self._entries.get(model_id)
 
             if existing is not None:
                 if not replace:
                     raise (
                         AIModelAlreadyRegisteredError(
-                            "AI model is already "
-                            "registered.",
+                            "AI model is already registered.",
                             details={
-                                "model_id": (
-                                    model_id
-                                ),
+                                "model_id": (model_id),
                             },
                         )
                     )
 
-                if not (
-                    self.config.
-                    loading.
-                    allow_runtime_replacement
-                ):
+                if not (self.config.loading.allow_runtime_replacement):
                     raise AIModelReplacementError(
-                        "Runtime model "
-                        "replacement is "
-                        "disabled.",
+                        "Runtime model replacement is disabled.",
                         details={
-                            "model_id": (
-                                model_id
-                            ),
+                            "model_id": (model_id),
                         },
                     )
 
                 if existing.adapter is not None:
-                    self._unload_entry_locked(
-                        existing
-                    )
+                    self._unload_entry_locked(existing)
 
                 self._entries.pop(
                     model_id,
                     None,
                 )
 
-            entry = (
-                AIModelRegistryEntry(
-                    descriptor
-                )
-            )
+            entry = AIModelRegistryEntry(descriptor)
 
-            self._entries[
-                model_id
-            ] = entry
+            self._entries[model_id] = entry
 
-        if (
-            create_adapter
-            or load
-            or not self.config.
-            loading.lazy_loading
-        ):
-            self.ensure_adapter(
-                model_id
-            )
+        if create_adapter or load or not self.config.loading.lazy_loading:
+            self.ensure_adapter(model_id)
 
-        if (
-            load
-            or not self.config.
-            loading.lazy_loading
-        ):
-            self.load(
-                model_id
-            )
+        if load or not self.config.loading.lazy_loading:
+            self.load(model_id)
 
-        return self.require(
-            model_id
-        )
+        return self.require(model_id)
 
     # ---------------------------------------------------------
     # Register many
@@ -370,28 +281,20 @@ class AIModelRegistry:
 
     def register_many(
         self,
-        descriptors: Iterable[
-            AIModelDescriptor
-        ],
+        descriptors: Iterable[AIModelDescriptor],
         *,
         replace: bool = False,
         create_adapters: bool = False,
         load: bool = False,
-    ) -> List[
-        AIModelRegistryEntry
-    ]:
-        output: List[
-            AIModelRegistryEntry
-        ] = []
+    ) -> List[AIModelRegistryEntry]:
+        output: List[AIModelRegistryEntry] = []
 
         for descriptor in descriptors:
             output.append(
                 self.register(
                     descriptor,
                     replace=replace,
-                    create_adapter=(
-                        create_adapters
-                    ),
+                    create_adapter=(create_adapters),
                     load=load,
                 )
             )
@@ -405,23 +308,15 @@ class AIModelRegistry:
     def get(
         self,
         model_id: str,
-    ) -> Optional[
-        AIModelRegistryEntry
-    ]:
+    ) -> Optional[AIModelRegistryEntry]:
         with self._lock:
-            entry = self._entries.get(
-                str(
-                    model_id
-                )
-            )
+            entry = self._entries.get(str(model_id))
 
             if entry is not None:
                 entry.touch()
 
                 if entry.loaded:
-                    self._touch_loaded_locked(
-                        entry.model_id
-                    )
+                    self._touch_loaded_locked(entry.model_id)
 
             return entry
 
@@ -432,20 +327,14 @@ class AIModelRegistry:
     def peek(
         self,
         model_id: str,
-    ) -> Optional[
-        AIModelRegistryEntry
-    ]:
+    ) -> Optional[AIModelRegistryEntry]:
         """
         Lookup without affecting LRU/access
         accounting.
         """
 
         with self._lock:
-            return self._entries.get(
-                str(
-                    model_id
-                )
-            )
+            return self._entries.get(str(model_id))
 
     # ---------------------------------------------------------
     # Require
@@ -455,18 +344,13 @@ class AIModelRegistry:
         self,
         model_id: str,
     ) -> AIModelRegistryEntry:
-        entry = self.get(
-            model_id
-        )
+        entry = self.get(model_id)
 
         if entry is None:
             raise AIModelNotRegisteredError(
-                "AI model is not "
-                "registered.",
+                "AI model is not registered.",
                 details={
-                    "model_id": (
-                        model_id
-                    ),
+                    "model_id": (model_id),
                 },
             )
 
@@ -479,87 +363,43 @@ class AIModelRegistry:
     def find(
         self,
         *,
-        family: Optional[
-            str
-        ] = None,
-        model_name: Optional[
-            str
-        ] = None,
-        version: Optional[
-            str
-        ] = None,
-        state: Optional[
-            str
-        ] = None,
-        loaded: Optional[
-            bool
-        ] = None,
-    ) -> List[
-        AIModelRegistryEntry
-    ]:
+        family: Optional[str] = None,
+        model_name: Optional[str] = None,
+        version: Optional[str] = None,
+        state: Optional[str] = None,
+        loaded: Optional[bool] = None,
+    ) -> List[AIModelRegistryEntry]:
         with self._lock:
-            entries = list(
-                self._entries.values()
-            )
+            entries = list(self._entries.values())
 
-        output: List[
-            AIModelRegistryEntry
-        ] = []
+        output: List[AIModelRegistryEntry] = []
 
         for entry in entries:
-            identity = (
-                entry.descriptor.
-                identity
-            )
+            identity = entry.descriptor.identity
 
-            if (
-                family is not None
-                and identity.family
-                != family
-            ):
+            if family is not None and identity.family != family:
                 continue
 
-            if (
-                model_name is not None
-                and identity.model_name
-                != model_name
-            ):
+            if model_name is not None and identity.model_name != model_name:
                 continue
 
-            if (
-                version is not None
-                and identity.version
-                != version
-            ):
+            if version is not None and identity.version != version:
                 continue
 
-            if (
-                state is not None
-                and entry.descriptor.state
-                != state
-            ):
+            if state is not None and entry.descriptor.state != state:
                 continue
 
-            if (
-                loaded is not None
-                and entry.loaded
-                is not loaded
-            ):
+            if loaded is not None and entry.loaded is not loaded:
                 continue
 
-            output.append(
-                entry
-            )
+            output.append(entry)
 
         return sorted(
             output,
             key=lambda entry: (
-                entry.descriptor.
-                identity.family,
-                entry.descriptor.
-                identity.model_name,
-                entry.descriptor.
-                identity.version,
+                entry.descriptor.identity.family,
+                entry.descriptor.identity.model_name,
+                entry.descriptor.identity.version,
             ),
         )
 
@@ -570,19 +410,9 @@ class AIModelRegistry:
     def descriptors(
         self,
         *,
-        family: Optional[
-            str
-        ] = None,
-    ) -> List[
-        AIModelDescriptor
-    ]:
-        return [
-            entry.descriptor
-            for entry
-            in self.find(
-                family=family
-            )
-        ]
+        family: Optional[str] = None,
+    ) -> List[AIModelDescriptor]:
+        return [entry.descriptor for entry in self.find(family=family)]
 
     # ---------------------------------------------------------
     # Adapter construction
@@ -593,21 +423,14 @@ class AIModelRegistry:
         model_id: str,
     ) -> AIModelAdapter:
         with self._lock:
-            entry = self._entries.get(
-                str(
-                    model_id
-                )
-            )
+            entry = self._entries.get(str(model_id))
 
             if entry is None:
                 raise (
                     AIModelNotRegisteredError(
-                        "AI model is not "
-                        "registered.",
+                        "AI model is not registered.",
                         details={
-                            "model_id": (
-                                model_id
-                            ),
+                            "model_id": (model_id),
                         },
                     )
                 )
@@ -622,14 +445,9 @@ class AIModelRegistry:
                 config=self.config,
             )
 
-            if (
-                adapter.model_id
-                != entry.model_id
-            ):
+            if adapter.model_id != entry.model_id:
                 raise AIModelStateError(
-                    "Created model adapter "
-                    "identity does not match "
-                    "the registry entry."
+                    "Created model adapter identity does not match the registry entry."
                 )
 
             entry.adapter = adapter
@@ -646,13 +464,7 @@ class AIModelRegistry:
         self,
     ) -> int:
         with self._lock:
-            return sum(
-                1
-                for entry
-                in self._entries.
-                values()
-                if entry.loaded
-            )
+            return sum(1 for entry in self._entries.values() if entry.loaded)
 
     # ---------------------------------------------------------
     # LRU accounting
@@ -667,9 +479,7 @@ class AIModelRegistry:
             None,
         )
 
-        self._loaded_order[
-            model_id
-        ] = None
+        self._loaded_order[model_id] = None
 
     # ---------------------------------------------------------
     # Select eviction candidate
@@ -678,42 +488,23 @@ class AIModelRegistry:
     def _eviction_candidate_locked(
         self,
         *,
-        exclude: Optional[
-            str
-        ] = None,
-    ) -> Optional[
-        AIModelRegistryEntry
-    ]:
-        for model_id in list(
-            self._loaded_order.keys()
-        ):
-            if (
-                exclude is not None
-                and model_id == exclude
-            ):
+        exclude: Optional[str] = None,
+    ) -> Optional[AIModelRegistryEntry]:
+        for model_id in list(self._loaded_order.keys()):
+            if exclude is not None and model_id == exclude:
                 continue
 
-            entry = self._entries.get(
-                model_id
-            )
+            entry = self._entries.get(model_id)
 
-            if (
-                entry is not None
-                and entry.loaded
-            ):
+            if entry is not None and entry.loaded:
                 return entry
 
         # Recover gracefully if loaded-order
         # tracking was empty/stale.
         candidates = [
             entry
-            for entry
-            in self._entries.values()
-            if (
-                entry.loaded
-                and entry.model_id
-                != exclude
-            )
+            for entry in self._entries.values()
+            if (entry.loaded and entry.model_id != exclude)
         ]
 
         if not candidates:
@@ -721,10 +512,7 @@ class AIModelRegistry:
 
         return min(
             candidates,
-            key=lambda entry: (
-                entry.
-                last_access_monotonic
-            ),
+            key=lambda entry: entry.last_access_monotonic,
         )
 
     # ---------------------------------------------------------
@@ -736,47 +524,19 @@ class AIModelRegistry:
         *,
         loading_model_id: str,
     ) -> None:
-        limit = (
-            self.config.
-            loading.
-            maximum_loaded_models
-        )
+        limit = self.config.loading.maximum_loaded_models
 
-        while (
-            sum(
-                1
-                for entry
-                in self._entries.
-                values()
-                if entry.loaded
-            )
-            >= limit
-        ):
-            if not (
-                self.config.
-                loading.
-                unload_unused_models
-            ):
+        while sum(1 for entry in self._entries.values() if entry.loaded) >= limit:
+            if not (self.config.loading.unload_unused_models):
                 raise AIModelCacheLimitError(
-                    "Maximum loaded-model "
-                    "limit has been "
-                    "reached.",
+                    "Maximum loaded-model limit has been reached.",
                     details={
                         "limit": limit,
-                        "loading_model_id": (
-                            loading_model_id
-                        ),
+                        "loading_model_id": (loading_model_id),
                     },
                 )
 
-            candidate = (
-                self.
-                _eviction_candidate_locked(
-                    exclude=(
-                        loading_model_id
-                    )
-                )
-            )
+            candidate = self._eviction_candidate_locked(exclude=(loading_model_id))
 
             if candidate is None:
                 raise AIModelCacheLimitError(
@@ -789,9 +549,7 @@ class AIModelRegistry:
                     },
                 )
 
-            self._unload_entry_locked(
-                candidate
-            )
+            self._unload_entry_locked(candidate)
 
     # ---------------------------------------------------------
     # Load
@@ -810,52 +568,34 @@ class AIModelRegistry:
         recently used model is unloaded first.
         """
 
-        model_id = str(
-            model_id
-        )
+        model_id = str(model_id)
 
         with self._lock:
-            entry = self._entries.get(
-                model_id
-            )
+            entry = self._entries.get(model_id)
 
             if entry is None:
                 raise (
                     AIModelNotRegisteredError(
-                        "AI model is not "
-                        "registered.",
+                        "AI model is not registered.",
                         details={
-                            "model_id": (
-                                model_id
-                            ),
+                            "model_id": (model_id),
                         },
                     )
                 )
 
-            if (
-                entry.adapter is not None
-                and entry.adapter.ready
-            ):
+            if entry.adapter is not None and entry.adapter.ready:
                 entry.touch()
 
-                self._touch_loaded_locked(
-                    model_id
-                )
+                self._touch_loaded_locked(model_id)
 
                 return entry.adapter
 
-            self._ensure_capacity_locked(
-                loading_model_id=(
-                    model_id
-                )
-            )
+            self._ensure_capacity_locked(loading_model_id=(model_id))
 
             if entry.adapter is None:
-                entry.adapter = (
-                    create_model_adapter(
-                        entry.descriptor,
-                        config=self.config,
-                    )
+                entry.adapter = create_model_adapter(
+                    entry.descriptor,
+                    config=self.config,
                 )
 
             adapter = entry.adapter
@@ -876,9 +616,7 @@ class AIModelRegistry:
             raise
 
         with self._lock:
-            current = self._entries.get(
-                model_id
-            )
+            current = self._entries.get(model_id)
 
             if current is None:
                 # Defensive guard against removal
@@ -890,21 +628,16 @@ class AIModelRegistry:
                     pass
 
                 raise AIModelNotRegisteredError(
-                    "AI model was removed "
-                    "while loading.",
+                    "AI model was removed while loading.",
                     details={
-                        "model_id": (
-                            model_id
-                        ),
+                        "model_id": (model_id),
                     },
                 )
 
             current.adapter = adapter
             current.touch()
 
-            self._touch_loaded_locked(
-                model_id
-            )
+            self._touch_loaded_locked(model_id)
 
             return adapter
 
@@ -924,10 +657,7 @@ class AIModelRegistry:
         )
 
         if adapter is None:
-            entry.descriptor.state = (
-                AIModelState.
-                UNLOADED.value
-            )
+            entry.descriptor.state = AIModelState.UNLOADED.value
 
             return
 
@@ -944,28 +674,19 @@ class AIModelRegistry:
         drop_adapter: bool = False,
     ) -> None:
         with self._lock:
-            entry = self._entries.get(
-                str(
-                    model_id
-                )
-            )
+            entry = self._entries.get(str(model_id))
 
             if entry is None:
                 raise (
                     AIModelNotRegisteredError(
-                        "AI model is not "
-                        "registered.",
+                        "AI model is not registered.",
                         details={
-                            "model_id": (
-                                model_id
-                            ),
+                            "model_id": (model_id),
                         },
                     )
                 )
 
-            self._unload_entry_locked(
-                entry
-            )
+            self._unload_entry_locked(entry)
 
             if drop_adapter:
                 entry.adapter = None
@@ -980,29 +701,20 @@ class AIModelRegistry:
         drop_adapters: bool = False,
     ) -> List[str]:
         with self._lock:
-            entries = list(
-                self._entries.values()
-            )
+            entries = list(self._entries.values())
 
         unloaded: List[str] = []
 
         for entry in entries:
-            if (
-                entry.adapter is None
-                and not entry.loaded
-            ):
+            if entry.adapter is None and not entry.loaded:
                 continue
 
             self.unload(
                 entry.model_id,
-                drop_adapter=(
-                    drop_adapters
-                ),
+                drop_adapter=(drop_adapters),
             )
 
-            unloaded.append(
-                entry.model_id
-            )
+            unloaded.append(entry.model_id)
 
         return unloaded
 
@@ -1016,47 +728,31 @@ class AIModelRegistry:
         *,
         unload: bool = True,
     ) -> AIModelDescriptor:
-        model_id = str(
-            model_id
-        )
+        model_id = str(model_id)
 
         with self._lock:
-            entry = self._entries.get(
-                model_id
-            )
+            entry = self._entries.get(model_id)
 
             if entry is None:
                 raise (
                     AIModelNotRegisteredError(
-                        "AI model is not "
-                        "registered.",
+                        "AI model is not registered.",
                         details={
-                            "model_id": (
-                                model_id
-                            ),
+                            "model_id": (model_id),
                         },
                     )
                 )
 
-            if (
-                entry.loaded
-                and not unload
-            ):
+            if entry.loaded and not unload:
                 raise AIModelStateError(
-                    "Loaded model cannot "
-                    "be removed without "
-                    "unloading it first.",
+                    "Loaded model cannot be removed without unloading it first.",
                     details={
-                        "model_id": (
-                            model_id
-                        ),
+                        "model_id": (model_id),
                     },
                 )
 
             if unload:
-                self._unload_entry_locked(
-                    entry
-                )
+                self._unload_entry_locked(entry)
 
             self._entries.pop(
                 model_id,
@@ -1086,13 +782,9 @@ class AIModelRegistry:
         """
 
         if load:
-            return self.load(
-                model_id
-            )
+            return self.load(model_id)
 
-        return self.ensure_adapter(
-            model_id
-        )
+        return self.ensure_adapter(model_id)
 
     # ---------------------------------------------------------
     # Ready models
@@ -1101,22 +793,11 @@ class AIModelRegistry:
     def ready_models(
         self,
         *,
-        family: Optional[
-            str
-        ] = None,
-    ) -> List[
-        AIModelRegistryEntry
-    ]:
-        entries = self.find(
-            family=family
-        )
+        family: Optional[str] = None,
+    ) -> List[AIModelRegistryEntry]:
+        entries = self.find(family=family)
 
-        return [
-            entry
-            for entry
-            in entries
-            if entry.ready
-        ]
+        return [entry for entry in entries if entry.ready]
 
     # ---------------------------------------------------------
     # Latest version helper
@@ -1126,12 +807,8 @@ class AIModelRegistry:
         self,
         *,
         family: str,
-        model_name: Optional[
-            str
-        ] = None,
-    ) -> Optional[
-        AIModelRegistryEntry
-    ]:
+        model_name: Optional[str] = None,
+    ) -> Optional[AIModelRegistryEntry]:
         """
         Return the lexicographically latest
         registered version.
@@ -1143,9 +820,7 @@ class AIModelRegistry:
 
         entries = self.find(
             family=family,
-            model_name=(
-                model_name
-            ),
+            model_name=(model_name),
         )
 
         if not entries:
@@ -1153,10 +828,7 @@ class AIModelRegistry:
 
         return max(
             entries,
-            key=lambda entry: (
-                entry.descriptor.
-                identity.version
-            ),
+            key=lambda entry: entry.descriptor.identity.version,
         )
 
     # ---------------------------------------------------------
@@ -1167,9 +839,7 @@ class AIModelRegistry:
         self,
     ) -> int:
         with self._lock:
-            return len(
-                self._entries
-            )
+            return len(self._entries)
 
     # ---------------------------------------------------------
     # Summary
@@ -1179,14 +849,9 @@ class AIModelRegistry:
         self,
     ) -> Dict[str, Any]:
         with self._lock:
-            entries = list(
-                self._entries.values()
-            )
+            entries = list(self._entries.values())
 
-            loaded_order = list(
-                self._loaded_order.
-                keys()
-            )
+            loaded_order = list(self._loaded_order.keys())
 
         by_family: Dict[
             str,
@@ -1202,19 +867,11 @@ class AIModelRegistry:
         ready_count = 0
 
         for entry in entries:
-            family = (
-                entry.descriptor.
-                identity.family
-            )
+            family = entry.descriptor.identity.family
 
-            state = (
-                entry.descriptor.
-                state
-            )
+            state = entry.descriptor.state
 
-            by_family[
-                family
-            ] = (
+            by_family[family] = (
                 by_family.get(
                     family,
                     0,
@@ -1222,9 +879,7 @@ class AIModelRegistry:
                 + 1
             )
 
-            by_state[
-                state
-            ] = (
+            by_state[state] = (
                 by_state.get(
                     state,
                     0,
@@ -1239,52 +894,16 @@ class AIModelRegistry:
                 ready_count += 1
 
         return {
-            "registered_models": len(
-                entries
-            ),
-
-            "loaded_models": (
-                loaded_count
-            ),
-
-            "ready_models": (
-                ready_count
-            ),
-
-            "maximum_loaded_models": (
-                self.config.
-                loading.
-                maximum_loaded_models
-            ),
-
-            "lazy_loading": (
-                self.config.
-                loading.lazy_loading
-            ),
-
-            "automatic_unload": (
-                self.config.
-                loading.
-                unload_unused_models
-            ),
-
-            "runtime_replacement": (
-                self.config.
-                loading.
-                allow_runtime_replacement
-            ),
-
-            "by_family": (
-                by_family
-            ),
-
-            "by_state": (
-                by_state
-            ),
-
-            "loaded_lru_order": (
-                loaded_order
-            ),
+            "registered_models": len(entries),
+            "loaded_models": (loaded_count),
+            "ready_models": (ready_count),
+            "maximum_loaded_models": (self.config.loading.maximum_loaded_models),
+            "lazy_loading": (self.config.loading.lazy_loading),
+            "automatic_unload": (self.config.loading.unload_unused_models),
+            "runtime_replacement": (self.config.loading.allow_runtime_replacement),
+            "by_family": (by_family),
+            "by_state": (by_state),
+            "loaded_lru_order": (loaded_order),
         }
 
 
