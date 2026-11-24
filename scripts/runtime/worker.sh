@@ -333,10 +333,8 @@ done
 # Worker selector validation
 # -------------------------------------------------------------------
 
-if (
-    [[ -n "${WORKER_MODULE}" ]]
-    && [[ -n "${WORKER_TYPE}" ]]
-); then
+if [[ -n "${WORKER_MODULE}" ]] \
+    && [[ -n "${WORKER_TYPE}" ]]; then
     failure \
         "--module and --worker cannot be used together."
 

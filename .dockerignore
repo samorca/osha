@@ -1,0 +1,17 @@
+.git
+.venv
+__pycache__
+*.py[cod]
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.copilot
+.vscode
+.vscode-server-insiders
+artifacts
+checkpoints
+models
+logs
+orchestration-ai-data/correlated/*.jsonl
+orchestration-ai-data/correlated/*.json
+*.log
