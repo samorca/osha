@@ -72,6 +72,7 @@ from src.accelerators import (
 
 from src.ai.config import (
     AIConfig,
+    from_environment as ai_config_from_environment,
 )
 
 from src.ai.loader import (
@@ -651,7 +652,7 @@ def create_api_dependencies(
         config=(accelerator_config or AcceleratorConfig())
     )
 
-    resolved_ai_config = ai_config or AIConfig()
+    resolved_ai_config = ai_config or ai_config_from_environment()
 
     resolved_ai_config.validate()
 

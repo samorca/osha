@@ -6,14 +6,14 @@
 # Usage:
 #
 #   ./scripts/api/smoke_test.sh
-#   ./scripts/api/smoke_test.sh --url http://127.0.0.1:8000
+#   ./scripts/api/smoke_test.sh --url http://127.0.0.1:8088
 #   ./scripts/api/smoke_test.sh --verbose
 #   ./scripts/api/smoke_test.sh --json
 #   ./scripts/api/smoke_test.sh --skip-ready
 #
 # Environment:
 #
-#   OSHA_API_URL=http://127.0.0.1:8000
+#   OSHA_API_URL=http://127.0.0.1:8088
 #   OSHA_API_SMOKE_TIMEOUT=10
 #   OSHA_PYTHON=/path/to/python
 #
@@ -48,7 +48,7 @@ HEALTH_SCRIPT="${PROJECT_ROOT}/scripts/api/health.sh"
 # Defaults
 # -------------------------------------------------------------------
 
-BASE_URL="${OSHA_API_URL:-http://127.0.0.1:8000}"
+BASE_URL="${OSHA_API_URL:-http://127.0.0.1:8088}"
 
 TIMEOUT="${OSHA_API_SMOKE_TIMEOUT:-10}"
 
@@ -157,7 +157,7 @@ Options:
       OSHA API base URL.
 
       Default:
-          http://127.0.0.1:8000
+          http://127.0.0.1:8088
 
   --timeout SECONDS
       Maximum duration of each HTTP request.
@@ -199,7 +199,7 @@ Examples:
       --verbose
 
   ./scripts/api/smoke_test.sh \
-      --url http://127.0.0.1:8080
+      --url       http://127.0.0.1:8088
 
   ./scripts/api/smoke_test.sh \
       --skip-ready

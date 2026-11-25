@@ -29,7 +29,7 @@ services:
       OSHA_HEALTH_INTERVAL_SECONDS: "15"
       OSHA_RUNTIME_LOG_LEVEL: "info"
       OSHA_API_HOST: "0.0.0.0"
-      OSHA_API_PORT: "8000"
+      OSHA_API_PORT: "8088"
       OSHA_API_WORKERS: "1"
       OSHA_API_LOG_LEVEL: "info"
       OSHA_API_GRACEFUL_TIMEOUT: "30"
@@ -39,6 +39,12 @@ services:
       OSHA_ARTIFACTS_DIR: "/app/artifacts"
       OSHA_CHECKPOINTS_DIR: "/app/checkpoints"
       OSHA_MODELS_DIR: "/app/models"
+      OSHA_MODEL_FAMILIES_ENABLED: "true"
+      OSHA_EVENT_MODEL_ENABLED: "true"
+      OSHA_ANOMALY_MODEL_ENABLED: "true"
+      OSHA_INCIDENT_ROOT_CAUSE_MODEL_ENABLED: "true"
+      OSHA_DECISION_RISK_MODEL_ENABLED: "true"
+      OSHA_REMEDIATION_RANKING_MODEL_ENABLED: "true"
       OSHA_LOGS_DIR: "/app/logs"
       OSHA_DATA_DIR: "/app/orchestration-ai-data"
       OSHA_ACCELERATOR: "auto"
@@ -52,11 +58,11 @@ services:
       OSHA_METRICS_ENABLED: "true"
       OSHA_LOGGING_ENABLED: "true"
     ports:
-      - "8000:8000"
+      - "8088:8088"
     healthcheck:
       test:
         - CMD-SHELL
-        - curl --fail --silent --show-error http://127.0.0.1:8000/health/live
+        - curl --fail --silent --show-error http://127.0.0.1:8088/health/live
       interval: 15s
       timeout: 3s
       retries: 3
@@ -98,6 +104,12 @@ services:
       OSHA_ARTIFACTS_DIR: "/app/artifacts"
       OSHA_CHECKPOINTS_DIR: "/app/checkpoints"
       OSHA_MODELS_DIR: "/app/models"
+      OSHA_MODEL_FAMILIES_ENABLED: "true"
+      OSHA_EVENT_MODEL_ENABLED: "true"
+      OSHA_ANOMALY_MODEL_ENABLED: "true"
+      OSHA_INCIDENT_ROOT_CAUSE_MODEL_ENABLED: "true"
+      OSHA_DECISION_RISK_MODEL_ENABLED: "true"
+      OSHA_REMEDIATION_RANKING_MODEL_ENABLED: "true"
       OSHA_LOGS_DIR: "/app/logs"
       OSHA_DATA_DIR: "/app/orchestration-ai-data"
       OSHA_ACCELERATOR: "auto"
@@ -166,6 +178,12 @@ services:
       OSHA_ARTIFACTS_DIR: "/app/artifacts"
       OSHA_CHECKPOINTS_DIR: "/app/checkpoints"
       OSHA_MODELS_DIR: "/app/models"
+      OSHA_MODEL_FAMILIES_ENABLED: "true"
+      OSHA_EVENT_MODEL_ENABLED: "true"
+      OSHA_ANOMALY_MODEL_ENABLED: "true"
+      OSHA_INCIDENT_ROOT_CAUSE_MODEL_ENABLED: "true"
+      OSHA_DECISION_RISK_MODEL_ENABLED: "true"
+      OSHA_REMEDIATION_RANKING_MODEL_ENABLED: "true"
       OSHA_LOGS_DIR: "/app/logs"
       OSHA_DATA_DIR: "/app/orchestration-ai-data"
       OSHA_ACCELERATOR: "auto"

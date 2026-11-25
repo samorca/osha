@@ -58,6 +58,9 @@ from src.accelerators import (
 from src.ai.base import (
     AnomalyModelAdapter,
     EventModelAdapter,
+    IncidentRootCauseModelAdapter,
+    DecisionPolicyRiskModelAdapter,
+    RemediationRecommendationModelAdapter,
 )
 
 from src.ai.config import (
@@ -71,6 +74,7 @@ from src.ai.errors import (
     AIDeviceUnavailableError,
     AIEventTextMissingError,
     AIInferenceExecutionError,
+    AIInferenceRequestError,
     AIInferenceNonFiniteInputError,
     AIInferenceShapeError,
     AILabelMapError,
@@ -98,6 +102,14 @@ from src.core.time import (
 
 from src.training.anomaly_model import (
     InfrastructureAnomalyModel,
+)
+
+from src.training.operational_models import (
+    DecisionRiskModel,
+    FEATURE_DIMENSION,
+    IncidentRootCauseModel,
+    RemediationRanker,
+    feature_vector,
 )
 
 from src.training.event_dataset import (
@@ -184,6 +196,30 @@ class AnomalyRuntime:
         self.accelerator_manager = accelerator_manager
 
         self.feature_names = tuple(feature_names or ())
+
+
+class OperationalRuntime:
+    """Runtime state shared by the operational model families."""
+
+    def __init__(
+        self,
+        *,
+        model: Any,
+        input_dimension: int,
+        device: Any,
+        accelerator_selection: AcceleratorSelection,
+        accelerator_manager: AcceleratorManager,
+        labels: Optional[Mapping[str, Sequence[str]]] = None,
+    ) -> None:
+        self.model = model
+        self.input_dimension = int(input_dimension)
+        self.device = device
+        self.accelerator_selection = accelerator_selection
+        self.accelerator_manager = accelerator_manager
+        self.labels = {
+            key: tuple(value)
+            for key, value in (labels or {}).items()
+        }
 
 
 # ------------------------------------------------------------------
@@ -1477,6 +1513,429 @@ class InfrastructureAnomalyModelAdapter(AnomalyModelAdapter):
             ) from exc
 
 
+class _OperationalModelAdapterMixin:
+    """Load and execute one fixed-feature operational classifier."""
+
+    model_kind: str
+
+    def _construct_model(
+        self,
+        model_config: Mapping[str, Any],
+    ) -> Any:
+        raise NotImplementedError
+
+    def _restore_labels(
+        self,
+        payload: Mapping[str, Any],
+        model_config: Mapping[str, Any],
+    ) -> Dict[str, Sequence[str]]:
+        return {}
+
+    def _load_model(self) -> OperationalRuntime:
+        require_torch()
+
+        accelerator_manager = create_inference_accelerator_manager(
+            self.config,
+            consumer=f"ai.models.{self.model_kind}",
+        )
+        accelerator_selection = None
+
+        try:
+            accelerator_selection = select_inference_accelerator(
+                accelerator_manager,
+                self.config,
+            )
+            device = accelerator_manager.runtime_device(
+                accelerator_selection
+            )
+            payload = load_torch_payload(
+                self.descriptor.path,
+                map_location=device,
+            )
+            model_config = require_mapping(
+                payload,
+                "model_config",
+            )
+            model = self._construct_model(model_config)
+            model.load_state_dict(
+                require_model_state(payload),
+                strict=True,
+            )
+            model.to(device)
+            model.eval()
+
+            self.descriptor.device = (
+                accelerator_selection.device_id
+            )
+            self.descriptor.model_config = {
+                **model_config,
+                "accelerator_selection": (
+                    accelerator_selection.to_dict()
+                ),
+            }
+            self.descriptor.loaded_at = utc_now()
+            self.descriptor.attributes.update(
+                {
+                    "runtime_device": str(device),
+                    "accelerator_kind": (
+                        accelerator_selection.kind
+                    ),
+                    "accelerator_fallback": (
+                        accelerator_selection.fallback_used
+                    ),
+                }
+            )
+
+            return OperationalRuntime(
+                model=model,
+                input_dimension=FEATURE_DIMENSION,
+                device=device,
+                accelerator_selection=accelerator_selection,
+                accelerator_manager=accelerator_manager,
+                labels=self._restore_labels(
+                    payload,
+                    model_config,
+                ),
+            )
+
+        except Exception:
+            if accelerator_selection is not None:
+                try:
+                    accelerator_manager.release(
+                        accelerator_selection
+                    )
+                except Exception:
+                    pass
+            raise
+
+    def _after_load(self) -> None:
+        if not isinstance(self.model, OperationalRuntime):
+            raise AIModelLoadError(
+                "Operational adapter runtime state is invalid."
+            )
+
+    def _release_model(self, runtime: Any) -> None:
+        if isinstance(runtime, OperationalRuntime):
+            release_accelerator_runtime(
+                manager=runtime.accelerator_manager,
+                selection=runtime.accelerator_selection,
+                model=runtime.model,
+            )
+
+    @staticmethod
+    def _input_features(
+        request: InferenceRequest,
+        expected_dimension: int,
+    ) -> List[float]:
+        payload = request.payload
+        if "features" in payload:
+            raw_features = payload["features"]
+            if not isinstance(raw_features, Sequence) or isinstance(
+                raw_features,
+                (str, bytes, bytearray),
+            ):
+                raise AIAnomalyFeatureError(
+                    "Operational model features must be a numeric sequence."
+                )
+            values = list(raw_features)
+        else:
+            values = feature_vector(
+                payload.get("input", payload)
+            )
+
+        if len(values) != expected_dimension:
+            raise AIInferenceShapeError(
+                "Operational model input has an unexpected feature dimension.",
+                details={
+                    "expected": expected_dimension,
+                    "actual": len(values),
+                },
+            )
+
+        output = []
+        for index, value in enumerate(values):
+            try:
+                number = float(value)
+            except (TypeError, ValueError) as exc:
+                raise AIAnomalyFeatureError(
+                    "Operational model feature is not numeric.",
+                    details={"index": index},
+                ) from exc
+            if not math.isfinite(number):
+                raise AIInferenceNonFiniteInputError(
+                    "Operational model features must be finite.",
+                    details={"index": index},
+                )
+            output.append(number)
+        return output
+
+    @staticmethod
+    def _ranked_predictions(
+        logits: Any,
+        labels: Sequence[str],
+        *,
+        head: str,
+        top_k: int,
+    ) -> List[Prediction]:
+        probabilities = torch.softmax(
+            logits,
+            dim=-1,
+        )
+        count = min(top_k, len(labels))
+        scores, indices = torch.topk(
+            probabilities,
+            k=count,
+            dim=-1,
+        )
+        predictions = []
+        for rank, (score, index) in enumerate(
+            zip(
+                scores[0].detach().cpu().tolist(),
+                indices[0].detach().cpu().tolist(),
+                strict=True,
+            ),
+            start=1,
+        ):
+            predictions.append(
+                Prediction(
+                    label=labels[index],
+                    score=float(score),
+                    probability=float(score),
+                    attributes={
+                        "head": head,
+                        "rank": rank,
+                        "calibrated": False,
+                    },
+                )
+            )
+        return predictions
+
+    def _infer(
+        self,
+        request: InferenceRequest,
+    ) -> InferenceResult:
+        runtime = self.model
+        if not isinstance(runtime, OperationalRuntime):
+            raise AIModelLoadError(
+                "Operational model is not loaded."
+            )
+
+        started = time.perf_counter()
+        features = self._input_features(
+            request,
+            runtime.input_dimension,
+        )
+        tensor = torch.tensor(
+            [features],
+            dtype=torch.float32,
+            device=runtime.device,
+        )
+        try:
+            with torch.no_grad():
+                output = runtime.model(tensor)
+
+            top_k = request.options.get("top_k", 3)
+            if isinstance(top_k, bool) or not isinstance(top_k, int):
+                raise AIInferenceRequestError(
+                    "top_k must be an integer."
+                )
+            if not 1 <= top_k <= 8:
+                raise AIInferenceRequestError(
+                    "top_k must be between 1 and 8."
+                )
+
+            if self.family == AIModelFamily.INCIDENT_ROOT_CAUSE.value:
+                predictions = self._ranked_predictions(
+                    output["root_cause_logits"],
+                    runtime.labels["root_cause"],
+                    head="root_cause",
+                    top_k=top_k,
+                )
+                predictions.extend(
+                    self._ranked_predictions(
+                        output["severity_logits"],
+                        runtime.labels["severity"],
+                        head="severity",
+                        top_k=1,
+                    )
+                )
+            elif self.family == AIModelFamily.DECISION_POLICY_RISK.value:
+                predictions = self._ranked_predictions(
+                    output["risk_logits"],
+                    runtime.labels["risk"],
+                    head="risk",
+                    top_k=top_k,
+                )
+            else:
+                score = float(
+                    output["recommendation_score"][0]
+                    .detach()
+                    .cpu()
+                    .item()
+                )
+                predictions = [
+                    Prediction(
+                        label="recommendation_score",
+                        score=score,
+                        attributes={
+                            "ranking_only": True,
+                            "authorizes_action": False,
+                            "calibrated": False,
+                        },
+                    )
+                ]
+
+            latency_ms = (
+                time.perf_counter() - started
+            ) * 1000.0
+            return InferenceResult(
+                request_id=str(request.request_id),
+                model=self.descriptor.identity,
+                state=InferenceState.COMPLETED.value,
+                predictions=predictions,
+                provenance=request.provenance,
+                latency_ms=latency_ms,
+                attributes={
+                    "experimental": True,
+                    "input_dimension": runtime.input_dimension,
+                    "scores_calibrated": False,
+                    "remediation_authorized": False,
+                },
+            ).finalize()
+        except (
+            AIInferenceRequestError,
+            AIAnomalyFeatureError,
+            AIInferenceShapeError,
+            AIInferenceNonFiniteInputError,
+        ):
+            raise
+        except Exception as exc:
+            raise AIInferenceExecutionError(
+                "Operational model inference failed.",
+                details=safe_ai_error_details(
+                    exc,
+                    operation="operational_inference",
+                    model_id=self.model_id,
+                    family=self.family,
+                    request_id=request.request_id,
+                    device=str(runtime.device),
+                ),
+            ) from exc
+
+
+class InfrastructureIncidentRootCauseModelAdapter(
+    _OperationalModelAdapterMixin,
+    IncidentRootCauseModelAdapter,
+):
+    model_kind = "incident_root_cause"
+
+    def _construct_model(
+        self,
+        model_config: Mapping[str, Any],
+    ) -> IncidentRootCauseModel:
+        input_dim = int(model_config.get("input_dim", -1))
+        if input_dim != FEATURE_DIMENSION:
+            raise AIModelConfigurationError(
+                "Incident model feature dimension is unsupported.",
+                details={"input_dim": input_dim},
+            )
+        return IncidentRootCauseModel(
+            input_dim=input_dim,
+            severity_count=int(
+                model_config.get("severity_count", -1)
+            ),
+            root_cause_count=int(
+                model_config.get("root_cause_count", -1)
+            ),
+        )
+
+    def _restore_labels(
+        self,
+        payload: Mapping[str, Any],
+        model_config: Mapping[str, Any],
+    ) -> Dict[str, Sequence[str]]:
+        labels = {
+            "severity": payload.get("severity_labels"),
+            "root_cause": payload.get("root_cause_labels"),
+        }
+        expected = {
+            "severity": int(model_config["severity_count"]),
+            "root_cause": int(model_config["root_cause_count"]),
+        }
+        for name, values in labels.items():
+            if (
+                not isinstance(values, Sequence)
+                or isinstance(values, (str, bytes, bytearray))
+                or len(values) != expected[name]
+                or not all(isinstance(value, str) and value for value in values)
+            ):
+                raise AIModelConfigurationError(
+                    "Incident model label map is invalid.",
+                    details={"label_map": name},
+                )
+        return labels
+
+
+class InfrastructureDecisionRiskModelAdapter(
+    _OperationalModelAdapterMixin,
+    DecisionPolicyRiskModelAdapter,
+):
+    model_kind = "decision_policy_risk"
+
+    def _construct_model(
+        self,
+        model_config: Mapping[str, Any],
+    ) -> DecisionRiskModel:
+        input_dim = int(model_config.get("input_dim", -1))
+        if input_dim != FEATURE_DIMENSION:
+            raise AIModelConfigurationError(
+                "Decision-risk model feature dimension is unsupported.",
+                details={"input_dim": input_dim},
+            )
+        return DecisionRiskModel(
+            input_dim=input_dim,
+            risk_count=int(model_config.get("risk_count", -1)),
+        )
+
+    def _restore_labels(
+        self,
+        payload: Mapping[str, Any],
+        model_config: Mapping[str, Any],
+    ) -> Dict[str, Sequence[str]]:
+        labels = payload.get("risk_labels")
+        if (
+            not isinstance(labels, Sequence)
+            or isinstance(labels, (str, bytes, bytearray))
+            or len(labels) != int(model_config["risk_count"])
+            or not all(isinstance(value, str) and value for value in labels)
+        ):
+            raise AIModelConfigurationError(
+                "Decision-risk model label map is invalid."
+            )
+        return {"risk": labels}
+
+
+class InfrastructureRemediationRankerAdapter(
+    _OperationalModelAdapterMixin,
+    RemediationRecommendationModelAdapter,
+):
+    model_kind = "remediation_recommendation"
+
+    def _construct_model(
+        self,
+        model_config: Mapping[str, Any],
+    ) -> RemediationRanker:
+        input_dim = int(model_config.get("input_dim", -1))
+        if input_dim != FEATURE_DIMENSION:
+            raise AIModelConfigurationError(
+                "Remediation-ranker feature dimension is unsupported.",
+                details={"input_dim": input_dim},
+            )
+        return RemediationRanker(
+            input_dim=input_dim,
+        )
+
+
 # ------------------------------------------------------------------
 # Adapter factory
 # ------------------------------------------------------------------
@@ -1510,6 +1969,24 @@ def create_model_adapter(
             config=config,
         )
 
+    if family == AIModelFamily.INCIDENT_ROOT_CAUSE.value:
+        return InfrastructureIncidentRootCauseModelAdapter(
+            descriptor,
+            config=config,
+        )
+
+    if family == AIModelFamily.DECISION_POLICY_RISK.value:
+        return InfrastructureDecisionRiskModelAdapter(
+            descriptor,
+            config=config,
+        )
+
+    if family == AIModelFamily.REMEDIATION_RECOMMENDATION.value:
+        return InfrastructureRemediationRankerAdapter(
+            descriptor,
+            config=config,
+        )
+
     raise AIModelConfigurationError(
         "No concrete AI adapter is registered for the requested model family.",
         details={
@@ -1526,6 +2003,7 @@ def create_model_adapter(
 __all__ = [
     "EventRuntime",
     "AnomalyRuntime",
+    "OperationalRuntime",
     "require_torch",
     "accelerator_config_from_ai",
     "create_inference_accelerator_manager",
@@ -1537,5 +2015,8 @@ __all__ = [
     "release_accelerator_runtime",
     "InfrastructureEventModelAdapter",
     "InfrastructureAnomalyModelAdapter",
+    "InfrastructureIncidentRootCauseModelAdapter",
+    "InfrastructureDecisionRiskModelAdapter",
+    "InfrastructureRemediationRankerAdapter",
     "create_model_adapter",
 ]

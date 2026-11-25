@@ -37,7 +37,7 @@ Examples:
 
     OSHA_API_HOST=0.0.0.0
 
-    OSHA_API_PORT=8000
+    OSHA_API_PORT=8088
 
     OSHA_API_CORS_ORIGINS=https://console.example.com
 
@@ -96,7 +96,7 @@ DEFAULT_API_VERSION = "v1"
 
 DEFAULT_HOST = "127.0.0.1"
 
-DEFAULT_PORT = 8000
+DEFAULT_PORT = 8088
 
 
 # ------------------------------------------------------------------

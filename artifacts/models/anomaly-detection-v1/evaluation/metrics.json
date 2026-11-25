@@ -1,0 +1,55 @@
+{
+  "checkpoint": "artifacts/models/anomaly-detection-v1/best.pt",
+  "data": "orchestration-ai-data/processed/anomalies/records_with_internal_external.jsonl",
+  "device": "cpu",
+  "threshold": 0.5,
+  "test_rows": 1174,
+  "test_samples": 1174,
+  "overall": {
+    "examples": 1174,
+    "true_positive": 574,
+    "true_negative": 452,
+    "false_positive": 4,
+    "false_negative": 144,
+    "accuracy": 0.8739352640545145,
+    "precision": 0.9930795847750865,
+    "recall": 0.7994428969359332,
+    "specificity": 0.9912280701754386,
+    "f1": 0.8858024691358025,
+    "balanced_accuracy": 0.8953354835556859,
+    "false_positive_rate": 0.008771929824561403,
+    "false_negative_rate": 0.20055710306406685
+  },
+  "per_event": {
+    "cloud-native-anomaly": {
+      "examples": 598,
+      "true_positive": 1,
+      "true_negative": 452,
+      "false_positive": 1,
+      "false_negative": 144,
+      "accuracy": 0.7575250836120402,
+      "precision": 0.5,
+      "recall": 0.006896551724137931,
+      "specificity": 0.9977924944812362,
+      "f1": 0.013605442176870748,
+      "balanced_accuracy": 0.5023445231026871,
+      "false_positive_rate": 0.002207505518763797,
+      "false_negative_rate": 0.993103448275862
+    },
+    "kubernetes": {
+      "examples": 576,
+      "true_positive": 573,
+      "true_negative": 0,
+      "false_positive": 3,
+      "false_negative": 0,
+      "accuracy": 0.9947916666666666,
+      "precision": 0.9947916666666666,
+      "recall": 1.0,
+      "specificity": 0.0,
+      "f1": 0.9973890339425587,
+      "balanced_accuracy": 0.5,
+      "false_positive_rate": 1.0,
+      "false_negative_rate": 0.0
+    }
+  }
+}

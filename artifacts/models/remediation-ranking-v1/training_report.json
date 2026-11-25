@@ -1,0 +1,18 @@
+{
+  "evaluation": {
+    "accuracy": 0.7931034482758621,
+    "mean_score": 0.16786819791852547,
+    "samples": 203
+  },
+  "family": "remediation_recommendation_ranking",
+  "feature_dimension": 16,
+  "history": [
+    {
+      "epoch": 1,
+      "loss": 0.5184385244752846
+    }
+  ],
+  "ranking_type": "safe_approved_or_reversible",
+  "test_samples": 203,
+  "train_samples": 811
+}

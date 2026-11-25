@@ -14,7 +14,7 @@
 #   ./scripts/api/run.sh
 #   ./scripts/api/run.sh --workers 4
 #   ./scripts/api/run.sh --host 0.0.0.0
-#   ./scripts/api/run.sh --port 8000
+#   ./scripts/api/run.sh --port 8088
 #   ./scripts/api/run.sh --wrapper-info
 #
 # Additional Uvicorn arguments may be supplied after:
@@ -26,7 +26,7 @@
 #   OSHA_PYTHON=/path/to/python
 #
 #   OSHA_API_HOST=0.0.0.0
-#   OSHA_API_PORT=8000
+#   OSHA_API_PORT=8088
 #   OSHA_API_WORKERS=1
 #
 #   OSHA_API_LOG_LEVEL=info
@@ -71,7 +71,7 @@ APP_FILE="${PROJECT_ROOT}/src/api/app.py"
 
 HOST="${OSHA_API_HOST:-0.0.0.0}"
 
-PORT="${OSHA_API_PORT:-8000}"
+PORT="${OSHA_API_PORT:-8088}"
 
 WORKERS="${OSHA_API_WORKERS:-1}"
 
@@ -242,7 +242,7 @@ Examples:
 
   ./scripts/api/run.sh \
       --host 0.0.0.0 \
-      --port 8000 \
+      --port 8088 \
       --workers 4
 
   ./scripts/api/run.sh \

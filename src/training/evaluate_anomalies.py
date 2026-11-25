@@ -10,13 +10,11 @@ import torch
 from torch.utils.data import DataLoader
 
 from src.training.anomaly_dataset import (
-    MetricWindowDataset,
-    RobustScaler,
-    load_metric_rows,
+    load_anomaly_records,
+    anomaly_dataset_from_records,
 )
 from src.training.anomaly_model import (
-    GRUAutoencoder,
-    reconstruction_scores,
+    InfrastructureAnomalyModel,
 )
 
 
@@ -161,46 +159,31 @@ def main():
     )
 
     config = checkpoint["model_config"]
-    feature_names = checkpoint["feature_names"]
-    threshold = checkpoint.get("threshold")
+    threshold = float(
+        config.get(
+            "temporary_threshold",
+            0.5,
+        )
+    )
 
-    if threshold is None:
-        raise ValueError("Checkpoint has no calibrated threshold")
+    model = InfrastructureAnomalyModel.from_config(
+        config
+    ).to(device)
+    model.load_state_dict(checkpoint["model_state_dict"])
+    model.eval()
 
-    scaler = RobustScaler.from_dict(checkpoint["scaler"])
-
-    test_rows = load_metric_rows(
+    records = load_anomaly_records(
         args.data,
-        "test",
-        feature_names,
+        require_label=True,
     )
-
-    test_dataset = MetricWindowDataset(
-        rows=test_rows,
-        scaler=scaler,
-        window_size=config["window_size"],
-        stride=config["stride"],
-        expected_interval_seconds=(config["expected_interval_seconds"]),
-    )
-
+    dataset = anomaly_dataset_from_records(records)
     test_loader = DataLoader(
-        test_dataset,
+        dataset,
         batch_size=args.batch_size,
         shuffle=False,
         num_workers=args.number_workers,
         pin_memory=torch.cuda.is_available(),
     )
-
-    model = GRUAutoencoder(
-        number_features=config["number_features"],
-        hidden_size=config["hidden_size"],
-        latent_size=config["latent_size"],
-        number_layers=config["number_layers"],
-    ).to(device)
-
-    model.load_state_dict(checkpoint["model_state_dict"])
-
-    model.eval()
 
     labels = []
     predictions = []
@@ -210,41 +193,36 @@ def main():
     row_ids = []
 
     with torch.no_grad():
-        for batch in test_loader:
-            windows = batch["window"].to(
+        for batch_number, batch in enumerate(test_loader):
+            features = batch["features"].to(
                 device,
                 non_blocking=True,
             )
+            output = model(features)
+            batch_scores = output["anomaly_probability"].cpu()
+            batch_predictions = (
+                batch_scores >= threshold
+            ).long()
 
-            output = model(windows)
-
-            batch_scores = reconstruction_scores(
-                windows,
-                output["reconstruction"],
-            ).cpu()
-
-            batch_predictions = (batch_scores > threshold).long()
-
-            labels.extend(batch["label"].tolist())
-
+            labels.extend(batch["target"].tolist())
             predictions.extend(batch_predictions.tolist())
-
             scores.extend(batch_scores.tolist())
 
-            timestamps.extend(list(batch["timestamp"]))
-
-            event_ids.extend(list(batch["event_id"]))
-
-            row_ids.extend(batch["row_id"].tolist())
-
-    valid = [index for index, label in enumerate(labels) if label in (0, 1)]
-
-    labels = [labels[index] for index in valid]
-    predictions = [predictions[index] for index in valid]
-    scores = [scores[index] for index in valid]
-    timestamps = [timestamps[index] for index in valid]
-    event_ids = [event_ids[index] for index in valid]
-    row_ids = [row_ids[index] for index in valid]
+            for offset in range(len(batch["features"])):
+                row_index = (
+                    batch_number * args.batch_size
+                    + offset
+                )
+                row_ids.append(row_index)
+                timestamps.append("")
+                event_ids.append(
+                    str(
+                        records[row_index].get(
+                            "source_dataset",
+                            "mixed",
+                        )
+                    )
+                )
 
     overall = binary_metrics(
         labels,
@@ -280,8 +258,8 @@ def main():
         "data": args.data,
         "device": str(device),
         "threshold": threshold,
-        "test_rows": len(test_rows),
-        "test_windows": len(test_dataset),
+        "test_rows": len(records),
+        "test_samples": len(dataset),
         "overall": overall,
         "per_event": per_event,
     }

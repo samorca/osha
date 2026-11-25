@@ -1,0 +1,38 @@
+{
+  "checkpoint": "/home/samorca/osha/artifacts/models/event-understanding-v1/best.pt",
+  "classes": {
+    "component": 21,
+    "event": 215,
+    "source": 3
+  },
+  "data": "/home/samorca/osha/orchestration-ai-data/processed/logs/events_with_external.jsonl",
+  "device": "cpu",
+  "evaluation": null,
+  "ignore_index": -100,
+  "metrics": {
+    "batch_count": 63,
+    "component_accuracy": 0.951,
+    "component_count": 1000,
+    "event_accuracy": 0.8690835850956697,
+    "event_count": 993,
+    "example_count": 1000,
+    "loss": 0.3649172392185955,
+    "source_accuracy": 0.995,
+    "source_count": 1000
+  },
+  "model_config": {
+    "dropout": 0.2,
+    "embedding_dim": 192,
+    "hidden_dim": 256,
+    "max_length": 128,
+    "num_components": 21,
+    "num_events": 215,
+    "num_sources": 3,
+    "vocab_size": 683
+  },
+  "record_count": 1000,
+  "schema_version": "1",
+  "split": "test",
+  "unknown_targets_ignored": true,
+  "vocabulary_size": 683
+}

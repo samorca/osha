@@ -70,7 +70,7 @@ api:
 
   host: "0.0.0.0"
 
-  port: 8000
+  port: 8088
 
   logLevel: info
 
@@ -86,7 +86,7 @@ api:
   service:
     type: ClusterIP
 
-    port: 8000
+    port: 8088
 
 
   resources:
@@ -170,6 +170,12 @@ worker:
 
   replicaCount: 1
 
+  command:
+    - /bin/bash
+    - /app/scripts/runtime/worker.sh
+    - --worker
+    - telemetry
+
   type: telemetry
 
   concurrency: 1
@@ -177,6 +183,19 @@ worker:
   pollIntervalSeconds: 2
 
   gracefulShutdownSeconds: 30
+
+  modelFamilies:
+    enabled: true
+
+    event: true
+
+    anomaly: true
+
+    incidentRootCause: true
+
+    decisionRisk: true
+
+    remediationRanking: true
 
   resources:
     requests:
@@ -295,6 +314,12 @@ serviceAccount:
 
 podSecurityContext:
   runAsNonRoot: true
+
+  runAsUser: 10001
+
+  runAsGroup: 10001
+
+  fsGroup: 10001
 
   seccompProfile:
     type: RuntimeDefault

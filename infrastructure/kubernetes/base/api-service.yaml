@@ -52,7 +52,7 @@ spec:
       protocol: TCP
 
       # Port used by clients inside the cluster.
-      port: 8000
+      port: 8088
 
       # Named container port from api-deployment.yaml.
       targetPort: http

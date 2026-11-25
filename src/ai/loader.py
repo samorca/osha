@@ -528,6 +528,32 @@ def descriptor_from_artifact(
             )
         )
 
+    elif family == AIModelFamily.INCIDENT_ROOT_CAUSE.value:
+        capabilities.extend(
+            (
+                "incident_inference",
+                "root_cause_ranking",
+                "severity_classification",
+            )
+        )
+
+    elif family == AIModelFamily.DECISION_POLICY_RISK.value:
+        capabilities.extend(
+            (
+                "decision_risk_scoring",
+                "policy_risk_classification",
+            )
+        )
+
+    elif family == AIModelFamily.REMEDIATION_RECOMMENDATION.value:
+        capabilities.extend(
+            (
+                "remediation_ranking",
+                "safe_action_scoring",
+                "recommendation_ranking",
+            )
+        )
+
     artifact_attributes = value.get(
         "attributes",
         {},

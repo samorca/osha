@@ -37,13 +37,13 @@ spec:
       serviceAccountName: {{ include "osha.worker.serviceAccountName" . }}
 
       securityContext:
-        {{- toYaml .Values.worker.podSecurityContext | nindent 8 }}
+        {{- toYaml (.Values.worker.podSecurityContext | default .Values.podSecurityContext) | nindent 8 }}
 
       containers:
         - name: worker
 
           securityContext:
-            {{- toYaml .Values.worker.securityContext | nindent 12 }}
+            {{- toYaml (.Values.worker.securityContext | default .Values.securityContext) | nindent 12 }}
 
           image: {{ include "osha.image" . | quote }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
@@ -65,10 +65,12 @@ spec:
             {{- toYaml . | nindent 12 }}
             {{- end }}
 
-          {{- with .Values.worker.envFrom }}
           envFrom:
+            - configMapRef:
+                name: {{ include "osha.configMapName" . }}
+            {{- with .Values.worker.envFrom }}
             {{- toYaml . | nindent 12 }}
-          {{- end }}
+            {{- end }}
 
           resources:
             {{- toYaml .Values.worker.resources | nindent 12 }}
@@ -83,15 +85,37 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
 
-          {{- with .Values.worker.volumeMounts }}
           volumeMounts:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
+            - name: tmp
+              mountPath: /tmp
 
-      {{- with .Values.worker.volumes }}
+            {{- with .Values.worker.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+
+            {{- if .Values.persistence.enabled }}
+            - name: osha-data
+              mountPath: {{ .Values.paths.models }}
+              subPath: models
+
+            - name: osha-data
+              mountPath: {{ .Values.paths.artifacts }}
+              subPath: artifacts
+            {{- end }}
+
       volumes:
+        - name: tmp
+          emptyDir: {}
+
+        {{- with .Values.worker.volumes }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
+
+        {{- if .Values.persistence.enabled }}
+        - name: osha-data
+          persistentVolumeClaim:
+            claimName: {{ include "osha.persistence.claimName" . }}
+        {{- end }}
 
       {{- with .Values.worker.nodeSelector }}
       nodeSelector:

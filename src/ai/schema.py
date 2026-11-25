@@ -76,6 +76,12 @@ class AIModelFamily(
 
     ANOMALY = "anomaly"
 
+    INCIDENT_ROOT_CAUSE = "incident_root_cause"
+
+    DECISION_POLICY_RISK = "decision_policy_risk"
+
+    REMEDIATION_RECOMMENDATION = "remediation_recommendation"
+
     CUSTOM = "custom"
 
 

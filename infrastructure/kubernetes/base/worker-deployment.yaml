@@ -254,6 +254,8 @@ spec:
             - name: worker-artifacts
               mountPath: /app/artifacts/workers
 
+            - name: worker-models
+              mountPath: /app/models
 
       # -------------------------------------------------------------
       # Volumes
@@ -268,3 +270,7 @@ spec:
 
         - name: worker-artifacts
           emptyDir: {}
+
+        - name: worker-models
+          emptyDir: {}
+

@@ -263,6 +263,9 @@ spec:
             - name: runtime-artifacts
               mountPath: /app/artifacts/runtime
 
+            - name: runtime-models
+              mountPath: /app/models
+
 
       # -------------------------------------------------------------
       # Volumes
@@ -276,4 +279,7 @@ spec:
           emptyDir: {}
 
         - name: runtime-artifacts
+          emptyDir: {}
+
+        - name: runtime-models
           emptyDir: {}

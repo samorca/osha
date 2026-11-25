@@ -10,6 +10,29 @@ Consumed by:
 Secrets and credentials MUST NOT be added here.
 */}}
 
+{{- $aiFamilies := list -}}
+{{- if .Values.worker.modelFamilies.enabled -}}
+{{- if .Values.worker.modelFamilies.event -}}
+{{- $aiFamilies = append $aiFamilies "event" -}}
+{{- end -}}
+{{- if .Values.worker.modelFamilies.anomaly -}}
+{{- $aiFamilies = append $aiFamilies "anomaly" -}}
+{{- end -}}
+{{- if .Values.worker.modelFamilies.incidentRootCause -}}
+{{- $aiFamilies = append $aiFamilies "incident_root_cause" -}}
+{{- end -}}
+{{- if .Values.worker.modelFamilies.decisionRisk -}}
+{{- $aiFamilies = append $aiFamilies "decision_policy_risk" -}}
+{{- end -}}
+{{- if .Values.worker.modelFamilies.remediationRanking -}}
+{{- $aiFamilies = append $aiFamilies "remediation_recommendation" -}}
+{{- end -}}
+{{- end -}}
+{{- $aiEnabled := and .Values.worker.modelFamilies.enabled (gt (len $aiFamilies) 0) -}}
+{{- if not $aiFamilies -}}
+{{- $aiFamilies = list "event" -}}
+{{- end -}}
+
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -68,6 +91,8 @@ data:
 
   PYTHONDONTWRITEBYTECODE: "1"
 
+  PYTHONPYCACHEPREFIX: "/tmp/pycache"
+
 
   # =================================================================
   # API
@@ -104,6 +129,28 @@ data:
   OSHA_CHECKPOINTS_DIR: {{ .Values.paths.checkpoints | quote }}
 
   OSHA_MODELS_DIR: {{ .Values.paths.models | quote }}
+
+  OSHA_AI_ENABLED: {{ $aiEnabled | toString | quote }}
+
+  OSHA_AI_ALLOWED_FAMILIES: {{ join "," $aiFamilies | quote }}
+
+  OSHA_AI_MODELS_DIRECTORY: {{ .Values.paths.models | quote }}
+
+  OSHA_AI_DEVICE: {{ .Values.accelerator.preferred | quote }}
+
+  OSHA_AI_ALLOW_CPU_FALLBACK: {{ .Values.accelerator.allowCPUFallback | toString | quote }}
+
+  OSHA_MODEL_FAMILIES_ENABLED: {{ .Values.worker.modelFamilies.enabled | toString | quote }}
+
+  OSHA_EVENT_MODEL_ENABLED: {{ .Values.worker.modelFamilies.event | toString | quote }}
+
+  OSHA_ANOMALY_MODEL_ENABLED: {{ .Values.worker.modelFamilies.anomaly | toString | quote }}
+
+  OSHA_INCIDENT_ROOT_CAUSE_MODEL_ENABLED: {{ .Values.worker.modelFamilies.incidentRootCause | toString | quote }}
+
+  OSHA_DECISION_RISK_MODEL_ENABLED: {{ .Values.worker.modelFamilies.decisionRisk | toString | quote }}
+
+  OSHA_REMEDIATION_RANKING_MODEL_ENABLED: {{ .Values.worker.modelFamilies.remediationRanking | toString | quote }}
 
   OSHA_LOGS_DIR: {{ .Values.paths.logs | quote }}
 

@@ -505,6 +505,48 @@ class AnomalyModelAdapter(AIModelAdapter):
             )
 
 
+class IncidentRootCauseModelAdapter(AIModelAdapter):
+    family = AIModelFamily.INCIDENT_ROOT_CAUSE.value
+
+    def validate_request(
+        self,
+        request: InferenceRequest,
+    ) -> None:
+        super().validate_request(request)
+        if not isinstance(request.payload, dict):
+            raise AIInferenceRequestError(
+                "Incident/root-cause inference payload must be an object."
+            )
+
+
+class DecisionPolicyRiskModelAdapter(AIModelAdapter):
+    family = AIModelFamily.DECISION_POLICY_RISK.value
+
+    def validate_request(
+        self,
+        request: InferenceRequest,
+    ) -> None:
+        super().validate_request(request)
+        if not isinstance(request.payload, dict):
+            raise AIInferenceRequestError(
+                "Decision/risk inference payload must be an object."
+            )
+
+
+class RemediationRecommendationModelAdapter(AIModelAdapter):
+    family = AIModelFamily.REMEDIATION_RECOMMENDATION.value
+
+    def validate_request(
+        self,
+        request: InferenceRequest,
+    ) -> None:
+        super().validate_request(request)
+        if not isinstance(request.payload, dict):
+            raise AIInferenceRequestError(
+                "Remediation/recommendation inference payload must be an object."
+            )
+
+
 # ---------------------------------------------------------------
 # Adapter type check
 # ---------------------------------------------------------------

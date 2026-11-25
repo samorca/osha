@@ -872,7 +872,11 @@ def main() -> None:
             else None
         )
 
-        pin_memory = bool(args.pin_memory and accelerator_selection.accelerator)
+        accelerator_available = (
+            accelerator_selection.kind
+            != "cpu"
+        )
+        pin_memory = bool(args.pin_memory and accelerator_available)
 
         train_loader = build_loader(
             train_dataset,
@@ -932,10 +936,10 @@ def main() -> None:
 
         criterion = nn.CrossEntropyLoss(ignore_index=IGNORE_INDEX)
 
-        use_amp = bool(args.mixed_precision and accelerator_selection.accelerator)
+        use_amp = bool(args.mixed_precision and accelerator_available)
 
         scaler = torch.amp.GradScaler(
-            device=("cuda" if accelerator_selection.accelerator else "cpu"),
+            device=("cuda" if accelerator_available else "cpu"),
             enabled=use_amp,
         )
 
@@ -1034,7 +1038,7 @@ def main() -> None:
                     ),
                 }
 
-                autocast_device = "cuda" if accelerator_selection.accelerator else "cpu"
+                autocast_device = "cuda" if accelerator_available else "cpu"
 
                 with torch.autocast(
                     device_type=(autocast_device),

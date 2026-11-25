@@ -39,7 +39,6 @@ EXCLUDED_DIRECTORIES = {
     "features",
     "labels",
     "processed",
-    "raw",
     "synthetic",
     ".git",
     ".venv",

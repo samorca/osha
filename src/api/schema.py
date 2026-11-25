@@ -288,6 +288,15 @@ class ModelFamilyAPI(
     ANOMALY = "anomaly"
 
 
+class OperationalModelFamilyAPI(
+    str,
+    Enum,
+):
+    INCIDENT_ROOT_CAUSE = "incident_root_cause"
+    DECISION_POLICY_RISK = "decision_policy_risk"
+    REMEDIATION_RECOMMENDATION = "remediation_recommendation"
+
+
 class ModelStateAPI(
     str,
     Enum,
@@ -854,6 +863,54 @@ class AnomalyInferenceRequest(APIInputModel):
     )
     @classmethod
     def validate_mappings(
+        cls,
+        value: Mapping[
+            str,
+            Any,
+        ],
+    ) -> Dict[str, Any]:
+        return validate_attributes(value)
+
+
+# ------------------------------------------------------------------
+# Operational model inference
+# ------------------------------------------------------------------
+
+
+class OperationalInferenceRequest(APIInputModel):
+    family: OperationalModelFamilyAPI
+
+    input: Dict[
+        str,
+        Any,
+    ] = Field(
+        min_length=1,
+        max_length=MAX_ATTRIBUTE_COUNT,
+    )
+
+    model_name: Optional[str] = Field(
+        default=None,
+        max_length=MAX_NAME_LENGTH,
+    )
+
+    model_version: Optional[str] = Field(
+        default=None,
+        max_length=MAX_NAME_LENGTH,
+    )
+
+    top_k: int = Field(
+        default=3,
+        ge=1,
+        le=8,
+    )
+
+    provenance: Optional[InferenceProvenanceRequest] = None
+
+    @field_validator(
+        "input",
+    )
+    @classmethod
+    def validate_input(
         cls,
         value: Mapping[
             str,

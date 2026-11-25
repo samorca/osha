@@ -380,6 +380,9 @@ def default_example_builder(
             TrainingTask.EVENT.value,
             TrainingTask.ANOMALY.value,
             TrainingTask.CLASSIFICATION.value,
+            TrainingTask.INCIDENT_ROOT_CAUSE.value,
+            TrainingTask.DECISION_POLICY_RISK.value,
+            TrainingTask.REMEDIATION_RECOMMENDATION.value,
         }
         and label is None
     ):

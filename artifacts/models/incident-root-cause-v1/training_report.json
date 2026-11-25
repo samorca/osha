@@ -1,0 +1,36 @@
+{
+  "evaluation": {
+    "root_cause_accuracy": 0.9950124688279302,
+    "samples": 401,
+    "severity_accuracy": 0.9950124688279302
+  },
+  "family": "incident_root_cause",
+  "feature_dimension": 16,
+  "history": [
+    {
+      "epoch": 1,
+      "loss": 0.446384160438239
+    }
+  ],
+  "labels": {
+    "root_cause": [
+      "capacity",
+      "configuration",
+      "network",
+      "storage",
+      "service",
+      "security",
+      "software",
+      "unknown"
+    ],
+    "severity": [
+      "info",
+      "low",
+      "medium",
+      "high",
+      "critical"
+    ]
+  },
+  "test_samples": 401,
+  "train_samples": 1604
+}

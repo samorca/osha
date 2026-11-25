@@ -30,6 +30,7 @@ from src.api.schema import (
     BatchInferenceResponse,
     EventInferenceRequest,
     InferenceResponse,
+    OperationalInferenceRequest,
 )
 
 from src.api.services.inference import (
@@ -103,6 +104,23 @@ async def infer_anomaly(
     service: InferenceServiceDependency,
 ) -> InferenceResponse:
     return await service.infer_anomaly(
+        payload,
+        context=operation_context(request),
+    )
+
+
+@router.post(
+    "/operational",
+    response_model=InferenceResponse,
+    summary="Run operational model inference",
+    operation_id="infer_operational",
+)
+async def infer_operational(
+    payload: OperationalInferenceRequest,
+    request: Request,
+    service: InferenceServiceDependency,
+) -> InferenceResponse:
+    return await service.infer_operational(
         payload,
         context=operation_context(request),
     )

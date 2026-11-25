@@ -11,7 +11,7 @@
 #
 #   ./scripts/api/run_dev.sh
 #   ./scripts/api/run_dev.sh --host 127.0.0.1
-#   ./scripts/api/run_dev.sh --port 8000
+#   ./scripts/api/run_dev.sh --port 8088
 #   ./scripts/api/run_dev.sh --no-reload
 #   ./scripts/api/run_dev.sh --log-level debug
 #   ./scripts/api/run_dev.sh --verbose
@@ -29,7 +29,7 @@
 #
 #   OSHA_PYTHON=/path/to/python
 #   OSHA_API_HOST=127.0.0.1
-#   OSHA_API_PORT=8000
+#   OSHA_API_PORT=8088
 #
 # Development only.
 #
@@ -66,7 +66,7 @@ APP_FILE="${PROJECT_ROOT}/src/api/app.py"
 
 HOST="${OSHA_API_HOST:-127.0.0.1}"
 
-PORT="${OSHA_API_PORT:-8000}"
+PORT="${OSHA_API_PORT:-8088}"
 
 LOG_LEVEL="${OSHA_API_LOG_LEVEL:-info}"
 
@@ -154,7 +154,7 @@ Options:
       Development HTTP port.
 
       Default:
-          8000
+          8088
 
   --log-level LEVEL
       Uvicorn log level.
@@ -197,11 +197,11 @@ Examples:
   ./scripts/api/run_dev.sh
 
   ./scripts/api/run_dev.sh \
-      --port 8080
+      --port 8088
 
   ./scripts/api/run_dev.sh \
       --host 0.0.0.0 \
-      --port 8000
+      --port 8088
 
   ./scripts/api/run_dev.sh \
       --log-level debug

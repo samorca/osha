@@ -6,7 +6,7 @@ api:
 
   server:
     host: "0.0.0.0"
-    port: 8000
+    port: 8088
     workers: 1
     log_level: "info"
 
@@ -17,7 +17,7 @@ api:
 
   development:
     host: "127.0.0.1"
-    port: 8000
+    port: 8088
     reload: true
     log_level: "debug"
 

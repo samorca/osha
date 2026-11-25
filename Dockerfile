@@ -24,6 +24,7 @@ COPY src/ /app/src/
 COPY scripts/ /app/scripts/
 COPY config/ /app/config/
 COPY orchestration-ai-data/ /app/orchestration-ai-data/
+COPY artifacts/ /app/artifacts/
 
 RUN mkdir -p \
         /app/artifacts \
@@ -37,6 +38,6 @@ RUN mkdir -p \
 
 USER osha
 
-EXPOSE 8000
+EXPOSE 8088
 
 CMD ["/bin/bash", "/app/scripts/runtime/run.sh"]

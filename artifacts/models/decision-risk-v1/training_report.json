@@ -1,0 +1,23 @@
+{
+  "evaluation": {
+    "risk_accuracy": 0.8606965174129353,
+    "samples": 201
+  },
+  "family": "decision_policy_risk",
+  "feature_dimension": 16,
+  "history": [
+    {
+      "epoch": 1,
+      "loss": 0.5723717913908117
+    }
+  ],
+  "risk_labels": [
+    "none",
+    "low",
+    "medium",
+    "high",
+    "critical"
+  ],
+  "test_samples": 201,
+  "train_samples": 804
+}

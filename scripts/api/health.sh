@@ -25,7 +25,7 @@
 #
 # Environment:
 #
-#   OSHA_API_URL=http://127.0.0.1:8000
+#   OSHA_API_URL=http://127.0.0.1:8088
 #   OSHA_API_HEALTH_TIMEOUT=5
 #
 # This script is read-only.
@@ -57,7 +57,7 @@ VENV_DIR="${PROJECT_ROOT}/.venv"
 # Defaults
 # -------------------------------------------------------------------
 
-BASE_URL="${OSHA_API_URL:-http://127.0.0.1:8000}"
+BASE_URL="${OSHA_API_URL:-http://127.0.0.1:8088}"
 
 TIMEOUT="${OSHA_API_HEALTH_TIMEOUT:-5}"
 
@@ -170,7 +170,7 @@ Connection:
       API base URL.
 
       Default:
-          http://127.0.0.1:8000
+          http://127.0.0.1:8088
 
   --timeout SECONDS
       Maximum request time for each probe.
@@ -213,7 +213,7 @@ Examples:
   ./scripts/api/health.sh --full
 
   ./scripts/api/health.sh \
-      --url http://127.0.0.1:8080
+      --url       http://127.0.0.1:8088
 
   ./scripts/api/health.sh --json
 

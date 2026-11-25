@@ -386,6 +386,9 @@ class AIConfig:
     ] = (
         AIModelFamily.EVENT.value,
         AIModelFamily.ANOMALY.value,
+        AIModelFamily.INCIDENT_ROOT_CAUSE.value,
+        AIModelFamily.DECISION_POLICY_RISK.value,
+        AIModelFamily.REMEDIATION_RECOMMENDATION.value,
     )
 
     paths: AIPathConfig = field(default_factory=AIPathConfig)

@@ -459,6 +459,9 @@ class TrainingConfig:
     ] = (
         TrainingTask.EVENT.value,
         TrainingTask.ANOMALY.value,
+        TrainingTask.INCIDENT_ROOT_CAUSE.value,
+        TrainingTask.DECISION_POLICY_RISK.value,
+        TrainingTask.REMEDIATION_RECOMMENDATION.value,
     )
 
     paths: TrainingPathConfig = field(default_factory=(TrainingPathConfig))

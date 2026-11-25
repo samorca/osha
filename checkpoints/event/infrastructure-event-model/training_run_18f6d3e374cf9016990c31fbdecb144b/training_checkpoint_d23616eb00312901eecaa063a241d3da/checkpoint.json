@@ -1,0 +1,18 @@
+{
+  "attributes": {
+    "metadata_path": "/home/samorca/osha/checkpoints/event/infrastructure-event-model/training_run_18f6d3e374cf9016990c31fbdecb144b/training_checkpoint_d23616eb00312901eecaa063a241d3da/checkpoint.json",
+    "optimizer_state_saved": true,
+    "task": "event"
+  },
+  "checkpoint_id": "training:checkpoint:d23616eb00312901eecaa063a241d3da",
+  "checksum": "34631f409573b50e9390521ae2c565dafe269114e4809a9806279789c0d14cbf",
+  "created_at": "2026-11-24T10:07:14.755726+00:00",
+  "epoch": 1,
+  "model_name": "infrastructure-event-model",
+  "path": "/home/samorca/osha/checkpoints/event/infrastructure-event-model/training_run_18f6d3e374cf9016990c31fbdecb144b/training_checkpoint_d23616eb00312901eecaa063a241d3da/checkpoint.pt",
+  "run_id": "training:run:18f6d3e374cf9016990c31fbdecb144b",
+  "score": 0.19793803539480373,
+  "score_name": "validation_loss",
+  "state": "best",
+  "step": 253
+}

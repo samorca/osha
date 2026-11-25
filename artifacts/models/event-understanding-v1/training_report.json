@@ -1,65 +1,409 @@
 {
-  "data": "orchestration-ai-data/processed/logs/events.jsonl",
-  "total_records": 32000,
-  "train_records": 25526,
-  "validation_records": 3239,
-  "test_records": 3235,
-  "vocabulary_size": 5615,
-  "source_classes": 16,
-  "component_classes": 354,
-  "event_classes": 1363,
+  "accelerator": {
+    "attributes": {
+      "backend_priority": [
+        "cuda",
+        "rocm",
+        "cpu"
+      ],
+      "candidate_score": [
+        0,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        -27303661568,
+        0,
+        -33510236160,
+        -1,
+        "cpu"
+      ],
+      "prefer_highest_free_memory": true
+    },
+    "candidates_considered": [
+      "cpu"
+    ],
+    "device": {
+      "accelerator": false,
+      "architecture": "x86_64",
+      "attributes": {
+        "machine": "x86_64",
+        "physical_processor_count": 8,
+        "platform": "Linux",
+        "platform_release": "6.18.58.1-microsoft-standard-WSL2",
+        "psutil_available": true,
+        "python_implementation": "CPython",
+        "torch_available": true
+      },
+      "available": true,
+      "capabilities": [
+        "compute",
+        "training",
+        "inference",
+        "memory_stats"
+      ],
+      "compute_capability": null,
+      "degraded": false,
+      "device_id": "cpu",
+      "driver_version": null,
+      "index": null,
+      "kind": "cpu",
+      "logical_processor_count": 16,
+      "memory": {
+        "allocated_bytes": null,
+        "free_bytes": 27303661568,
+        "reserved_bytes": null,
+        "total_bytes": 33510236160,
+        "used_bytes": 6206574592,
+        "utilization_ratio": 0.18521428981776533
+      },
+      "multiprocessor_count": null,
+      "name": "System CPU (x86_64)",
+      "runtime_device": "cpu",
+      "runtime_version": "2.9.1+cpu",
+      "state": "available",
+      "supported_precisions": [
+        "float64",
+        "float32",
+        "bfloat16"
+      ],
+      "vendor": null
+    },
+    "fallback_used": false,
+    "reason": "Preferred accelerator backend satisfies all workload requirements.",
+    "rejected_candidates": {},
+    "requirements": {
+      "allow_cpu_fallback": true,
+      "allow_degraded": true,
+      "attributes": {
+        "source": "accelerator_config"
+      },
+      "device_id": null,
+      "device_index": null,
+      "inference": false,
+      "minimum_free_memory_bytes": null,
+      "minimum_total_memory_bytes": null,
+      "mixed_precision": false,
+      "preferred_kind": "cpu",
+      "require_accelerator": false,
+      "required_capabilities": [
+        "training"
+      ],
+      "required_precisions": [
+        "float32"
+      ],
+      "training": true
+    },
+    "schema_version": "1",
+    "selected_at": "2026-11-24T10:07:13.001385+00:00"
+  },
+  "automatic_promotion": false,
+  "best_checkpoint": {
+    "attributes": {
+      "metadata_path": "/home/samorca/osha/checkpoints/event/infrastructure-event-model/training_run_18f6d3e374cf9016990c31fbdecb144b/training_checkpoint_d23616eb00312901eecaa063a241d3da/checkpoint.json",
+      "optimizer_state_saved": true,
+      "task": "event"
+    },
+    "checkpoint_id": "training:checkpoint:d23616eb00312901eecaa063a241d3da",
+    "checksum": "34631f409573b50e9390521ae2c565dafe269114e4809a9806279789c0d14cbf",
+    "created_at": "2026-11-24T10:07:14.755726+00:00",
+    "epoch": 1,
+    "model_name": "infrastructure-event-model",
+    "path": "/home/samorca/osha/checkpoints/event/infrastructure-event-model/training_run_18f6d3e374cf9016990c31fbdecb144b/training_checkpoint_d23616eb00312901eecaa063a241d3da/checkpoint.pt",
+    "run_id": "training:run:18f6d3e374cf9016990c31fbdecb144b",
+    "score": 0.19793803539480373,
+    "score_name": "validation_loss",
+    "state": "best",
+    "step": 253
+  },
+  "classes": {
+    "component": 21,
+    "event": 215,
+    "source": 3
+  },
+  "data": "/home/samorca/osha/orchestration-ai-data/processed/logs/events_with_external.jsonl",
+  "evaluations": {
+    "test": {
+      "attributes": {
+        "threshold_directions": {}
+      },
+      "evaluated_at": "2026-11-24T10:07:14.876615+00:00",
+      "evaluation_id": "training:evaluation:51e4088a0d7fd00fae73e013ab14338e",
+      "metrics": [
+        {
+          "epoch": null,
+          "name": "loss",
+          "observed_at": "2026-11-24T10:07:14.876588+00:00",
+          "split": "test",
+          "step": null,
+          "value": 0.2298227638748358
+        },
+        {
+          "epoch": null,
+          "name": "source_accuracy",
+          "observed_at": "2026-11-24T10:07:14.876593+00:00",
+          "split": "test",
+          "step": null,
+          "value": 0.994059405940594
+        },
+        {
+          "epoch": null,
+          "name": "component_accuracy",
+          "observed_at": "2026-11-24T10:07:14.876599+00:00",
+          "split": "test",
+          "step": null,
+          "value": 0.9263157894736842
+        },
+        {
+          "epoch": null,
+          "name": "event_accuracy",
+          "observed_at": "2026-11-24T10:07:14.876605+00:00",
+          "split": "test",
+          "step": null,
+          "value": 0.944672131147541
+        }
+      ],
+      "model_name": "infrastructure-event-model",
+      "passed": null,
+      "run_id": "training:run:18f6d3e374cf9016990c31fbdecb144b",
+      "split": "test",
+      "thresholds": {}
+    },
+    "validation": {
+      "attributes": {
+        "threshold_directions": {}
+      },
+      "evaluated_at": "2026-11-24T10:07:14.876518+00:00",
+      "evaluation_id": "training:evaluation:2343bb643416ac32bc67baf1682a6c30",
+      "metrics": [
+        {
+          "epoch": null,
+          "name": "loss",
+          "observed_at": "2026-11-24T10:07:14.876465+00:00",
+          "split": "validation",
+          "step": null,
+          "value": 0.19793803539480373
+        },
+        {
+          "epoch": null,
+          "name": "source_accuracy",
+          "observed_at": "2026-11-24T10:07:14.876490+00:00",
+          "split": "validation",
+          "step": null,
+          "value": 0.993421052631579
+        },
+        {
+          "epoch": null,
+          "name": "component_accuracy",
+          "observed_at": "2026-11-24T10:07:14.876497+00:00",
+          "split": "validation",
+          "step": null,
+          "value": 0.9518518518518518
+        },
+        {
+          "epoch": null,
+          "name": "event_accuracy",
+          "observed_at": "2026-11-24T10:07:14.876503+00:00",
+          "split": "validation",
+          "step": null,
+          "value": 0.9325842696629213
+        }
+      ],
+      "model_name": "infrastructure-event-model",
+      "passed": null,
+      "run_id": "training:run:18f6d3e374cf9016990c31fbdecb144b",
+      "split": "validation",
+      "thresholds": {}
+    }
+  },
   "history": [
     {
       "epoch": 1,
-      "train_loss": 4.416209363997132,
-      "validation_loss": 1.4033103531189994,
-      "validation_source_accuracy": 0.9564680456931152,
-      "validation_component_accuracy": 0.9248942172073342,
-      "validation_event_accuracy": 0.8712565606668725,
-      "validation_component_examples": 2836
-    },
-    {
-      "epoch": 2,
-      "train_loss": 1.1017986025875972,
-      "validation_loss": 0.8305332428574854,
-      "validation_source_accuracy": 0.9749922815683854,
-      "validation_component_accuracy": 0.9569816643159379,
-      "validation_event_accuracy": 0.9376350725532572,
-      "validation_component_examples": 2836
-    },
-    {
-      "epoch": 3,
-      "train_loss": 0.6293534277413124,
-      "validation_loss": 0.6416547356730363,
-      "validation_source_accuracy": 0.9805495523309663,
-      "validation_component_accuracy": 0.9657968970380818,
-      "validation_event_accuracy": 0.9561593084285274,
-      "validation_component_examples": 2836
-    },
-    {
-      "epoch": 4,
-      "train_loss": 0.4291782742576267,
-      "validation_loss": 0.5932003342930008,
-      "validation_source_accuracy": 0.9814757641247298,
-      "validation_component_accuracy": 0.9693229901269393,
-      "validation_event_accuracy": 0.9598641556035814,
-      "validation_component_examples": 2836
-    },
-    {
-      "epoch": 5,
-      "train_loss": 0.3117222489980528,
-      "validation_loss": 0.5640076978483657,
-      "validation_source_accuracy": 0.9851806112997838,
-      "validation_component_accuracy": 0.9714386459802539,
-      "validation_event_accuracy": 0.962334053720284,
-      "validation_component_examples": 2836
+      "global_step": 253,
+      "train_loss": 0.7541952100048659,
+      "validation_batch_count": 29,
+      "validation_component_accuracy": 0.9518518518518518,
+      "validation_component_count": 270,
+      "validation_event_accuracy": 0.9325842696629213,
+      "validation_event_count": 445,
+      "validation_example_count": 456,
+      "validation_loss": 0.19793803539480373,
+      "validation_source_accuracy": 0.993421052631579,
+      "validation_source_count": 456
     }
   ],
+  "mixed_precision": false,
+  "model_config": {
+    "dropout": 0.2,
+    "embedding_dim": 192,
+    "hidden_dim": 256,
+    "max_length": 128,
+    "num_components": 21,
+    "num_events": 215,
+    "num_sources": 3,
+    "vocab_size": 683
+  },
+  "records": {
+    "test": 505,
+    "total": 5000,
+    "train": 4039,
+    "validation": 456
+  },
+  "run": {
+    "accelerator": "cpu",
+    "attributes": {
+      "accelerator_selection": {
+        "attributes": {
+          "backend_priority": [
+            "cuda",
+            "rocm",
+            "cpu"
+          ],
+          "candidate_score": [
+            0,
+            0,
+            0,
+            0,
+            2,
+            0,
+            0,
+            -27303661568,
+            0,
+            -33510236160,
+            -1,
+            "cpu"
+          ],
+          "prefer_highest_free_memory": true
+        },
+        "candidates_considered": [
+          "cpu"
+        ],
+        "device": {
+          "accelerator": false,
+          "architecture": "x86_64",
+          "attributes": {
+            "machine": "x86_64",
+            "physical_processor_count": 8,
+            "platform": "Linux",
+            "platform_release": "6.18.58.1-microsoft-standard-WSL2",
+            "psutil_available": true,
+            "python_implementation": "CPython",
+            "torch_available": true
+          },
+          "available": true,
+          "capabilities": [
+            "compute",
+            "training",
+            "inference",
+            "memory_stats"
+          ],
+          "compute_capability": null,
+          "degraded": false,
+          "device_id": "cpu",
+          "driver_version": null,
+          "index": null,
+          "kind": "cpu",
+          "logical_processor_count": 16,
+          "memory": {
+            "allocated_bytes": null,
+            "free_bytes": 27303661568,
+            "reserved_bytes": null,
+            "total_bytes": 33510236160,
+            "used_bytes": 6206574592,
+            "utilization_ratio": 0.18521428981776533
+          },
+          "multiprocessor_count": null,
+          "name": "System CPU (x86_64)",
+          "runtime_device": "cpu",
+          "runtime_version": "2.9.1+cpu",
+          "state": "available",
+          "supported_precisions": [
+            "float64",
+            "float32",
+            "bfloat16"
+          ],
+          "vendor": null
+        },
+        "fallback_used": false,
+        "reason": "Preferred accelerator backend satisfies all workload requirements.",
+        "rejected_candidates": {},
+        "requirements": {
+          "allow_cpu_fallback": true,
+          "allow_degraded": true,
+          "attributes": {
+            "source": "accelerator_config"
+          },
+          "device_id": null,
+          "device_index": null,
+          "inference": false,
+          "minimum_free_memory_bytes": null,
+          "minimum_total_memory_bytes": null,
+          "mixed_precision": false,
+          "preferred_kind": "cpu",
+          "require_accelerator": false,
+          "required_capabilities": [
+            "training"
+          ],
+          "required_precisions": [
+            "float32"
+          ],
+          "training": true
+        },
+        "schema_version": "1",
+        "selected_at": "2026-11-24T10:07:13.001385+00:00"
+      },
+      "data_path": "/home/samorca/osha/orchestration-ai-data/processed/logs/events_with_external.jsonl",
+      "output_directory": "/home/samorca/osha/artifacts/models/event-understanding-v1",
+      "record_count": 5000
+    },
+    "checkpoint_ids": [
+      "training:checkpoint:d23616eb00312901eecaa063a241d3da"
+    ],
+    "completed_at": "2026-11-24T10:07:14.876658+00:00",
+    "dataset_id": "osha-infrastructure-events",
+    "error_type": null,
+    "metrics": [
+      {
+        "epoch": 1,
+        "name": "loss",
+        "observed_at": "2026-11-24T10:07:14.717392+00:00",
+        "split": "train",
+        "step": 253,
+        "value": 0.7541952100048659
+      }
+    ],
+    "model_name": "infrastructure-event-model",
+    "run_id": "training:run:18f6d3e374cf9016990c31fbdecb144b",
+    "schema_version": "1",
+    "started_at": "2026-11-24T10:07:13.717894+00:00",
+    "state": "completed",
+    "task": "event"
+  },
+  "runtime_device": "cpu",
+  "schema_version": "1",
   "test": {
-    "loss": 0.671605686546422,
-    "source_accuracy": 0.9820710973724884,
-    "component_accuracy": 0.9676041295834816,
-    "event_accuracy": 0.962596599690881,
-    "component_examples": 2809
-  }
+    "batch_count": 32,
+    "component_accuracy": 0.9263157894736842,
+    "component_count": 285,
+    "event_accuracy": 0.944672131147541,
+    "event_count": 488,
+    "example_count": 505,
+    "loss": 0.2298227638748358,
+    "source_accuracy": 0.994059405940594,
+    "source_count": 505
+  },
+  "validation": {
+    "batch_count": 29,
+    "component_accuracy": 0.9518518518518518,
+    "component_count": 270,
+    "event_accuracy": 0.9325842696629213,
+    "event_count": 445,
+    "example_count": 456,
+    "loss": 0.19793803539480373,
+    "source_accuracy": 0.993421052631579,
+    "source_count": 456
+  },
+  "vocabulary_size": 683
 }

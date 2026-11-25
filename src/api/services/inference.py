@@ -71,6 +71,7 @@ from uuid import uuid4
 from src.ai.pipeline import AIPipeline
 
 from src.ai.schema import (
+    InferenceProvenance,
     InferenceRequest,
 )
 
@@ -105,6 +106,7 @@ from src.api.schema import (
     InferenceStateAPI,
     ModelFamilyAPI,
     ModelIdentityResponse,
+    OperationalInferenceRequest,
     PredictionResponse,
 )
 
@@ -386,24 +388,78 @@ def provenance_payload(
     return source
 
 
+def domain_provenance(
+    provenance: Any,
+    *,
+    context: Optional[InferenceOperationContext] = None,
+) -> InferenceProvenance:
+    source = provenance_payload(
+        provenance,
+        context=context,
+    )
+    attributes = _mapping(source.get("attributes"))
+
+    for key in ("tenant_id", "cluster", "host"):
+        if source.get(key) is not None:
+            attributes.setdefault(key, source[key])
+
+    observed_at = source.get("observed_at")
+    if hasattr(observed_at, "isoformat"):
+        observed_at = observed_at.isoformat()
+
+    source_id = source.get("source_id")
+    return InferenceProvenance(
+        provider=source.get("source"),
+        environment_id=source.get("environment"),
+        correlation_id=source.get("correlation_id"),
+        source_ids=([str(source_id)] if source_id else []),
+        observed_at=(str(observed_at) if observed_at is not None else None),
+        attributes=attributes,
+    )
+
+
 def provenance_response(
     provenance: Any,
 ) -> Optional[InferenceProvenanceResponse]:
     source = _mapping(provenance)
 
-    if not source:
+    if not any(
+        source.get(key)
+        for key in (
+            "source",
+            "provider",
+            "source_id",
+            "source_ids",
+            "resource_id",
+            "tenant_id",
+            "environment",
+            "environment_id",
+            "cluster",
+            "host",
+            "correlation_id",
+            "observed_at",
+            "attributes",
+        )
+    ):
         return None
 
+    attributes = _mapping(source.get("attributes"))
+    source_ids = source.get("source_ids") or ()
+
     return InferenceProvenanceResponse(
-        source=source.get("source"),
-        source_id=source.get("source_id"),
-        tenant_id=source.get("tenant_id"),
-        environment=source.get("environment"),
-        cluster=source.get("cluster"),
-        host=source.get("host"),
+        source=source.get("source", source.get("provider")),
+        source_id=(
+            source.get("source_id")
+            or source.get("resource_id")
+            or (source_ids[0] if source_ids else None)
+        ),
+        tenant_id=source.get("tenant_id", attributes.get("tenant_id")),
+        environment=source.get("environment", source.get("environment_id")),
+        cluster=source.get("cluster", attributes.get("cluster")),
+        host=source.get("host", attributes.get("host")),
         correlation_id=source.get("correlation_id"),
         observed_at=source.get("observed_at"),
-        attributes=_mapping(source.get("attributes")),
+        attributes=attributes,
     )
 
 
@@ -453,11 +509,9 @@ def event_domain_request(
         "model_version": (request.model_version),
         "payload": payload,
         "options": options,
-        "provenance": (
-            provenance_payload(
-                request.provenance,
-                context=context,
-            )
+        "provenance": domain_provenance(
+            request.provenance,
+            context=context,
         ),
         "attributes": {
             "api_request": True,
@@ -536,11 +590,9 @@ def anomaly_domain_request(
         "model_version": (request.model_version),
         "payload": payload,
         "options": options,
-        "provenance": (
-            provenance_payload(
-                request.provenance,
-                context=context,
-            )
+        "provenance": domain_provenance(
+            request.provenance,
+            context=context,
         ),
         "attributes": {
             "api_request": True,
@@ -574,6 +626,64 @@ def anomaly_domain_request(
                 "operation": ("anomaly_request_translation"),
                 "request_id": request_id,
                 "error_type": (type(exc).__name__),
+            },
+        ) from exc
+
+
+def operational_domain_request(
+    request: OperationalInferenceRequest,
+    *,
+    request_id: str,
+    context: Optional[InferenceOperationContext] = None,
+) -> InferenceRequest:
+    family = getattr(
+        request.family,
+        "value",
+        request.family,
+    )
+    values = {
+        "request_id": request_id,
+        "family": family,
+        "model_name": request.model_name,
+        "model_version": request.model_version,
+        "payload": {"input": dict(request.input)},
+        "options": {"top_k": request.top_k},
+        "provenance": domain_provenance(
+            request.provenance,
+            context=context,
+        ),
+        "attributes": {
+            "api_request": True,
+            "api_request_id": (
+                context.request_id if context is not None else request_id
+            ),
+        },
+    }
+
+    try:
+        domain_request = _construct_with_supported_arguments(
+            InferenceRequest,
+            values,
+        )
+
+        validator = getattr(
+            domain_request,
+            "validate",
+            None,
+        )
+
+        if callable(validator):
+            validator()
+
+        return domain_request
+
+    except Exception as exc:
+        raise InferenceInputAPIError(
+            "The operational inference request could not be translated.",
+            details={
+                "operation": "operational_request_translation",
+                "request_id": request_id,
+                "error_type": type(exc).__name__,
             },
         ) from exc
 
@@ -1239,6 +1349,39 @@ class InferenceService:
             result,
             request_id=request_id,
         )
+
+    # ------------------------------------------------------
+    # Operational model inference
+    # ------------------------------------------------------
+
+    async def infer_operational(
+        self,
+        request: OperationalInferenceRequest,
+        *,
+        context: Optional[InferenceOperationContext] = None,
+    ) -> InferenceResponse:
+        request_id = _request_identifier(context)
+
+        domain_request = operational_domain_request(
+            request,
+            request_id=request_id,
+            context=context,
+        )
+
+        result = await self._execute(
+            domain_request,
+            public_request_id=request_id,
+        )
+
+        response = inference_response(
+            result,
+            request_id=request_id,
+        )
+        if getattr(request.family, "value", request.family) == (
+            "remediation_recommendation"
+        ):
+            response.attributes.setdefault("advisory_only", True)
+        return response
 
     # ------------------------------------------------------
     # Batch item
