@@ -1,0 +1,20 @@
+{
+  "artifact_id": "training:artifact:13a34f97d6116f6f0a3addf85d9dadf2",
+  "attributes": {
+    "evaluation_id": null,
+    "evaluation_passed": null,
+    "source_checkpoint_metric": null,
+    "source_checkpoint_score": null
+  },
+  "checkpoint_id": "training:checkpoint:bb0b8ebe3ddf2875c7a3d51c60dd8eef",
+  "checksum": "e9b5ce9e8e5e1b932fe0e8b4e954d5b1450d1f5669579adda7912e03f4a63524",
+  "created_at": "2026-11-25T12:22:20.385787+00:00",
+  "metrics": {},
+  "model_name": "infrastructure-anomaly-model",
+  "path": "/home/samorca/osha/artifacts/anomaly/infrastructure-anomaly-model/gpu-user-approved-20261125/model.pt",
+  "schema_version": "1",
+  "source_run_id": "manual-install-anomaly-20261125",
+  "state": "candidate",
+  "task": "anomaly",
+  "version": "gpu-user-approved-20261125"
+}

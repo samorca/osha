@@ -1,0 +1,210 @@
+---
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: osha-config
+  namespace: osha
+
+  labels:
+    app.kubernetes.io/name: osha
+    app.kubernetes.io/instance: osha
+    app.kubernetes.io/part-of: osha
+    app.kubernetes.io/component: configuration
+    app.kubernetes.io/managed-by: kustomize
+
+    osha.atonixcorp.io/system: orchestration-self-healing-ai
+
+  annotations:
+    osha.atonixcorp.io/description: >-
+      Non-secret shared configuration for OSHA API,
+      runtime, and worker workloads.
+
+data:
+  # -----------------------------------------------------------------
+  # Runtime identity
+  # -----------------------------------------------------------------
+
+  OSHA_ENVIRONMENT_ID: "kubernetes"
+
+  OSHA_INSTANCE_NAME: "osha"
+
+
+  # -----------------------------------------------------------------
+  # Safety
+  # -----------------------------------------------------------------
+  #
+  # Runtime remediation remains dry-run by default.
+  #
+  # Production overlays should not change this unless
+  # the remediation safety and approval path has been
+  # explicitly configured.
+  # -----------------------------------------------------------------
+
+  OSHA_DRY_RUN: "true"
+
+  OSHA_FAIL_FAST: "true"
+
+
+  # -----------------------------------------------------------------
+  # Runtime lifecycle
+  # -----------------------------------------------------------------
+
+  OSHA_STARTUP_TIMEOUT_SECONDS: "60"
+
+  OSHA_SHUTDOWN_TIMEOUT_SECONDS: "60"
+
+  OSHA_HEALTH_INTERVAL_SECONDS: "15"
+
+  OSHA_RUNTIME_LOG_LEVEL: "info"
+
+
+  # -----------------------------------------------------------------
+  # Python process
+  # -----------------------------------------------------------------
+
+  PYTHONUNBUFFERED: "1"
+
+  PYTHONDONTWRITEBYTECODE: "1"
+
+
+  # -----------------------------------------------------------------
+  # API
+  # -----------------------------------------------------------------
+
+  OSHA_API_HOST: "0.0.0.0"
+
+  OSHA_API_PORT: "8088"
+
+  OSHA_API_WORKERS: "1"
+
+  OSHA_API_LOG_LEVEL: "info"
+
+  OSHA_API_GRACEFUL_TIMEOUT: "30"
+
+  OSHA_API_LIMIT_CONCURRENCY: "500"
+
+  OSHA_API_LIMIT_MAX_REQUESTS: "10000"
+
+
+  # -----------------------------------------------------------------
+  # Proxy trust
+  # -----------------------------------------------------------------
+  #
+  # Do not use "*" here.
+  #
+  # If a cluster ingress/reverse proxy is introduced,
+  # the production overlay should configure only the
+  # networks/IPs that OSHA is expected to trust.
+  # -----------------------------------------------------------------
+
+  OSHA_FORWARDED_ALLOW_IPS: "127.0.0.1"
+
+
+  # -----------------------------------------------------------------
+  # Internal filesystem layout
+  # -----------------------------------------------------------------
+  #
+  # These paths are inside the OSHA container.
+  #
+  # Deployment manifests will decide which are
+  # ephemeral and which receive persistent volumes.
+  # -----------------------------------------------------------------
+
+  OSHA_ARTIFACTS_DIR: "/app/artifacts"
+
+  OSHA_CHECKPOINTS_DIR: "/app/checkpoints"
+
+  OSHA_MODELS_DIR: "/app/models"
+
+  OSHA_AI_CACHE_DIRECTORY: "/tmp/osha/ai-cache"
+
+  OSHA_AI_LOG_DIRECTORY: "/tmp/osha/ai-logs"
+
+  OSHA_MODEL_FAMILIES_ENABLED: "true"
+
+  OSHA_EVENT_MODEL_ENABLED: "true"
+
+  OSHA_ANOMALY_MODEL_ENABLED: "true"
+
+  OSHA_INCIDENT_ROOT_CAUSE_MODEL_ENABLED: "true"
+
+  OSHA_DECISION_RISK_MODEL_ENABLED: "true"
+
+  OSHA_REMEDIATION_RANKING_MODEL_ENABLED: "true"
+
+  OSHA_LOGS_DIR: "/app/logs"
+
+  OSHA_DATA_DIR: "/app/orchestration-ai-data"
+
+
+  # -----------------------------------------------------------------
+  # Accelerator selection
+  # -----------------------------------------------------------------
+
+  OSHA_ACCELERATOR: "auto"
+
+  OSHA_ALLOW_CPU_FALLBACK: "true"
+
+
+  # -----------------------------------------------------------------
+  # Telemetry
+  # -----------------------------------------------------------------
+
+  OSHA_TELEMETRY_ENABLED: "true"
+
+  OSHA_TELEMETRY_INTERVAL_SECONDS: "15"
+
+
+  # -----------------------------------------------------------------
+  # Collectors
+  # -----------------------------------------------------------------
+
+  OSHA_COLLECTORS_ENABLED: "true"
+
+  OSHA_COLLECTOR_INTERVAL_SECONDS: "30"
+
+
+  # -----------------------------------------------------------------
+  # Workers
+  # -----------------------------------------------------------------
+
+  OSHA_WORKERS_ENABLED: "true"
+
+  OSHA_WORKER_CONCURRENCY: "1"
+
+  OSHA_WORKER_POLL_INTERVAL_SECONDS: "2"
+
+  OSHA_WORKER_GRACEFUL_SHUTDOWN_SECONDS: "30"
+
+
+  # -----------------------------------------------------------------
+  # Remediation
+  # -----------------------------------------------------------------
+  #
+  # Keep execution disabled at the shared base level.
+  #
+  # Environment overlays may configure policies, but
+  # secrets/credentials must never be introduced here.
+  # -----------------------------------------------------------------
+
+  OSHA_REMEDIATION_ENABLED: "true"
+
+  OSHA_REMEDIATION_DRY_RUN: "true"
+
+  OSHA_REMEDIATION_AUTOMATIC_EXECUTION: "false"
+
+  OSHA_REMEDIATION_REQUIRE_APPROVAL: "true"
+
+  OSHA_REMEDIATION_ALLOW_DESTRUCTIVE_ACTIONS: "false"
+
+
+  # -----------------------------------------------------------------
+  # Observability
+  # -----------------------------------------------------------------
+
+  OSHA_OBSERVABILITY_ENABLED: "true"
+
+  OSHA_METRICS_ENABLED: "true"
+
+  OSHA_LOGGING_ENABLED: "true"

@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from typing import Iterator
+from typing import Any, Iterator
 
 import torch
 
@@ -41,7 +41,28 @@ def read_jsonl(
 def load_event_runtime(
     checkpoint_path: Path,
     device: torch.device,
+    *,
+    model_verifier: Any = None,
+    require_signed_model: bool = False,
+    security_audit_recorder: Any = None,
 ):
+    if require_signed_model and model_verifier is None:
+        raise ValueError(
+            "require_signed_model requires a model verifier."
+        )
+    if model_verifier is not None:
+        if security_audit_recorder is None:
+            raise ValueError(
+                "Model verification requires a signed security audit recorder."
+            )
+        from src.security.integration import require_verified_model
+
+        require_verified_model(
+            checkpoint_path,
+            model_verifier,
+            audit=security_audit_recorder,
+        )
+
     checkpoint = torch.load(
         checkpoint_path,
         map_location=device,

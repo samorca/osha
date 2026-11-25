@@ -217,6 +217,31 @@ def blocked_result(
     ).finalize()
 
 
+def security_blocked_result(
+    request: RemediationRequest,
+    *,
+    reason: str,
+) -> ExecutionResult:
+    return ExecutionResult(
+        status=ExecutionStatus.BLOCKED.value,
+        success=False,
+        operation=request.action_type,
+        started_at=utc_now(),
+        finished_at=utc_now(),
+        changed=False,
+        evidence=[
+            RemediationEvidence(
+                evidence_type="security_authorization_blocked",
+                description=reason,
+                score=0.0,
+                source_id=request.request_id,
+                resource_ids=list(request.target_resource_ids),
+            )
+        ],
+        attributes={"security_authorization": "denied"},
+    ).finalize()
+
+
 def failed_result(
     request: RemediationRequest,
     *,
@@ -255,6 +280,31 @@ def failed_result(
     ).finalize()
 
 
+def record_security_denial(
+    recorder: Any,
+    request: RemediationRequest,
+    *,
+    action: str,
+    reason: str,
+) -> None:
+    from src.security.audit.signed_events import (
+        AuditEventType,
+        AuditOutcome,
+        AuditSeverity,
+    )
+
+    recorder.record(
+        event_type=AuditEventType.REMEDIATION_DECISION,
+        action=action,
+        outcome=AuditOutcome.DENIED,
+        severity=AuditSeverity.WARNING,
+        target=request.action_id,
+        correlation_id=request.request_id,
+        message=reason,
+        details={"action_type": request.action_type},
+    )
+
+
 # ---------------------------------------------------------------
 # Execution
 # ---------------------------------------------------------------
@@ -266,6 +316,8 @@ def execute_request(
     validator: Optional[RemediationValidator] = None,
     registry: Optional[AdapterRegistry] = None,
     config: Optional[ExecutorConfig] = None,
+    authorization_gate: Any = None,
+    security_audit_recorder: Any = None,
 ) -> ExecutionResult:
     """
     Validate and dispatch one remediation
@@ -293,6 +345,16 @@ def execute_request(
     validation = active_validator.validate(request)
 
     if not validation.valid:
+        if (
+            request.mode == RemediationMode.EXECUTE.value
+            and security_audit_recorder is not None
+        ):
+            record_security_denial(
+                security_audit_recorder,
+                request,
+                action="remediation_validation_denied",
+                reason="Remediation request failed executor validation.",
+            )
         return blocked_result(
             request,
             validation,
@@ -307,6 +369,13 @@ def execute_request(
         request.mode == RemediationMode.EXECUTE.value
         and not configuration.execution_enabled
     ):
+        if security_audit_recorder is not None:
+            record_security_denial(
+                security_audit_recorder,
+                request,
+                action="remediation_kill_switch_denied",
+                reason="Remediation execution is disabled by the executor kill switch.",
+            )
         return ExecutionResult(
             status=(ExecutionStatus.BLOCKED.value),
             success=False,
@@ -333,12 +402,74 @@ def execute_request(
             },
         ).finalize()
 
+    if request.mode == RemediationMode.EXECUTE.value:
+        if authorization_gate is None:
+            if security_audit_recorder is not None:
+                record_security_denial(
+                    security_audit_recorder,
+                    request,
+                    action="remediation_authorization_missing",
+                    reason="No remediation authorization gate is configured.",
+                )
+            return security_blocked_result(
+                request,
+                reason="No remediation authorization gate is configured.",
+            )
+        if security_audit_recorder is None:
+            return security_blocked_result(
+                request,
+                reason="No signed execution audit recorder is configured.",
+            )
+        from src.security.integration import RemediationAuthorizationGateError
+
+        try:
+            decision = authorization_gate(request)
+        except RemediationAuthorizationGateError as exc:
+            return security_blocked_result(request, reason=str(exc))
+
+        if getattr(decision, "allowed", False) is not True:
+            record_security_denial(
+                security_audit_recorder,
+                request,
+                action="remediation_authorization_denied",
+                reason="Remediation authorization did not return an allow decision.",
+            )
+            return security_blocked_result(
+                request,
+                reason="Remediation authorization did not return an allow decision.",
+            )
+
+        from src.security.audit.signed_events import (
+            AuditEventType,
+            AuditOutcome,
+            AuditSeverity,
+        )
+
+        security_audit_recorder.record(
+            event_type=AuditEventType.REMEDIATION_EXECUTION,
+            action="execute_remediation_started",
+            outcome=AuditOutcome.UNKNOWN,
+            severity=AuditSeverity.NOTICE,
+            target=(
+                sorted(
+                    set(request.target_resource_ids)
+                    | set(request.target_service_ids)
+                )[0]
+                if request.target_resource_ids or request.target_service_ids
+                else request.action_id
+            ),
+            correlation_id=request.request_id,
+            message="Authorized remediation execution was dispatched.",
+            details={"action_type": request.action_type},
+        )
+
     started_at = utc_now()
 
     monotonic_started = time.monotonic()
 
     adapter_name = None
 
+    result: ExecutionResult
     try:
         adapter = adapters.resolve(
             request,
@@ -353,11 +484,6 @@ def execute_request(
 
         result.attributes["request_id"] = request.request_id
 
-        return sanitize_execution_result(
-            result,
-            config=configuration,
-        )
-
     except (
         AdapterNotFoundError,
         AdapterExecutionDisabledError,
@@ -365,16 +491,13 @@ def execute_request(
     ) as exc:
         duration = time.monotonic() - monotonic_started
 
-        return sanitize_execution_result(
-            failed_result(
-                request,
-                adapter_name=(adapter_name),
-                error_type=(type(exc).__name__),
-                error_message=str(exc),
-                started_at=(started_at),
-                duration_seconds=(duration),
-            ),
-            config=configuration,
+        result = failed_result(
+            request,
+            adapter_name=adapter_name,
+            error_type=type(exc).__name__,
+            error_message=str(exc),
+            started_at=started_at,
+            duration_seconds=duration,
         )
 
     except Exception as exc:
@@ -385,17 +508,51 @@ def execute_request(
 
         # Do not expose traceback or exception
         # internals in the result.
-        return sanitize_execution_result(
-            failed_result(
-                request,
-                adapter_name=(adapter_name),
-                error_type=(type(exc).__name__),
-                error_message=("Unexpected adapter execution failure."),
-                started_at=(started_at),
-                duration_seconds=(duration),
-            ),
-            config=configuration,
+        result = failed_result(
+            request,
+            adapter_name=adapter_name,
+            error_type=type(exc).__name__,
+            error_message="Unexpected adapter execution failure.",
+            started_at=started_at,
+            duration_seconds=duration,
         )
+
+    if request.mode == RemediationMode.EXECUTE.value:
+        from src.security.audit.signed_events import (
+            AuditEventType,
+            AuditOutcome,
+            AuditSeverity,
+        )
+
+        security_audit_recorder.record(
+            event_type=AuditEventType.REMEDIATION_EXECUTION,
+            action="execute_remediation_completed",
+            outcome=(
+                AuditOutcome.SUCCESS if result.success else AuditOutcome.FAILURE
+            ),
+            severity=(
+                AuditSeverity.NOTICE
+                if result.success
+                else AuditSeverity.ERROR
+            ),
+            target=(
+                sorted(
+                    set(request.target_resource_ids)
+                    | set(request.target_service_ids)
+                )[0]
+                if request.target_resource_ids or request.target_service_ids
+                else request.action_id
+            ),
+            correlation_id=request.request_id,
+            message="Remediation execution completed.",
+            details={
+                "status": result.status,
+                "changed": result.changed,
+                "adapter_name": result.adapter_name,
+            },
+        )
+
+    return sanitize_execution_result(result, config=configuration)
 
 
 def execute_requests(
@@ -404,6 +561,8 @@ def execute_requests(
     validator: Optional[RemediationValidator] = None,
     registry: Optional[AdapterRegistry] = None,
     config: Optional[ExecutorConfig] = None,
+    authorization_gate: Any = None,
+    security_audit_recorder: Any = None,
 ) -> List[ExecutionResult]:
     adapters = registry or default_adapter_registry()
 
@@ -421,6 +580,8 @@ def execute_requests(
             validator=(active_validator),
             registry=adapters,
             config=configuration,
+            authorization_gate=authorization_gate,
+            security_audit_recorder=security_audit_recorder,
         )
         for request in requests
     ]
@@ -485,6 +646,8 @@ class RemediationExecutor:
         registry: Optional[AdapterRegistry] = None,
         validator: Optional[RemediationValidator] = None,
         config: Optional[ExecutorConfig] = None,
+        authorization_gate: Any = None,
+        security_audit_recorder: Any = None,
     ) -> None:
         self.registry = registry or default_adapter_registry()
 
@@ -495,6 +658,16 @@ class RemediationExecutor:
         self.validator = validator or RemediationValidator(
             adapter_capabilities=(self.registry.capabilities())
         )
+        self.authorization_gate = authorization_gate
+        self.security_audit_recorder = security_audit_recorder
+        if self.config.execution_enabled and (
+            self.authorization_gate is None
+            or self.security_audit_recorder is None
+        ):
+            raise ValueError(
+                "Enabled remediation execution requires an authorization gate "
+                "and signed security audit recorder."
+            )
 
     def execute(
         self,
@@ -505,6 +678,8 @@ class RemediationExecutor:
             validator=self.validator,
             registry=self.registry,
             config=self.config,
+            authorization_gate=self.authorization_gate,
+            security_audit_recorder=self.security_audit_recorder,
         )
 
     def execute_many(

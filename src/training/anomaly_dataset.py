@@ -21,13 +21,11 @@ existing training workflows can be migrated
 incrementally.
 """
 
-import json
-import hashlib
-import math
 import csv
-
+import hashlib
+import json
+import math
 from pathlib import Path
-
 from typing import (
     Any,
     Dict,
@@ -40,7 +38,6 @@ from typing import (
 )
 
 import torch
-
 from torch.utils.data import Dataset
 
 from src.training.errors import (
@@ -49,22 +46,18 @@ from src.training.errors import (
     InvalidLabelError,
     TrainingSourceFormatError,
 )
-
 from src.training.features import (
     EncodedTrainingExample,
-    FeatureBuildResult,
     FeatureBuilder,
+    FeatureBuildResult,
     FeatureSchema,
 )
-
 from src.training.schema import (
     TrainingTask,
 )
-
 from src.training.splits import (
     TrainingSplitResult,
 )
-
 
 # ---------------------------------------------------------------
 # Anomaly labels
@@ -75,6 +68,17 @@ NORMAL_LABEL = 0
 ANOMALY_LABEL = 1
 
 IGNORE_INDEX = -100
+
+NON_FEATURE_FIELDS = {
+    "label",
+    "target",
+    "anomaly",
+    "anomaly_label",
+    "is_anomaly",
+    "row_id",
+    "record_id",
+    "example_id",
+}
 
 
 # ---------------------------------------------------------------
@@ -242,6 +246,7 @@ def extract_legacy_features(
         ordered_values = [
             nested[key]
             for key in sorted(nested, key=str)
+            if str(key).strip().lower() not in NON_FEATURE_FIELDS
         ]
 
         for value in ordered_values:
@@ -267,7 +272,6 @@ def extract_legacy_features(
                 )
 
         for field in (
-            "row_id",
             "score",
             "severity",
         ):

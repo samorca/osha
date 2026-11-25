@@ -165,10 +165,31 @@ class AIModelRegistry:
         self,
         *,
         config: Optional[AIConfig] = None,
+        model_verifier: Any = None,
+        require_signed_models: bool = False,
+        security_audit_recorder: Any = None,
     ) -> None:
         self.config = config or AIConfig()
 
         self.config.validate()
+
+        if require_signed_models and model_verifier is None:
+            raise ValueError(
+                "require_signed_models requires a model verifier."
+            )
+        if model_verifier is not None:
+            from src.security.integration import SecurityAuditRecorder
+            from src.security.provenance.model_signing import ModelVerificationService
+
+            if not isinstance(model_verifier, ModelVerificationService):
+                raise TypeError("model_verifier must be ModelVerificationService.")
+            if not isinstance(security_audit_recorder, SecurityAuditRecorder):
+                raise ValueError(
+                    "Model verification requires a signed security audit recorder."
+                )
+        self.model_verifier = model_verifier
+        self.require_signed_models = require_signed_models
+        self.security_audit_recorder = security_audit_recorder
 
         self._entries: Dict[
             str,
@@ -604,6 +625,19 @@ class AIModelRegistry:
         # and GPU operations, so avoid holding the
         # registry lock during adapter.load().
         try:
+            if self.model_verifier is not None:
+                from src.security.integration import require_verified_model
+
+                require_verified_model(
+                    entry.descriptor.path,
+                    self.model_verifier,
+                    audit=self.security_audit_recorder,
+                )
+            elif self.require_signed_models:
+                raise AIModelStateError(
+                    "Model loading requires a signed manifest verifier."
+                )
+
             adapter.load()
 
         except Exception:

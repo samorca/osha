@@ -6,6 +6,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      network: host
     restart: unless-stopped
     user: "10001:10001"
     working_dir: /app
@@ -79,6 +80,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      network: host
     restart: unless-stopped
     user: "10001:10001"
     working_dir: /app
@@ -151,6 +153,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      network: host
     restart: unless-stopped
     user: "10001:10001"
     working_dir: /app

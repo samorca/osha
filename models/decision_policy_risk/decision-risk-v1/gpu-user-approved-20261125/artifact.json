@@ -1,0 +1,36 @@
+{
+  "artifact_id": "training:artifact:c0462cc02d3ac9f5eeb720da9c4ac119",
+  "attributes": {
+    "evaluation_id": null,
+    "evaluation_passed": null,
+    "evaluation_split": "test",
+    "manual_install_authorization": {
+      "approved": true,
+      "approved_at": "2026-11-25T12:22:20.371197+00:00",
+      "note": "Installed by explicit user request; this records no independent quality-gate pass.",
+      "qualification_status": "user_accepted_unqualified_candidate",
+      "source": "explicit_user_request"
+    },
+    "promoted": true,
+    "source_checkpoint_metric": null,
+    "source_checkpoint_score": null,
+    "source_training_report": "training_report.json",
+    "source_training_report_sha256": "cbc9a0e87fb09dccf838c24c87df4b50cda500bc287c53be744b14ddcb3cb250",
+    "training_device": "cuda"
+  },
+  "checkpoint_id": "training:checkpoint:b3608c4cb9bf091b9cabfe03ee620f5f",
+  "checksum": "64dad5c1d4787a6ec039fe1471c014161fa41f9a024c52fe946d3c91fdfc404c",
+  "created_at": "2026-11-25T12:22:20.740312+00:00",
+  "metrics": {
+    "loss": 0.40763262423932256,
+    "risk_accuracy": 0.8656716417910447,
+    "samples": 201.0
+  },
+  "model_name": "decision-risk-v1",
+  "path": "/home/samorca/osha/models/decision_policy_risk/decision-risk-v1/gpu-user-approved-20261125/model.pt",
+  "schema_version": "1",
+  "source_run_id": "manual-install-decision_policy_risk-20261125",
+  "state": "promoted",
+  "task": "decision_policy_risk",
+  "version": "gpu-user-approved-20261125"
+}

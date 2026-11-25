@@ -1,0 +1,276 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: osha-worker
+  namespace: osha
+
+  labels:
+    app.kubernetes.io/name: osha
+    app.kubernetes.io/instance: osha
+    app.kubernetes.io/component: worker
+    app.kubernetes.io/part-of: osha
+    app.kubernetes.io/managed-by: kustomize
+
+    osha.atonixcorp.io/system: orchestration-self-healing-ai
+    osha.atonixcorp.io/worker-type: telemetry
+
+  annotations:
+    osha.atonixcorp.io/description: >-
+      OSHA background worker deployment.
+
+
+spec:
+  # -----------------------------------------------------------------
+  # Worker replicas
+  # -----------------------------------------------------------------
+  #
+  # Keep one base worker replica until individual
+  # worker concurrency/idempotency contracts have
+  # been validated.
+  # -----------------------------------------------------------------
+
+  replicas: 1
+
+  revisionHistoryLimit: 5
+
+
+  # -----------------------------------------------------------------
+  # Selector
+  # -----------------------------------------------------------------
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: osha
+      app.kubernetes.io/instance: osha
+      app.kubernetes.io/component: worker
+      osha.atonixcorp.io/worker-type: telemetry
+
+
+  # -----------------------------------------------------------------
+  # Update strategy
+  # -----------------------------------------------------------------
+
+  strategy:
+    type: RollingUpdate
+
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+
+
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: osha
+        app.kubernetes.io/instance: osha
+        app.kubernetes.io/component: worker
+        app.kubernetes.io/part-of: osha
+        app.kubernetes.io/managed-by: kustomize
+
+        osha.atonixcorp.io/system: orchestration-self-healing-ai
+        osha.atonixcorp.io/worker-type: telemetry
+
+      annotations:
+        osha.atonixcorp.io/workload: worker
+
+
+    spec:
+      # -------------------------------------------------------------
+      # Kubernetes identity
+      # -------------------------------------------------------------
+
+      serviceAccountName: osha-worker
+
+      automountServiceAccountToken: false
+
+
+      # -------------------------------------------------------------
+      # Graceful termination
+      # -------------------------------------------------------------
+
+      terminationGracePeriodSeconds: 45
+
+
+      # -------------------------------------------------------------
+      # Pod security
+      # -------------------------------------------------------------
+
+      securityContext:
+        runAsNonRoot: true
+
+        runAsUser: 10001
+
+        runAsGroup: 10001
+
+        fsGroup: 10001
+
+        seccompProfile:
+          type: RuntimeDefault
+
+
+      # -------------------------------------------------------------
+      # Worker container
+      # -------------------------------------------------------------
+
+      containers:
+        - name: worker
+
+          #
+          # Environment overlays replace the image
+          # with the desired registry/tag.
+          #
+          image: osha:latest
+
+          imagePullPolicy: IfNotPresent
+
+
+          # ---------------------------------------------------------
+          # Worker command
+          # ---------------------------------------------------------
+          #
+          # worker.sh resolves this to:
+          #
+          #     src.workers.telemetry
+          #
+          # or:
+          #
+          #     src.workers.telemetry_worker
+          #
+          # depending on the implementation present.
+          # ---------------------------------------------------------
+
+          command:
+            - /bin/bash
+            - /app/scripts/runtime/worker.sh
+            - --worker
+            - telemetry
+
+
+          workingDir: /app
+
+
+          # ---------------------------------------------------------
+          # Shared configuration
+          # ---------------------------------------------------------
+          #
+          # Kubernetes envFrom imports every key/value
+          # from the referenced ConfigMap as container
+          # environment variables.
+          # ---------------------------------------------------------
+
+          envFrom:
+            - configMapRef:
+                name: osha-config
+
+
+          # ---------------------------------------------------------
+          # Worker identity
+          # ---------------------------------------------------------
+
+          env:
+            - name: OSHA_WORKER_TYPE
+              value: "telemetry"
+
+
+            - name: OSHA_KUBERNETES_NAMESPACE
+
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+
+
+            - name: OSHA_POD_NAME
+
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+
+
+            - name: OSHA_POD_UID
+
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+
+
+            - name: OSHA_NODE_NAME
+
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+
+
+            - name: OSHA_POD_IP
+
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+
+
+          # ---------------------------------------------------------
+          # Resources
+          # ---------------------------------------------------------
+          #
+          # Conservative defaults.
+          #
+          # Worker-specific overlays can change
+          # these independently as their workloads
+          # become measurable.
+          # ---------------------------------------------------------
+
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+
+
+          # ---------------------------------------------------------
+          # Container security
+          # ---------------------------------------------------------
+
+          securityContext:
+            allowPrivilegeEscalation: false
+
+            privileged: false
+
+            readOnlyRootFilesystem: true
+
+            capabilities:
+              drop:
+                - ALL
+
+
+          # ---------------------------------------------------------
+          # Writable filesystem
+          # ---------------------------------------------------------
+
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+
+            - name: worker-tmp
+              mountPath: /app/.worker
+
+            - name: worker-artifacts
+              mountPath: /app/artifacts/workers
+
+      # -------------------------------------------------------------
+      # Volumes
+      # -------------------------------------------------------------
+
+      volumes:
+        - name: tmp
+          emptyDir: {}
+
+        - name: worker-tmp
+          emptyDir: {}
+
+        - name: worker-artifacts
+          emptyDir: {}
+

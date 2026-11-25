@@ -1,0 +1,20 @@
+{
+  "artifact_id": "training:artifact:b485da305761098d230436619eba2339",
+  "attributes": {
+    "evaluation_id": null,
+    "evaluation_passed": null,
+    "source_checkpoint_metric": null,
+    "source_checkpoint_score": null
+  },
+  "checkpoint_id": "training:checkpoint:ebddff8c108989f45e68faa8463f038f",
+  "checksum": "0db9fe1baa81656ac627d6d0f56a064dc3e50e0f3144013839979db519209349",
+  "created_at": "2026-11-25T12:22:20.562843+00:00",
+  "metrics": {},
+  "model_name": "infrastructure-event-model",
+  "path": "/home/samorca/osha/artifacts/event/infrastructure-event-model/gpu-user-approved-20261125/model.pt",
+  "schema_version": "1",
+  "source_run_id": "manual-install-event-20261125",
+  "state": "candidate",
+  "task": "event",
+  "version": "gpu-user-approved-20261125"
+}

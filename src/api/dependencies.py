@@ -40,8 +40,8 @@ Important:
     Resource initialization belongs to FastAPI's
     lifespan startup.
 
-    Services will be attached here after the
-    src/api/services/* modules are implemented.
+    API services are registered when the dependency
+    graph is constructed.
 """
 
 import asyncio
@@ -622,6 +622,36 @@ class APIDependencies:
 # ------------------------------------------------------------------
 
 
+def _register_default_api_services(
+    dependencies: APIDependencies,
+) -> None:
+    from src.api.services.accelerators import (
+        register_accelerator_service,
+    )
+    from src.api.services.decisions import (
+        register_decision_service,
+    )
+    from src.api.services.incidents import (
+        register_incident_service,
+    )
+    from src.api.services.inference import (
+        register_inference_service,
+    )
+    from src.api.services.models import (
+        register_model_service,
+    )
+    from src.api.services.remediation import (
+        register_remediation_service,
+    )
+
+    register_accelerator_service(dependencies)
+    register_model_service(dependencies)
+    register_inference_service(dependencies)
+    register_incident_service(dependencies)
+    register_decision_service(dependencies)
+    register_remediation_service(dependencies)
+
+
 def create_api_dependencies(
     *,
     config: Optional[APIConfig] = None,
@@ -656,7 +686,11 @@ def create_api_dependencies(
 
     resolved_ai_config.validate()
 
-    resolved_registry = model_registry or AIModelRegistry(config=(resolved_ai_config))
+    resolved_registry = (
+        model_registry
+        if model_registry is not None
+        else AIModelRegistry(config=(resolved_ai_config))
+    )
 
     resolved_loader = model_loader or AIModelLoader(
         config=(resolved_ai_config),
@@ -682,6 +716,8 @@ def create_api_dependencies(
     )
 
     dependencies.validate()
+
+    _register_default_api_services(dependencies)
 
     return dependencies
 

@@ -1,0 +1,302 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: osha-api
+  namespace: osha
+
+  labels:
+    app.kubernetes.io/name: osha
+    app.kubernetes.io/instance: osha
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: osha
+    app.kubernetes.io/managed-by: kustomize
+
+    osha.atonixcorp.io/system: orchestration-self-healing-ai
+
+
+spec:
+  # Base configuration remains intentionally small.
+  # Production overlays can scale this independently.
+  replicas: 1
+
+  revisionHistoryLimit: 5
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: osha
+      app.kubernetes.io/instance: osha
+      app.kubernetes.io/component: api
+
+  strategy:
+    type: RollingUpdate
+
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+
+
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: osha
+        app.kubernetes.io/instance: osha
+        app.kubernetes.io/component: api
+        app.kubernetes.io/part-of: osha
+        app.kubernetes.io/managed-by: kustomize
+
+        osha.atonixcorp.io/system: orchestration-self-healing-ai
+
+      annotations:
+        osha.atonixcorp.io/workload: api
+
+
+    spec:
+      serviceAccountName: osha-api
+
+      #
+      # Reinforce the ServiceAccount security policy
+      # at the Pod level.
+      #
+      automountServiceAccountToken: false
+
+      terminationGracePeriodSeconds: 45
+
+
+      securityContext:
+        runAsNonRoot: true
+
+        runAsUser: 10001
+
+        runAsGroup: 10001
+
+        fsGroup: 10001
+
+        seccompProfile:
+          type: RuntimeDefault
+
+
+      containers:
+        - name: api
+
+          #
+          # Base image reference.
+          #
+          # Development and production overlays can
+          # replace this without editing the base
+          # Deployment.
+          #
+          image: osha:latest
+
+          imagePullPolicy: IfNotPresent
+
+
+          # ---------------------------------------------------------
+          # Application command
+          # ---------------------------------------------------------
+
+          command:
+            - /bin/bash
+            - /app/scripts/api/run.sh
+
+
+          # ---------------------------------------------------------
+          # Working directory
+          # ---------------------------------------------------------
+
+          workingDir: /app
+
+
+          # ---------------------------------------------------------
+          # Shared non-secret configuration
+          # ---------------------------------------------------------
+
+          envFrom:
+            - configMapRef:
+                name: osha-config
+
+
+          # ---------------------------------------------------------
+          # Kubernetes-specific environment
+          # ---------------------------------------------------------
+
+          env:
+            - name: OSHA_KUBERNETES_NAMESPACE
+
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+
+
+            - name: OSHA_POD_NAME
+
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+
+
+            - name: OSHA_POD_UID
+
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+
+
+            - name: OSHA_NODE_NAME
+
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+
+
+            - name: OSHA_POD_IP
+
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+
+
+          # ---------------------------------------------------------
+          # Container port
+          # ---------------------------------------------------------
+
+          ports:
+            - name: http
+              containerPort: 8088
+              protocol: TCP
+
+
+          # ---------------------------------------------------------
+          # Startup probe
+          # ---------------------------------------------------------
+          #
+          # Gives application bootstrap time before
+          # Kubernetes begins normal liveness and
+          # readiness decisions.
+          #
+
+          startupProbe:
+            httpGet:
+              path: /health/live
+              port: http
+              scheme: HTTP
+              httpHeaders:
+                - name: Host
+                  value: localhost
+
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 24
+
+            successThreshold: 1
+
+
+          # ---------------------------------------------------------
+          # Liveness
+          # ---------------------------------------------------------
+          #
+          # Liveness checks process/application
+          # survivability.
+          #
+
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+              scheme: HTTP
+              httpHeaders:
+                - name: Host
+                  value: localhost
+
+            periodSeconds: 15
+            timeoutSeconds: 3
+            failureThreshold: 3
+            successThreshold: 1
+
+
+          # ---------------------------------------------------------
+          # Readiness
+          # ---------------------------------------------------------
+          #
+          # Readiness determines whether Kubernetes
+          # should route Service traffic to this Pod.
+          #
+
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+              scheme: HTTP
+              httpHeaders:
+                - name: Host
+                  value: localhost
+
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+            successThreshold: 1
+
+
+          # ---------------------------------------------------------
+          # Resources
+          # ---------------------------------------------------------
+          #
+          # Conservative base values.
+          #
+          # Development and production overlays can
+          # tune these after real profiling.
+          #
+
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+
+
+          # ---------------------------------------------------------
+          # Container security
+          # ---------------------------------------------------------
+
+          securityContext:
+            allowPrivilegeEscalation: false
+
+            privileged: false
+
+            readOnlyRootFilesystem: true
+
+            capabilities:
+              drop:
+                - ALL
+
+
+          # ---------------------------------------------------------
+          # Writable ephemeral filesystem
+          # ---------------------------------------------------------
+          #
+          # The container root filesystem remains
+          # read-only.
+          #
+
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+
+            - name: runtime-tmp
+              mountPath: /app/.runtime
+
+
+      # -------------------------------------------------------------
+      # Ephemeral volumes
+      # -------------------------------------------------------------
+
+      volumes:
+        - name: tmp
+          emptyDir: {}
+
+        - name: runtime-tmp
+          emptyDir: {}

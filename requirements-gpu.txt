@@ -1,0 +1,4 @@
+# Optional local training profile; install after requirements.txt.
+--index-url https://download.pytorch.org/whl/cu128
+--extra-index-url https://pypi.org/simple
+torch==2.9.1+cu128

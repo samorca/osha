@@ -1,0 +1,37 @@
+{
+  "artifact_id": "training:artifact:df8ff478576791a594bb6369e64db6ee",
+  "attributes": {
+    "evaluation_id": null,
+    "evaluation_passed": null,
+    "evaluation_split": "test",
+    "manual_install_authorization": {
+      "approved": true,
+      "approved_at": "2026-11-25T12:22:20.371197+00:00",
+      "note": "Installed by explicit user request; this records no independent quality-gate pass.",
+      "qualification_status": "user_accepted_unqualified_candidate",
+      "source": "explicit_user_request"
+    },
+    "promoted": true,
+    "source_checkpoint_metric": null,
+    "source_checkpoint_score": null,
+    "source_training_report": "training_report.json",
+    "source_training_report_sha256": "66a919ed6ec87d39798fb9e0880979474a4415d2711802f17fd48ca167998da5",
+    "training_device": "cuda"
+  },
+  "checkpoint_id": "training:checkpoint:855ceb45259de646b561bbfdd354177e",
+  "checksum": "f0a6792f684c2fd1114c3e72f3354ca3541b9b9c579cb3b05b913f6aea1c731d",
+  "created_at": "2026-11-25T12:22:20.746281+00:00",
+  "metrics": {
+    "accuracy": 0.7931034482758621,
+    "loss": 0.5141439061299921,
+    "mean_score": 0.21987252308083285,
+    "samples": 203.0
+  },
+  "model_name": "remediation-ranking-v1",
+  "path": "/home/samorca/osha/models/remediation_recommendation/remediation-ranking-v1/gpu-user-approved-20261125/model.pt",
+  "schema_version": "1",
+  "source_run_id": "manual-install-remediation_recommendation-20261125",
+  "state": "promoted",
+  "task": "remediation_recommendation",
+  "version": "gpu-user-approved-20261125"
+}

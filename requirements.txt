@@ -12,3 +12,4 @@ kubernetes
 openstacksdk
 fastapi
 uvicorn
+cryptography

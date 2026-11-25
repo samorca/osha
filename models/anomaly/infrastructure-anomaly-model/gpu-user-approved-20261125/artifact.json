@@ -1,0 +1,49 @@
+{
+  "artifact_id": "training:artifact:13a34f97d6116f6f0a3addf85d9dadf2",
+  "attributes": {
+    "evaluation_id": null,
+    "evaluation_passed": null,
+    "evaluation_split": "test",
+    "manual_install_authorization": {
+      "approved": true,
+      "approved_at": "2026-11-25T12:22:20.371197+00:00",
+      "note": "Installed by explicit user request; this records no independent quality-gate pass.",
+      "qualification_status": "user_accepted_unqualified_candidate",
+      "source": "explicit_user_request"
+    },
+    "promoted": true,
+    "source_checkpoint_metric": null,
+    "source_checkpoint_score": null,
+    "source_training_report": "training_report.json",
+    "source_training_report_sha256": "c7e8429021336cef89bcdcbe2eeb48ded69909a2a67973b72c8dfa4557177a7e",
+    "training_device": "cuda:0"
+  },
+  "checkpoint_id": "training:checkpoint:bb0b8ebe3ddf2875c7a3d51c60dd8eef",
+  "checksum": "e9b5ce9e8e5e1b932fe0e8b4e954d5b1450d1f5669579adda7912e03f4a63524",
+  "created_at": "2026-11-25T12:22:20.385787+00:00",
+  "metrics": {
+    "accuracy": 1.0,
+    "batch_count": 2.0,
+    "evaluated_count": 54.0,
+    "example_count": 54.0,
+    "f1": 1.0,
+    "false_negative": 0.0,
+    "false_negative_rate": 0.0,
+    "false_positive": 0.0,
+    "false_positive_rate": 0.0,
+    "loss": 0.0024187781382352114,
+    "precision": 1.0,
+    "recall": 1.0,
+    "specificity": 1.0,
+    "threshold": 0.5,
+    "true_negative": 43.0,
+    "true_positive": 11.0
+  },
+  "model_name": "infrastructure-anomaly-model",
+  "path": "/home/samorca/osha/models/anomaly/infrastructure-anomaly-model/gpu-user-approved-20261125/model.pt",
+  "schema_version": "1",
+  "source_run_id": "manual-install-anomaly-20261125",
+  "state": "promoted",
+  "task": "anomaly",
+  "version": "gpu-user-approved-20261125"
+}

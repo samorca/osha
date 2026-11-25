@@ -1,0 +1,20 @@
+{
+  "artifact_id": "training:artifact:87444982548690c680d9a0cdd9beaaa4",
+  "attributes": {
+    "evaluation_id": null,
+    "evaluation_passed": null,
+    "source_checkpoint_metric": null,
+    "source_checkpoint_score": null
+  },
+  "checkpoint_id": "training:checkpoint:3827b8410017d062b8ba714653c524d5",
+  "checksum": "2760736c4c0624726df172ce279a3cae51b5c509931cca1c1b287bce7d735fe0",
+  "created_at": "2026-11-25T12:22:20.733897+00:00",
+  "metrics": {},
+  "model_name": "incident-root-cause-v1",
+  "path": "/home/samorca/osha/artifacts/incident_root_cause/incident-root-cause-v1/gpu-user-approved-20261125/model.pt",
+  "schema_version": "1",
+  "source_run_id": "manual-install-incident_root_cause-20261125",
+  "state": "candidate",
+  "task": "incident_root_cause",
+  "version": "gpu-user-approved-20261125"
+}

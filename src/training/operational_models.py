@@ -4,7 +4,6 @@ import argparse
 import hashlib
 import json
 import random
-
 from dataclasses import dataclass
 from pathlib import Path
 from typing import (
@@ -18,7 +17,6 @@ from typing import (
 )
 
 import torch
-
 from torch import nn
 from torch.utils.data import (
     DataLoader,
@@ -31,12 +29,14 @@ from src.training.config import (
     TrainingConfig,
     TrainingPathConfig,
 )
+from src.training.decision_risk_model import DecisionRiskModel
+from src.training.incident_root_cause_model import IncidentRootCauseModel
+from src.training.remediation_ranker import RemediationRanker
 from src.training.schema import (
     TrainingRun,
     TrainingState,
     TrainingTask,
 )
-
 
 FEATURE_DIMENSION = 16
 
@@ -157,131 +157,6 @@ class OperationalDataset(Dataset):
                 sample.score,
                 dtype=torch.float32,
             ),
-        }
-
-
-class IncidentRootCauseModel(nn.Module):
-    def __init__(
-        self,
-        *,
-        input_dim: int = FEATURE_DIMENSION,
-        severity_count: int = 5,
-        root_cause_count: int = 8,
-        hidden_dim: int = 128,
-    ) -> None:
-        super().__init__()
-        self.encoder = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
-            nn.GELU(),
-            nn.LayerNorm(hidden_dim),
-            nn.Dropout(0.15),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.GELU(),
-        )
-        self.severity_head = nn.Linear(
-            hidden_dim,
-            severity_count,
-        )
-        self.root_cause_head = nn.Linear(
-            hidden_dim,
-            root_cause_count,
-        )
-
-    def forward(
-        self,
-        features: torch.Tensor,
-    ) -> Dict[str, torch.Tensor]:
-        representation = self.encoder(features)
-        severity_logits = self.severity_head(
-            representation
-        )
-        root_cause_logits = self.root_cause_head(
-            representation
-        )
-        return {
-            "severity_logits": severity_logits,
-            "root_cause_logits": root_cause_logits,
-            "representation": representation,
-        }
-
-
-class DecisionRiskModel(nn.Module):
-    def __init__(
-        self,
-        *,
-        input_dim: int = FEATURE_DIMENSION,
-        risk_count: int = 5,
-        hidden_dim: int = 128,
-    ) -> None:
-        super().__init__()
-        self.network = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
-            nn.GELU(),
-            nn.LayerNorm(hidden_dim),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.GELU(),
-        )
-        self.risk_head = nn.Linear(
-            hidden_dim,
-            risk_count,
-        )
-        self.policy_probability_head = nn.Linear(
-            hidden_dim,
-            1,
-        )
-
-    def forward(
-        self,
-        features: torch.Tensor,
-    ) -> Dict[str, torch.Tensor]:
-        representation = self.network(features)
-        policy_probability = torch.sigmoid(
-            self.policy_probability_head(
-                representation
-            ).squeeze(-1)
-        )
-        return {
-            "risk_logits": self.risk_head(
-                representation
-            ),
-            "policy_probability": policy_probability,
-            "representation": representation,
-        }
-
-
-class RemediationRanker(nn.Module):
-    def __init__(
-        self,
-        *,
-        input_dim: int = FEATURE_DIMENSION,
-        hidden_dim: int = 128,
-    ) -> None:
-        super().__init__()
-        self.network = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
-            nn.GELU(),
-            nn.LayerNorm(hidden_dim),
-            nn.Linear(hidden_dim, 64),
-            nn.GELU(),
-        )
-        self.score_head = nn.Linear(
-            64,
-            1,
-        )
-
-    def forward(
-        self,
-        features: torch.Tensor,
-    ) -> Dict[str, torch.Tensor]:
-        representation = self.network(features)
-        score = torch.sigmoid(
-            self.score_head(
-                representation
-            ).squeeze(-1)
-        )
-        return {
-            "recommendation_score": score,
-            "representation": representation,
         }
 
 
@@ -892,6 +767,42 @@ def split_samples(
     return values[:split], values[split:]
 
 
+def split_training_validation(
+    samples: Sequence[OperationalSample],
+    *,
+    validation_ratio: float = 0.10,
+    seed: int = 43,
+) -> tuple[List[OperationalSample], List[OperationalSample]]:
+    if not 0.0 < validation_ratio < 1.0:
+        raise ValueError("validation_ratio must be between 0 and 1")
+    values = list(samples)
+    if len(values) < 2:
+        raise ValueError("At least two training samples are required")
+    random.Random(seed).shuffle(values)
+    validation_count = min(
+        len(values) - 1,
+        max(1, int(len(values) * validation_ratio)),
+    )
+    return values[validation_count:], values[:validation_count]
+
+
+def select_training_device(accelerator: str) -> torch.device:
+    if accelerator == "cuda":
+        if not torch.cuda.is_available():
+            raise RuntimeError(
+                "CUDA was requested but is unavailable. "
+                "Install the GPU training requirements and verify the NVIDIA driver."
+            )
+        return torch.device("cuda")
+    if accelerator == "auto" and torch.cuda.is_available():
+        return torch.device("cuda")
+    return torch.device("cpu")
+
+
+def model_device(model: nn.Module) -> torch.device:
+    return next(model.parameters(), torch.empty(0)).device
+
+
 def train_classifier(
     model: nn.Module,
     train_dataset: Dataset,
@@ -899,8 +810,12 @@ def train_classifier(
     epochs: int,
     batch_size: int,
     output_key: str,
+    validation_samples: Sequence[OperationalSample],
+    validation_metric_names: Sequence[str],
+    incident: bool = False,
+    device: torch.device | str = "cpu",
 ) -> Dict[str, Any]:
-    device = torch.device("cpu")
+    device = torch.device(device)
     model.to(device)
     optimizer = torch.optim.AdamW(
         model.parameters(),
@@ -914,6 +829,10 @@ def train_classifier(
     )
 
     history = []
+    best_score = float("-inf")
+    best_validation_loss = float("inf")
+    best_state: Dict[str, torch.Tensor] | None = None
+    best_epoch = 0
     for epoch in range(1, epochs + 1):
         model.train()
         total_loss = 0.0
@@ -939,16 +858,42 @@ def train_classifier(
                 loss.detach()
             )
             batch_count += 1
-        history.append(
-            {
-                "epoch": epoch,
-                "loss": (
-                    total_loss
-                    / max(1, batch_count)
-                ),
-            }
+        validation = evaluate_classifier(
+            model,
+            validation_samples,
+            incident=incident,
         )
-    return {"history": history}
+        score = min(
+            float(validation[name])
+            for name in validation_metric_names
+        )
+        validation_loss = float(validation["loss"])
+        history.append({
+            "epoch": epoch,
+            "loss": total_loss / max(1, batch_count),
+            "validation": validation,
+        })
+        if score > best_score or (
+            score == best_score
+            and validation_loss < best_validation_loss
+        ):
+            best_score = score
+            best_validation_loss = validation_loss
+            best_epoch = epoch
+            best_state = {
+                name: value.detach().clone()
+                for name, value in model.state_dict().items()
+            }
+
+    if best_state is None:
+        raise RuntimeError("Training did not produce a validation checkpoint")
+    model.load_state_dict(best_state)
+    return {
+        "history": history,
+        "best_epoch": best_epoch,
+        "best_validation_score": best_score,
+        "best_validation_loss": best_validation_loss,
+    }
 
 
 def train_ranker(
@@ -957,8 +902,10 @@ def train_ranker(
     *,
     epochs: int,
     batch_size: int,
+    validation_samples: Sequence[OperationalSample],
+    device: torch.device | str = "cpu",
 ) -> Dict[str, Any]:
-    device = torch.device("cpu")
+    device = torch.device(device)
     model.to(device)
     optimizer = torch.optim.AdamW(
         model.parameters(),
@@ -971,6 +918,10 @@ def train_ranker(
         num_workers=0,
     )
     history = []
+    best_score = float("-inf")
+    best_validation_loss = float("inf")
+    best_state: Dict[str, torch.Tensor] | None = None
+    best_epoch = 0
     for epoch in range(1, epochs + 1):
         model.train()
         total_loss = 0.0
@@ -988,9 +939,7 @@ def train_ranker(
                 output[
                     "recommendation_score"
                 ],
-                batch[
-                    "score"
-                ].to(device),
+                batch["target"].to(device, dtype=torch.float32),
             )
             loss.backward()
             optimizer.step()
@@ -998,16 +947,38 @@ def train_ranker(
                 loss.detach()
             )
             batch_count += 1
-        history.append(
-            {
-                "epoch": epoch,
-                "loss": (
-                    total_loss
-                    / max(1, batch_count)
-                ),
-            }
+        validation = evaluate_ranker(
+            model,
+            validation_samples,
         )
-    return {"history": history}
+        score = float(validation["accuracy"])
+        validation_loss = float(validation["loss"])
+        history.append({
+            "epoch": epoch,
+            "loss": total_loss / max(1, batch_count),
+            "validation": validation,
+        })
+        if score > best_score or (
+            score == best_score
+            and validation_loss < best_validation_loss
+        ):
+            best_score = score
+            best_validation_loss = validation_loss
+            best_epoch = epoch
+            best_state = {
+                name: value.detach().clone()
+                for name, value in model.state_dict().items()
+            }
+
+    if best_state is None:
+        raise RuntimeError("Training did not produce a validation checkpoint")
+    model.load_state_dict(best_state)
+    return {
+        "history": history,
+        "best_epoch": best_epoch,
+        "best_validation_score": best_score,
+        "best_validation_loss": best_validation_loss,
+    }
 
 
 def train_incident_model(
@@ -1016,8 +987,10 @@ def train_incident_model(
     *,
     epochs: int,
     batch_size: int,
+    validation_samples: Sequence[OperationalSample],
+    device: torch.device | str = "cpu",
 ) -> Dict[str, Any]:
-    device = torch.device("cpu")
+    device = torch.device(device)
     model.to(device)
     optimizer = torch.optim.AdamW(
         model.parameters(),
@@ -1030,6 +1003,10 @@ def train_incident_model(
         num_workers=0,
     )
     history = []
+    best_score = float("-inf")
+    best_validation_loss = float("inf")
+    best_state: Dict[str, torch.Tensor] | None = None
+    best_epoch = 0
     for epoch in range(1, epochs + 1):
         model.train()
         total_loss = 0.0
@@ -1069,16 +1046,42 @@ def train_incident_model(
                 loss.detach()
             )
             batch_count += 1
-        history.append(
-            {
-                "epoch": epoch,
-                "loss": (
-                    total_loss
-                    / max(1, batch_count)
-                ),
-            }
+        validation = evaluate_classifier(
+            model,
+            validation_samples,
+            incident=True,
         )
-    return {"history": history}
+        score = min(
+            float(validation["severity_accuracy"]),
+            float(validation["root_cause_accuracy"]),
+        )
+        validation_loss = float(validation["loss"])
+        history.append({
+            "epoch": epoch,
+            "loss": total_loss / max(1, batch_count),
+            "validation": validation,
+        })
+        if score > best_score or (
+            score == best_score
+            and validation_loss < best_validation_loss
+        ):
+            best_score = score
+            best_validation_loss = validation_loss
+            best_epoch = epoch
+            best_state = {
+                name: value.detach().clone()
+                for name, value in model.state_dict().items()
+            }
+
+    if best_state is None:
+        raise RuntimeError("Training did not produce a validation checkpoint")
+    model.load_state_dict(best_state)
+    return {
+        "history": history,
+        "best_epoch": best_epoch,
+        "best_validation_score": best_score,
+        "best_validation_loss": best_validation_loss,
+    }
 
 
 def atomic_save(
@@ -1136,16 +1139,36 @@ def evaluate_classifier(
         return {"accuracy": 0.0, "samples": 0}
 
     model.eval()
+    device = model_device(model)
     correct_severity = 0
     correct_root_cause = 0
+    total_loss = 0.0
     with torch.no_grad():
         for sample in samples:
             features = torch.tensor(
                 [sample.features],
                 dtype=torch.float32,
-            )
+            ).to(device)
             output = model(features)
             if incident:
+                total_loss += float(
+                    nn.functional.cross_entropy(
+                        output["severity_logits"],
+                        torch.tensor(
+                            [sample.target],
+                            dtype=torch.long,
+                            device=device,
+                        ),
+                    )
+                    + nn.functional.cross_entropy(
+                        output["root_cause_logits"],
+                        torch.tensor(
+                            [sample.target % len(ROOT_CAUSES)],
+                            dtype=torch.long,
+                            device=device,
+                        ),
+                    )
+                )
                 severity_prediction = int(
                     output[
                         "severity_logits"
@@ -1165,6 +1188,16 @@ def evaluate_classifier(
                     == (sample.target % len(ROOT_CAUSES))
                 )
             else:
+                total_loss += float(
+                    nn.functional.cross_entropy(
+                        output["risk_logits"],
+                        torch.tensor(
+                            [sample.target],
+                            dtype=torch.long,
+                            device=device,
+                        ),
+                    )
+                )
                 prediction = int(
                     output[
                         "risk_logits"
@@ -1179,6 +1212,7 @@ def evaluate_classifier(
         count = len(samples)
         return {
             "samples": count,
+            "loss": total_loss / count,
             "severity_accuracy": (
                 correct_severity / count
             ),
@@ -1189,6 +1223,7 @@ def evaluate_classifier(
 
     return {
         "samples": len(samples),
+        "loss": total_loss / len(samples),
         "risk_accuracy": (
             correct_severity
             / len(samples)
@@ -1210,14 +1245,16 @@ def evaluate_ranker(
         }
 
     model.eval()
+    device = model_device(model)
     correct = 0
     scores = []
+    total_loss = 0.0
     with torch.no_grad():
         for sample in samples:
             features = torch.tensor(
                 [sample.features],
                 dtype=torch.float32,
-            )
+            ).to(device)
             score = float(
                 model(
                     features
@@ -1226,6 +1263,12 @@ def evaluate_ranker(
                 ].item()
             )
             scores.append(score)
+            total_loss += float(
+                nn.functional.binary_cross_entropy(
+                    torch.tensor(score, device=device),
+                    torch.tensor(float(sample.target), device=device),
+                )
+            )
             prediction = 1 if score >= 0.5 else 0
             correct += int(
                 prediction
@@ -1234,6 +1277,7 @@ def evaluate_ranker(
 
     return {
         "samples": len(samples),
+        "loss": total_loss / len(samples),
         "accuracy": (
             correct
             / len(samples)
@@ -1440,6 +1484,11 @@ def parse_args() -> argparse.Namespace:
         default="checkpoints",
     )
     parser.add_argument(
+        "--accelerator",
+        choices=("auto", "cuda", "cpu"),
+        default="auto",
+    )
+    parser.add_argument(
         "--register-existing",
         action="store_true",
         help="Create managed checkpoints from existing operational best.pt files.",
@@ -1481,6 +1530,9 @@ def main() -> int:
         )
         return 0
 
+    device = select_training_device(arguments.accelerator)
+    print(f"Training device: {device}")
+
     incident_source_samples = build_incident_samples(root)
     decision_source_samples = build_decision_samples(root)
     remediation_source_samples = build_remediation_samples(root)
@@ -1488,11 +1540,23 @@ def main() -> int:
     incident_train, incident_test = split_samples(
         incident_source_samples
     )
+    incident_train, incident_validation = split_training_validation(
+        incident_train,
+        seed=arguments.seed,
+    )
     decision_train, decision_test = split_samples(
         decision_source_samples
     )
+    decision_train, decision_validation = split_training_validation(
+        decision_train,
+        seed=arguments.seed,
+    )
     remediation_train, remediation_test = split_samples(
         remediation_source_samples
+    )
+    remediation_train, remediation_validation = split_training_validation(
+        remediation_train,
+        seed=arguments.seed,
     )
 
     incident_model = IncidentRootCauseModel()
@@ -1501,6 +1565,8 @@ def main() -> int:
         OperationalDataset(incident_train),
         epochs=arguments.epochs,
         batch_size=arguments.batch_size,
+        validation_samples=incident_validation,
+        device=device,
     )
 
     decision_model = DecisionRiskModel()
@@ -1510,6 +1576,9 @@ def main() -> int:
         epochs=arguments.epochs,
         batch_size=arguments.batch_size,
         output_key="risk_logits",
+        validation_samples=decision_validation,
+        validation_metric_names=("risk_accuracy",),
+        device=device,
     )
 
     remediation_model = RemediationRanker()
@@ -1518,6 +1587,8 @@ def main() -> int:
         OperationalDataset(remediation_train),
         epochs=arguments.epochs,
         batch_size=arguments.batch_size,
+        validation_samples=remediation_validation,
+        device=device,
     )
 
     incident_evaluation = evaluate_classifier(
@@ -1533,6 +1604,9 @@ def main() -> int:
         remediation_model,
         remediation_test,
     )
+    incident_model.to("cpu")
+    decision_model.to("cpu")
+    remediation_model.to("cpu")
 
     incident_dir = output_root / "incident-root-cause-v1"
     decision_dir = output_root / "decision-risk-v1"
@@ -1588,7 +1662,9 @@ def main() -> int:
         incident_dir / "training_report.json",
         {
             "family": "incident_root_cause",
+            "device": str(device),
             "train_samples": len(incident_train),
+            "validation_samples": len(incident_validation),
             "test_samples": len(incident_test),
             "feature_dimension": FEATURE_DIMENSION,
             "labels": {
@@ -1603,7 +1679,9 @@ def main() -> int:
         decision_dir / "training_report.json",
         {
             "family": "decision_policy_risk",
+            "device": str(device),
             "train_samples": len(decision_train),
+            "validation_samples": len(decision_validation),
             "test_samples": len(decision_test),
             "feature_dimension": FEATURE_DIMENSION,
             "risk_labels": list(RISK_LEVELS),
@@ -1615,10 +1693,12 @@ def main() -> int:
         remediation_dir / "training_report.json",
         {
             "family": "remediation_recommendation_ranking",
+            "device": str(device),
             "train_samples": len(remediation_train),
+            "validation_samples": len(remediation_validation),
             "test_samples": len(remediation_test),
             "feature_dimension": FEATURE_DIMENSION,
-            "ranking_type": "safe_approved_or_reversible",
+            "ranking_type": "successful_remediation_outcome",
             "evaluation": remediation_evaluation,
             **remediation_training,
         },

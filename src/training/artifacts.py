@@ -464,12 +464,65 @@ class ModelArtifactManager:
         *,
         config: Optional[TrainingConfig] = None,
         registry: Optional[ModelArtifactRegistry] = None,
+        model_signer: Any = None,
+        model_producer: Any = None,
+        model_pipeline_id: Optional[str] = None,
+        security_audit_recorder: Any = None,
+        require_signed_models: bool = False,
     ) -> None:
         self.config = config or TrainingConfig()
 
         self.config.validate()
 
         self.registry = registry or ModelArtifactRegistry()
+        if require_signed_models and (
+            model_signer is None
+            or model_producer is None
+            or not model_pipeline_id
+            or security_audit_recorder is None
+        ):
+            raise ValueError(
+                "Signed model promotion requires a signer, verified producer, "
+                "pipeline ID, and signed security audit recorder."
+            )
+        if model_signer is not None and (
+            model_producer is None
+            or not model_pipeline_id
+            or security_audit_recorder is None
+        ):
+            raise ValueError(
+                "Model signing requires a verified producer, pipeline ID, "
+                "and signed security audit recorder."
+            )
+        if model_signer is not None or model_producer is not None:
+            from src.security.identity.workload_identity import AuthenticatedWorkload
+            from src.security.integration import SecurityAuditRecorder
+            from src.security.provenance.model_signing import ModelSigningService
+
+            if model_signer is not None and not isinstance(
+                model_signer,
+                ModelSigningService,
+            ):
+                raise TypeError("model_signer must be ModelSigningService.")
+            if model_producer is not None and not isinstance(
+                model_producer,
+                AuthenticatedWorkload,
+            ):
+                raise TypeError("model_producer must be AuthenticatedWorkload.")
+            if model_signer is not None and not isinstance(
+                security_audit_recorder,
+                SecurityAuditRecorder,
+            ):
+                raise TypeError(
+                    "security_audit_recorder must be SecurityAuditRecorder."
+                )
+        if model_producer is not None:
+            model_producer.require_verified()
+        self.model_signer = model_signer
+        self.model_producer = model_producer
+        self.model_pipeline_id = model_pipeline_id
+        self.security_audit_recorder = security_audit_recorder
+        self.require_signed_models = require_signed_models
 
     # ---------------------------------------------------------
     # Roots
@@ -921,6 +974,76 @@ class ModelArtifactManager:
                 promoted,
                 staging,
             )
+
+            if self.model_signer is not None:
+                from src.security.audit.signed_events import (
+                    AuditEventType,
+                    AuditOutcome,
+                    AuditSeverity,
+                )
+                from src.security.integration import write_signed_model_manifest
+                from src.security.provenance.artefact_manifest import (
+                    ArtefactType,
+                    create_file_manifest,
+                )
+
+                producer = self.model_producer.require_verified()
+                if not promoted.source_run_id:
+                    raise ModelPromotionError(
+                        "Signed model promotion requires a source training run ID."
+                    )
+
+                manual_authorization = artifact.attributes.get(
+                    "manual_install_authorization",
+                    {},
+                )
+                qualification_status = (
+                    manual_authorization.get("qualification_status", "unspecified")
+                    if isinstance(manual_authorization, Mapping)
+                    else "unspecified"
+                )
+                evaluation_passed = (
+                    evaluation.passed
+                    if evaluation is not None
+                    else artifact.attributes.get("evaluation_passed")
+                )
+                manifest = create_file_manifest(
+                    staged_model,
+                    artefact_id=str(promoted.artifact_id),
+                    artefact_name=promoted.model_name,
+                    artefact_type=ArtefactType.MODEL,
+                    artefact_version=promoted.version,
+                    producer=producer,
+                    pipeline_id=self.model_pipeline_id,
+                    run_id=promoted.source_run_id,
+                    metadata={
+                        "evaluation_passed": (
+                            "unknown"
+                            if evaluation_passed is None
+                            else str(evaluation_passed).lower()
+                        ),
+                        "qualification_status": str(qualification_status),
+                    },
+                )
+                signed_manifest = self.model_signer.sign_manifest(manifest)
+                write_signed_model_manifest(staged_model, signed_manifest)
+                self.security_audit_recorder.record(
+                    event_type=AuditEventType.PROVENANCE_VERIFICATION,
+                    action="sign_promoted_model",
+                    outcome=AuditOutcome.ACCEPTED,
+                    severity=AuditSeverity.NOTICE,
+                    target=f"{promoted.model_name}:{promoted.version}",
+                    correlation_id=str(promoted.artifact_id),
+                    message="Promoted model manifest was signed.",
+                    details={
+                        "evaluation_passed": evaluation_passed,
+                        "qualification_status": str(qualification_status),
+                    },
+                )
+            elif self.require_signed_models:
+                raise ModelPromotionError(
+                    "Model promotion requires a signed manifest."
+                )
 
             staging.replace(destination_directory)
 

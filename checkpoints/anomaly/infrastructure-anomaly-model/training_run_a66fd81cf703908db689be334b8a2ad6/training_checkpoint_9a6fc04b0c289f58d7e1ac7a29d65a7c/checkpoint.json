@@ -1,0 +1,18 @@
+{
+  "attributes": {
+    "metadata_path": "/home/samorca/osha/checkpoints/anomaly/infrastructure-anomaly-model/training_run_a66fd81cf703908db689be334b8a2ad6/training_checkpoint_9a6fc04b0c289f58d7e1ac7a29d65a7c/checkpoint.json",
+    "optimizer_state_saved": true,
+    "task": "anomaly"
+  },
+  "checkpoint_id": "training:checkpoint:9a6fc04b0c289f58d7e1ac7a29d65a7c",
+  "checksum": "99bceeb81793d339deed1058612f841dab69eff1707d5da9a439e6d855e645bc",
+  "created_at": "2026-11-25T12:03:06.483655+00:00",
+  "epoch": 17,
+  "model_name": "infrastructure-anomaly-model",
+  "path": "/home/samorca/osha/checkpoints/anomaly/infrastructure-anomaly-model/training_run_a66fd81cf703908db689be334b8a2ad6/training_checkpoint_9a6fc04b0c289f58d7e1ac7a29d65a7c/checkpoint.pt",
+  "run_id": "training:run:a66fd81cf703908db689be334b8a2ad6",
+  "score": 0.01033319323323667,
+  "score_name": "validation_loss",
+  "state": "saved",
+  "step": 272
+}

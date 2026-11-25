@@ -37,4 +37,41 @@ Traditional monitoring systems are excellent at collecting and visualizing this 
 
 OSHA aims to introduce an intelligence layer above those signals.
 
-The long-term objective is:
+The long-term objective is to build a secure, auditable
+operational-intelligence platform.
+
+## Security boundary integration
+
+The security package exposes central integration points rather than adding
+cryptography to each collector. The shared adapters live in
+`src/security/integration.py`:
+
+- Training sources can require a signed sidecar for every consumed dataset.
+  The sidecar name is `<data-file>.osha-signed.json`; verification occurs
+  before records are read.
+- `ModelArtifactManager` can sign promoted model manifests. The AI registry
+  and standalone runtime can verify those manifests before loading model
+  bytes. A signature establishes integrity and trusted provenance, not model
+  quality or qualification.
+- `RemediationAuthorizationGate` evaluates authenticated workload identity,
+  permissions, approval, risk, evidence, and rollback policy immediately
+  before execute-mode adapter dispatch. Execute mode stays disabled by
+  default and requires both this gate and signed execution auditing.
+- `SecureTelemetryTransport` seals normalized records. Correlation loading
+  can require and open those envelopes before records enter the pipeline.
+  Receivers bind the expected collector identity to its trusted signing key.
+- These boundaries use `SecurityAuditRecorder` for signed events and an
+  integrity chain.
+
+These controls are enabled by injecting trusted verifier/signer services into
+the corresponding managers. The project does not generate production signing,
+encryption, or workload-identity credentials. Provision trusted keys,
+producer/pipeline allow-lists, workload authentication, and approval/resource
+resolvers from the deployment's approved identity and key-management systems.
+Unsigned legacy inputs remain supported unless the relevant `require_signed_*`
+or `require_secure` option is enabled.
+
+The current `IntegrityChain` is process-local and intended for development and
+testing. Multi-process or multi-replica deployments need a durable backend
+with atomic append semantics and external chain-head anchoring before signed
+audit can be treated as durable production evidence.

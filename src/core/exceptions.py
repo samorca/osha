@@ -280,6 +280,10 @@ class AuthenticationError(SecurityError):
     default_code = "authentication_error"
 
 
+class PermissionDeniedError(SecurityError):
+    default_code = "permission_denied"
+
+
 # ---------------------------------------------------------------
 # Generic resource errors
 # ---------------------------------------------------------------

@@ -370,7 +370,7 @@ def telemetry_from_dict(
         ):
             continue
 
-        relationshipsships.append(relationship_dict(item))
+        relationships.append(relationship_from_dict(item))
 
     telemetry = TelemetryRecord(
         resource=resource_from_dict(resource_data),
@@ -437,10 +437,20 @@ def read_jsonl(
 
 def load_telemetry_file(
     path: Path,
+    *,
+    secure_transport: Any = None,
+    require_secure: bool = False,
 ) -> tuple[
     List[TelemetryRecord],
     List[LoadIssue],
 ]:
+    if require_secure and secure_transport is None:
+        raise ValueError(
+            "require_secure needs a configured secure telemetry transport."
+        )
+    if secure_transport is not None:
+        from src.security.integration import SecurityBoundaryError
+
     records: List[TelemetryRecord] = []
 
     issues: List[LoadIssue] = []
@@ -488,16 +498,31 @@ def load_telemetry_file(
                 ):
                     raise TypeError("JSONL record must be an object")
 
+                if secure_transport is not None:
+                    value = secure_transport.open(value)
+
                 records.append(telemetry_from_dict(value))
 
             except Exception as exc:
+                if secure_transport is not None:
+                    from src.security.integration import SecurityBoundaryError
+
+                    if isinstance(exc, SecurityBoundaryError):
+                        raise
+                    raise SecurityBoundaryError(
+                        "Authenticated telemetry payload is invalid."
+                    ) from exc
                 issues.append(
                     LoadIssue(
                         source=str(path),
                         line_number=(line_number),
                         error_type=(type(exc).__name__),
                         message=str(exc),
-                        raw_line=(text[:4096]),
+                        raw_line=(
+                            None
+                            if secure_transport is not None
+                            else text[:4096]
+                        ),
                     )
                 )
 
@@ -509,10 +534,18 @@ def load_telemetry_file(
 
 def load_telemetry_files(
     paths: Iterable[Path],
+    *,
+    secure_transport: Any = None,
+    require_secure: bool = False,
 ) -> tuple[
     List[TelemetryRecord],
     List[LoadIssue],
 ]:
+    if require_secure and secure_transport is None:
+        raise ValueError(
+            "require_secure needs a configured secure telemetry transport."
+        )
+
     records: List[TelemetryRecord] = []
 
     issues: List[LoadIssue] = []
@@ -520,7 +553,11 @@ def load_telemetry_files(
     seen_record_ids = set()
 
     for path in paths:
-        loaded, file_issues = load_telemetry_file(path)
+        loaded, file_issues = load_telemetry_file(
+            path,
+            secure_transport=secure_transport,
+            require_secure=require_secure,
+        )
 
         issues.extend(file_issues)
 

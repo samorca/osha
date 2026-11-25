@@ -1,0 +1,327 @@
+{{/*
+=====================================================================
+OSHA Runtime Deployment
+=====================================================================
+
+Process:
+
+    scripts/runtime/run.sh
+        ->
+    python -m src.runtime.main
+        ->
+    OshaRuntime
+
+The runtime owns the OSHA application lifecycle.
+
+It is separate from:
+
+    API
+    Workers
+
+The base chart intentionally keeps the runtime at
+one replica until distributed coordination / leader
+election is implemented and validated.
+*/}}
+
+{{- if .Values.runtime.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: {{ include "osha.runtime.fullname" . }}
+  namespace: {{ include "osha.namespace" . }}
+
+  labels:
+    {{- include "osha.runtime.labels" . | nindent 4 }}
+
+  annotations:
+    osha.atonixcorp.io/description: >-
+      OSHA orchestration runtime deployment.
+
+
+spec:
+  # -----------------------------------------------------------------
+  # Runtime replicas
+  # -----------------------------------------------------------------
+
+  replicas: {{ .Values.runtime.replicaCount }}
+
+
+  # -----------------------------------------------------------------
+  # Deployment history
+  # -----------------------------------------------------------------
+
+  revisionHistoryLimit: 5
+
+
+  # -----------------------------------------------------------------
+  # Selector
+  # -----------------------------------------------------------------
+
+  selector:
+    matchLabels:
+      {{- include "osha.runtime.selectorLabels" . | nindent 6 }}
+
+
+  # -----------------------------------------------------------------
+  # Strategy
+  # -----------------------------------------------------------------
+  #
+  # Recreate deliberately avoids overlapping two
+  # versions of the orchestration authority.
+  # -----------------------------------------------------------------
+
+  strategy:
+    type: Recreate
+
+
+  # -----------------------------------------------------------------
+  # Pod
+  # -----------------------------------------------------------------
+
+  template:
+    metadata:
+      labels:
+        {{- include "osha.runtime.labels" . | nindent 8 }}
+
+      annotations:
+        osha.atonixcorp.io/workload: runtime
+
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+
+
+    spec:
+      # -------------------------------------------------------------
+      # Kubernetes identity
+      # -------------------------------------------------------------
+
+      serviceAccountName: {{ include "osha.runtime.serviceAccountName" . }}
+
+      automountServiceAccountToken: {{ .Values.serviceAccount.runtime.automountServiceAccountToken }}
+
+
+      # -------------------------------------------------------------
+      # Shutdown
+      # -------------------------------------------------------------
+      #
+      # Kubernetes gets slightly longer than OSHA's
+      # configured shutdown timeout so Python has time
+      # to complete graceful shutdown after SIGTERM.
+      # -------------------------------------------------------------
+
+      terminationGracePeriodSeconds: {{ .Values.config.shutdownTimeoutSeconds | int | add 15 }}
+
+
+      # -------------------------------------------------------------
+      # Private image registry credentials
+      # -------------------------------------------------------------
+
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+
+      # -------------------------------------------------------------
+      # Pod security
+      # -------------------------------------------------------------
+
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+
+
+      # -------------------------------------------------------------
+      # Scheduling
+      # -------------------------------------------------------------
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+
+      # -------------------------------------------------------------
+      # Runtime container
+      # -------------------------------------------------------------
+
+      containers:
+        - name: runtime
+
+          image: {{ include "osha.image" . | quote }}
+
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+
+
+          # ---------------------------------------------------------
+          # Entrypoint
+          # ---------------------------------------------------------
+          #
+          # run.sh uses exec so Python becomes PID 1
+          # and receives SIGTERM directly.
+          # ---------------------------------------------------------
+
+          command:
+            - /bin/bash
+            - /app/scripts/runtime/run.sh
+
+
+          workingDir: /app
+
+
+          # ---------------------------------------------------------
+          # Shared non-secret configuration
+          # ---------------------------------------------------------
+
+          envFrom:
+            - configMapRef:
+                name: {{ include "osha.configMapName" . }}
+
+
+          # ---------------------------------------------------------
+          # Runtime identity
+          # ---------------------------------------------------------
+
+          env:
+            - name: OSHA_STARTED_BY
+              value: {{ .Values.runtime.startedBy | quote }}
+
+
+            - name: OSHA_KUBERNETES_NAMESPACE
+
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+
+
+            - name: OSHA_POD_NAME
+
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+
+
+            - name: OSHA_POD_UID
+
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+
+
+            - name: OSHA_NODE_NAME
+
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+
+
+            - name: OSHA_POD_IP
+
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+
+
+          # ---------------------------------------------------------
+          # Resources
+          # ---------------------------------------------------------
+
+          resources:
+            {{- toYaml .Values.runtime.resources | nindent 12 }}
+
+
+          # ---------------------------------------------------------
+          # Container security
+          # ---------------------------------------------------------
+
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+
+
+          # ---------------------------------------------------------
+          # Writable locations
+          # ---------------------------------------------------------
+          #
+          # OSHA's root filesystem can remain
+          # read-only while these explicitly selected
+          # directories remain writable.
+          # ---------------------------------------------------------
+
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+
+            - name: runtime-tmp
+              mountPath: /app/.runtime
+
+
+            # -------------------------------------------------------
+            # Runtime artifacts
+            # -------------------------------------------------------
+
+            {{- if .Values.persistence.enabled }}
+            - name: osha-data
+              mountPath: {{ .Values.paths.artifacts }}
+              subPath: artifacts
+
+            - name: osha-data
+              mountPath: {{ .Values.paths.checkpoints }}
+              subPath: checkpoints
+
+            - name: osha-data
+              mountPath: {{ .Values.paths.models }}
+              subPath: models
+
+            - name: osha-data
+              mountPath: {{ .Values.paths.logs }}
+              subPath: logs
+
+            - name: osha-data
+              mountPath: {{ .Values.paths.data }}
+              subPath: orchestration-ai-data
+
+            {{- else }}
+            - name: runtime-artifacts
+              mountPath: /app/artifacts/runtime
+            {{- end }}
+
+
+      # -------------------------------------------------------------
+      # Volumes
+      # -------------------------------------------------------------
+
+      volumes:
+        - name: tmp
+          emptyDir: {}
+
+        - name: runtime-tmp
+          emptyDir: {}
+
+
+        {{- if .Values.persistence.enabled }}
+        - name: osha-data
+          persistentVolumeClaim:
+            claimName: {{ include "osha.persistence.claimName" . }}
+
+        {{- else }}
+        - name: runtime-artifacts
+          emptyDir: {}
+        {{- end }}
+
+{{- end }}

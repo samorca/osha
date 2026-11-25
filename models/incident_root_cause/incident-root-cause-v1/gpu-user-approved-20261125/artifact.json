@@ -1,0 +1,37 @@
+{
+  "artifact_id": "training:artifact:87444982548690c680d9a0cdd9beaaa4",
+  "attributes": {
+    "evaluation_id": null,
+    "evaluation_passed": null,
+    "evaluation_split": "test",
+    "manual_install_authorization": {
+      "approved": true,
+      "approved_at": "2026-11-25T12:22:20.371197+00:00",
+      "note": "Installed by explicit user request; this records no independent quality-gate pass.",
+      "qualification_status": "user_accepted_unqualified_candidate",
+      "source": "explicit_user_request"
+    },
+    "promoted": true,
+    "source_checkpoint_metric": null,
+    "source_checkpoint_score": null,
+    "source_training_report": "training_report.json",
+    "source_training_report_sha256": "3131cb2c8e49d769d26648e425accbade5627ab7ed88fcc53a18bb8add0147f6",
+    "training_device": "cuda"
+  },
+  "checkpoint_id": "training:checkpoint:3827b8410017d062b8ba714653c524d5",
+  "checksum": "2760736c4c0624726df172ce279a3cae51b5c509931cca1c1b287bce7d735fe0",
+  "created_at": "2026-11-25T12:22:20.733897+00:00",
+  "metrics": {
+    "loss": 0.01780190314025503,
+    "root_cause_accuracy": 0.9975062344139651,
+    "samples": 401.0,
+    "severity_accuracy": 0.9975062344139651
+  },
+  "model_name": "incident-root-cause-v1",
+  "path": "/home/samorca/osha/models/incident_root_cause/incident-root-cause-v1/gpu-user-approved-20261125/model.pt",
+  "schema_version": "1",
+  "source_run_id": "manual-install-incident_root_cause-20261125",
+  "state": "promoted",
+  "task": "incident_root_cause",
+  "version": "gpu-user-approved-20261125"
+}

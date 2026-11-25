@@ -35,6 +35,8 @@ from src.remediation.audit import (
 
 from src.remediation.executor import (
     RemediationExecutor,
+    record_security_denial,
+    security_blocked_result,
 )
 
 from src.remediation.rollback import (
@@ -223,6 +225,8 @@ class RemediationPipeline:
         verifier: Optional[RemediationVerifier] = None,
         rollback_manager: Optional[RollbackManager] = None,
         audit: Optional[RemediationAudit] = None,
+        authorization_gate: Any = None,
+        security_audit_recorder: Any = None,
     ) -> None:
         self.registry = registry or default_adapter_registry()
 
@@ -233,7 +237,11 @@ class RemediationPipeline:
         self.executor = executor or RemediationExecutor(
             registry=self.registry,
             validator=self.validator,
+            authorization_gate=authorization_gate,
+            security_audit_recorder=security_audit_recorder,
         )
+        self.authorization_gate = authorization_gate
+        self.security_audit_recorder = security_audit_recorder
 
         self.verifier = verifier or RemediationVerifier()
 
@@ -314,7 +322,27 @@ class RemediationPipeline:
 
         result.status = RemediationStatus.READY.value
 
-        result.execution = self.executor.execute(request)
+        if (
+            request.mode == RemediationMode.EXECUTE.value
+            and type(self.executor) is not RemediationExecutor
+        ):
+            if self.security_audit_recorder is not None:
+                record_security_denial(
+                    self.security_audit_recorder,
+                    request,
+                    action="custom_remediation_executor_denied",
+                    reason=(
+                        "Execute mode cannot dispatch through an unguarded custom executor."
+                    ),
+                )
+            result.execution = security_blocked_result(
+                request,
+                reason=(
+                    "Execute mode cannot dispatch through an unguarded custom executor."
+                ),
+            )
+        else:
+            result.execution = self.executor.execute(request)
 
         record = self.audit.record_execution(
             request,

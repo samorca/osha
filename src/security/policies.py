@@ -14,7 +14,7 @@ from typing import (
     Optional,
 )
 
-from src.security.identity import (
+from src.security.identity.registry import (
     normalize_role,
 )
 

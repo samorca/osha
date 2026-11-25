@@ -1530,6 +1530,21 @@ class InferenceService:
     ) -> Dict[str, Any]:
         self._ensure_open()
 
+        health_check = getattr(
+            self.pipeline,
+            "health_check",
+            None,
+        )
+
+        if callable(health_check):
+            try:
+                result = health_check(deep=deep)
+
+            except TypeError:
+                result = health_check()
+
+            return _mapping(result)
+
         checker = getattr(
             self.pipeline,
             "health",

@@ -1,0 +1,20 @@
+{
+  "artifact_id": "training:artifact:df8ff478576791a594bb6369e64db6ee",
+  "attributes": {
+    "evaluation_id": null,
+    "evaluation_passed": null,
+    "source_checkpoint_metric": null,
+    "source_checkpoint_score": null
+  },
+  "checkpoint_id": "training:checkpoint:855ceb45259de646b561bbfdd354177e",
+  "checksum": "f0a6792f684c2fd1114c3e72f3354ca3541b9b9c579cb3b05b913f6aea1c731d",
+  "created_at": "2026-11-25T12:22:20.746281+00:00",
+  "metrics": {},
+  "model_name": "remediation-ranking-v1",
+  "path": "/home/samorca/osha/artifacts/remediation_recommendation/remediation-ranking-v1/gpu-user-approved-20261125/model.pt",
+  "schema_version": "1",
+  "source_run_id": "manual-install-remediation_recommendation-20261125",
+  "state": "candidate",
+  "task": "remediation_recommendation",
+  "version": "gpu-user-approved-20261125"
+}

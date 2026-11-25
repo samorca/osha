@@ -25,6 +25,7 @@ COPY scripts/ /app/scripts/
 COPY config/ /app/config/
 COPY orchestration-ai-data/ /app/orchestration-ai-data/
 COPY artifacts/ /app/artifacts/
+COPY models/ /app/models/
 
 RUN mkdir -p \
         /app/artifacts \

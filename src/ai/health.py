@@ -554,7 +554,11 @@ class AIHealthChecker:
 
         self.config.validate()
 
-        self.registry = registry or AIModelRegistry(config=self.config)
+        self.registry = (
+            registry
+            if registry is not None
+            else AIModelRegistry(config=self.config)
+        )
 
         self.loader = loader or AIModelLoader(
             config=self.config,

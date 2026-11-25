@@ -197,6 +197,9 @@ def discover_files(
         if not path.is_file():
             continue
 
+        if path.name.endswith(".osha-signed.json"):
+            continue
+
         if path.suffix.lower() not in SUPPORTED_SUFFIXES:
             continue
 
@@ -417,10 +420,35 @@ class TrainingSourceManager:
         self,
         *,
         config: Optional[TrainingConfig] = None,
+        dataset_verifier: Any = None,
+        require_signed_datasets: bool = False,
+        security_audit_recorder: Any = None,
     ) -> None:
         self.config = config or TrainingConfig()
 
         self.config.validate()
+
+        if require_signed_datasets and dataset_verifier is None:
+            raise ValueError(
+                "require_signed_datasets requires a dataset verifier."
+            )
+        if dataset_verifier is not None:
+            from src.security.integration import SecurityAuditRecorder
+            from src.security.provenance.dataset_signing import (
+                DatasetVerificationService,
+            )
+
+            if not isinstance(dataset_verifier, DatasetVerificationService):
+                raise TypeError(
+                    "dataset_verifier must be DatasetVerificationService."
+                )
+            if not isinstance(security_audit_recorder, SecurityAuditRecorder):
+                raise ValueError(
+                    "Dataset verification requires a signed security audit recorder."
+                )
+        self.dataset_verifier = dataset_verifier
+        self.require_signed_datasets = require_signed_datasets
+        self.security_audit_recorder = security_audit_recorder
 
     # ---------------------------------------------------------
     # Resolved roots
@@ -661,6 +689,19 @@ class TrainingSourceManager:
 
         for file_path in source.files:
             path = Path(file_path).resolve()
+
+            if self.dataset_verifier is not None:
+                from src.security.integration import require_verified_dataset
+
+                require_verified_dataset(
+                    path,
+                    self.dataset_verifier,
+                    audit=self.security_audit_recorder,
+                )
+            elif self.require_signed_datasets:
+                raise TrainingSourceError(
+                    "Training source has no configured dataset verifier."
+                )
 
             for value in iter_source_file(
                 path,
