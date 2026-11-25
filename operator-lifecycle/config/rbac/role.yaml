@@ -5,6 +5,18 @@ metadata:
   name: osha-lifecycle-manager-role
 rules:
 - apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - lifecycle.osha.io
   resources:
   - operatorcatalogs
@@ -30,11 +42,6 @@ rules:
   - lifecycle.osha.io
   resources:
   - operatorinstallplans/status
-  verbs:
-  - get
-- apiGroups:
-  - lifecycle.osha.io
-  resources:
   - operatorsubscriptions/status
   verbs:
   - get

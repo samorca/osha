@@ -1,0 +1,19 @@
+apiVersion: lifecycle.osha.io/v1alpha1
+kind: OperatorCatalog
+metadata:
+  name: osha-catalog
+  namespace: osha-lifecycle-system
+spec:
+  displayName: OSHA Catalog
+  publisher: OSHA
+  source:
+    type: ConfigMap
+    configMap:
+      name: osha-catalog-data
+      namespace: osha-lifecycle-system
+      key: catalog.yaml
+  syncPolicy:
+    interval: 10m
+    suspend: true
+  priority: 100
+  enabled: true

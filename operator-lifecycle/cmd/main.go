@@ -7,6 +7,7 @@ import (
 	lifecyclev1alpha1 "github.com/samorca/osha/operator-lifecycle/api/v1alpha1"
 	"github.com/samorca/osha/operator-lifecycle/internal/catalog"
 	"github.com/samorca/osha/operator-lifecycle/internal/installer"
+	"github.com/samorca/osha/operator-lifecycle/internal/installplan"
 	"github.com/samorca/osha/operator-lifecycle/internal/policy"
 	"github.com/samorca/osha/operator-lifecycle/internal/resolver"
 	"github.com/samorca/osha/operator-lifecycle/internal/subscription"
@@ -156,7 +157,22 @@ func main() {
 		os.Exit(1)
 	}
 
-	_ = installExecutor
+	installPlanReconciler := &installplan.Reconciler{
+		Client:   manager.GetClient(),
+		Scheme:   manager.GetScheme(),
+		Executor: installExecutor,
+		Policy:   policyEngine,
+	}
+
+	if err := installPlanReconciler.SetupWithManager(manager); err != nil {
+		setupLog.Error(
+			err,
+			"unable to register OperatorInstallPlan controller",
+		)
+
+		os.Exit(1)
+	}
+
 	_ = upgradeEngine
 
 	if err := manager.AddHealthzCheck(
