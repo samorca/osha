@@ -40,6 +40,33 @@ OSHA aims to introduce an intelligence layer above those signals.
 The long-term objective is to build a secure, auditable
 operational-intelligence platform.
 
+## Telemetry collector worker
+
+The Compose telemetry worker runs the Linux collector every
+`OSHA_COLLECTOR_INTERVAL_SECONDS` (30 seconds by default). It appends JSONL files
+under `OSHA_DATA_DIR/live/<source>/<worker-id>.jsonl`. Kubernetes collection is
+included when in-cluster credentials or a visible `KUBECONFIG` are available;
+set `OSHA_COLLECTOR_SOURCES=linux,kubernetes` to require both sources. The
+Kubernetes collector defaults to namespace `osha`, includes pod logs, and reads
+up to 200 lines per container per cycle.
+
+Run one collection cycle locally with:
+
+```bash
+OSHA_COLLECTOR_SOURCES=linux,kubernetes \
+OSHA_KUBERNETES_NAMESPACE=osha \
+python -m src.workers.main --once
+```
+
+In Docker Compose, view worker output with `docker compose logs -f worker`.
+The container's Linux collector sees the container environment, not the host.
+Collecting Linux telemetry from the host or every Kubernetes node requires
+running the worker in those host/node contexts with the appropriate
+read-only access. Kubernetes API collection requires permission to list pods
+and events and read pod logs in the selected namespace. Collected pod and
+journal logs may contain sensitive text; do not treat the JSONL output as
+sanitized training data.
+
 ## Security boundary integration
 
 The security package exposes central integration points rather than adding

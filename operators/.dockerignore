@@ -1,0 +1,17 @@
+.git
+.gitignore
+
+dist/
+coverage/
+tmp/
+
+*.log
+*.out
+
+.env
+.env.*
+
+test/
+docs/
+
+bundle/

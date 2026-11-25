@@ -1,0 +1,22 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: oshaplatform-viewer-role
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+rules:
+  - apiGroups:
+      - platform.osha.io
+    resources:
+      - oshaplatforms
+    verbs:
+      - get
+      - list
+      - watch
+
+  - apiGroups:
+      - platform.osha.io
+    resources:
+      - oshaplatforms/status
+    verbs:
+      - get

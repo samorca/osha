@@ -1,0 +1,39 @@
+apiVersion: lifecycle.osha.io/v1alpha1
+kind: OperatorInstallPlan
+metadata:
+  name: e2e-install-plan
+  namespace: osha-lifecycle-system
+spec:
+  subscription:
+    name: e2e-subscription
+    namespace: osha-lifecycle-system
+
+  package: e2e-operator
+  action: Install
+  targetVersion: 1.1.0
+  targetNamespace: osha-lifecycle-system
+
+  approval: Manual
+  approved: true
+
+  resolutionHash: e2e-resolution-hash
+
+  steps:
+    - id: create-configmap
+      action: Create
+
+      resource:
+        group: ""
+        version: v1
+        kind: ConfigMap
+        name: e2e-installed-resource
+        namespace: osha-lifecycle-system
+
+      manifest: |
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: e2e-installed-resource
+          namespace: osha-lifecycle-system
+        data:
+          installedVersion: "1.1.0"

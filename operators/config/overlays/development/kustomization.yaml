@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: osha-system
+
+resources:
+  - ../../default
+
+images:
+  - name: controller
+    newName: osha-operator
+    newTag: dev
+
+patches:
+  - path: manager_patch.yaml

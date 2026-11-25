@@ -23,7 +23,6 @@ RUN python -m pip install --upgrade pip \
 COPY src/ /app/src/
 COPY scripts/ /app/scripts/
 COPY config/ /app/config/
-COPY orchestration-ai-data/ /app/orchestration-ai-data/
 COPY artifacts/ /app/artifacts/
 COPY models/ /app/models/
 

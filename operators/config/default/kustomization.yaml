@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: osha-system
+
+resources:
+  - namespace.yaml
+  - ../crd
+  - ../rbac
+  - ../manager
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: osha
+      app.kubernetes.io/managed-by: kustomize

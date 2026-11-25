@@ -1,0 +1,19 @@
+apiVersion: lifecycle.osha.io/v1alpha1
+kind: OperatorCatalog
+metadata:
+  name: e2e-catalog
+  namespace: osha-lifecycle-system
+spec:
+  displayName: E2E Catalog
+  publisher: OSHA
+  source:
+    type: ConfigMap
+    configMap:
+      name: e2e-catalog-data
+      namespace: osha-lifecycle-system
+      key: catalog.yaml
+  syncPolicy:
+    interval: 10m
+    suspend: true
+  priority: 100
+  enabled: true

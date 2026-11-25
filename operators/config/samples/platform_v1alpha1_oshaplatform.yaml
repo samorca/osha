@@ -1,0 +1,38 @@
+apiVersion: platform.osha.io/v1alpha1
+kind: OSHAPlatform
+
+metadata:
+  name: osha
+  namespace: osha-system
+
+spec:
+  managementPolicy: ObserveOnly
+
+  observationIntervalSeconds: 30
+
+  paused: false
+
+  approval:
+    requireApproval: true
+    allowScaling: false
+    allowRestart: false
+    allowDeletion: false
+
+  components:
+    - name: osha-api
+      namespace: osha
+      kind: Deployment
+      required: true
+      desiredReplicas: 1
+
+    - name: osha-runtime
+      namespace: osha
+      kind: Deployment
+      required: true
+      desiredReplicas: 1
+
+    - name: osha-worker
+      namespace: osha
+      kind: Deployment
+      required: true
+      desiredReplicas: 1
