@@ -172,6 +172,10 @@ status:
 		-n $(NAMESPACE) \
 		2>/dev/null || true
 
+.PHONY: samples
+samples:
+	$(KUBECTL) apply -k config/samples
+
 .PHONY: logs
 logs:
 	$(KUBECTL) logs \

@@ -1,0 +1,15 @@
+apiVersion: lifecycle.osha.io/v1alpha1
+kind: OperatorSubscription
+metadata:
+  name: osha-operator
+  namespace: osha-lifecycle-system
+spec:
+  package: osha-operator
+  catalog:
+    name: osha-catalog
+    namespace: osha-lifecycle-system
+  channel: stable
+  versionConstraint: ">=0.1.0, <0.2.0"
+  approval: Manual
+  targetNamespace: osha-system
+  paused: false

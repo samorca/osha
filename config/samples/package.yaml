@@ -1,0 +1,24 @@
+apiVersion: lifecycle.osha.io/v1alpha1
+kind: OperatorPackage
+metadata:
+  name: osha-operator
+  namespace: osha-lifecycle-system
+spec:
+  displayName: OSHA Operator
+  provider: OSHA
+  description: Lifecycle-managed installation for the OSHA Kubernetes platform operator.
+  defaultChannel: stable
+  channels:
+    - name: stable
+      entries:
+        - version: 0.1.0
+  releases:
+    - version: 0.1.0
+      maturity: Alpha
+      artifacts:
+        image: osha-operator:dev
+        bundleImage: osha-operator-bundle:dev
+      providedAPIs:
+        - group: platform.osha.io
+          version: v1alpha1
+          kind: OSHAPlatform
