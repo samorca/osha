@@ -1,0 +1,18 @@
+{
+  "attributes": {
+    "metadata_path": "/home/samorca/osha/checkpoints/remediation_recommendation/remediation-ranking-v1/training_run_84d9de67f853319cac670a797098f7c9/training_checkpoint_86a005d63135cd29820013f588fa77ea/checkpoint.json",
+    "optimizer_state_saved": false,
+    "task": "remediation_recommendation"
+  },
+  "checkpoint_id": "training:checkpoint:86a005d63135cd29820013f588fa77ea",
+  "checksum": "c6d552119c1a48d4f9fe4796c76777f811d1cacea5165627b99b072e78ad828d",
+  "created_at": "2026-11-25T21:33:58.569282+00:00",
+  "epoch": null,
+  "model_name": "remediation-ranking-v1",
+  "path": "/home/samorca/osha/checkpoints/remediation_recommendation/remediation-ranking-v1/training_run_84d9de67f853319cac670a797098f7c9/training_checkpoint_86a005d63135cd29820013f588fa77ea/checkpoint.pt",
+  "run_id": "training:run:84d9de67f853319cac670a797098f7c9",
+  "score": 0.6666666666666666,
+  "score_name": "test_accuracy",
+  "state": "saved",
+  "step": null
+}

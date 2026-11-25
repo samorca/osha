@@ -547,6 +547,24 @@ class RemediationRecommendationModelAdapter(AIModelAdapter):
             )
 
 
+class CapacityForecastingModelAdapter(AIModelAdapter):
+    family = AIModelFamily.CAPACITY_FORECASTING.value
+
+    def validate_request(
+        self,
+        request: InferenceRequest,
+    ) -> None:
+        super().validate_request(request)
+        if not isinstance(request.payload, dict):
+            raise AIInferenceRequestError(
+                "Capacity-forecast inference payload must be an object."
+            )
+        if not isinstance(request.payload.get("history"), list):
+            raise AIInferenceRequestError(
+                "Capacity-forecast history must be a list."
+            )
+
+
 # ---------------------------------------------------------------
 # Adapter type check
 # ---------------------------------------------------------------

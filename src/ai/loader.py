@@ -554,6 +554,15 @@ def descriptor_from_artifact(
             )
         )
 
+    elif family == AIModelFamily.CAPACITY_FORECASTING.value:
+        capabilities.extend(
+            (
+                "capacity_forecasting",
+                "time_series_forecasting",
+                "capacity_threshold_prediction",
+            )
+        )
+
     artifact_attributes = value.get(
         "attributes",
         {},

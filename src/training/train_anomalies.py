@@ -89,7 +89,7 @@ from src.training.config import (
     OptimizationConfig,
     ReproducibilityConfig,
     TrainingConfig,
-    TrainingPathConfig,
+    from_environment,
 )
 
 from src.training.errors import (
@@ -340,7 +340,7 @@ def build_training_config(
             TrainingTask.EVENT.value,
             TrainingTask.ANOMALY.value,
         ),
-        paths=TrainingPathConfig(),
+        paths=from_environment().paths,
         reproducibility=(
             ReproducibilityConfig(
                 random_seed=args.seed,

@@ -82,6 +82,8 @@ class AIModelFamily(
 
     REMEDIATION_RECOMMENDATION = "remediation_recommendation"
 
+    CAPACITY_FORECASTING = "capacity_forecasting"
+
     CUSTOM = "custom"
 
 

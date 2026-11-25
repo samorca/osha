@@ -124,8 +124,8 @@ APPLICATION_TITLE = "OSHA Orchestration API"
 APPLICATION_DESCRIPTION = (
     "HTTP control plane for OSHA infrastructure "
     "intelligence, accelerator management, model "
-    "serving, incident analysis, decisions, and "
-    "guarded remediation."
+    "serving, capacity forecasting, incident analysis, "
+    "decisions, and guarded remediation."
 )
 
 APPLICATION_VERSION = "1.0.0"
@@ -142,6 +142,7 @@ ROUTER_MODULES: Tuple[
     "src.api.routes.health",
     "src.api.routes.accelerators",
     "src.api.routes.inference",
+    "src.api.routes.forecasting",
     "src.api.routes.models",
     "src.api.routes.incidents",
     "src.api.routes.decisions",
@@ -474,6 +475,9 @@ def router_enabled(
         )
 
     if module_name.endswith(".inference"):
+        return bool(config.features.inference_enabled)
+
+    if module_name.endswith(".forecasting"):
         return bool(config.features.inference_enabled)
 
     if module_name.endswith(".models"):

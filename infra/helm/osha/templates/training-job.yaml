@@ -1,0 +1,100 @@
+{{- include "osha.training.validate" . }}
+{{- if .Values.training.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ printf "%s-training-%s" (include "osha.fullname" .) (.Values.training.version | lower | replace "." "-" | replace "_" "-") | trunc 63 | trimSuffix "-" }}
+  namespace: {{ include "osha.namespace" . }}
+  labels:
+    {{- include "osha.labels" . | nindent 4 }}
+    app.kubernetes.io/component: training
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 86400
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        {{- include "osha.labels" . | nindent 8 }}
+        app.kubernetes.io/component: training
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        {{- include "osha.modelSeedInitContainer" . | nindent 8 }}
+      containers:
+        - name: train-models
+          image: {{ include "osha.image" . | quote }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          command:
+            - python
+            - -m
+            - src.training.train_all
+          args:
+            - --version
+            - {{ .Values.training.version | quote }}
+            - --data-root
+            - {{ .Values.training.dataRoot | quote }}
+            - --event-data
+            - {{ .Values.training.eventData | quote }}
+            - --anomaly-data
+            - {{ .Values.training.anomalyData | quote }}
+            - --capacity-data
+            - {{ .Values.training.capacityData | quote }}
+            - --epochs
+            - {{ .Values.training.epochs | toString | quote }}
+            - --batch-size
+            - {{ .Values.training.batchSize | toString | quote }}
+            - --seed
+            - {{ .Values.training.seed | toString | quote }}
+            - --num-workers
+            - {{ .Values.training.numWorkers | toString | quote }}
+            - --accelerator
+            - {{ .Values.training.accelerator | quote }}
+            - --checkpoints
+            - {{ .Values.paths.checkpoints | quote }}
+            - --artifacts
+            - {{ .Values.paths.artifacts | quote }}
+            - --models
+            - {{ .Values.paths.models | quote }}
+            - --logs
+            - {{ printf "%s/training" .Values.paths.logs | quote }}
+          workingDir: /app
+          env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: PYTHONPATH
+              value: /app
+          envFrom:
+            - configMapRef:
+                name: {{ include "osha.configMapName" . }}
+          resources:
+            {{- toYaml .Values.training.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: osha-data
+              mountPath: {{ .Values.paths.artifacts }}
+              subPath: artifacts
+            - name: osha-data
+              mountPath: {{ .Values.paths.checkpoints }}
+              subPath: checkpoints
+            - name: osha-data
+              mountPath: {{ .Values.paths.models }}
+              subPath: models
+            - name: osha-data
+              mountPath: {{ .Values.paths.logs }}
+              subPath: logs
+            - name: osha-data
+              mountPath: {{ .Values.training.dataRoot }}
+              subPath: data
+              readOnly: true
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        {{- include "osha.modelVolume" . | nindent 8 }}
+{{- end }}

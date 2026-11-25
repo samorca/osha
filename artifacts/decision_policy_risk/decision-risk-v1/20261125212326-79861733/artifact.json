@@ -1,0 +1,24 @@
+{
+  "artifact_id": "training:artifact:a7b0fbd56135517f99e80ce13ad3c829",
+  "attributes": {
+    "evaluation_id": "training:evaluation:3f3cb161862f4ba935a59dacb737770d",
+    "evaluation_passed": true,
+    "source_checkpoint_metric": "risk_accuracy",
+    "source_checkpoint_score": 0.8606965174129353
+  },
+  "checkpoint_id": "training:checkpoint:ef9b8c3d3b6b606a468e507709f5477a",
+  "checksum": "0c9fb5e818ee02aa7a63cd3cb64efd62a3507585ea435f81645118189aa48c22",
+  "created_at": "2026-11-25T21:34:04.925668+00:00",
+  "metrics": {
+    "loss": 0.412656795492961,
+    "risk_accuracy": 0.8606965174129353,
+    "samples": 201.0
+  },
+  "model_name": "decision-risk-v1",
+  "path": "/home/samorca/osha/artifacts/decision_policy_risk/decision-risk-v1/20261125212326-79861733/model.pt",
+  "schema_version": "1",
+  "source_run_id": "cb27e3e595df4809be0f2b725486da44",
+  "state": "accepted",
+  "task": "decision_policy_risk",
+  "version": "20261125212326-79861733"
+}

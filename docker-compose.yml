@@ -1,13 +1,53 @@
 name: osha
 
 services:
-  api:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: "osha"
+      POSTGRES_USER: "osha"
+      POSTGRES_PASSWORD: ${OSHA_DATABASE_PASSWORD:?Set OSHA_DATABASE_PASSWORD before starting Compose}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    volumes:
+      - osha-postgres-data:/var/lib/postgresql/data
+
+  model-seed:
     image: osha:latest
     build:
       context: .
       dockerfile: Dockerfile
       network: host
+    user: "10001:10001"
+    working_dir: /app
+    command:
+      - /bin/bash
+      - /app/scripts/models/seed_models.sh
+    environment:
+      OSHA_MODEL_SEED_DIRECTORY: /opt/osha/model-seed
+      OSHA_AI_MODELS_DIRECTORY: /app/models
+    restart: "no"
+    volumes:
+      - osha-models:/app/models
+
+  api:
+    image: osha:latest
+    env_file:
+      - .env
+    build:
+      context: .
+      dockerfile: Dockerfile
+      network: host
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      model-seed:
+        condition: service_completed_successfully
     user: "10001:10001"
     working_dir: /app
     deploy:
@@ -22,6 +62,16 @@ services:
       PYTHONUNBUFFERED: "1"
       PYTHONDONTWRITEBYTECODE: "1"
       OSHA_ENVIRONMENT_ID: "kubernetes"
+      OSHA_DATABASE_BACKEND: "postgresql"
+      OSHA_DATABASE_NAME: "osha"
+      OSHA_DATABASE_ENVIRONMENT_ID: "kubernetes"
+      OSHA_DATABASE_HOST: "postgres"
+      OSHA_DATABASE_PORT: "5432"
+      OSHA_DATABASE_USERNAME: "osha"
+      OSHA_DATABASE_SECRET_PROVIDER: "environment"
+      OSHA_DATABASE_SECRET_NAME: "database-password"
+      OSHA_DATABASE_SECRET_KEY: "OSHA_DATABASE_PASSWORD"
+      OSHA_DATABASE_PASSWORD: ${OSHA_DATABASE_PASSWORD:?Set OSHA_DATABASE_PASSWORD before starting Compose}
       OSHA_INSTANCE_NAME: "osha"
       OSHA_DRY_RUN: "true"
       OSHA_FAIL_FAST: "true"
@@ -40,14 +90,16 @@ services:
       OSHA_ARTIFACTS_DIR: "/app/artifacts"
       OSHA_CHECKPOINTS_DIR: "/app/checkpoints"
       OSHA_MODELS_DIR: "/app/models"
+      OSHA_AI_MODELS_DIRECTORY: "/app/models"
       OSHA_MODEL_FAMILIES_ENABLED: "true"
       OSHA_EVENT_MODEL_ENABLED: "true"
       OSHA_ANOMALY_MODEL_ENABLED: "true"
       OSHA_INCIDENT_ROOT_CAUSE_MODEL_ENABLED: "true"
       OSHA_DECISION_RISK_MODEL_ENABLED: "true"
       OSHA_REMEDIATION_RANKING_MODEL_ENABLED: "true"
+      OSHA_CAPACITY_FORECASTING_MODEL_ENABLED: "true"
       OSHA_LOGS_DIR: "/app/logs"
-      OSHA_DATA_DIR: "/app/orchestration-ai-data"
+      OSHA_DATA_DIR: "/app/data"
       OSHA_ACCELERATOR: "auto"
       OSHA_ALLOW_CPU_FALLBACK: "true"
       OSHA_REMEDIATION_ENABLED: "true"
@@ -71,17 +123,24 @@ services:
     volumes:
       - osha-artifacts:/app/artifacts
       - osha-checkpoints:/app/checkpoints
-      - osha-models:/app/models
+      - osha-models:/app/models:ro
       - osha-logs:/app/logs
-      - osha-data:/app/orchestration-ai-data
+      - osha-data:/app/data
 
   runtime:
     image: osha:latest
+    env_file:
+      - .env
     build:
       context: .
       dockerfile: Dockerfile
       network: host
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      model-seed:
+        condition: service_completed_successfully
     user: "10001:10001"
     working_dir: /app
     deploy:
@@ -96,6 +155,16 @@ services:
       PYTHONUNBUFFERED: "1"
       PYTHONDONTWRITEBYTECODE: "1"
       OSHA_ENVIRONMENT_ID: "kubernetes"
+      OSHA_DATABASE_BACKEND: "postgresql"
+      OSHA_DATABASE_NAME: "osha"
+      OSHA_DATABASE_ENVIRONMENT_ID: "kubernetes"
+      OSHA_DATABASE_HOST: "postgres"
+      OSHA_DATABASE_PORT: "5432"
+      OSHA_DATABASE_USERNAME: "osha"
+      OSHA_DATABASE_SECRET_PROVIDER: "environment"
+      OSHA_DATABASE_SECRET_NAME: "database-password"
+      OSHA_DATABASE_SECRET_KEY: "OSHA_DATABASE_PASSWORD"
+      OSHA_DATABASE_PASSWORD: ${OSHA_DATABASE_PASSWORD:?Set OSHA_DATABASE_PASSWORD before starting Compose}
       OSHA_INSTANCE_NAME: "osha"
       OSHA_DRY_RUN: "true"
       OSHA_FAIL_FAST: "true"
@@ -106,14 +175,16 @@ services:
       OSHA_ARTIFACTS_DIR: "/app/artifacts"
       OSHA_CHECKPOINTS_DIR: "/app/checkpoints"
       OSHA_MODELS_DIR: "/app/models"
+      OSHA_AI_MODELS_DIRECTORY: "/app/models"
       OSHA_MODEL_FAMILIES_ENABLED: "true"
       OSHA_EVENT_MODEL_ENABLED: "true"
       OSHA_ANOMALY_MODEL_ENABLED: "true"
       OSHA_INCIDENT_ROOT_CAUSE_MODEL_ENABLED: "true"
       OSHA_DECISION_RISK_MODEL_ENABLED: "true"
       OSHA_REMEDIATION_RANKING_MODEL_ENABLED: "true"
+      OSHA_CAPACITY_FORECASTING_MODEL_ENABLED: "true"
       OSHA_LOGS_DIR: "/app/logs"
-      OSHA_DATA_DIR: "/app/orchestration-ai-data"
+      OSHA_DATA_DIR: "/app/data"
       OSHA_ACCELERATOR: "auto"
       OSHA_ALLOW_CPU_FALLBACK: "true"
       OSHA_TELEMETRY_ENABLED: "true"
@@ -144,17 +215,24 @@ services:
     volumes:
       - osha-artifacts:/app/artifacts
       - osha-checkpoints:/app/checkpoints
-      - osha-models:/app/models
+      - osha-models:/app/models:ro
       - osha-logs:/app/logs
-      - osha-data:/app/orchestration-ai-data
+      - osha-data:/app/data
 
   worker:
     image: osha:latest
+    env_file:
+      - .env
     build:
       context: .
       dockerfile: Dockerfile
       network: host
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      model-seed:
+        condition: service_completed_successfully
     user: "10001:10001"
     working_dir: /app
     deploy:
@@ -171,6 +249,16 @@ services:
       PYTHONUNBUFFERED: "1"
       PYTHONDONTWRITEBYTECODE: "1"
       OSHA_ENVIRONMENT_ID: "kubernetes"
+      OSHA_DATABASE_BACKEND: "postgresql"
+      OSHA_DATABASE_NAME: "osha"
+      OSHA_DATABASE_ENVIRONMENT_ID: "kubernetes"
+      OSHA_DATABASE_HOST: "postgres"
+      OSHA_DATABASE_PORT: "5432"
+      OSHA_DATABASE_USERNAME: "osha"
+      OSHA_DATABASE_SECRET_PROVIDER: "environment"
+      OSHA_DATABASE_SECRET_NAME: "database-password"
+      OSHA_DATABASE_SECRET_KEY: "OSHA_DATABASE_PASSWORD"
+      OSHA_DATABASE_PASSWORD: ${OSHA_DATABASE_PASSWORD:?Set OSHA_DATABASE_PASSWORD before starting Compose}
       OSHA_INSTANCE_NAME: "osha"
       OSHA_DRY_RUN: "true"
       OSHA_FAIL_FAST: "true"
@@ -181,14 +269,16 @@ services:
       OSHA_ARTIFACTS_DIR: "/app/artifacts"
       OSHA_CHECKPOINTS_DIR: "/app/checkpoints"
       OSHA_MODELS_DIR: "/app/models"
+      OSHA_AI_MODELS_DIRECTORY: "/app/models"
       OSHA_MODEL_FAMILIES_ENABLED: "true"
       OSHA_EVENT_MODEL_ENABLED: "true"
       OSHA_ANOMALY_MODEL_ENABLED: "true"
       OSHA_INCIDENT_ROOT_CAUSE_MODEL_ENABLED: "true"
       OSHA_DECISION_RISK_MODEL_ENABLED: "true"
       OSHA_REMEDIATION_RANKING_MODEL_ENABLED: "true"
+      OSHA_CAPACITY_FORECASTING_MODEL_ENABLED: "true"
       OSHA_LOGS_DIR: "/app/logs"
-      OSHA_DATA_DIR: "/app/orchestration-ai-data"
+      OSHA_DATA_DIR: "/app/data"
       OSHA_ACCELERATOR: "auto"
       OSHA_ALLOW_CPU_FALLBACK: "true"
       OSHA_TELEMETRY_ENABLED: "true"
@@ -219,11 +309,40 @@ services:
     volumes:
       - osha-artifacts:/app/artifacts
       - osha-checkpoints:/app/checkpoints
+      - osha-models:/app/models:ro
+      - osha-logs:/app/logs
+      - osha-data:/app/data
+
+  trainer:
+    image: osha:latest
+    profiles:
+      - training
+    build:
+      context: .
+      dockerfile: Dockerfile
+      network: host
+    user: "10001:10001"
+    working_dir: /app
+    entrypoint:
+      - python
+      - -m
+      - src.training.train_all
+    depends_on:
+      model-seed:
+        condition: service_completed_successfully
+    environment:
+      PYTHONUNBUFFERED: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+      OSHA_AI_MODELS_DIRECTORY: "/app/models"
+    volumes:
+      - ./data:/app/data:ro
+      - osha-artifacts:/app/artifacts
+      - osha-checkpoints:/app/checkpoints
       - osha-models:/app/models
       - osha-logs:/app/logs
-      - osha-data:/app/orchestration-ai-data
 
 volumes:
+  osha-postgres-data:
   osha-artifacts:
   osha-checkpoints:
   osha-models:

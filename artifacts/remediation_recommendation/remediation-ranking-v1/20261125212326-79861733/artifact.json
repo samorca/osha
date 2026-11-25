@@ -1,0 +1,25 @@
+{
+  "artifact_id": "training:artifact:af2936f36c5db419200f8d1af91e91ed",
+  "attributes": {
+    "evaluation_id": "training:evaluation:3ac2344a369f5f31fc03c6fe4c98725c",
+    "evaluation_passed": true,
+    "source_checkpoint_metric": "accuracy",
+    "source_checkpoint_score": 0.6666666666666666
+  },
+  "checkpoint_id": "training:checkpoint:a71dc5f2558b96d89c251f27f34cb91e",
+  "checksum": "95d2b0ec663ea83829e81527c84c003606c7a99e8aa55499382e56302d7bb435",
+  "created_at": "2026-11-25T21:34:04.931800+00:00",
+  "metrics": {
+    "accuracy": 0.6666666666666666,
+    "loss": 1.0129774672289689,
+    "mean_score": 0.05408617978294691,
+    "samples": 3.0
+  },
+  "model_name": "remediation-ranking-v1",
+  "path": "/home/samorca/osha/artifacts/remediation_recommendation/remediation-ranking-v1/20261125212326-79861733/model.pt",
+  "schema_version": "1",
+  "source_run_id": "cb27e3e595df4809be0f2b725486da44",
+  "state": "accepted",
+  "task": "remediation_recommendation",
+  "version": "20261125212326-79861733"
+}

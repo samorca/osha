@@ -364,6 +364,12 @@ def default_example_builder(
             },
         )
 
+    if task == TrainingTask.CAPACITY_FORECASTING.value:
+        raise TrainingTaskMismatchError(
+            "Capacity forecasting requires ordered time-series windows; "
+            "use the dedicated capacity-forecast training pipeline."
+        )
+
     source = _source_metadata(record)
 
     label = _field(

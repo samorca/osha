@@ -462,6 +462,7 @@ class TrainingConfig:
         TrainingTask.INCIDENT_ROOT_CAUSE.value,
         TrainingTask.DECISION_POLICY_RISK.value,
         TrainingTask.REMEDIATION_RECOMMENDATION.value,
+        TrainingTask.CAPACITY_FORECASTING.value,
     )
 
     paths: TrainingPathConfig = field(default_factory=(TrainingPathConfig))

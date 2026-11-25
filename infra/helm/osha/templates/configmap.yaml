@@ -27,6 +27,9 @@ Secrets and credentials MUST NOT be added here.
 {{- if .Values.worker.modelFamilies.remediationRanking -}}
 {{- $aiFamilies = append $aiFamilies "remediation_recommendation" -}}
 {{- end -}}
+{{- if .Values.worker.modelFamilies.capacityForecasting -}}
+{{- $aiFamilies = append $aiFamilies "capacity_forecasting" -}}
+{{- end -}}
 {{- end -}}
 {{- $aiEnabled := and .Values.worker.modelFamilies.enabled (gt (len $aiFamilies) 0) -}}
 {{- if not $aiFamilies -}}
@@ -59,6 +62,24 @@ data:
   OSHA_ENVIRONMENT_ID: {{ .Values.config.environmentId | quote }}
 
   OSHA_INSTANCE_NAME: {{ .Values.config.instanceName | quote }}
+
+  OSHA_DATABASE_BACKEND: {{ .Values.database.backend | quote }}
+
+  OSHA_DATABASE_NAME: {{ .Values.database.name | quote }}
+
+  OSHA_DATABASE_ENVIRONMENT_ID: {{ .Values.config.environmentId | quote }}
+
+  OSHA_DATABASE_HOST: {{ .Values.database.host | default (printf "%s-postgresql" (include "osha.fullname" .)) | quote }}
+
+  OSHA_DATABASE_PORT: {{ .Values.database.port | toString | quote }}
+
+  OSHA_DATABASE_USERNAME: {{ .Values.database.username | quote }}
+
+  OSHA_DATABASE_SECRET_PROVIDER: "environment"
+
+  OSHA_DATABASE_SECRET_NAME: {{ .Values.database.existingSecret | quote }}
+
+  OSHA_DATABASE_SECRET_KEY: "OSHA_DATABASE_PASSWORD"
 
 
   # =================================================================
@@ -144,6 +165,16 @@ data:
 
   OSHA_AI_ALLOW_CPU_FALLBACK: {{ .Values.accelerator.allowCPUFallback | toString | quote }}
 
+  OSHA_FORECASTING_ENABLED: {{ .Values.forecasting.enabled | toString | quote }}
+
+  OSHA_FORECASTING_MINIMUM_POINTS: {{ .Values.forecasting.minimumPoints | toString | quote }}
+
+  OSHA_FORECASTING_TRAINING_WINDOW_HOURS: {{ .Values.forecasting.trainingWindowHours | toString | quote }}
+
+  OSHA_FORECASTING_DEFAULT_HORIZON_HOURS: {{ .Values.forecasting.defaultHorizonHours | toString | quote }}
+
+  OSHA_FORECASTING_STEP_MINUTES: {{ .Values.forecasting.stepMinutes | toString | quote }}
+
   OSHA_MODEL_FAMILIES_ENABLED: {{ .Values.worker.modelFamilies.enabled | toString | quote }}
 
   OSHA_EVENT_MODEL_ENABLED: {{ .Values.worker.modelFamilies.event | toString | quote }}
@@ -155,6 +186,8 @@ data:
   OSHA_DECISION_RISK_MODEL_ENABLED: {{ .Values.worker.modelFamilies.decisionRisk | toString | quote }}
 
   OSHA_REMEDIATION_RANKING_MODEL_ENABLED: {{ .Values.worker.modelFamilies.remediationRanking | toString | quote }}
+
+  OSHA_CAPACITY_FORECASTING_MODEL_ENABLED: {{ .Values.worker.modelFamilies.capacityForecasting | toString | quote }}
 
   OSHA_LOGS_DIR: {{ .Values.paths.logs | quote }}
 

@@ -1,0 +1,115 @@
+{
+  "best_epoch": 8,
+  "best_validation_loss": 0.5207572967279702,
+  "best_validation_score": 0.775,
+  "device": "cuda",
+  "evaluation": {
+    "loss": 0.412656795492961,
+    "risk_accuracy": 0.8606965174129353,
+    "samples": 201
+  },
+  "family": "decision_policy_risk",
+  "feature_dimension": 16,
+  "history": [
+    {
+      "epoch": 1,
+      "loss": 0.9011100729306539,
+      "validation": {
+        "loss": 0.6026509024202824,
+        "risk_accuracy": 0.775,
+        "samples": 80
+      }
+    },
+    {
+      "epoch": 2,
+      "loss": 0.4673912674188614,
+      "validation": {
+        "loss": 0.5459053178317845,
+        "risk_accuracy": 0.775,
+        "samples": 80
+      }
+    },
+    {
+      "epoch": 3,
+      "loss": 0.42479196687539417,
+      "validation": {
+        "loss": 0.5365661111660301,
+        "risk_accuracy": 0.775,
+        "samples": 80
+      }
+    },
+    {
+      "epoch": 4,
+      "loss": 0.42829105257987976,
+      "validation": {
+        "loss": 0.5289170905482024,
+        "risk_accuracy": 0.775,
+        "samples": 80
+      }
+    },
+    {
+      "epoch": 5,
+      "loss": 0.42456120749314624,
+      "validation": {
+        "loss": 0.5792733620852232,
+        "risk_accuracy": 0.775,
+        "samples": 80
+      }
+    },
+    {
+      "epoch": 6,
+      "loss": 0.40705372641483945,
+      "validation": {
+        "loss": 0.5478382187429816,
+        "risk_accuracy": 0.775,
+        "samples": 80
+      }
+    },
+    {
+      "epoch": 7,
+      "loss": 0.39773501952489215,
+      "validation": {
+        "loss": 0.5352863051462918,
+        "risk_accuracy": 0.775,
+        "samples": 80
+      }
+    },
+    {
+      "epoch": 8,
+      "loss": 0.42285629361867905,
+      "validation": {
+        "loss": 0.5207572967279702,
+        "risk_accuracy": 0.775,
+        "samples": 80
+      }
+    },
+    {
+      "epoch": 9,
+      "loss": 0.42436319092909497,
+      "validation": {
+        "loss": 0.5648773977067322,
+        "risk_accuracy": 0.775,
+        "samples": 80
+      }
+    },
+    {
+      "epoch": 10,
+      "loss": 0.41524863491455716,
+      "validation": {
+        "loss": 0.5397894631139935,
+        "risk_accuracy": 0.775,
+        "samples": 80
+      }
+    }
+  ],
+  "risk_labels": [
+    "none",
+    "low",
+    "medium",
+    "high",
+    "critical"
+  ],
+  "test_samples": 201,
+  "train_samples": 724,
+  "validation_samples": 80
+}

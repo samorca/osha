@@ -35,6 +35,7 @@ They do not:
 import math
 import time
 
+from datetime import datetime
 from pathlib import Path
 
 from typing import (
@@ -57,6 +58,7 @@ from src.accelerators import (
 
 from src.ai.base import (
     AnomalyModelAdapter,
+    CapacityForecastingModelAdapter,
     EventModelAdapter,
     IncidentRootCauseModelAdapter,
     DecisionPolicyRiskModelAdapter,
@@ -119,6 +121,13 @@ from src.training.event_dataset import (
 
 from src.training.event_model import (
     InfrastructureEventModel,
+)
+
+from src.forecasting import (
+    AutoregressiveCapacityPredictor,
+    CapacityForecastingService,
+    CapacityMetric,
+    TelemetryPoint,
 )
 
 
@@ -1936,6 +1945,151 @@ class InfrastructureRemediationRankerAdapter(
         )
 
 
+class InfrastructureCapacityForecastingModelAdapter(
+    CapacityForecastingModelAdapter,
+):
+    def _load_model(self) -> AutoregressiveCapacityPredictor:
+        predictor = AutoregressiveCapacityPredictor.load(self.descriptor.path)
+        self.descriptor.device = "cpu"
+        self.descriptor.loaded_at = utc_now()
+        self.descriptor.model_config = {
+            "interval_seconds": predictor.interval_seconds,
+            "trained_metrics": list(predictor.trained_metrics),
+        }
+        return predictor
+
+    def _infer(
+        self,
+        request: InferenceRequest,
+    ) -> InferenceResult:
+        predictor = self.model
+        if not isinstance(predictor, AutoregressiveCapacityPredictor):
+            raise AIModelLoadError(
+                "Capacity-forecast model is not loaded."
+            )
+
+        payload = request.payload
+        resource_id = payload.get("resource_id")
+        if not isinstance(resource_id, str) or not resource_id.strip():
+            raise AIInferenceRequestError(
+                "Capacity-forecast resource_id must be a non-empty string."
+            )
+
+        try:
+            metric = CapacityMetric(str(payload.get("metric")))
+        except ValueError as exc:
+            raise AIInferenceRequestError(
+                "Capacity-forecast metric is unsupported."
+            ) from exc
+
+        raw_history = payload.get("history")
+        if not isinstance(raw_history, list) or len(raw_history) > 10_000:
+            raise AIInferenceRequestError(
+                "Capacity-forecast history must be a list of at most 10,000 points."
+            )
+
+        history: list[TelemetryPoint] = []
+        for index, raw_point in enumerate(raw_history):
+            if not isinstance(raw_point, Mapping):
+                raise AIInferenceRequestError(
+                    "Capacity-forecast history point must be an object.",
+                    details={"index": index},
+                )
+            raw_timestamp = raw_point.get("timestamp")
+            try:
+                timestamp = (
+                    raw_timestamp
+                    if isinstance(raw_timestamp, datetime)
+                    else datetime.fromisoformat(
+                        str(raw_timestamp).replace("Z", "+00:00")
+                    )
+                )
+                value = float(raw_point.get("value"))
+            except (TypeError, ValueError) as exc:
+                raise AIInferenceRequestError(
+                    "Capacity-forecast history point is invalid.",
+                    details={"index": index},
+                ) from exc
+            if (
+                timestamp.tzinfo is None
+                or timestamp.utcoffset() is None
+                or not math.isfinite(value)
+                or not 0.0 <= value <= 100.0
+            ):
+                raise AIInferenceRequestError(
+                    "Capacity-forecast history point is invalid.",
+                    details={"index": index},
+                )
+            history.append(TelemetryPoint(timestamp=timestamp, value=value))
+
+        raw_horizon = payload.get("horizon_hours", 12.0)
+        raw_step = payload.get("step_minutes", 60)
+        if isinstance(raw_horizon, bool) or isinstance(raw_step, bool):
+            raise AIInferenceRequestError(
+                "Capacity-forecast horizon and step must be numeric."
+            )
+        try:
+            horizon_hours = float(raw_horizon)
+            if not isinstance(raw_step, int):
+                raise TypeError("step_minutes must be an integer")
+            step_minutes = raw_step
+        except (TypeError, ValueError) as exc:
+            raise AIInferenceRequestError(
+                "Capacity-forecast horizon and step must be numeric."
+            ) from exc
+        if (
+            not math.isfinite(horizon_hours)
+            or not 0.0 < horizon_hours <= 24.0 * 30
+            or step_minutes < 1
+            or math.ceil(horizon_hours * 60 / step_minutes) > 1000
+        ):
+            raise AIInferenceRequestError(
+                "Capacity-forecast horizon or output resolution is invalid."
+            )
+
+        forecast = CapacityForecastingService(predictor=predictor).forecast(
+            resource_id=resource_id.strip(),
+            metric=metric,
+            history=history,
+            horizon_hours=horizon_hours,
+            step_minutes=step_minutes,
+        )
+        predictions = [
+            Prediction(
+                label=f"{metric.value}:{point.timestamp.isoformat()}",
+                score=point.value,
+                attributes={
+                    "timestamp": point.timestamp.isoformat(),
+                    "lower_bound": point.lower_bound,
+                    "upper_bound": point.upper_bound,
+                },
+            )
+            for point in forecast.points
+        ]
+        return InferenceResult(
+            request_id=str(request.request_id),
+            model=self.descriptor.identity,
+            state=InferenceState.COMPLETED.value,
+            predictions=predictions,
+            provenance=request.provenance,
+            attributes={
+                "resource_id": forecast.resource_id,
+                "metric": forecast.metric.value,
+                "status": forecast.status.value,
+                "confidence": forecast.confidence,
+                "threshold": forecast.threshold,
+                "predicted_threshold_time": (
+                    forecast.predicted_threshold_time.isoformat()
+                    if forecast.predicted_threshold_time is not None
+                    else None
+                ),
+                "time_to_threshold_hours": forecast.time_to_threshold_hours,
+                "model_name": forecast.model_name,
+                "diagnostics": dict(forecast.metadata),
+            },
+        )
+
+
 # ------------------------------------------------------------------
 # Adapter factory
 # ------------------------------------------------------------------
@@ -1987,6 +2141,12 @@ def create_model_adapter(
             config=config,
         )
 
+    if family == AIModelFamily.CAPACITY_FORECASTING.value:
+        return InfrastructureCapacityForecastingModelAdapter(
+            descriptor,
+            config=config,
+        )
+
     raise AIModelConfigurationError(
         "No concrete AI adapter is registered for the requested model family.",
         details={
@@ -2004,6 +2164,7 @@ __all__ = [
     "EventRuntime",
     "AnomalyRuntime",
     "OperationalRuntime",
+    "InfrastructureCapacityForecastingModelAdapter",
     "require_torch",
     "accelerator_config_from_ai",
     "create_inference_accelerator_manager",

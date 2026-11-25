@@ -1,0 +1,138 @@
+{
+  "best_epoch": 10,
+  "best_validation_loss": 0.0025703653316668353,
+  "best_validation_score": 1.0,
+  "device": "cuda",
+  "evaluation": {
+    "loss": 0.0363635756836001,
+    "root_cause_accuracy": 0.9950124688279302,
+    "samples": 401,
+    "severity_accuracy": 0.9950124688279302
+  },
+  "family": "incident_root_cause",
+  "feature_dimension": 16,
+  "history": [
+    {
+      "epoch": 1,
+      "loss": 1.5230074097280917,
+      "validation": {
+        "loss": 0.27126695116749033,
+        "root_cause_accuracy": 0.9625,
+        "samples": 160,
+        "severity_accuracy": 0.9625
+      }
+    },
+    {
+      "epoch": 2,
+      "loss": 0.24828806713871335,
+      "validation": {
+        "loss": 0.056274635752197356,
+        "root_cause_accuracy": 1.0,
+        "samples": 160,
+        "severity_accuracy": 1.0
+      }
+    },
+    {
+      "epoch": 3,
+      "loss": 0.06217031994753558,
+      "validation": {
+        "loss": 0.009964094989118166,
+        "root_cause_accuracy": 1.0,
+        "samples": 160,
+        "severity_accuracy": 1.0
+      }
+    },
+    {
+      "epoch": 4,
+      "loss": 0.0333323206793031,
+      "validation": {
+        "loss": 0.0053614667856891176,
+        "root_cause_accuracy": 1.0,
+        "samples": 160,
+        "severity_accuracy": 1.0
+      }
+    },
+    {
+      "epoch": 5,
+      "loss": 0.02805473657486879,
+      "validation": {
+        "loss": 0.004515209159944788,
+        "root_cause_accuracy": 1.0,
+        "samples": 160,
+        "severity_accuracy": 1.0
+      }
+    },
+    {
+      "epoch": 6,
+      "loss": 0.024933415060134037,
+      "validation": {
+        "loss": 0.004501807700216886,
+        "root_cause_accuracy": 1.0,
+        "samples": 160,
+        "severity_accuracy": 1.0
+      }
+    },
+    {
+      "epoch": 7,
+      "loss": 0.023507188296998324,
+      "validation": {
+        "loss": 0.0044109502479841465,
+        "root_cause_accuracy": 1.0,
+        "samples": 160,
+        "severity_accuracy": 1.0
+      }
+    },
+    {
+      "epoch": 8,
+      "loss": 0.021088953413393185,
+      "validation": {
+        "loss": 0.0033916350270374097,
+        "root_cause_accuracy": 1.0,
+        "samples": 160,
+        "severity_accuracy": 1.0
+      }
+    },
+    {
+      "epoch": 9,
+      "loss": 0.02039199370040518,
+      "validation": {
+        "loss": 0.0026652164271581567,
+        "root_cause_accuracy": 1.0,
+        "samples": 160,
+        "severity_accuracy": 1.0
+      }
+    },
+    {
+      "epoch": 10,
+      "loss": 0.02035430171931891,
+      "validation": {
+        "loss": 0.0025703653316668353,
+        "root_cause_accuracy": 1.0,
+        "samples": 160,
+        "severity_accuracy": 1.0
+      }
+    }
+  ],
+  "labels": {
+    "root_cause": [
+      "capacity",
+      "configuration",
+      "network",
+      "storage",
+      "service",
+      "security",
+      "software",
+      "unknown"
+    ],
+    "severity": [
+      "info",
+      "low",
+      "medium",
+      "high",
+      "critical"
+    ]
+  },
+  "test_samples": 401,
+  "train_samples": 1444,
+  "validation_samples": 160
+}

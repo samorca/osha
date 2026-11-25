@@ -157,6 +157,10 @@ spec:
       {{- end }}
 
 
+      initContainers:
+        {{- include "osha.modelSeedInitContainer" . | nindent 8 }}
+
+
       # -------------------------------------------------------------
       # Runtime container
       # -------------------------------------------------------------
@@ -201,6 +205,12 @@ spec:
           env:
             - name: OSHA_STARTED_BY
               value: {{ .Values.runtime.startedBy | quote }}
+
+            - name: OSHA_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.existingSecret | quote }}
+                  key: {{ .Values.database.passwordKey | quote }}
 
 
             - name: OSHA_KUBERNETES_NAMESPACE
@@ -270,6 +280,7 @@ spec:
             - name: runtime-tmp
               mountPath: /app/.runtime
 
+            {{- include "osha.modelVolumeMount" . | nindent 12 }}
 
             # -------------------------------------------------------
             # Runtime artifacts
@@ -283,10 +294,6 @@ spec:
             - name: osha-data
               mountPath: {{ .Values.paths.checkpoints }}
               subPath: checkpoints
-
-            - name: osha-data
-              mountPath: {{ .Values.paths.models }}
-              subPath: models
 
             - name: osha-data
               mountPath: {{ .Values.paths.logs }}
@@ -313,12 +320,9 @@ spec:
         - name: runtime-tmp
           emptyDir: {}
 
+        {{- include "osha.modelVolume" . | nindent 8 }}
 
         {{- if .Values.persistence.enabled }}
-        - name: osha-data
-          persistentVolumeClaim:
-            claimName: {{ include "osha.persistence.claimName" . }}
-
         {{- else }}
         - name: runtime-artifacts
           emptyDir: {}

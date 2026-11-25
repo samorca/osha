@@ -356,6 +356,65 @@ PersistentVolumeClaim name
 {{- printf "%s-data" (include "osha.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end }}
 
+{{/*
+---------------------------------------------------------------------
+Promoted model volume
+---------------------------------------------------------------------
+*/}}
+
+{{- define "osha.modelVolume" -}}
+{{- if .Values.persistence.enabled }}
+- name: osha-data
+  persistentVolumeClaim:
+    claimName: {{ include "osha.persistence.claimName" . }}
+{{- else }}
+- name: models
+  emptyDir: {}
+{{- end }}
+{{- end }}
+
+{{- define "osha.modelVolumeMount" -}}
+{{- if .Values.persistence.enabled }}
+- name: osha-data
+  mountPath: {{ .Values.paths.models }}
+  subPath: models
+  readOnly: true
+{{- else }}
+- name: models
+  mountPath: {{ .Values.paths.models }}
+  readOnly: true
+{{- end }}
+{{- end }}
+
+{{- define "osha.modelSeedVolumeMount" -}}
+{{- if .Values.persistence.enabled }}
+- name: osha-data
+  mountPath: {{ .Values.paths.models }}
+  subPath: models
+{{- else }}
+- name: models
+  mountPath: {{ .Values.paths.models }}
+{{- end }}
+{{- end }}
+
+{{- define "osha.modelSeedInitContainer" -}}
+- name: seed-models
+  image: {{ include "osha.image" . | quote }}
+  imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+  command:
+    - /bin/bash
+    - /app/scripts/models/seed_models.sh
+  env:
+    - name: OSHA_MODEL_SEED_DIRECTORY
+      value: /opt/osha/model-seed
+    - name: OSHA_AI_MODELS_DIRECTORY
+      value: {{ .Values.paths.models | quote }}
+  volumeMounts:
+    {{- include "osha.modelSeedVolumeMount" . | nindent 4 }}
+  securityContext:
+    {{- toYaml .Values.securityContext | nindent 4 }}
+{{- end }}
+
 
 {{/*
 =====================================================================
@@ -386,6 +445,20 @@ Validate API port
 {{- define "osha.api.validate" -}}
 {{- if or (lt (int .Values.api.port) 1) (gt (int .Values.api.port) 65535) -}}
 {{- fail "api.port must be between 1 and 65535" -}}
+{{- end -}}
+{{- end }}
+
+{{- define "osha.training.validate" -}}
+{{- if .Values.training.enabled -}}
+{{- if not .Values.persistence.enabled -}}
+{{- fail "training.enabled requires persistence.enabled so outputs survive the Job." -}}
+{{- end -}}
+{{- if not (has "ReadWriteMany" .Values.persistence.accessModes) -}}
+{{- fail "training.enabled requires persistence.accessModes to include ReadWriteMany for shared model storage." -}}
+{{- end -}}
+{{- if not .Values.training.version -}}
+{{- fail "training.version must be set when training.enabled is true." -}}
+{{- end -}}
 {{- end -}}
 {{- end }}
 

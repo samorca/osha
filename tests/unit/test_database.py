@@ -10,6 +10,8 @@ from pathlib import Path
 import pytest
 
 import src.database as database_package
+from src.database.config import DatabaseConfig
+from src.database.pipeline import DatabasePipeline
 
 
 # -------------------------------------------------------------------
@@ -1078,3 +1080,31 @@ def test_database_modules_are_not_test_modules() -> None:
         assert not module_name.startswith(
             "tests."
         )
+
+
+def test_telemetry_repository_stores_idempotent_batches() -> None:
+    pipeline = DatabasePipeline(config=DatabaseConfig())
+    pipeline.start()
+    repository = pipeline.telemetry_repository()
+    repository.ensure_schema()
+    record = {
+        "signal_type": "resource_state",
+        "timestamp": "2026-01-01T00:00:00+00:00",
+        "payload": {"cpu_percent": 12.5},
+    }
+
+    try:
+        assert repository.store_batch(
+            [record],
+            source="linux",
+            worker_id="worker-1",
+            environment_id="test",
+        ) == 1
+        assert repository.store_batch(
+            [record],
+            source="linux",
+            worker_id="worker-1",
+            environment_id="test",
+        ) == 0
+    finally:
+        pipeline.stop()

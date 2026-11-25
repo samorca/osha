@@ -61,9 +61,11 @@ from src.runtime.schema import (
 )
 
 from src.runtime.services import (
+    RuntimeService,
     RuntimeServiceRegistry,
     registry_from_config,
 )
+from src.database.runtime import create_database_pipeline
 
 
 LOGGER = logging.getLogger(
@@ -542,17 +544,38 @@ def build_registry(
     """
     Build the configured runtime-service registry.
 
-    Hooks are deliberately not invented here.
-
-    Service hooks should be supplied explicitly by a
-    future application-composition module when the
-    corresponding subsystem lifecycle contracts are
-    finalized.
+    The persistence service is composed here so that
+    each runtime process initializes and checks its
+    configured database connection.
     """
 
-    return registry_from_config(
-        config
-    )
+    registry = registry_from_config(config)
+    database = create_database_pipeline()
+    database_service = registry.get("database")
+
+    def start_database() -> Dict[str, Any]:
+        try:
+            result = database.start()
+            database.telemetry_repository().ensure_schema()
+            return result
+        except Exception:
+            if database.ready:
+                database.stop()
+            raise
+
+    if database_service is None:
+        database_service = RuntimeService(
+            name="database",
+            config=config.service("database"),
+        )
+        registry.register(database_service)
+
+    database_service.start_hook = start_database
+    database_service.stop_hook = database.stop
+    database_service.readiness_probe = lambda: database.ready
+    database_service.attributes["backend"] = database.config.backend
+    registry.validate_dependencies()
+    return registry
 
 
 def build_runtime(

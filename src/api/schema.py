@@ -921,6 +921,80 @@ class OperationalInferenceRequest(APIInputModel):
 
 
 # ------------------------------------------------------------------
+# Capacity forecasting
+# ------------------------------------------------------------------
+
+
+class CapacityMetricAPI(str, Enum):
+    CPU = "cpu"
+    MEMORY = "memory"
+    DISK = "disk"
+    NETWORK = "network"
+
+
+class CapacityForecastStatusAPI(str, Enum):
+    HEALTHY = "healthy"
+    WARNING = "warning"
+    CRITICAL = "critical"
+    INSUFFICIENT_DATA = "insufficient_data"
+
+
+class CapacityTelemetryPointRequest(APIInputModel):
+    timestamp: datetime
+    value: float = Field(ge=0.0, le=100.0, allow_inf_nan=False)
+
+    @field_validator("timestamp")
+    @classmethod
+    def require_timezone(
+        cls,
+        value: datetime,
+    ) -> datetime:
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("timestamp must include a timezone")
+        return value
+
+
+class CapacityForecastRequest(APIInputModel):
+    resource_id: str = Field(min_length=1, max_length=MAX_NAME_LENGTH)
+    metric: CapacityMetricAPI
+    history: List[CapacityTelemetryPointRequest] = Field(
+        default_factory=list,
+        max_length=10_000,
+    )
+    horizon_hours: Optional[float] = Field(
+        default=None,
+        gt=0.0,
+        le=24.0 * 30,
+        allow_inf_nan=False,
+    )
+    step_minutes: Optional[int] = Field(default=None, ge=1, le=24 * 60)
+
+
+class CapacityForecastPointResponse(APIOutputModel):
+    timestamp: datetime
+    value: float
+    lower_bound: Optional[float] = None
+    upper_bound: Optional[float] = None
+
+
+class CapacityForecastResponse(APIOutputModel):
+    resource_id: str
+    metric: CapacityMetricAPI
+    generated_at: datetime
+    horizon_hours: float
+    current_value: float
+    threshold: float
+    status: CapacityForecastStatusAPI
+    points: List[CapacityForecastPointResponse] = Field(default_factory=list)
+    predicted_threshold_time: Optional[datetime] = None
+    time_to_threshold_hours: Optional[float] = None
+    confidence: float
+    model_name: str
+    diagnostics: Dict[str, Any] = Field(default_factory=dict)
+    metadata: APIResponseMetadata = Field(default_factory=APIResponseMetadata)
+
+
+# ------------------------------------------------------------------
 # Batch inference
 # ------------------------------------------------------------------
 

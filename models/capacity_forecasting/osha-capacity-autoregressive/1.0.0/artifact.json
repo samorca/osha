@@ -1,0 +1,28 @@
+{
+  "artifact_id": "training:artifact:2cfa69606cb43a8da9b3e33037464b6c",
+  "attributes": {
+    "evaluation_id": "training:evaluation:6ef809c65036b849a189e3fe0019d693",
+    "evaluation_passed": true,
+    "promoted": true,
+    "source_checkpoint_metric": "weighted_test_mae",
+    "source_checkpoint_score": 1.2012383743590977
+  },
+  "checkpoint_id": "training:checkpoint:666c1ff9a7ba9cd77dfcbdc11e8644a8",
+  "checksum": "756be0ded73eb99085a509553e8854bb86476ca37642af3473f966051419d80e",
+  "created_at": "2026-11-25T20:51:19.656922+00:00",
+  "metrics": {
+    "cpu_baseline_test_mae": 1.8218550564428608,
+    "cpu_test_mae": 1.7487208331407602,
+    "disk_baseline_test_mae": 1.5343677304855177,
+    "disk_test_mae": 1.4643758802835194,
+    "memory_baseline_test_mae": 0.6013873368876244,
+    "memory_test_mae": 0.5964577874687711
+  },
+  "model_name": "osha-capacity-autoregressive",
+  "path": "/home/samorca/osha/models/capacity_forecasting/osha-capacity-autoregressive/1.0.0/model.pt",
+  "schema_version": "1",
+  "source_run_id": "bbbb84257740448ba753474ef3d57f5f",
+  "state": "promoted",
+  "task": "capacity_forecasting",
+  "version": "1.0.0"
+}

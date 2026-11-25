@@ -1,0 +1,26 @@
+{
+  "artifact_id": "training:artifact:fb4d6878c3571121b29328e4e75d3bb1",
+  "attributes": {
+    "evaluation_id": "training:evaluation:10566439ee7435102b628334b2f453fd",
+    "evaluation_passed": true,
+    "promoted": true,
+    "source_checkpoint_metric": "root_cause_accuracy",
+    "source_checkpoint_score": 0.9950124688279302
+  },
+  "checkpoint_id": "training:checkpoint:819ed73c491707520c6a5ea1c6c935a4",
+  "checksum": "a2576c50a62bbfe9d13bed739dc448b776267a53e91578ebbba6918f9d409b6b",
+  "created_at": "2026-11-25T21:34:04.920005+00:00",
+  "metrics": {
+    "loss": 0.0363635756836001,
+    "root_cause_accuracy": 0.9950124688279302,
+    "samples": 401.0,
+    "severity_accuracy": 0.9950124688279302
+  },
+  "model_name": "incident-root-cause-v1",
+  "path": "/home/samorca/osha/models/incident_root_cause/incident-root-cause-v1/20261125212326-79861733/model.pt",
+  "schema_version": "1",
+  "source_run_id": "cb27e3e595df4809be0f2b725486da44",
+  "state": "promoted",
+  "task": "incident_root_cause",
+  "version": "20261125212326-79861733"
+}

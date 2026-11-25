@@ -1,0 +1,18 @@
+{
+  "attributes": {
+    "metadata_path": "/home/samorca/osha/checkpoints/decision_policy_risk/decision-risk-v1/training_run_0ef6b10db0dad84334f0811f43029b79/training_checkpoint_37ca48c6d5c6c8efa91a9f0c142c8d44/checkpoint.json",
+    "optimizer_state_saved": false,
+    "task": "decision_policy_risk"
+  },
+  "checkpoint_id": "training:checkpoint:37ca48c6d5c6c8efa91a9f0c142c8d44",
+  "checksum": "83af185411cc8eb23fb232d13939f3b5038be036b9bb4ca4fe1372b8d16c666e",
+  "created_at": "2026-11-25T21:33:58.562108+00:00",
+  "epoch": null,
+  "model_name": "decision-risk-v1",
+  "path": "/home/samorca/osha/checkpoints/decision_policy_risk/decision-risk-v1/training_run_0ef6b10db0dad84334f0811f43029b79/training_checkpoint_37ca48c6d5c6c8efa91a9f0c142c8d44/checkpoint.pt",
+  "run_id": "training:run:0ef6b10db0dad84334f0811f43029b79",
+  "score": 0.8606965174129353,
+  "score_name": "test_accuracy",
+  "state": "saved",
+  "step": null
+}

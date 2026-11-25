@@ -11,7 +11,9 @@ import sys
 import time
 
 from pathlib import Path
-from typing import Optional, Sequence
+from typing import Any, Optional, Sequence
+
+from src.database.runtime import create_database_pipeline
 
 
 SUPPORTED_SOURCES = ("linux", "kubernetes")
@@ -109,7 +111,11 @@ def build_command(
     return command
 
 
-def _read_collector_errors(output_path: Path, offset: int) -> list[dict[str, str]]:
+def _read_collector_output(
+    output_path: Path,
+    offset: int,
+) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
+    records = []
     errors = []
     with output_path.open("rb") as output_file:
         output_file.seek(offset)
@@ -117,6 +123,7 @@ def _read_collector_errors(output_path: Path, offset: int) -> list[dict[str, str
             record = json.loads(line)
             if not isinstance(record, dict):
                 raise ValueError("JSONL records must be objects")
+            records.append(record)
             if record.get("signal_type") != "collector_error":
                 continue
 
@@ -129,7 +136,7 @@ def _read_collector_errors(output_path: Path, offset: int) -> list[dict[str, str
                         if isinstance(payload.get(key), str)
                     }
                 )
-    return errors
+    return records, errors
 
 
 def collect_cycle(
@@ -142,6 +149,9 @@ def collect_cycle(
     include_pod_logs: bool,
     timeout_seconds: float,
     emit_output: bool = True,
+    telemetry_repository: Any = None,
+    environment_id: str = "local-dev",
+    persisted_offsets: Optional[dict[str, int]] = None,
 ) -> dict:
     results = []
     for source in sources:
@@ -155,8 +165,13 @@ def collect_cycle(
         )
         output_path = Path(command[command.index("--output") + 1])
         try:
-            output_offset = output_path.stat().st_size
+            current_size = output_path.stat().st_size
+            if telemetry_repository is not None and persisted_offsets is not None:
+                output_offset = persisted_offsets.get(source, 0)
+            else:
+                output_offset = current_size
         except FileNotFoundError:
+            current_size = 0
             output_offset = 0
         except OSError as exc:
             results.append(
@@ -212,7 +227,10 @@ def collect_cycle(
             continue
 
         try:
-            collector_errors = _read_collector_errors(output_path, output_offset)
+            records, collector_errors = _read_collector_output(
+                output_path,
+                output_offset,
+            )
         except FileNotFoundError:
             results.append(
                 {
@@ -233,11 +251,37 @@ def collect_cycle(
             )
             continue
 
+        records_persisted = 0
+        persistence_error = None
+        if telemetry_repository is not None:
+            try:
+                records_persisted = telemetry_repository.store_batch(
+                    records,
+                    source=source,
+                    worker_id=worker_id,
+                    environment_id=environment_id,
+                )
+                if persisted_offsets is not None:
+                    persisted_offsets[source] = output_path.stat().st_size
+            except Exception as exc:
+                persistence_error = type(exc).__name__
+
         source_result = {
             "source": source,
-            "status": "degraded" if collector_errors else "success",
+            "status": (
+                "failed"
+                if persistence_error
+                else "degraded"
+                if collector_errors
+                else "success"
+            ),
             "exit_code": completed.returncode,
+            "records_collected": len(records),
         }
+        if telemetry_repository is not None:
+            source_result["records_persisted"] = records_persisted
+        if persistence_error:
+            source_result["persistence_error"] = persistence_error
         if collector_errors:
             source_result["collector_errors"] = collector_errors
         results.append(source_result)
@@ -342,31 +386,59 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     signal.signal(signal.SIGTERM, request_shutdown)
     signal.signal(signal.SIGINT, request_shutdown)
 
-    cycle = 0
-    while not shutdown_requested:
-        cycle += 1
-        started = time.monotonic()
-        result = collect_cycle(
-            arguments.sources,
-            output_directory=arguments.data_dir,
-            worker_id=arguments.worker_id,
-            namespace=arguments.namespace,
-            tail_lines=arguments.tail_lines,
-            include_pod_logs=not arguments.skip_pod_logs,
-            timeout_seconds=arguments.timeout,
-            emit_output=not arguments.json,
+    database = create_database_pipeline()
+    try:
+        database.start()
+        telemetry_repository = database.telemetry_repository()
+        telemetry_repository.ensure_schema()
+    except Exception as exc:
+        print(
+            json.dumps(
+                {
+                    "status": "failed",
+                    "error": "database_start_failed",
+                    "error_type": type(exc).__name__,
+                },
+                sort_keys=True,
+            ),
+            file=sys.stderr,
+            flush=True,
         )
-        result["cycle"] = cycle
-        print(json.dumps(result, sort_keys=True), flush=True)
+        database.stop()
+        return 1
 
-        if arguments.once:
-            return 0 if result["status"] == "success" else 1
+    try:
+        cycle = 0
+        persisted_offsets: dict[str, int] = {}
+        while not shutdown_requested:
+            cycle += 1
+            started = time.monotonic()
+            result = collect_cycle(
+                arguments.sources,
+                output_directory=arguments.data_dir,
+                worker_id=arguments.worker_id,
+                namespace=arguments.namespace,
+                tail_lines=arguments.tail_lines,
+                include_pod_logs=not arguments.skip_pod_logs,
+                timeout_seconds=arguments.timeout,
+                emit_output=not arguments.json,
+                telemetry_repository=telemetry_repository,
+                environment_id=os.getenv("OSHA_ENVIRONMENT_ID", "local-dev"),
+                persisted_offsets=persisted_offsets,
+            )
+            result["cycle"] = cycle
+            print(json.dumps(result, sort_keys=True), flush=True)
 
-        remaining = arguments.interval - (time.monotonic() - started)
-        if remaining > 0 and not shutdown_requested:
-            time.sleep(remaining)
+            if arguments.once:
+                return 0 if result["status"] == "success" else 1
 
-    return 0
+            remaining = arguments.interval - (time.monotonic() - started)
+            if remaining > 0 and not shutdown_requested:
+                time.sleep(remaining)
+
+        return 0
+    finally:
+        database.stop()
 
 
 if __name__ == "__main__":

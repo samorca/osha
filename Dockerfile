@@ -24,7 +24,7 @@ COPY src/ /app/src/
 COPY scripts/ /app/scripts/
 COPY config/ /app/config/
 COPY artifacts/ /app/artifacts/
-COPY models/ /app/models/
+COPY models/ /opt/osha/model-seed/
 
 RUN mkdir -p \
         /app/artifacts \
@@ -32,9 +32,10 @@ RUN mkdir -p \
         /app/models \
         /app/logs \
         /app/orchestration-ai-data \
+        /opt/osha/model-seed \
     && addgroup --system osha \
     && adduser --system --ingroup osha --uid 10001 osha \
-    && chown -R osha:osha /app
+    && chown -R osha:osha /app /opt/osha/model-seed
 
 USER osha
 

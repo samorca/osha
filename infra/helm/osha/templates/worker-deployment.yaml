@@ -41,6 +41,9 @@ spec:
       securityContext:
         {{- toYaml (.Values.worker.podSecurityContext | default .Values.podSecurityContext) | nindent 8 }}
 
+      initContainers:
+        {{- include "osha.modelSeedInitContainer" . | nindent 8 }}
+
       containers:
         - name: worker
 
@@ -62,6 +65,12 @@ spec:
 
             - name: PYTHONPATH
               value: "/app"
+
+            - name: OSHA_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.existingSecret | quote }}
+                  key: {{ .Values.database.passwordKey | quote }}
 
             {{- with .Values.worker.extraEnv }}
             {{- toYaml . | nindent 12 }}
@@ -91,15 +100,13 @@ spec:
             - name: tmp
               mountPath: /tmp
 
+            {{- include "osha.modelVolumeMount" . | nindent 12 }}
+
             {{- with .Values.worker.volumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
 
             {{- if .Values.persistence.enabled }}
-            - name: osha-data
-              mountPath: {{ .Values.paths.models }}
-              subPath: models
-
             - name: osha-data
               mountPath: {{ .Values.paths.artifacts }}
               subPath: artifacts
@@ -113,11 +120,7 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
 
-        {{- if .Values.persistence.enabled }}
-        - name: osha-data
-          persistentVolumeClaim:
-            claimName: {{ include "osha.persistence.claimName" . }}
-        {{- end }}
+        {{- include "osha.modelVolume" . | nindent 8 }}
 
       {{- with .Values.worker.nodeSelector }}
       nodeSelector:

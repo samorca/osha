@@ -1,3 +1,5 @@
+import asyncio
+
 from src.ai.config import (
     AIConfig,
 )
@@ -22,6 +24,7 @@ def test_create_api_dependencies_registers_route_services() -> None:
 
     assert set(dependencies.services) == {
         "accelerators",
+        "capacity_forecasting",
         "decisions",
         "incidents",
         "inference",
@@ -49,6 +52,45 @@ def test_create_api_dependencies_preserves_shared_empty_model_registry() -> None
     assert pipeline.inference.registry is registry
     assert pipeline.health.registry is registry
     assert pipeline.health.loader is dependencies.model_loader
+
+
+def test_api_lifecycle_initializes_and_closes_database() -> None:
+    class Database:
+        ready = False
+
+        def start(self):
+            self.ready = True
+
+        def stop(self):
+            self.ready = False
+
+        @staticmethod
+        def telemetry_repository():
+            class Repository:
+                @staticmethod
+                def ensure_schema():
+                    pass
+
+            return Repository()
+
+    class AIPipelineStub:
+        @staticmethod
+        async def start():
+            return None
+
+    database = Database()
+    dependencies = create_api_dependencies(
+        config=APIConfig(),
+        ai_pipeline=AIPipelineStub(),
+        database_pipeline=database,
+    )
+
+    asyncio.run(dependencies.start())
+    assert database.ready
+    assert dependencies.ready
+
+    asyncio.run(dependencies.close())
+    assert not database.ready
 
 
 def test_inference_service_uses_pipeline_health_check() -> None:

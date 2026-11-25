@@ -10,6 +10,8 @@ from abc import (
     abstractmethod,
 )
 
+from dataclasses import dataclass, field
+
 from threading import RLock
 
 from typing import (
@@ -147,6 +149,65 @@ class MemoryDatabaseAdapter(DatabaseAdapter):
 
 
 # ---------------------------------------------------------------
+# PostgreSQL adapter
+# ---------------------------------------------------------------
+
+
+@dataclass
+class PostgreSQLDatabaseHandle:
+    connection: Any
+    lock: RLock = field(default_factory=RLock, repr=False)
+
+
+class PostgreSQLDatabaseAdapter(DatabaseAdapter):
+    """PostgreSQL connection adapter using psycopg 3."""
+
+    def connect(
+        self,
+        *,
+        config: DatabaseConfig,
+        credential: Optional[SecretValue],
+    ) -> PostgreSQLDatabaseHandle:
+        config.validate()
+
+        if not config.host or not config.username or credential is None:
+            raise DatabaseConnectionError(
+                "PostgreSQL requires a host, username, and configured password reference."
+            )
+
+        try:
+            import psycopg
+        except ImportError as exc:
+            raise DatabaseConnectionError(
+                "The psycopg PostgreSQL driver is not installed."
+            ) from exc
+
+        connection = psycopg.connect(
+            host=config.host,
+            port=config.port or 5432,
+            dbname=config.database,
+            user=config.username,
+            password=credential.reveal(),
+            connect_timeout=max(1, round(config.connect_timeout_seconds)),
+            options=(
+                f"-c statement_timeout="
+                f"{max(1, round(config.statement_timeout_seconds * 1000))}"
+            ),
+            application_name="osha",
+            autocommit=True,
+        )
+        return PostgreSQLDatabaseHandle(connection=connection)
+
+    def close(self, handle: PostgreSQLDatabaseHandle) -> None:
+        with handle.lock:
+            handle.connection.close()
+
+    def ping(self, handle: PostgreSQLDatabaseHandle) -> bool:
+        with handle.lock:
+            return handle.connection.execute("SELECT 1").fetchone() == (1,)
+
+
+# ---------------------------------------------------------------
 # Database connection
 # ---------------------------------------------------------------
 
@@ -190,6 +251,8 @@ class DatabaseConnection:
         if adapter is None:
             if self.config.backend == DatabaseBackend.MEMORY.value:
                 adapter = MemoryDatabaseAdapter()
+            elif self.config.backend == DatabaseBackend.POSTGRESQL.value:
+                adapter = PostgreSQLDatabaseAdapter()
 
             else:
                 raise (
@@ -532,5 +595,7 @@ class DatabaseConnection:
 __all__ = [
     "DatabaseAdapter",
     "MemoryDatabaseAdapter",
+    "PostgreSQLDatabaseAdapter",
+    "PostgreSQLDatabaseHandle",
     "DatabaseConnection",
 ]

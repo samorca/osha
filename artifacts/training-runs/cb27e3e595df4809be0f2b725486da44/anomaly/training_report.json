@@ -1,0 +1,593 @@
+{
+  "automatic_promotion": false,
+  "best_checkpoint": {
+    "attributes": {
+      "metadata_path": "/home/samorca/osha/checkpoints/anomaly/infrastructure-anomaly-model/training_run_5418cf60d6c01926e52596e5aa7b8883/training_checkpoint_8ea87d62c177c7ca91d39956bd67cc4b/checkpoint.json",
+      "optimizer_state_saved": true,
+      "task": "anomaly"
+    },
+    "checkpoint_id": "training:checkpoint:8ea87d62c177c7ca91d39956bd67cc4b",
+    "checksum": "b5e7adfb2fd6a2f661fce4b64c845f966b0f4fa5d67eee1a4e92ec45410adb64",
+    "created_at": "2026-11-25T21:33:22.093646+00:00",
+    "epoch": 10,
+    "model_name": "infrastructure-anomaly-model",
+    "path": "/home/samorca/osha/checkpoints/anomaly/infrastructure-anomaly-model/training_run_5418cf60d6c01926e52596e5aa7b8883/training_checkpoint_8ea87d62c177c7ca91d39956bd67cc4b/checkpoint.pt",
+    "run_id": "training:run:5418cf60d6c01926e52596e5aa7b8883",
+    "score": 0.13176071643829346,
+    "score_name": "validation_loss",
+    "state": "best",
+    "step": 80
+  },
+  "candidate_artifact_created": false,
+  "class_weighting": {
+    "enabled": true,
+    "positive_class_weight": 3.110169491525424
+  },
+  "data": "/home/samorca/osha/data/processed/anomalies/records.jsonl",
+  "datasets": {
+    "test": {
+      "anomaly_count": 11,
+      "feature_dimension": 16,
+      "ignored_count": 0,
+      "normal_count": 43,
+      "sample_count": 54
+    },
+    "train": {
+      "anomaly_count": 118,
+      "feature_dimension": 16,
+      "ignored_count": 0,
+      "normal_count": 367,
+      "sample_count": 485
+    },
+    "validation": {
+      "anomaly_count": 16,
+      "feature_dimension": 16,
+      "ignored_count": 0,
+      "normal_count": 43,
+      "sample_count": 59
+    }
+  },
+  "device": "cuda:0",
+  "evaluations": {
+    "test": {
+      "attributes": {
+        "threshold_directions": {}
+      },
+      "evaluated_at": "2026-11-25T21:33:22.327489+00:00",
+      "evaluation_id": "training:evaluation:249e657398bb88e41f82f0b08c5ebe94",
+      "metrics": [
+        {
+          "epoch": null,
+          "name": "loss",
+          "observed_at": "2026-11-25T21:33:22.327270+00:00",
+          "split": "test",
+          "step": null,
+          "value": 0.12277103960514069
+        },
+        {
+          "epoch": null,
+          "name": "accuracy",
+          "observed_at": "2026-11-25T21:33:22.327288+00:00",
+          "split": "test",
+          "step": null,
+          "value": 1.0
+        },
+        {
+          "epoch": null,
+          "name": "precision",
+          "observed_at": "2026-11-25T21:33:22.327298+00:00",
+          "split": "test",
+          "step": null,
+          "value": 1.0
+        },
+        {
+          "epoch": null,
+          "name": "recall",
+          "observed_at": "2026-11-25T21:33:22.327307+00:00",
+          "split": "test",
+          "step": null,
+          "value": 1.0
+        },
+        {
+          "epoch": null,
+          "name": "specificity",
+          "observed_at": "2026-11-25T21:33:22.327315+00:00",
+          "split": "test",
+          "step": null,
+          "value": 1.0
+        },
+        {
+          "epoch": null,
+          "name": "f1",
+          "observed_at": "2026-11-25T21:33:22.327439+00:00",
+          "split": "test",
+          "step": null,
+          "value": 1.0
+        },
+        {
+          "epoch": null,
+          "name": "false_positive_rate",
+          "observed_at": "2026-11-25T21:33:22.327455+00:00",
+          "split": "test",
+          "step": null,
+          "value": 0.0
+        },
+        {
+          "epoch": null,
+          "name": "false_negative_rate",
+          "observed_at": "2026-11-25T21:33:22.327469+00:00",
+          "split": "test",
+          "step": null,
+          "value": 0.0
+        }
+      ],
+      "model_name": "infrastructure-anomaly-model",
+      "passed": null,
+      "run_id": "training:run:5418cf60d6c01926e52596e5aa7b8883",
+      "split": "test",
+      "thresholds": {}
+    },
+    "validation": {
+      "attributes": {
+        "threshold_directions": {}
+      },
+      "evaluated_at": "2026-11-25T21:33:22.326762+00:00",
+      "evaluation_id": "training:evaluation:177cb48532556ad6f03f35f750a41855",
+      "metrics": [
+        {
+          "epoch": null,
+          "name": "loss",
+          "observed_at": "2026-11-25T21:33:22.326420+00:00",
+          "split": "validation",
+          "step": null,
+          "value": 0.13176071643829346
+        },
+        {
+          "epoch": null,
+          "name": "accuracy",
+          "observed_at": "2026-11-25T21:33:22.326524+00:00",
+          "split": "validation",
+          "step": null,
+          "value": 1.0
+        },
+        {
+          "epoch": null,
+          "name": "precision",
+          "observed_at": "2026-11-25T21:33:22.326562+00:00",
+          "split": "validation",
+          "step": null,
+          "value": 1.0
+        },
+        {
+          "epoch": null,
+          "name": "recall",
+          "observed_at": "2026-11-25T21:33:22.326575+00:00",
+          "split": "validation",
+          "step": null,
+          "value": 1.0
+        },
+        {
+          "epoch": null,
+          "name": "specificity",
+          "observed_at": "2026-11-25T21:33:22.326585+00:00",
+          "split": "validation",
+          "step": null,
+          "value": 1.0
+        },
+        {
+          "epoch": null,
+          "name": "f1",
+          "observed_at": "2026-11-25T21:33:22.326622+00:00",
+          "split": "validation",
+          "step": null,
+          "value": 1.0
+        },
+        {
+          "epoch": null,
+          "name": "false_positive_rate",
+          "observed_at": "2026-11-25T21:33:22.326637+00:00",
+          "split": "validation",
+          "step": null,
+          "value": 0.0
+        },
+        {
+          "epoch": null,
+          "name": "false_negative_rate",
+          "observed_at": "2026-11-25T21:33:22.326645+00:00",
+          "split": "validation",
+          "step": null,
+          "value": 0.0
+        }
+      ],
+      "model_name": "infrastructure-anomaly-model",
+      "passed": null,
+      "run_id": "training:run:5418cf60d6c01926e52596e5aa7b8883",
+      "split": "validation",
+      "thresholds": {}
+    }
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "global_step": 8,
+      "train_loss": 0.9026547074317932,
+      "validation_accuracy": 0.9322033898305084,
+      "validation_batch_count": 1,
+      "validation_evaluated_count": 59,
+      "validation_example_count": 59,
+      "validation_f1": 0.8571428571428571,
+      "validation_false_negative": 4,
+      "validation_false_negative_rate": 0.25,
+      "validation_false_positive": 0,
+      "validation_false_positive_rate": 0.0,
+      "validation_loss": 0.6097184419631958,
+      "validation_precision": 1.0,
+      "validation_recall": 0.75,
+      "validation_specificity": 1.0,
+      "validation_threshold": 0.5,
+      "validation_true_negative": 43,
+      "validation_true_positive": 12
+    },
+    {
+      "epoch": 2,
+      "global_step": 16,
+      "train_loss": 0.5988302566111088,
+      "validation_accuracy": 0.9322033898305084,
+      "validation_batch_count": 1,
+      "validation_evaluated_count": 59,
+      "validation_example_count": 59,
+      "validation_f1": 0.8571428571428571,
+      "validation_false_negative": 4,
+      "validation_false_negative_rate": 0.25,
+      "validation_false_positive": 0,
+      "validation_false_positive_rate": 0.0,
+      "validation_loss": 0.5606467127799988,
+      "validation_precision": 1.0,
+      "validation_recall": 0.75,
+      "validation_specificity": 1.0,
+      "validation_threshold": 0.5,
+      "validation_true_negative": 43,
+      "validation_true_positive": 12
+    },
+    {
+      "epoch": 3,
+      "global_step": 24,
+      "train_loss": 0.5698366072028875,
+      "validation_accuracy": 0.9322033898305084,
+      "validation_batch_count": 1,
+      "validation_evaluated_count": 59,
+      "validation_example_count": 59,
+      "validation_f1": 0.8571428571428571,
+      "validation_false_negative": 4,
+      "validation_false_negative_rate": 0.25,
+      "validation_false_positive": 0,
+      "validation_false_positive_rate": 0.0,
+      "validation_loss": 0.5149354338645935,
+      "validation_precision": 1.0,
+      "validation_recall": 0.75,
+      "validation_specificity": 1.0,
+      "validation_threshold": 0.5,
+      "validation_true_negative": 43,
+      "validation_true_positive": 12
+    },
+    {
+      "epoch": 4,
+      "global_step": 32,
+      "train_loss": 0.5035407468676567,
+      "validation_accuracy": 0.9322033898305084,
+      "validation_batch_count": 1,
+      "validation_evaluated_count": 59,
+      "validation_example_count": 59,
+      "validation_f1": 0.8571428571428571,
+      "validation_false_negative": 4,
+      "validation_false_negative_rate": 0.25,
+      "validation_false_positive": 0,
+      "validation_false_positive_rate": 0.0,
+      "validation_loss": 0.5063142776489258,
+      "validation_precision": 1.0,
+      "validation_recall": 0.75,
+      "validation_specificity": 1.0,
+      "validation_threshold": 0.5,
+      "validation_true_negative": 43,
+      "validation_true_positive": 12
+    },
+    {
+      "epoch": 5,
+      "global_step": 40,
+      "train_loss": 0.4713518153876066,
+      "validation_accuracy": 0.9322033898305084,
+      "validation_batch_count": 1,
+      "validation_evaluated_count": 59,
+      "validation_example_count": 59,
+      "validation_f1": 0.8571428571428571,
+      "validation_false_negative": 4,
+      "validation_false_negative_rate": 0.25,
+      "validation_false_positive": 0,
+      "validation_false_positive_rate": 0.0,
+      "validation_loss": 0.5122383832931519,
+      "validation_precision": 1.0,
+      "validation_recall": 0.75,
+      "validation_specificity": 1.0,
+      "validation_threshold": 0.5,
+      "validation_true_negative": 43,
+      "validation_true_positive": 12
+    },
+    {
+      "epoch": 6,
+      "global_step": 48,
+      "train_loss": 0.4511697106063366,
+      "validation_accuracy": 0.9322033898305084,
+      "validation_batch_count": 1,
+      "validation_evaluated_count": 59,
+      "validation_example_count": 59,
+      "validation_f1": 0.8571428571428571,
+      "validation_false_negative": 4,
+      "validation_false_negative_rate": 0.25,
+      "validation_false_positive": 0,
+      "validation_false_positive_rate": 0.0,
+      "validation_loss": 0.4473385810852051,
+      "validation_precision": 1.0,
+      "validation_recall": 0.75,
+      "validation_specificity": 1.0,
+      "validation_threshold": 0.5,
+      "validation_true_negative": 43,
+      "validation_true_positive": 12
+    },
+    {
+      "epoch": 7,
+      "global_step": 56,
+      "train_loss": 0.4483688585460186,
+      "validation_accuracy": 0.9322033898305084,
+      "validation_batch_count": 1,
+      "validation_evaluated_count": 59,
+      "validation_example_count": 59,
+      "validation_f1": 0.8571428571428571,
+      "validation_false_negative": 4,
+      "validation_false_negative_rate": 0.25,
+      "validation_false_positive": 0,
+      "validation_false_positive_rate": 0.0,
+      "validation_loss": 0.40836402773857117,
+      "validation_precision": 1.0,
+      "validation_recall": 0.75,
+      "validation_specificity": 1.0,
+      "validation_threshold": 0.5,
+      "validation_true_negative": 43,
+      "validation_true_positive": 12
+    },
+    {
+      "epoch": 8,
+      "global_step": 64,
+      "train_loss": 0.3702807854861021,
+      "validation_accuracy": 0.9322033898305084,
+      "validation_batch_count": 1,
+      "validation_evaluated_count": 59,
+      "validation_example_count": 59,
+      "validation_f1": 0.8571428571428571,
+      "validation_false_negative": 4,
+      "validation_false_negative_rate": 0.25,
+      "validation_false_positive": 0,
+      "validation_false_positive_rate": 0.0,
+      "validation_loss": 0.6986361742019653,
+      "validation_precision": 1.0,
+      "validation_recall": 0.75,
+      "validation_specificity": 1.0,
+      "validation_threshold": 0.5,
+      "validation_true_negative": 43,
+      "validation_true_positive": 12
+    },
+    {
+      "epoch": 9,
+      "global_step": 72,
+      "train_loss": 0.3706291038542986,
+      "validation_accuracy": 1.0,
+      "validation_batch_count": 1,
+      "validation_evaluated_count": 59,
+      "validation_example_count": 59,
+      "validation_f1": 1.0,
+      "validation_false_negative": 0,
+      "validation_false_negative_rate": 0.0,
+      "validation_false_positive": 0,
+      "validation_false_positive_rate": 0.0,
+      "validation_loss": 0.19246706366539001,
+      "validation_precision": 1.0,
+      "validation_recall": 1.0,
+      "validation_specificity": 1.0,
+      "validation_threshold": 0.5,
+      "validation_true_negative": 43,
+      "validation_true_positive": 16
+    },
+    {
+      "epoch": 10,
+      "global_step": 80,
+      "train_loss": 0.36579286120831966,
+      "validation_accuracy": 1.0,
+      "validation_batch_count": 1,
+      "validation_evaluated_count": 59,
+      "validation_example_count": 59,
+      "validation_f1": 1.0,
+      "validation_false_negative": 0,
+      "validation_false_negative_rate": 0.0,
+      "validation_false_positive": 0,
+      "validation_false_positive_rate": 0.0,
+      "validation_loss": 0.13176071643829346,
+      "validation_precision": 1.0,
+      "validation_recall": 1.0,
+      "validation_specificity": 1.0,
+      "validation_threshold": 0.5,
+      "validation_true_negative": 43,
+      "validation_true_positive": 16
+    }
+  ],
+  "model_config": {
+    "anomaly_label": 1,
+    "dropout": 0.2,
+    "feature_source": "legacy_numeric_jsonl",
+    "hidden_dim": 256,
+    "input_dim": 16,
+    "normal_label": 0,
+    "output_type": "binary_logit",
+    "positive_class_weight": 3.110169491525424,
+    "representation_dim": 128,
+    "temporary_threshold": 0.5
+  },
+  "records": {
+    "test": 54,
+    "total": 598,
+    "train": 485,
+    "validation": 59
+  },
+  "run": {
+    "accelerator": "cuda:0",
+    "attributes": {
+      "data_path": "/home/samorca/osha/data/processed/anomalies/records.jsonl",
+      "feature_dimension": 16,
+      "output_directory": "/home/samorca/osha/artifacts/training-runs/cb27e3e595df4809be0f2b725486da44/anomaly",
+      "record_count": 598
+    },
+    "checkpoint_ids": [
+      "training:checkpoint:f11dda6a9682772f3fa061f9091c8bf5",
+      "training:checkpoint:ca7f5d8a147f3c95f9d1742a1e06eb37",
+      "training:checkpoint:6298e06573debac7d2201523e2586174",
+      "training:checkpoint:80fde8929674355a88a0426595081bab",
+      "training:checkpoint:9006c2c4045cf22594556a9700a3f40d",
+      "training:checkpoint:0f2d2cb84b4f3511ccd3568eb34b0143",
+      "training:checkpoint:f77d021223b36dd9b381f672e46816d1",
+      "training:checkpoint:914de41102f0e5194524688c68ef7fe2",
+      "training:checkpoint:fab504ce8898778329bc9f925b9824b1",
+      "training:checkpoint:8ea87d62c177c7ca91d39956bd67cc4b"
+    ],
+    "completed_at": "2026-11-25T21:33:22.327684+00:00",
+    "dataset_id": "osha-infrastructure-anomalies",
+    "error_type": null,
+    "metrics": [
+      {
+        "epoch": 1,
+        "name": "loss",
+        "observed_at": "2026-11-25T21:33:19.449824+00:00",
+        "split": "train",
+        "step": 8,
+        "value": 0.9026547074317932
+      },
+      {
+        "epoch": 2,
+        "name": "loss",
+        "observed_at": "2026-11-25T21:33:19.994379+00:00",
+        "split": "train",
+        "step": 16,
+        "value": 0.5988302566111088
+      },
+      {
+        "epoch": 3,
+        "name": "loss",
+        "observed_at": "2026-11-25T21:33:20.316202+00:00",
+        "split": "train",
+        "step": 24,
+        "value": 0.5698366072028875
+      },
+      {
+        "epoch": 4,
+        "name": "loss",
+        "observed_at": "2026-11-25T21:33:20.577100+00:00",
+        "split": "train",
+        "step": 32,
+        "value": 0.5035407468676567
+      },
+      {
+        "epoch": 5,
+        "name": "loss",
+        "observed_at": "2026-11-25T21:33:20.883295+00:00",
+        "split": "train",
+        "step": 40,
+        "value": 0.4713518153876066
+      },
+      {
+        "epoch": 6,
+        "name": "loss",
+        "observed_at": "2026-11-25T21:33:21.125970+00:00",
+        "split": "train",
+        "step": 48,
+        "value": 0.4511697106063366
+      },
+      {
+        "epoch": 7,
+        "name": "loss",
+        "observed_at": "2026-11-25T21:33:21.371238+00:00",
+        "split": "train",
+        "step": 56,
+        "value": 0.4483688585460186
+      },
+      {
+        "epoch": 8,
+        "name": "loss",
+        "observed_at": "2026-11-25T21:33:21.593769+00:00",
+        "split": "train",
+        "step": 64,
+        "value": 0.3702807854861021
+      },
+      {
+        "epoch": 9,
+        "name": "loss",
+        "observed_at": "2026-11-25T21:33:21.829252+00:00",
+        "split": "train",
+        "step": 72,
+        "value": 0.3706291038542986
+      },
+      {
+        "epoch": 10,
+        "name": "loss",
+        "observed_at": "2026-11-25T21:33:22.070104+00:00",
+        "split": "train",
+        "step": 80,
+        "value": 0.36579286120831966
+      }
+    ],
+    "model_name": "infrastructure-anomaly-model",
+    "run_id": "training:run:5418cf60d6c01926e52596e5aa7b8883",
+    "schema_version": "1",
+    "started_at": "2026-11-25T21:33:18.032937+00:00",
+    "state": "completed",
+    "task": "anomaly"
+  },
+  "schema_version": "1",
+  "test": {
+    "accuracy": 1.0,
+    "batch_count": 1,
+    "evaluated_count": 54,
+    "example_count": 54,
+    "f1": 1.0,
+    "false_negative": 0,
+    "false_negative_rate": 0.0,
+    "false_positive": 0,
+    "false_positive_rate": 0.0,
+    "loss": 0.12277103960514069,
+    "precision": 1.0,
+    "recall": 1.0,
+    "specificity": 1.0,
+    "threshold": 0.5,
+    "true_negative": 43,
+    "true_positive": 11
+  },
+  "threshold": {
+    "calibrated": false,
+    "embedded_in_model": false,
+    "temporary_value": 0.5
+  },
+  "validation": {
+    "accuracy": 1.0,
+    "batch_count": 1,
+    "evaluated_count": 59,
+    "example_count": 59,
+    "f1": 1.0,
+    "false_negative": 0,
+    "false_negative_rate": 0.0,
+    "false_positive": 0,
+    "false_positive_rate": 0.0,
+    "loss": 0.13176071643829346,
+    "precision": 1.0,
+    "recall": 1.0,
+    "specificity": 1.0,
+    "threshold": 0.5,
+    "true_negative": 43,
+    "true_positive": 16
+  }
+}

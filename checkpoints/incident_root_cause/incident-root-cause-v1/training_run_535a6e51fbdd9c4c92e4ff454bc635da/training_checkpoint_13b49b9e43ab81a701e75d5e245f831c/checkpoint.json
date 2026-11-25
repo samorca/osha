@@ -1,0 +1,18 @@
+{
+  "attributes": {
+    "metadata_path": "/home/samorca/osha/checkpoints/incident_root_cause/incident-root-cause-v1/training_run_535a6e51fbdd9c4c92e4ff454bc635da/training_checkpoint_13b49b9e43ab81a701e75d5e245f831c/checkpoint.json",
+    "optimizer_state_saved": false,
+    "task": "incident_root_cause"
+  },
+  "checkpoint_id": "training:checkpoint:13b49b9e43ab81a701e75d5e245f831c",
+  "checksum": "e4eb9bc11e66df88ee3ca3f268a977f89294731401340531be43f9467de9e15b",
+  "created_at": "2026-11-25T21:33:58.548948+00:00",
+  "epoch": null,
+  "model_name": "incident-root-cause-v1",
+  "path": "/home/samorca/osha/checkpoints/incident_root_cause/incident-root-cause-v1/training_run_535a6e51fbdd9c4c92e4ff454bc635da/training_checkpoint_13b49b9e43ab81a701e75d5e245f831c/checkpoint.pt",
+  "run_id": "training:run:535a6e51fbdd9c4c92e4ff454bc635da",
+  "score": 0.9950124688279302,
+  "score_name": "test_accuracy",
+  "state": "saved",
+  "step": null
+}

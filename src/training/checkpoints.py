@@ -1224,6 +1224,20 @@ class CheckpointManager:
             root.rglob(METADATA_FILE_NAME),
             key=lambda item: str(item),
         ):
+            try:
+                metadata_value = json.loads(
+                    metadata_path.read_text(encoding="utf-8")
+                )
+            except (OSError, UnicodeError, json.JSONDecodeError):
+                metadata_value = None
+
+            if (
+                isinstance(metadata_value, Mapping)
+                and metadata_value.get("model_type")
+                == "osha.capacity.autoregressive-ridge"
+            ):
+                continue
+
             checkpoint = load_checkpoint_metadata(metadata_path)
 
             checkpoint_path = metadata_path.parent / CHECKPOINT_FILE_NAME

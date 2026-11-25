@@ -51,6 +51,7 @@ from src.database.transaction import (
     DatabaseTransaction,
     TransactionAdapter,
 )
+from src.database.telemetry import TelemetryRepository
 
 from src.security.secrets import (
     SecretManager,
@@ -139,6 +140,8 @@ class DatabasePipeline:
             str,
             Any,
         ] = {}
+
+        self._telemetry_repository: Optional[TelemetryRepository] = None
 
         self._lock = RLock()
 
@@ -317,6 +320,15 @@ class DatabasePipeline:
                 self._repositories[name] = repository
 
             return repository
+
+    def telemetry_repository(self) -> TelemetryRepository:
+        if not self.connection.ready:
+            raise DatabaseConnectionError("Database pipeline is not ready.")
+
+        with self._lock:
+            if self._telemetry_repository is None:
+                self._telemetry_repository = TelemetryRepository(self.connection)
+            return self._telemetry_repository
 
     # ---------------------------------------------------------
     # Health

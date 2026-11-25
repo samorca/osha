@@ -25,6 +25,7 @@ The task-specific optimization loops remain in:
 
 import builtins
 import math
+import os
 import random
 from collections.abc import Iterable, Mapping
 from pathlib import Path
@@ -695,6 +696,9 @@ class TrainingPipeline:
             numpy_seeded = True
 
         if torch is not None:
+            if self.config.reproducibility.deterministic:
+                os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
+
             torch.manual_seed(seed)
 
             if torch.cuda.is_available():

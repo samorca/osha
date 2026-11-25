@@ -57,6 +57,8 @@ class TrainingTask(
 
     REMEDIATION_RECOMMENDATION = "remediation_recommendation"
 
+    CAPACITY_FORECASTING = "capacity_forecasting"
+
     CLASSIFICATION = "classification"
 
     REGRESSION = "regression"

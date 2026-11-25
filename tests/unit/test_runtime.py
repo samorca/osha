@@ -25,6 +25,7 @@ from src.runtime.services import (
     RuntimeService,
     RuntimeServiceRegistry,
 )
+from src.runtime.main import build_registry
 
 
 # -------------------------------------------------------------------
@@ -112,6 +113,22 @@ def test_runtime_uses_supplied_config() -> None:
     )
 
     assert runtime.config.dry_run is True
+
+
+def test_composed_runtime_starts_and_stops_database(monkeypatch) -> None:
+    monkeypatch.delenv("OSHA_DATABASE_BACKEND", raising=False)
+    registry = build_registry(make_config())
+    database = registry.get("database")
+
+    assert database is not None
+    assert database.start_hook is not None
+    assert database.stop_hook is not None
+    assert database.readiness_probe is not None
+
+    database.start_hook()
+    assert database.readiness_probe()
+    database.stop_hook()
+    assert not database.readiness_probe()
 
 
 def test_runtime_uses_supplied_registry() -> None:

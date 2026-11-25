@@ -1,0 +1,120 @@
+{
+  "best_epoch": 10,
+  "best_validation_loss": 0.06220818683505058,
+  "best_validation_score": 1.0,
+  "device": "cuda",
+  "evaluation": {
+    "accuracy": 0.6666666666666666,
+    "loss": 1.0129774672289689,
+    "mean_score": 0.05408617978294691,
+    "samples": 3
+  },
+  "family": "remediation_recommendation_ranking",
+  "feature_dimension": 16,
+  "history": [
+    {
+      "epoch": 1,
+      "loss": 0.7235292792320251,
+      "validation": {
+        "accuracy": 1.0,
+        "loss": 0.5919983386993408,
+        "mean_score": 0.4467793405056,
+        "samples": 1
+      }
+    },
+    {
+      "epoch": 2,
+      "loss": 0.5820452570915222,
+      "validation": {
+        "accuracy": 1.0,
+        "loss": 0.4736194908618927,
+        "mean_score": 0.3772558271884918,
+        "samples": 1
+      }
+    },
+    {
+      "epoch": 3,
+      "loss": 0.46508023142814636,
+      "validation": {
+        "accuracy": 1.0,
+        "loss": 0.37649303674697876,
+        "mean_score": 0.31373611092567444,
+        "samples": 1
+      }
+    },
+    {
+      "epoch": 4,
+      "loss": 0.3691161870956421,
+      "validation": {
+        "accuracy": 1.0,
+        "loss": 0.2971075177192688,
+        "mean_score": 0.25703588128089905,
+        "samples": 1
+      }
+    },
+    {
+      "epoch": 5,
+      "loss": 0.29081064462661743,
+      "validation": {
+        "accuracy": 1.0,
+        "loss": 0.23256060481071472,
+        "mean_score": 0.20749828219413757,
+        "samples": 1
+      }
+    },
+    {
+      "epoch": 6,
+      "loss": 0.22733049094676971,
+      "validation": {
+        "accuracy": 1.0,
+        "loss": 0.18055197596549988,
+        "mean_score": 0.1651907116174698,
+        "samples": 1
+      }
+    },
+    {
+      "epoch": 7,
+      "loss": 0.17635641992092133,
+      "validation": {
+        "accuracy": 1.0,
+        "loss": 0.13915680348873138,
+        "mean_score": 0.12990841269493103,
+        "samples": 1
+      }
+    },
+    {
+      "epoch": 8,
+      "loss": 0.1359129101037979,
+      "validation": {
+        "accuracy": 1.0,
+        "loss": 0.10665729641914368,
+        "mean_score": 0.10116634517908096,
+        "samples": 1
+      }
+    },
+    {
+      "epoch": 9,
+      "loss": 0.10423939675092697,
+      "validation": {
+        "accuracy": 1.0,
+        "loss": 0.08148179203271866,
+        "mean_score": 0.07825050503015518,
+        "samples": 1
+      }
+    },
+    {
+      "epoch": 10,
+      "loss": 0.0797431468963623,
+      "validation": {
+        "accuracy": 1.0,
+        "loss": 0.06220818683505058,
+        "mean_score": 0.06031276285648346,
+        "samples": 1
+      }
+    }
+  ],
+  "ranking_type": "successful_remediation_outcome",
+  "test_samples": 3,
+  "train_samples": 10,
+  "validation_samples": 1
+}

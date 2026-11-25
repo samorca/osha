@@ -15,6 +15,11 @@ tests
 docs
 tmp
 .cache
+data
+orchestration-ai-data
+checkpoints
+logs
+artifacts/training-runs
 node_modules
 dist
 build

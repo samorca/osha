@@ -1,0 +1,642 @@
+{
+  "accelerator": {
+    "attributes": {
+      "backend_priority": [
+        "cuda",
+        "rocm",
+        "cpu"
+      ],
+      "candidate_score": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -3450077184,
+        0,
+        -4294508544,
+        0,
+        "cuda:0"
+      ],
+      "prefer_highest_free_memory": true
+    },
+    "candidates_considered": [
+      "cuda:0",
+      "cpu"
+    ],
+    "device": {
+      "accelerator": true,
+      "architecture": "sm_86",
+      "attributes": {
+        "bfloat16_supported": true,
+        "cuda_runtime_version": "12.8",
+        "hip_runtime": false,
+        "is_integrated": 0,
+        "is_multi_gpu_board": 0,
+        "major": 8,
+        "minor": 6,
+        "multi_processor_count": 20,
+        "pci_bus_id": "1",
+        "torch_version": "2.9.1+cu128",
+        "total_memory": 4294508544,
+        "uuid": "5b80e11d-a7fc-f8fd-0b1b-92e27be65a03"
+      },
+      "available": true,
+      "capabilities": [
+        "compute",
+        "training",
+        "inference",
+        "mixed_precision",
+        "async_execution",
+        "memory_stats",
+        "synchronization",
+        "cache_control",
+        "tensor_cores"
+      ],
+      "compute_capability": "8.6",
+      "degraded": false,
+      "device_id": "cuda:0",
+      "driver_version": null,
+      "index": 0,
+      "kind": "cuda",
+      "logical_processor_count": null,
+      "memory": {
+        "allocated_bytes": 0,
+        "free_bytes": 3450077184,
+        "reserved_bytes": 0,
+        "total_bytes": 4294508544,
+        "used_bytes": 844431360,
+        "utilization_ratio": 0.19663049947351555
+      },
+      "multiprocessor_count": 20,
+      "name": "NVIDIA GeForce RTX 3050 Ti Laptop GPU",
+      "runtime_device": "cuda:0",
+      "runtime_version": "12.8",
+      "state": "available",
+      "supported_precisions": [
+        "float64",
+        "float32",
+        "float16",
+        "int8",
+        "bfloat16"
+      ],
+      "vendor": "NVIDIA"
+    },
+    "fallback_used": false,
+    "reason": "Automatic accelerator selection chose the highest-ranked eligible device.",
+    "rejected_candidates": {},
+    "requirements": {
+      "allow_cpu_fallback": true,
+      "allow_degraded": true,
+      "attributes": {
+        "source": "accelerator_config"
+      },
+      "device_id": null,
+      "device_index": null,
+      "inference": false,
+      "minimum_free_memory_bytes": null,
+      "minimum_total_memory_bytes": null,
+      "mixed_precision": false,
+      "preferred_kind": "auto",
+      "require_accelerator": false,
+      "required_capabilities": [
+        "training"
+      ],
+      "required_precisions": [
+        "float32"
+      ],
+      "training": true
+    },
+    "schema_version": "1",
+    "selected_at": "2026-11-25T21:23:32.728029+00:00"
+  },
+  "automatic_promotion": false,
+  "best_checkpoint": {
+    "attributes": {
+      "metadata_path": "/home/samorca/osha/checkpoints/event/infrastructure-event-model/training_run_a1df2040f32c0456b1a92f427a097397/training_checkpoint_83749ab08a8ff115b94cda11f9f8b741/checkpoint.json",
+      "optimizer_state_saved": true,
+      "task": "event"
+    },
+    "checkpoint_id": "training:checkpoint:83749ab08a8ff115b94cda11f9f8b741",
+    "checksum": "dd94b4b397365d2187799df2e7156a88e36dd2f1e945f8475dcab4a9355f48a3",
+    "created_at": "2026-11-25T21:32:08.144402+00:00",
+    "epoch": 8,
+    "model_name": "infrastructure-event-model",
+    "path": "/home/samorca/osha/checkpoints/event/infrastructure-event-model/training_run_a1df2040f32c0456b1a92f427a097397/training_checkpoint_83749ab08a8ff115b94cda11f9f8b741/checkpoint.pt",
+    "run_id": "training:run:a1df2040f32c0456b1a92f427a097397",
+    "score": 0.058406284304653,
+    "score_name": "validation_loss",
+    "state": "best",
+    "step": 3192
+  },
+  "classes": {
+    "component": 323,
+    "event": 1221,
+    "source": 16
+  },
+  "data": "/home/samorca/osha/data/processed/logs/events.jsonl",
+  "evaluations": {
+    "test": {
+      "attributes": {
+        "threshold_directions": {}
+      },
+      "evaluated_at": "2026-11-25T21:33:09.270825+00:00",
+      "evaluation_id": "training:evaluation:43d32fdca0d1bc476ae6361e0c73b35c",
+      "metrics": [
+        {
+          "epoch": null,
+          "name": "loss",
+          "observed_at": "2026-11-25T21:33:09.270683+00:00",
+          "split": "test",
+          "step": null,
+          "value": 0.0844711079036785
+        },
+        {
+          "epoch": null,
+          "name": "source_accuracy",
+          "observed_at": "2026-11-25T21:33:09.270738+00:00",
+          "split": "test",
+          "step": null,
+          "value": 0.9860896445131375
+        },
+        {
+          "epoch": null,
+          "name": "component_accuracy",
+          "observed_at": "2026-11-25T21:33:09.270760+00:00",
+          "split": "test",
+          "step": null,
+          "value": 0.9810307802433786
+        },
+        {
+          "epoch": null,
+          "name": "event_accuracy",
+          "observed_at": "2026-11-25T21:33:09.270781+00:00",
+          "split": "test",
+          "step": null,
+          "value": 0.9946048873373532
+        }
+      ],
+      "model_name": "infrastructure-event-model",
+      "passed": null,
+      "run_id": "training:run:a1df2040f32c0456b1a92f427a097397",
+      "split": "test",
+      "thresholds": {}
+    },
+    "validation": {
+      "attributes": {
+        "threshold_directions": {}
+      },
+      "evaluated_at": "2026-11-25T21:33:09.269899+00:00",
+      "evaluation_id": "training:evaluation:078e3ffa3328d407233eb12ea79b67a5",
+      "metrics": [
+        {
+          "epoch": null,
+          "name": "loss",
+          "observed_at": "2026-11-25T21:33:09.269400+00:00",
+          "split": "validation",
+          "step": null,
+          "value": 0.058406284304653
+        },
+        {
+          "epoch": null,
+          "name": "source_accuracy",
+          "observed_at": "2026-11-25T21:33:09.269564+00:00",
+          "split": "validation",
+          "step": null,
+          "value": 0.9879592466810744
+        },
+        {
+          "epoch": null,
+          "name": "component_accuracy",
+          "observed_at": "2026-11-25T21:33:09.269598+00:00",
+          "split": "validation",
+          "step": null,
+          "value": 0.9822443181818182
+        },
+        {
+          "epoch": null,
+          "name": "event_accuracy",
+          "observed_at": "2026-11-25T21:33:09.269624+00:00",
+          "split": "validation",
+          "step": null,
+          "value": 0.9955710218285353
+        }
+      ],
+      "model_name": "infrastructure-event-model",
+      "passed": null,
+      "run_id": "training:run:a1df2040f32c0456b1a92f427a097397",
+      "split": "validation",
+      "thresholds": {}
+    }
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "global_step": 399,
+      "train_loss": 1.4561329734952826,
+      "validation_batch_count": 51,
+      "validation_component_accuracy": 0.9318181818181818,
+      "validation_component_count": 2816,
+      "validation_event_accuracy": 0.9009807023093958,
+      "validation_event_count": 3161,
+      "validation_example_count": 3239,
+      "validation_loss": 0.3991913123092815,
+      "validation_source_accuracy": 0.962334053720284,
+      "validation_source_count": 3239
+    },
+    {
+      "epoch": 2,
+      "global_step": 798,
+      "train_loss": 0.37219605228879993,
+      "validation_batch_count": 51,
+      "validation_component_accuracy": 0.9641335227272727,
+      "validation_component_count": 2816,
+      "validation_event_accuracy": 0.9623536855425499,
+      "validation_event_count": 3161,
+      "validation_example_count": 3239,
+      "validation_loss": 0.1938269211152824,
+      "validation_source_accuracy": 0.9749922815683854,
+      "validation_source_count": 3239
+    },
+    {
+      "epoch": 3,
+      "global_step": 1197,
+      "train_loss": 0.2165113423943968,
+      "validation_batch_count": 51,
+      "validation_component_accuracy": 0.9719460227272727,
+      "validation_component_count": 2816,
+      "validation_event_accuracy": 0.9765896868079722,
+      "validation_event_count": 3161,
+      "validation_example_count": 3239,
+      "validation_loss": 0.12512673606739982,
+      "validation_source_accuracy": 0.9808582895955542,
+      "validation_source_count": 3239
+    },
+    {
+      "epoch": 4,
+      "global_step": 1596,
+      "train_loss": 0.1506245238286324,
+      "validation_batch_count": 51,
+      "validation_component_accuracy": 0.9751420454545454,
+      "validation_component_count": 2816,
+      "validation_event_accuracy": 0.9826004428978171,
+      "validation_event_count": 3161,
+      "validation_example_count": 3239,
+      "validation_loss": 0.09557210353623126,
+      "validation_source_accuracy": 0.9833281877122568,
+      "validation_source_count": 3239
+    },
+    {
+      "epoch": 5,
+      "global_step": 1995,
+      "train_loss": 0.10860535534644934,
+      "validation_batch_count": 51,
+      "validation_component_accuracy": 0.9765625,
+      "validation_component_count": 2816,
+      "validation_event_accuracy": 0.987345776652958,
+      "validation_event_count": 3161,
+      "validation_example_count": 3239,
+      "validation_loss": 0.08744117783327751,
+      "validation_source_accuracy": 0.9833281877122568,
+      "validation_source_count": 3239
+    },
+    {
+      "epoch": 6,
+      "global_step": 2394,
+      "train_loss": 0.08304149617457338,
+      "validation_batch_count": 51,
+      "validation_component_accuracy": 0.9794034090909091,
+      "validation_component_count": 2816,
+      "validation_event_accuracy": 0.9905093324897184,
+      "validation_event_count": 3161,
+      "validation_example_count": 3239,
+      "validation_loss": 0.07068716941798545,
+      "validation_source_accuracy": 0.9851806112997838,
+      "validation_source_count": 3239
+    },
+    {
+      "epoch": 7,
+      "global_step": 2793,
+      "train_loss": 0.06488709479925178,
+      "validation_batch_count": 51,
+      "validation_component_accuracy": 0.9822443181818182,
+      "validation_component_count": 2816,
+      "validation_event_accuracy": 0.9946219550775072,
+      "validation_event_count": 3161,
+      "validation_example_count": 3239,
+      "validation_loss": 0.06462530306610051,
+      "validation_source_accuracy": 0.9879592466810744,
+      "validation_source_count": 3239
+    },
+    {
+      "epoch": 8,
+      "global_step": 3192,
+      "train_loss": 0.052720932567137335,
+      "validation_batch_count": 51,
+      "validation_component_accuracy": 0.9822443181818182,
+      "validation_component_count": 2816,
+      "validation_event_accuracy": 0.9955710218285353,
+      "validation_event_count": 3161,
+      "validation_example_count": 3239,
+      "validation_loss": 0.058406284304653,
+      "validation_source_accuracy": 0.9879592466810744,
+      "validation_source_count": 3239
+    },
+    {
+      "epoch": 9,
+      "global_step": 3591,
+      "train_loss": 0.042322212343517324,
+      "validation_batch_count": 51,
+      "validation_component_accuracy": 0.9829545454545454,
+      "validation_component_count": 2816,
+      "validation_event_accuracy": 0.9968364441632395,
+      "validation_event_count": 3161,
+      "validation_example_count": 3239,
+      "validation_loss": 0.06048617262094209,
+      "validation_source_accuracy": 0.9879592466810744,
+      "validation_source_count": 3239
+    },
+    {
+      "epoch": 10,
+      "global_step": 3990,
+      "train_loss": 0.035002040112785585,
+      "validation_batch_count": 51,
+      "validation_component_accuracy": 0.9825994318181818,
+      "validation_component_count": 2816,
+      "validation_event_accuracy": 0.9974691553305916,
+      "validation_event_count": 3161,
+      "validation_example_count": 3239,
+      "validation_loss": 0.05962165568167157,
+      "validation_source_accuracy": 0.9879592466810744,
+      "validation_source_count": 3239
+    }
+  ],
+  "mixed_precision": false,
+  "model_config": {
+    "dropout": 0.2,
+    "embedding_dim": 192,
+    "hidden_dim": 256,
+    "max_length": 128,
+    "num_components": 323,
+    "num_events": 1221,
+    "num_sources": 16,
+    "vocab_size": 5615
+  },
+  "records": {
+    "test": 3235,
+    "total": 32000,
+    "train": 25526,
+    "validation": 3239
+  },
+  "run": {
+    "accelerator": "cuda:0",
+    "attributes": {
+      "accelerator_selection": {
+        "attributes": {
+          "backend_priority": [
+            "cuda",
+            "rocm",
+            "cpu"
+          ],
+          "candidate_score": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            -3450077184,
+            0,
+            -4294508544,
+            0,
+            "cuda:0"
+          ],
+          "prefer_highest_free_memory": true
+        },
+        "candidates_considered": [
+          "cuda:0",
+          "cpu"
+        ],
+        "device": {
+          "accelerator": true,
+          "architecture": "sm_86",
+          "attributes": {
+            "bfloat16_supported": true,
+            "cuda_runtime_version": "12.8",
+            "hip_runtime": false,
+            "is_integrated": 0,
+            "is_multi_gpu_board": 0,
+            "major": 8,
+            "minor": 6,
+            "multi_processor_count": 20,
+            "pci_bus_id": "1",
+            "torch_version": "2.9.1+cu128",
+            "total_memory": 4294508544,
+            "uuid": "5b80e11d-a7fc-f8fd-0b1b-92e27be65a03"
+          },
+          "available": true,
+          "capabilities": [
+            "compute",
+            "training",
+            "inference",
+            "mixed_precision",
+            "async_execution",
+            "memory_stats",
+            "synchronization",
+            "cache_control",
+            "tensor_cores"
+          ],
+          "compute_capability": "8.6",
+          "degraded": false,
+          "device_id": "cuda:0",
+          "driver_version": null,
+          "index": 0,
+          "kind": "cuda",
+          "logical_processor_count": null,
+          "memory": {
+            "allocated_bytes": 0,
+            "free_bytes": 3450077184,
+            "reserved_bytes": 0,
+            "total_bytes": 4294508544,
+            "used_bytes": 844431360,
+            "utilization_ratio": 0.19663049947351555
+          },
+          "multiprocessor_count": 20,
+          "name": "NVIDIA GeForce RTX 3050 Ti Laptop GPU",
+          "runtime_device": "cuda:0",
+          "runtime_version": "12.8",
+          "state": "available",
+          "supported_precisions": [
+            "float64",
+            "float32",
+            "float16",
+            "int8",
+            "bfloat16"
+          ],
+          "vendor": "NVIDIA"
+        },
+        "fallback_used": false,
+        "reason": "Automatic accelerator selection chose the highest-ranked eligible device.",
+        "rejected_candidates": {},
+        "requirements": {
+          "allow_cpu_fallback": true,
+          "allow_degraded": true,
+          "attributes": {
+            "source": "accelerator_config"
+          },
+          "device_id": null,
+          "device_index": null,
+          "inference": false,
+          "minimum_free_memory_bytes": null,
+          "minimum_total_memory_bytes": null,
+          "mixed_precision": false,
+          "preferred_kind": "auto",
+          "require_accelerator": false,
+          "required_capabilities": [
+            "training"
+          ],
+          "required_precisions": [
+            "float32"
+          ],
+          "training": true
+        },
+        "schema_version": "1",
+        "selected_at": "2026-11-25T21:23:32.728029+00:00"
+      },
+      "data_path": "/home/samorca/osha/data/processed/logs/events.jsonl",
+      "output_directory": "/home/samorca/osha/artifacts/training-runs/cb27e3e595df4809be0f2b725486da44/event",
+      "record_count": 32000
+    },
+    "checkpoint_ids": [
+      "training:checkpoint:d08b56ebbae44bf7c84fdbec66122027",
+      "training:checkpoint:9db8ef8014f72c3c10ffce47b3b9fd84",
+      "training:checkpoint:94ff94d303906a45de76a2b3ca55b73c",
+      "training:checkpoint:adce8257191a0b440d5bacebcdc681c2",
+      "training:checkpoint:1aa96aba860e3665c1406c2dae7797dc",
+      "training:checkpoint:29048703e67a4efd67a600ff9c7a9fbd",
+      "training:checkpoint:a0c6c8fb065499c1af78e299d021d975",
+      "training:checkpoint:83749ab08a8ff115b94cda11f9f8b741",
+      "training:checkpoint:49d7ce89d125bfb13e44e60aec19db60",
+      "training:checkpoint:8ab8aef845d2570ffb731b18ce766393"
+    ],
+    "completed_at": "2026-11-25T21:33:09.271229+00:00",
+    "dataset_id": "osha-infrastructure-events",
+    "error_type": null,
+    "metrics": [
+      {
+        "epoch": 1,
+        "name": "loss",
+        "observed_at": "2026-11-25T21:24:08.940934+00:00",
+        "split": "train",
+        "step": 399,
+        "value": 1.4561329734952826
+      },
+      {
+        "epoch": 2,
+        "name": "loss",
+        "observed_at": "2026-11-25T21:25:47.167573+00:00",
+        "split": "train",
+        "step": 798,
+        "value": 0.37219605228879993
+      },
+      {
+        "epoch": 3,
+        "name": "loss",
+        "observed_at": "2026-11-25T21:27:52.853152+00:00",
+        "split": "train",
+        "step": 1197,
+        "value": 0.2165113423943968
+      },
+      {
+        "epoch": 4,
+        "name": "loss",
+        "observed_at": "2026-11-25T21:28:59.601278+00:00",
+        "split": "train",
+        "step": 1596,
+        "value": 0.1506245238286324
+      },
+      {
+        "epoch": 5,
+        "name": "loss",
+        "observed_at": "2026-11-25T21:29:48.349176+00:00",
+        "split": "train",
+        "step": 1995,
+        "value": 0.10860535534644934
+      },
+      {
+        "epoch": 6,
+        "name": "loss",
+        "observed_at": "2026-11-25T21:30:47.519232+00:00",
+        "split": "train",
+        "step": 2394,
+        "value": 0.08304149617457338
+      },
+      {
+        "epoch": 7,
+        "name": "loss",
+        "observed_at": "2026-11-25T21:31:27.040910+00:00",
+        "split": "train",
+        "step": 2793,
+        "value": 0.06488709479925178
+      },
+      {
+        "epoch": 8,
+        "name": "loss",
+        "observed_at": "2026-11-25T21:32:05.724189+00:00",
+        "split": "train",
+        "step": 3192,
+        "value": 0.052720932567137335
+      },
+      {
+        "epoch": 9,
+        "name": "loss",
+        "observed_at": "2026-11-25T21:32:28.060168+00:00",
+        "split": "train",
+        "step": 3591,
+        "value": 0.042322212343517324
+      },
+      {
+        "epoch": 10,
+        "name": "loss",
+        "observed_at": "2026-11-25T21:33:02.577788+00:00",
+        "split": "train",
+        "step": 3990,
+        "value": 0.035002040112785585
+      }
+    ],
+    "model_name": "infrastructure-event-model",
+    "run_id": "training:run:a1df2040f32c0456b1a92f427a097397",
+    "schema_version": "1",
+    "started_at": "2026-11-25T21:23:37.652775+00:00",
+    "state": "completed",
+    "task": "event"
+  },
+  "runtime_device": "cuda:0",
+  "schema_version": "1",
+  "test": {
+    "batch_count": 51,
+    "component_accuracy": 0.9810307802433786,
+    "component_count": 2794,
+    "event_accuracy": 0.9946048873373532,
+    "event_count": 3151,
+    "example_count": 3235,
+    "loss": 0.0844711079036785,
+    "source_accuracy": 0.9860896445131375,
+    "source_count": 3235
+  },
+  "validation": {
+    "batch_count": 51,
+    "component_accuracy": 0.9822443181818182,
+    "component_count": 2816,
+    "event_accuracy": 0.9955710218285353,
+    "event_count": 3161,
+    "example_count": 3239,
+    "loss": 0.058406284304653,
+    "source_accuracy": 0.9879592466810744,
+    "source_count": 3239
+  },
+  "vocabulary_size": 5615
+}

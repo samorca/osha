@@ -29,6 +29,7 @@ from src.training.config import (
     TrainingConfig,
     TrainingPathConfig,
 )
+from src.training.errors import EmptyTrainingDatasetError
 from src.training.decision_risk_model import DecisionRiskModel
 from src.training.incident_root_cause_model import IncidentRootCauseModel
 from src.training.remediation_ranker import RemediationRanker
@@ -430,19 +431,9 @@ def build_incident_samples(
             )
         )
     if not samples:
-        samples = [
-            OperationalSample(
-                features=feature_vector(
-                    {
-                        "score": index / 20.0,
-                        "confidence": index / 20.0,
-                        "signal_count": index,
-                    }
-                ),
-                target=(index % 5),
-            )
-            for index in range(20)
-        ]
+        raise EmptyTrainingDatasetError(
+            "Incident training requires real labeled incident or anomaly data."
+        )
     return samples
 
 
@@ -582,55 +573,44 @@ def build_decision_samples(
                 )
             )
     if not samples:
-        samples = [
+        raise EmptyTrainingDatasetError(
+            "Decision-risk training requires real decision, incident, or remediation data."
+        )
+    operational_records = read_jsonl(
+        (
+            root
+            / "processed/anomalies/records_with_internal_external.jsonl",
+            root
+            / "processed/logs/events_with_external.jsonl",
+        )
+    )
+    for record in operational_records[:1000]:
+        nested = record.get("values")
+        label_value = (
+            nested.get("is_anomaly")
+            if isinstance(nested, Mapping)
+            else record.get("is_anomaly", 0)
+        )
+        try:
+            score = float(label_value)
+        except (TypeError, ValueError):
+            score = 0.0
+        risk_index = (
+            4
+            if score >= 0.75
+            else 3
+            if score >= 0.50
+            else 2
+            if score >= 0.25
+            else 1
+        )
+        samples.append(
             OperationalSample(
-                features=feature_vector(
-                    {
-                        "risk_score": index / 20.0,
-                        "approval_required": index % 2,
-                    }
-                ),
-                target=(index % 5),
-                score=(index / 20.0),
-            )
-            for index in range(20)
-        ]
-    else:
-        operational_records = read_jsonl(
-            (
-                root
-                / "processed/anomalies/records_with_internal_external.jsonl",
-                root
-                / "processed/logs/events_with_external.jsonl",
+                features=feature_vector(record),
+                target=risk_index,
+                score=score,
             )
         )
-        for record in operational_records[:1000]:
-            nested = record.get("values")
-            label_value = (
-                nested.get("is_anomaly")
-                if isinstance(nested, Mapping)
-                else record.get("is_anomaly", 0)
-            )
-            try:
-                score = float(label_value)
-            except (TypeError, ValueError):
-                score = 0.0
-            risk_index = (
-                4
-                if score >= 0.75
-                else 3
-                if score >= 0.50
-                else 2
-                if score >= 0.25
-                else 1
-            )
-            samples.append(
-                OperationalSample(
-                    features=feature_vector(record),
-                    target=risk_index,
-                    score=score,
-                )
-            )
     return samples
 
 
@@ -706,42 +686,9 @@ def build_remediation_samples(
             )
         )
     if not samples:
-        samples = [
-            OperationalSample(
-                features=feature_vector(
-                    {
-                        "risk_score": index / 20.0,
-                        "reversibility": 1 - (index % 3) * 0.25,
-                        "approval": index % 2,
-                    }
-                ),
-                target=(1 if index % 4 else 0),
-                score=(1.0 if index % 4 else 0.0),
-            )
-            for index in range(20)
-        ]
-    else:
-        operational_records = read_jsonl(
-            (
-                root
-                / "processed/anomalies/records_with_internal_external.jsonl",
-                root
-                / "processed/live/kubernetes/predictions.jsonl",
-                root
-                / "processed/logs/events_with_external.jsonl",
-            )
+        raise EmptyTrainingDatasetError(
+            "Remediation training requires real remediation outcome records."
         )
-        for index, record in enumerate(
-            operational_records[:1000]
-        ):
-            score = 1.0 if index % 5 == 0 else 0.0
-            samples.append(
-                OperationalSample(
-                    features=feature_vector(record),
-                    target=(1 if score else 0),
-                    score=score,
-                )
-            )
     return samples
 
 

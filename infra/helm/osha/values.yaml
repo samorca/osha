@@ -58,6 +58,59 @@ remediation:
 
 
 # ----------------------------------------------------------------
+# PostgreSQL persistence
+# ----------------------------------------------------------------
+
+database:
+  backend: postgresql
+
+  name: osha
+
+  username: osha
+
+  host: ""
+
+  port: 5432
+
+  existingSecret: osha-postgresql-credentials
+
+  passwordKey: password
+
+  postgresql:
+    enabled: true
+
+    image: postgres:16-alpine
+
+    storage: 8Gi
+
+    storageClassName: ""
+
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 1
+        memory: 1Gi
+
+
+# ----------------------------------------------------------------
+# Capacity forecasting
+# ----------------------------------------------------------------
+
+forecasting:
+  enabled: true
+
+  minimumPoints: 4
+
+  trainingWindowHours: 24
+
+  defaultHorizonHours: 12
+
+  stepMinutes: 60
+
+
+# ----------------------------------------------------------------
 # API
 # ----------------------------------------------------------------
 
@@ -197,6 +250,8 @@ worker:
 
     remediationRanking: true
 
+    capacityForecasting: true
+
   resources:
     requests:
       cpu: 250m
@@ -281,6 +336,42 @@ persistence:
     - ReadWriteOnce
 
   size: 10Gi
+
+
+# ----------------------------------------------------------------
+# Unified model training
+# ----------------------------------------------------------------
+
+training:
+  enabled: false
+
+  version: ""
+
+  dataRoot: /app/data
+
+  eventData: /app/data/processed/logs/events.jsonl
+
+  anomalyData: /app/data/processed/anomalies/records.jsonl
+
+  capacityData: /app/data/processed/metrics/snapshots.jsonl
+
+  epochs: 10
+
+  batchSize: 64
+
+  seed: 42
+
+  numWorkers: 2
+
+  accelerator: auto
+
+  resources:
+    requests:
+      cpu: 1
+      memory: 2Gi
+    limits:
+      cpu: "4"
+      memory: 8Gi
 
 
 # ----------------------------------------------------------------

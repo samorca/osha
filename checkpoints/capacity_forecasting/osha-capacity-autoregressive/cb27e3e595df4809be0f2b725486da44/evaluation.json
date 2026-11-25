@@ -1,0 +1,78 @@
+{
+  "dataset_checksum": "0ee25d126b07abe0af4ecac2a54ae590171bd4d843946bbfd79961b8da32dc66",
+  "evaluation_split": "test",
+  "metrics": {
+    "cpu": {
+      "autoregressive_blend": 0.6,
+      "baseline_test_mae": 1.8218550564428608,
+      "lookback_points": 24,
+      "ridge_alpha": 100.0,
+      "source_counts": {
+        "alibaba": {
+          "rows": 2243,
+          "test_windows": 449,
+          "train_windows": 1321,
+          "validation_windows": 449
+        },
+        "google": {
+          "rows": 8064,
+          "test_windows": 1613,
+          "train_windows": 4814,
+          "validation_windows": 1613
+        }
+      },
+      "test_mae": 1.7487208331407602,
+      "test_rmse": 2.8421405117231044,
+      "test_samples": 2062,
+      "validation_mae": 1.834331329164544
+    },
+    "disk": {
+      "autoregressive_blend": 1.0,
+      "baseline_test_mae": 1.5343677304855177,
+      "lookback_points": 12,
+      "ridge_alpha": 100.0,
+      "source_counts": {
+        "alibaba": {
+          "rows": 2243,
+          "test_windows": 449,
+          "train_windows": 1333,
+          "validation_windows": 449
+        }
+      },
+      "test_mae": 1.4643758802835194,
+      "test_rmse": 1.9664389675075509,
+      "test_samples": 449,
+      "validation_mae": 1.8044441862870213
+    },
+    "memory": {
+      "autoregressive_blend": 0.6,
+      "baseline_test_mae": 0.6013873368876244,
+      "lookback_points": 24,
+      "ridge_alpha": 100.0,
+      "source_counts": {
+        "alibaba": {
+          "rows": 2243,
+          "test_windows": 449,
+          "train_windows": 1321,
+          "validation_windows": 449
+        },
+        "google": {
+          "rows": 8064,
+          "test_windows": 1613,
+          "train_windows": 4814,
+          "validation_windows": 1613
+        }
+      },
+      "test_mae": 0.5964577874687711,
+      "test_rmse": 0.9320962445719851,
+      "test_samples": 2062,
+      "validation_mae": 0.5803299917623885
+    }
+  },
+  "passed": true,
+  "trained_metrics": [
+    "cpu",
+    "disk",
+    "memory"
+  ]
+}

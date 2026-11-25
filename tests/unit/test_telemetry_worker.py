@@ -130,6 +130,100 @@ def test_collect_cycle_reports_collector_errors_as_degraded(monkeypatch, tmp_pat
     ]
 
 
+def test_collect_cycle_persists_new_records(monkeypatch, tmp_path):
+    class Repository:
+        def __init__(self):
+            self.batches = []
+
+        def store_batch(self, records, **kwargs):
+            self.batches.append((records, kwargs))
+            return len(records)
+
+    repository = Repository()
+
+    def fake_run(command, **kwargs):
+        output_path = Path(command[command.index("--output") + 1])
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(
+            json.dumps(
+                {
+                    "signal_type": "resource_state",
+                    "timestamp": "2026-01-01T00:00:00+00:00",
+                    "payload": {"cpu_percent": 12.5},
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        return subprocess.CompletedProcess(
+            args=command,
+            returncode=0,
+            stdout="",
+            stderr="",
+        )
+
+    monkeypatch.setattr(telemetry_worker.subprocess, "run", fake_run)
+
+    result = telemetry_worker.collect_cycle(
+        ("linux",),
+        output_directory=Path(tmp_path),
+        worker_id="worker-1",
+        namespace="osha",
+        tail_lines=200,
+        include_pod_logs=True,
+        timeout_seconds=5,
+        emit_output=False,
+        telemetry_repository=repository,
+        environment_id="test",
+    )
+
+    assert result["status"] == "success"
+    assert result["sources"][0]["records_persisted"] == 1
+    assert repository.batches[0][1] == {
+        "source": "linux",
+        "worker_id": "worker-1",
+        "environment_id": "test",
+    }
+
+
+def test_collect_cycle_reports_persistence_failure(monkeypatch, tmp_path):
+    persisted_offsets = {}
+
+    class Repository:
+        def store_batch(self, records, **kwargs):
+            raise RuntimeError("database unavailable")
+
+    def fake_run(command, **kwargs):
+        output_path = Path(command[command.index("--output") + 1])
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text('{"signal_type":"metric"}\n', encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=command,
+            returncode=0,
+            stdout="",
+            stderr="",
+        )
+
+    monkeypatch.setattr(telemetry_worker.subprocess, "run", fake_run)
+    result = telemetry_worker.collect_cycle(
+        ("linux",),
+        output_directory=Path(tmp_path),
+        worker_id="worker-1",
+        namespace="osha",
+        tail_lines=200,
+        include_pod_logs=True,
+        timeout_seconds=5,
+        emit_output=False,
+        telemetry_repository=Repository(),
+        persisted_offsets=persisted_offsets,
+    )
+
+    assert result["status"] == "degraded"
+    assert result["sources"][0]["status"] == "failed"
+    assert result["sources"][0]["persistence_error"] == "RuntimeError"
+    assert persisted_offsets == {}
+
+
 def test_parse_sources_rejects_unknown_sources():
     with pytest.raises(ValueError, match="unknown"):
         telemetry_worker.parse_sources("linux,unknown")

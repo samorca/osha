@@ -1,0 +1,31 @@
+{
+  "artifact_id": "training:artifact:75fd4ee62d9cd473807cafdab1442d65",
+  "attributes": {
+    "evaluation_id": "training:evaluation:6400cbe13a6a1da2f404826805d396ad",
+    "evaluation_passed": true,
+    "promoted": true,
+    "source_checkpoint_metric": "loss",
+    "source_checkpoint_score": 0.0844711079036785
+  },
+  "checkpoint_id": "training:checkpoint:3686cc2d497e0995c49b10e4a9366995",
+  "checksum": "dd94b4b397365d2187799df2e7156a88e36dd2f1e945f8475dcab4a9355f48a3",
+  "created_at": "2026-11-25T21:34:04.886194+00:00",
+  "metrics": {
+    "batch_count": 51.0,
+    "component_accuracy": 0.9810307802433786,
+    "component_count": 2794.0,
+    "event_accuracy": 0.9946048873373532,
+    "event_count": 3151.0,
+    "example_count": 3235.0,
+    "loss": 0.0844711079036785,
+    "source_accuracy": 0.9860896445131375,
+    "source_count": 3235.0
+  },
+  "model_name": "infrastructure-event-model",
+  "path": "/home/samorca/osha/models/event/infrastructure-event-model/20261125212326-79861733/model.pt",
+  "schema_version": "1",
+  "source_run_id": "training:run:a1df2040f32c0456b1a92f427a097397",
+  "state": "promoted",
+  "task": "event",
+  "version": "20261125212326-79861733"
+}

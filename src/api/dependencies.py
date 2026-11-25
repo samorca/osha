@@ -98,6 +98,9 @@ from src.api.errors import (
     ServiceUnavailableAPIError,
 )
 
+from src.database.pipeline import DatabasePipeline
+from src.database.runtime import create_database_pipeline
+
 
 # ------------------------------------------------------------------
 # Logging
@@ -204,6 +207,8 @@ class APIDependencies:
     model_loader: AIModelLoader
 
     ai_pipeline: AIPipeline
+
+    database_pipeline: Optional[DatabasePipeline] = None
 
     services: Dict[
         str,
@@ -333,19 +338,29 @@ class APIDependencies:
         #
 
         try:
-            await _call_maybe_async(
-                self.ai_pipeline,
-                "start",
-            )
+            if self.database_pipeline is not None:
+                self.database_pipeline.start()
+                self.database_pipeline.telemetry_repository().ensure_schema()
 
-        except TypeError:
-            # Some pipeline versions may require
-            # explicit discovery behavior.
-            await _call_maybe_async(
-                self.ai_pipeline,
-                "start",
-                discover_existing=True,
-            )
+            try:
+                await _call_maybe_async(
+                    self.ai_pipeline,
+                    "start",
+                )
+
+            except TypeError:
+                # Some pipeline versions may require
+                # explicit discovery behavior.
+                await _call_maybe_async(
+                    self.ai_pipeline,
+                    "start",
+                    discover_existing=True,
+                )
+
+        except Exception:
+            if self.database_pipeline is not None and self.database_pipeline.ready:
+                self.database_pipeline.stop()
+            raise
 
         with self._lock:
             self.started = True
@@ -421,6 +436,17 @@ class APIDependencies:
                         "resource": ("api_service"),
                         "resource_id": (service_name),
                         "error_type": (type(exc).__name__),
+                    }
+                )
+
+        if self.database_pipeline is not None:
+            try:
+                self.database_pipeline.stop()
+            except Exception as exc:
+                failures.append(
+                    {
+                        "resource": "database_pipeline",
+                        "error_type": type(exc).__name__,
                     }
                 )
 
@@ -586,7 +612,14 @@ class APIDependencies:
         self,
     ) -> bool:
         with self._lock:
-            return bool(self.started and not self.closed)
+            return bool(
+                self.started
+                and not self.closed
+                and (
+                    self.database_pipeline is None
+                    or self.database_pipeline.ready
+                )
+            )
 
     # ------------------------------------------------------
     # Summary
@@ -612,6 +645,10 @@ class APIDependencies:
                 "model_registry": (self.model_registry is not None),
                 "model_loader": (self.model_loader is not None),
                 "ai_pipeline": (self.ai_pipeline is not None),
+                "database_pipeline": (
+                    self.database_pipeline is not None
+                    and self.database_pipeline.ready
+                ),
             },
             "attributes": dict(self.attributes),
         }
@@ -637,6 +674,9 @@ def _register_default_api_services(
     from src.api.services.inference import (
         register_inference_service,
     )
+    from src.api.services.forecasting import (
+        register_capacity_forecasting_service,
+    )
     from src.api.services.models import (
         register_model_service,
     )
@@ -647,6 +687,7 @@ def _register_default_api_services(
     register_accelerator_service(dependencies)
     register_model_service(dependencies)
     register_inference_service(dependencies)
+    register_capacity_forecasting_service(dependencies)
     register_incident_service(dependencies)
     register_decision_service(dependencies)
     register_remediation_service(dependencies)
@@ -661,6 +702,7 @@ def create_api_dependencies(
     model_registry: Optional[AIModelRegistry] = None,
     model_loader: Optional[AIModelLoader] = None,
     ai_pipeline: Optional[AIPipeline] = None,
+    database_pipeline: Optional[DatabasePipeline] = None,
 ) -> APIDependencies:
     """
     Construct the process-scoped dependency graph.
@@ -710,6 +752,7 @@ def create_api_dependencies(
         model_registry=(resolved_registry),
         model_loader=(resolved_loader),
         ai_pipeline=(resolved_pipeline),
+        database_pipeline=(database_pipeline or create_database_pipeline()),
         attributes={
             "scope": ("worker_process"),
         },
