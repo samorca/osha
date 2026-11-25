@@ -1,0 +1,265 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+
+metadata:
+  name: osha-operator.v0.1.0
+
+  annotations:
+    alm-examples: |-
+      [
+        {
+          "apiVersion": "platform.osha.io/v1alpha1",
+          "kind": "OSHAPlatform",
+          "metadata": {
+            "name": "osha",
+            "namespace": "osha-system"
+          },
+          "spec": {
+            "managementPolicy": "ObserveOnly",
+            "observationIntervalSeconds": 30,
+            "paused": false,
+            "approval": {
+              "requireApproval": true,
+              "allowScaling": false,
+              "allowRestart": false,
+              "allowDeletion": false
+            },
+            "components": [
+              {
+                "name": "osha-api",
+                "namespace": "osha-system",
+                "kind": "Deployment",
+                "required": true,
+                "desiredReplicas": 1
+              },
+              {
+                "name": "osha-runtime",
+                "namespace": "osha-system",
+                "kind": "Deployment",
+                "required": true,
+                "desiredReplicas": 1
+              },
+              {
+                "name": "osha-worker",
+                "namespace": "osha-system",
+                "kind": "Deployment",
+                "required": true,
+                "desiredReplicas": 1
+              }
+            ]
+          }
+        }
+      ]
+
+    capabilities: Basic Install
+
+    categories: |
+      Monitoring,Integration & Delivery
+
+    containerImage: ghcr.io/samorca/osha-operator:v0.1.0
+
+    createdAt: "2026-11-25T00:00:00Z"
+
+    description: >-
+      OSHA Operator observes and manages Kubernetes resources belonging
+      to the OSHA infrastructure intelligence platform.
+
+    support: OSHA
+
+spec:
+  displayName: OSHA Operator
+
+  description: >-
+    OSHA Operator provides Kubernetes-native lifecycle integration for
+    the OSHA infrastructure intelligence platform.
+
+    The initial v0.1.0 release discovers and observes explicitly configured
+    Kubernetes workloads and reports their readiness through the
+    OSHAPlatform custom resource.
+
+    Mutation capabilities remain policy controlled and are disabled by
+    default.
+
+  version: 0.1.0
+
+  maturity: alpha
+
+  provider:
+    name: OSHA
+
+  maintainers:
+    - name: Samuel Obiora
+
+  keywords:
+    - osha
+    - kubernetes
+    - infrastructure
+    - observability
+    - operations
+    - automation
+    - operator
+
+  installModes:
+    - type: OwnNamespace
+      supported: true
+
+    - type: SingleNamespace
+      supported: true
+
+    - type: MultiNamespace
+      supported: false
+
+    - type: AllNamespaces
+      supported: false
+
+  customresourcedefinitions:
+    owned:
+      - name: oshaplatforms.platform.osha.io
+        version: v1alpha1
+        kind: OSHAPlatform
+        displayName: OSHA Platform
+        description: >-
+          Declares the OSHA workloads observed and managed by the
+          OSHA Kubernetes Operator.
+
+  install:
+    strategy: deployment
+
+    spec:
+      deployments:
+        - name: osha-operator-controller-manager
+
+          spec:
+            replicas: 1
+
+            selector:
+              matchLabels:
+                app.kubernetes.io/name: osha-operator
+                app.kubernetes.io/component: controller-manager
+
+            template:
+              metadata:
+                labels:
+                  app.kubernetes.io/name: osha-operator
+                  app.kubernetes.io/component: controller-manager
+                  app.kubernetes.io/part-of: osha
+
+              spec:
+                serviceAccountName: osha-operator-controller-manager
+
+                securityContext:
+                  runAsNonRoot: true
+
+                  seccompProfile:
+                    type: RuntimeDefault
+
+                containers:
+                  - name: manager
+
+                    image: ghcr.io/samorca/osha-operator:v0.1.0
+
+                    imagePullPolicy: IfNotPresent
+
+                    command:
+                      - /manager
+
+                    args:
+                      - --leader-elect
+                      - --metrics-bind-address=:8080
+                      - --health-probe-bind-address=:8081
+
+                    ports:
+                      - name: metrics
+                        containerPort: 8080
+                        protocol: TCP
+
+                      - name: health
+                        containerPort: 8081
+                        protocol: TCP
+
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      readOnlyRootFilesystem: true
+                      runAsNonRoot: true
+
+                      capabilities:
+                        drop:
+                          - ALL
+
+                    resources:
+                      requests:
+                        cpu: 50m
+                        memory: 64Mi
+
+                      limits:
+                        cpu: 500m
+                        memory: 256Mi
+
+                    livenessProbe:
+                      httpGet:
+                        path: /healthz
+                        port: health
+
+                      initialDelaySeconds: 15
+                      periodSeconds: 20
+
+                    readinessProbe:
+                      httpGet:
+                        path: /readyz
+                        port: health
+
+                      initialDelaySeconds: 5
+                      periodSeconds: 10
+
+      permissions:
+        - serviceAccountName: osha-operator-controller-manager
+
+          rules:
+            - apiGroups:
+                - platform.osha.io
+
+              resources:
+                - oshaplatforms
+
+              verbs:
+                - get
+                - list
+                - watch
+
+            - apiGroups:
+                - platform.osha.io
+
+              resources:
+                - oshaplatforms/status
+
+              verbs:
+                - get
+                - patch
+                - update
+
+            - apiGroups:
+                - apps
+
+              resources:
+                - deployments
+                - statefulsets
+                - daemonsets
+
+              verbs:
+                - get
+                - list
+                - watch
+
+            - apiGroups:
+                - coordination.k8s.io
+
+              resources:
+                - leases
+
+              verbs:
+                - create
+                - get
+                - list
+                - patch
+                - update
+                - watch

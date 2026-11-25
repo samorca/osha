@@ -1,0 +1,16 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: osha-operator-rolebinding
+  labels:
+    app.kubernetes.io/name: osha-operator
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/part-of: osha
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: osha-operator-role
+subjects:
+  - kind: ServiceAccount
+    name: osha-operator-controller-manager
+    namespace: osha-system

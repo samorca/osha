@@ -1,0 +1,278 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.23.0
+  name: oshaplatforms.platform.osha.io
+spec:
+  group: platform.osha.io
+  names:
+    categories:
+    - all
+    kind: OSHAPlatform
+    listKind: OSHAPlatformList
+    plural: oshaplatforms
+    shortNames:
+    - osha
+    singular: oshaplatform
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.managementPolicy
+      name: Policy
+      type: string
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    - jsonPath: .status.readyComponents
+      name: Ready
+      type: integer
+    - jsonPath: .status.totalComponents
+      name: Total
+      type: integer
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              approval:
+                properties:
+                  allowDeletion:
+                    default: false
+                    type: boolean
+                  allowRestart:
+                    default: false
+                    type: boolean
+                  allowScaling:
+                    default: false
+                    type: boolean
+                  requireApproval:
+                    default: true
+                    type: boolean
+                type: object
+              components:
+                items:
+                  properties:
+                    desiredReplicas:
+                      description: Used as an expectation in ObserveOnly and may be
+                        reconciled in Reconcile mode.
+                      format: int32
+                      maximum: 1000
+                      minimum: 0
+                      type: integer
+                    kind:
+                      default: Deployment
+                      enum:
+                      - Deployment
+                      - StatefulSet
+                      - DaemonSet
+                      type: string
+                    name:
+                      maxLength: 253
+                      minLength: 1
+                      type: string
+                    namespace:
+                      description: Defaults to the OSHAPlatform namespace when empty.
+                      maxLength: 63
+                      type: string
+                    required:
+                      default: true
+                      type: boolean
+                  required:
+                  - name
+                  type: object
+                maxItems: 100
+                minItems: 1
+                type: array
+              managementPolicy:
+                default: ObserveOnly
+                enum:
+                - ObserveOnly
+                - Reconcile
+                type: string
+              observationIntervalSeconds:
+                default: 30
+                format: int32
+                maximum: 3600
+                minimum: 5
+                type: integer
+              paused:
+                default: false
+                type: boolean
+            required:
+            - components
+            type: object
+          status:
+            properties:
+              components:
+                items:
+                  properties:
+                    availableReplicas:
+                      format: int32
+                      type: integer
+                    currentReplicas:
+                      format: int32
+                      type: integer
+                    desiredReplicas:
+                      format: int32
+                      type: integer
+                    kind:
+                      enum:
+                      - Deployment
+                      - StatefulSet
+                      - DaemonSet
+                      type: string
+                    lastObservedTime:
+                      format: date-time
+                      type: string
+                    message:
+                      type: string
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    observedGeneration:
+                      format: int64
+                      type: integer
+                    phase:
+                      enum:
+                      - Unknown
+                      - NotFound
+                      - Progressing
+                      - Ready
+                      - Degraded
+                      type: string
+                    readyReplicas:
+                      format: int32
+                      type: integer
+                    required:
+                      type: boolean
+                    resourceVersion:
+                      type: string
+                    updatedReplicas:
+                      format: int32
+                      type: integer
+                  required:
+                  - kind
+                  - lastObservedTime
+                  - name
+                  - namespace
+                  - phase
+                  - required
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - kind
+                - namespace
+                - name
+                x-kubernetes-list-type: map
+              conditions:
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              lastReconcileTime:
+                format: date-time
+                type: string
+              observedGeneration:
+                format: int64
+                type: integer
+              phase:
+                enum:
+                - Pending
+                - Discovering
+                - Progressing
+                - Ready
+                - Degraded
+                - Terminating
+                type: string
+              readyComponents:
+                format: int32
+                type: integer
+              totalComponents:
+                format: int32
+                type: integer
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
