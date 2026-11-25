@@ -1,0 +1,13 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: osha-lifecycle-leader-election-rolebinding
+  namespace: osha-lifecycle-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: osha-lifecycle-leader-election-role
+subjects:
+  - kind: ServiceAccount
+    name: osha-lifecycle-manager
+    namespace: osha-lifecycle-system

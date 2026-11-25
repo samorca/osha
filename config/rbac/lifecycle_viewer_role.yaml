@@ -1,0 +1,28 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: osha-lifecycle-viewer
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+rules:
+  - apiGroups:
+      - lifecycle.osha.io
+    resources:
+      - operatorpackages
+      - operatorcatalogs
+      - operatorsubscriptions
+      - operatorinstallplans
+    verbs:
+      - get
+      - list
+      - watch
+
+  - apiGroups:
+      - lifecycle.osha.io
+    resources:
+      - operatorpackages/status
+      - operatorcatalogs/status
+      - operatorsubscriptions/status
+      - operatorinstallplans/status
+    verbs:
+      - get

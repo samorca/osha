@@ -1,0 +1,17 @@
+apiVersion: lifecycle.osha.io/v1alpha1
+kind: OperatorSubscription
+metadata:
+  name: e2e-subscription
+  namespace: osha-lifecycle-system
+spec:
+  package: e2e-operator
+
+  catalog:
+    name: e2e-catalog
+    namespace: osha-lifecycle-system
+
+  channel: stable
+  versionConstraint: ">=1.0.0, <2.0.0"
+  approval: Manual
+  targetNamespace: osha-lifecycle-system
+  paused: true

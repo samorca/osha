@@ -1,0 +1,17 @@
+.git/
+.gitignore
+
+bin/
+dist/
+tmp/
+coverage/
+
+*.log
+*.out
+
+.env
+.env.*
+
+test/
+
+README.md

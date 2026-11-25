@@ -1,0 +1,33 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: osha-lifecycle-editor
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+rules:
+  - apiGroups:
+      - lifecycle.osha.io
+    resources:
+      - operatorpackages
+      - operatorcatalogs
+      - operatorsubscriptions
+      - operatorinstallplans
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+
+  - apiGroups:
+      - lifecycle.osha.io
+    resources:
+      - operatorpackages/status
+      - operatorcatalogs/status
+      - operatorsubscriptions/status
+      - operatorinstallplans/status
+    verbs:
+      - get

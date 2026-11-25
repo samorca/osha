@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: controller-manager
+  namespace: osha-lifecycle-system
+
+  labels:
+    app.kubernetes.io/name: osha-operator-lifecycle
+    app.kubernetes.io/component: lifecycle-manager
+    app.kubernetes.io/part-of: osha
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: osha-operator-lifecycle
+      app.kubernetes.io/component: lifecycle-manager
+
+  strategy:
+    type: RollingUpdate
+
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: osha-operator-lifecycle
+        app.kubernetes.io/component: lifecycle-manager
+        app.kubernetes.io/part-of: osha
+
+    spec:
+      serviceAccountName: osha-lifecycle-manager
+
+      terminationGracePeriodSeconds: 30
+
+      securityContext:
+        runAsNonRoot: true
+
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+        - name: manager
+
+          image: controller:latest
+          imagePullPolicy: IfNotPresent
+
+          command:
+            - /manager
+
+          args:
+            - --leader-elect
+            - --metrics-bind-address=:8080
+            - --health-probe-bind-address=:8081
+
+          ports:
+            - name: metrics
+              containerPort: 8080
+              protocol: TCP
+
+            - name: health
+              containerPort: 8081
+              protocol: TCP
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+
+            capabilities:
+              drop:
+                - ALL
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3

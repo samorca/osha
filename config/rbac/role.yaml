@@ -1,0 +1,42 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: osha-lifecycle-manager-role
+rules:
+- apiGroups:
+  - lifecycle.osha.io
+  resources:
+  - operatorcatalogs
+  - operatorpackages
+  - operatorsubscriptions
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - lifecycle.osha.io
+  resources:
+  - operatorinstallplans
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - lifecycle.osha.io
+  resources:
+  - operatorinstallplans/status
+  verbs:
+  - get
+- apiGroups:
+  - lifecycle.osha.io
+  resources:
+  - operatorsubscriptions/status
+  verbs:
+  - get
+  - patch
+  - update
