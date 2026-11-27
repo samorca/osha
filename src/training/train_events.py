@@ -90,7 +90,7 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument(
         "--data",
-        default=("orchestration-ai-data/processed/logs/events.jsonl"),
+        default=("dataset/processed/logs/events.jsonl"),
     )
 
     parser.add_argument(

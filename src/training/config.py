@@ -70,7 +70,7 @@ class TrainingPathConfig:
 
     prepared_data_directory: str = "data/prepared"
 
-    orchestration_data_directory: str = "orchestration-ai-data"
+    orchestration_data_directory: str = "dataset"
 
     checkpoint_directory: str = "checkpoints"
 

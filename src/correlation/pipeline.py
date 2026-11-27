@@ -945,27 +945,27 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument(
         "--output",
-        default=("orchestration-ai-data/correlated/result.json"),
+        default=("dataset/correlated/result.json"),
     )
 
     parser.add_argument(
         "--groups-output",
-        default=("orchestration-ai-data/correlated/groups.jsonl"),
+        default=("dataset/correlated/groups.jsonl"),
     )
 
     parser.add_argument(
         "--candidates-output",
-        default=("orchestration-ai-data/correlated/candidates.jsonl"),
+        default=("dataset/correlated/candidates.jsonl"),
     )
 
     parser.add_argument(
         "--relationships-output",
-        default=("orchestration-ai-data/correlated/relationships.jsonl"),
+        default=("dataset/correlated/relationships.jsonl"),
     )
 
     parser.add_argument(
         "--load-errors-output",
-        default=("orchestration-ai-data/quarantine/correlation-load-errors.jsonl"),
+        default=("dataset/quarantine/correlation-load-errors.jsonl"),
     )
 
     parser.add_argument(

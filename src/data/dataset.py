@@ -28,12 +28,15 @@ from enum import Enum
 from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
 from uuid import uuid4
 
-from .manifests import (
-    ArtifactSource,
-    ArtifactType,
-    DataManifest,
+from .errors import (
     ManifestError,
-    ManifestStatus,
+)
+from .schema import (
+    DataSource,
+    DatasetFile,
+    DatasetFormat,
+    DatasetManifest,
+    DatasetPurpose,
 )
 
 
@@ -232,7 +235,7 @@ class Dataset:
 
     records: list[DatasetRecord] = field(default_factory=list)
 
-    source: ArtifactSource | None = None
+    source: DataSource | None = None
 
     schema_name: str | None = None
     schema_version: str | None = None
@@ -278,8 +281,8 @@ class Dataset:
 
         if self.source is not None:
             try:
-                self.source.validate()
-            except ManifestError as exc:
+                self.source.finalize()
+            except (ManifestError, TypeError, ValueError) as exc:
                 raise DatasetValidationError(f"Invalid dataset source: {exc}") from exc
 
         for key, value in self.labels.items():
@@ -595,45 +598,46 @@ class Dataset:
         uri: str | None = None,
         content_type: str = "application/json",
         format: str = "json",
-    ) -> DataManifest:
+    ) -> DatasetManifest:
         """
-        Build a DataManifest describing this dataset.
+        Build a DatasetManifest describing this dataset.
 
         Note that this does not persist the dataset.
         """
 
-        status_map = {
-            DatasetState.CREATED: ManifestStatus.PENDING,
-            DatasetState.READY: ManifestStatus.READY,
-            DatasetState.PROCESSING: ManifestStatus.PROCESSING,
-            DatasetState.COMPLETE: ManifestStatus.COMPLETE,
-            DatasetState.FAILED: ManifestStatus.FAILED,
-            DatasetState.ARCHIVED: ManifestStatus.ARCHIVED,
-        }
-
-        manifest = DataManifest(
+        manifest_uri = uri or f"dataset://{self.dataset_id}"
+        manifest = DatasetManifest(
+            dataset_id=self.dataset_id,
             name=self.name,
-            artifact_type=ArtifactType.DATASET,
-            uri=uri or f"dataset://{self.dataset_id}",
             version=self.version,
-            status=status_map[self.state],
-            content_type=content_type,
+            source=self.source
+            or DataSource(
+                kind="generated",
+                location=manifest_uri,
+                provider="osha",
+            ),
             format=format,
-            record_count=len(self.records),
-            checksum_sha256=self.fingerprint(),
-            source=self.source,
-            schema_name=self.schema_name,
-            schema_version=self.schema_version,
-            created_at=self.created_at,
-            updated_at=self.updated_at,
-            labels=dict(self.labels),
-            metadata={
+            purpose=DatasetPurpose.GENERAL.value,
+            files=[
+                DatasetFile(
+                    path=manifest_uri,
+                    checksum=self.fingerprint(),
+                    media_type=content_type,
+                    record_count=len(self.records),
+                )
+            ],
+            labels=list(self.labels),
+            attributes={
                 **self.metadata,
-                "dataset_id": self.dataset_id,
+                "dataset_state": self.state.value,
+                "schema_name": self.schema_name,
+                "schema_version": self.schema_version,
+                "created_at": self.created_at.isoformat(),
+                "updated_at": self.updated_at.isoformat(),
             },
         )
 
-        manifest.validate()
+        manifest.finalize()
         return manifest
 
     def to_dict(
@@ -729,7 +733,7 @@ class Dataset:
                     )
                 ),
                 records=records,
-                source=(ArtifactSource.from_dict(source_data) if source_data else None),
+                source=(DataSource(**source_data) if source_data else None),
                 schema_name=value.get("schema_name"),
                 schema_version=value.get("schema_version"),
                 created_at=created_at.astimezone(timezone.utc),
@@ -771,7 +775,7 @@ def dataset_from_records(
     name: str,
     records: Iterable[Mapping[str, Any]],
     *,
-    source: ArtifactSource | None = None,
+    source: DataSource | None = None,
     description: str | None = None,
     schema_name: str | None = None,
     schema_version: str | None = None,

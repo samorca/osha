@@ -1,225 +1,452 @@
+"""
+OSHA Database Health Monitoring.
+
+Provides structured health information for OSHA's relational database layer.
+
+This module can support:
+
+    - application startup checks
+    - API health endpoints
+    - Docker health checks
+    - Kubernetes readiness checks
+    - Kubernetes liveness diagnostics
+    - operational monitoring
+    - database pool diagnostics
+
+Health checks must not expose database passwords, connection credentials,
+tokens or other sensitive configuration.
+
+The module reuses the process-wide SQLAlchemy Engine managed by OSHA's
+connection layer.
+"""
+
 from __future__ import annotations
 
-"""
-Database dependency health/readiness checks for
-OSHA.
-"""
+import enum
+import logging
+import time
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from typing import Any
 
-from time import (
-    perf_counter,
+from sqlalchemy import Engine, text
+from sqlalchemy.exc import SQLAlchemyError
+
+from .config import get_database_config
+from .connection import (
+    get_engine,
+    get_pool_status,
 )
-
-from typing import (
-    Any,
-    Dict,
-    Optional,
-)
-
-from src.database.connection import (
-    DatabaseConnection,
-)
-
-from src.database.schema import (
-    ConnectionState,
-    DatabaseHealth,
+from .exceptions import (
+    DatabaseHealthCheckError,
+    DatabaseUnavailableError,
 )
 
 
-# ---------------------------------------------------------------
-# Database health checker
-# ---------------------------------------------------------------
+logger = logging.getLogger(__name__)
 
 
-class DatabaseHealthChecker:
+# ---------------------------------------------------------------------------
+# Health status
+# ---------------------------------------------------------------------------
+
+class DatabaseHealthStatus(str, enum.Enum):
+    """Health states reported by OSHA's database subsystem."""
+
+    HEALTHY = "healthy"
+    DEGRADED = "degraded"
+    UNHEALTHY = "unhealthy"
+    UNKNOWN = "unknown"
+
+
+# ---------------------------------------------------------------------------
+# Health result
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True, slots=True)
+class DatabaseHealthResult:
     """
-    Probe OSHA's configured persistence
-    dependency without exposing driver or
-    credential details.
+    Structured result returned by a database health check.
 
-    This reports health of OSHA's database
-    dependency only.
+    Sensitive connection information is intentionally excluded.
+    """
 
-    It does not represent health of external
-    infrastructure monitored by OSHA.
+    status: DatabaseHealthStatus
+
+    reachable: bool
+
+    checked_at: datetime
+
+    latency_ms: float | None
+
+    database: str | None
+    host: str | None
+    port: int | None
+    driver: str | None
+
+    pool: dict[str, Any]
+
+    error: str | None = None
+
+    @property
+    def healthy(self) -> bool:
+        """Return whether the database is healthy."""
+        return self.status == DatabaseHealthStatus.HEALTHY
+
+    @property
+    def ready(self) -> bool:
+        """
+        Return whether OSHA should consider the relational database ready.
+
+        A reachable degraded database remains available for traffic while
+        monitoring systems can separately alert on degradation.
+        """
+        return (
+            self.reachable
+            and self.status
+            in {
+                DatabaseHealthStatus.HEALTHY,
+                DatabaseHealthStatus.DEGRADED,
+            }
+        )
+
+    def as_dict(self) -> dict[str, Any]:
+        """Return a serialisable, non-sensitive health representation."""
+        return {
+            "status": self.status.value,
+            "healthy": self.healthy,
+            "ready": self.ready,
+            "reachable": self.reachable,
+            "checked_at": self.checked_at.isoformat(),
+            "latency_ms": self.latency_ms,
+            "database": self.database,
+            "host": self.host,
+            "port": self.port,
+            "driver": self.driver,
+            "pool": self.pool,
+            "error": self.error,
+        }
+
+
+# ---------------------------------------------------------------------------
+# Health service
+# ---------------------------------------------------------------------------
+
+class DatabaseHealthService:
+    """
+    Perform structured health checks for OSHA's relational database.
+
+    The service accepts an optional Engine for testing or specialised
+    integration scenarios. Otherwise it uses OSHA's process-wide Engine.
     """
 
     def __init__(
         self,
-        *,
-        connection: DatabaseConnection,
-        degraded_latency_seconds: float = 1.0,
+        engine: Engine | None = None,
     ) -> None:
-        if degraded_latency_seconds <= 0:
-            raise ValueError("degraded_latency_seconds must be > 0")
+        self._engine = engine
 
-        self.connection = connection
+    @property
+    def engine(self) -> Engine:
+        """Return the SQLAlchemy Engine used for health checks."""
+        return self._engine or get_engine()
 
-        self.degraded_latency_seconds = float(degraded_latency_seconds)
-
-        self._last: Optional[DatabaseHealth] = None
-
-    # ---------------------------------------------------------
-    # Health check
-    # ---------------------------------------------------------
+    # ------------------------------------------------------------------
+    # Connectivity
+    # ------------------------------------------------------------------
 
     def check(
         self,
-    ) -> DatabaseHealth:
+    ) -> DatabaseHealthResult:
         """
-        Run one lightweight readiness probe.
+        Perform a relational database health check.
 
-        Results:
+        The health query intentionally performs the smallest practical
+        operation:
 
-            healthy
-            degraded
-            unhealthy
-            unknown
+            SELECT 1
+
+        The result includes:
+            - connectivity
+            - query latency
+            - safe endpoint identity
+            - pool diagnostics
+
+        Database errors are converted into an unhealthy result rather than
+        escaping from this method.
         """
-
-        # -----------------------------------------------------
-        # Connection not ready
-        # -----------------------------------------------------
-
-        if not self.connection.ready:
-            state = self.connection.status.state
-
-            status = (
-                "unhealthy"
-                if state
-                in {
-                    ConnectionState.FAILED.value,
-                    ConnectionState.CLOSED.value,
-                }
-                else "unknown"
-            )
-
-            self._last = DatabaseHealth(
-                status=status,
-                connection_id=(self.connection.status.connection_id),
-                message=("Database connection is not ready."),
-                attributes={
-                    "connection_state": (state),
-                    "error_type": (self.connection.status.last_error_type),
-                },
-            ).finalize()
-
-            return self._last
-
-        # -----------------------------------------------------
-        # Readiness ping
-        # -----------------------------------------------------
-
-        started = perf_counter()
-
-        try:
-            healthy = self.connection.ping()
-
-        except Exception as exc:
-            latency = max(
-                0.0,
-                perf_counter() - started,
-            )
-
-            self._last = DatabaseHealth(
-                status="unhealthy",
-                connection_id=(self.connection.status.connection_id),
-                latency_seconds=(latency),
-                message=("Database health probe failed."),
-                attributes={
-                    "error_type": (type(exc).__name__),
-                    "error_module": (type(exc).__module__),
-                },
-            ).finalize()
-
-            return self._last
-
-        latency = max(
-            0.0,
-            perf_counter() - started,
+        checked_at = datetime.now(
+            timezone.utc
         )
 
-        # -----------------------------------------------------
-        # Determine health status
-        # -----------------------------------------------------
+        engine = self.engine
 
-        if not healthy:
-            status = "unhealthy"
+        started = time.perf_counter()
 
-            message = "Database readiness probe failed."
+        try:
+            with engine.connect() as connection:
+                value = connection.scalar(
+                    text("SELECT 1")
+                )
 
-        elif latency >= self.degraded_latency_seconds:
-            status = "degraded"
+            latency_ms = (
+                time.perf_counter() - started
+            ) * 1000.0
 
-            message = (
-                "Database readiness probe exceeded the configured latency threshold."
+            if value != 1:
+                return DatabaseHealthResult(
+                    status=DatabaseHealthStatus.DEGRADED,
+                    reachable=True,
+                    checked_at=checked_at,
+                    latency_ms=round(
+                        latency_ms,
+                        3,
+                    ),
+                    database=engine.url.database,
+                    host=engine.url.host,
+                    port=engine.url.port,
+                    driver=engine.url.drivername,
+                    pool=self._safe_pool_status(
+                        engine
+                    ),
+                    error=(
+                        "database health query returned "
+                        "an unexpected result"
+                    ),
+                )
+
+            return DatabaseHealthResult(
+                status=DatabaseHealthStatus.HEALTHY,
+                reachable=True,
+                checked_at=checked_at,
+                latency_ms=round(
+                    latency_ms,
+                    3,
+                ),
+                database=engine.url.database,
+                host=engine.url.host,
+                port=engine.url.port,
+                driver=engine.url.drivername,
+                pool=self._safe_pool_status(
+                    engine
+                ),
             )
 
-        else:
-            status = "healthy"
+        except SQLAlchemyError as exc:
+            latency_ms = (
+                time.perf_counter() - started
+            ) * 1000.0
 
-            message = "Database dependency is ready."
+            logger.warning(
+                "OSHA database health check failed: %s",
+                exc.__class__.__name__,
+            )
 
-        self._last = DatabaseHealth(
-            status=status,
-            connection_id=(self.connection.status.connection_id),
-            latency_seconds=(latency),
-            message=message,
-            attributes={
-                "connection_state": (self.connection.status.state),
-                "degraded_latency_seconds": (self.degraded_latency_seconds),
-                "backend": (self.connection.config.backend),
-            },
-        ).finalize()
+            return DatabaseHealthResult(
+                status=DatabaseHealthStatus.UNHEALTHY,
+                reachable=False,
+                checked_at=checked_at,
+                latency_ms=round(
+                    latency_ms,
+                    3,
+                ),
+                database=engine.url.database,
+                host=engine.url.host,
+                port=engine.url.port,
+                driver=engine.url.drivername,
+                pool=self._safe_pool_status(
+                    engine
+                ),
+                error="database connection check failed",
+            )
 
-        return self._last
+    # ------------------------------------------------------------------
+    # Startup requirement
+    # ------------------------------------------------------------------
 
-    # ---------------------------------------------------------
-    # Last observation
-    # ---------------------------------------------------------
-
-    @property
-    def last(
+    def require_healthy(
         self,
-    ) -> Optional[DatabaseHealth]:
-        return self._last
-
-    # ---------------------------------------------------------
-    # Readiness convenience
-    # ---------------------------------------------------------
-
-    def ready(
-        self,
-    ) -> bool:
+    ) -> DatabaseHealthResult:
         """
-        Return True only for a healthy result.
+        Require the relational database to be healthy.
 
-        DEGRADED intentionally does not count as
-        fully ready in this helper.
+        This is suitable for service startup when OSHA cannot operate without
+        its relational persistence layer.
         """
+        result = self.check()
 
-        return self.check().status == "healthy"
+        if not result.healthy:
+            raise DatabaseUnavailableError(
+                "OSHA relational database is not healthy",
+                code="database_unhealthy",
+                context={
+                    "status": result.status.value,
+                    "reachable": result.reachable,
+                },
+            )
 
-    # ---------------------------------------------------------
-    # Safe summary
-    # ---------------------------------------------------------
+        return result
 
-    def summary(
+    # ------------------------------------------------------------------
+    # Readiness
+    # ------------------------------------------------------------------
+
+    def readiness(
         self,
-    ) -> Dict[str, Any]:
-        return {
-            "connection_ready": (self.connection.ready),
-            "connection_state": (self.connection.status.state),
-            "degraded_latency_seconds": (self.degraded_latency_seconds),
-            "last_health": (self._last.to_dict() if self._last is not None else None),
-            "scope": ("osha_database_dependency"),
-            "credentials_exposed": (False),
-        }
+    ) -> DatabaseHealthResult:
+        """
+        Return database readiness state.
+
+        Readiness determines whether the database is available sufficiently
+        for OSHA to accept work.
+        """
+        return self.check()
+
+    # ------------------------------------------------------------------
+    # Liveness
+    # ------------------------------------------------------------------
+
+    def liveness(
+        self,
+    ) -> dict[str, Any]:
+        """
+        Return process-side database subsystem liveness information.
+
+        Liveness deliberately does not require a successful database query.
+
+        Database unavailability should normally affect readiness rather than
+        automatically implying that the OSHA process itself is dead.
+        """
+        try:
+            engine = self.engine
+
+            return {
+                "status": "alive",
+                "engine_available": engine is not None,
+            }
+
+        except Exception:
+            logger.exception(
+                "OSHA database engine liveness check failed"
+            )
+
+            return {
+                "status": "unhealthy",
+                "engine_available": False,
+            }
+
+    # ------------------------------------------------------------------
+    # Diagnostics
+    # ------------------------------------------------------------------
+
+    def diagnostics(
+        self,
+    ) -> dict[str, Any]:
+        """
+        Return safe database diagnostics.
+
+        Passwords and complete credential-bearing URLs are never returned.
+        """
+        try:
+            engine = self.engine
+            config = get_database_config()
+
+            return {
+                "driver": engine.url.drivername,
+                "database": engine.url.database,
+                "host": engine.url.host,
+                "port": engine.url.port,
+                "application_name": config.application_name,
+                "pool": self._safe_pool_status(
+                    engine
+                ),
+            }
+
+        except Exception as exc:
+            logger.exception(
+                "Unable to generate OSHA database diagnostics"
+            )
+
+            raise DatabaseHealthCheckError(
+                "Unable to generate database diagnostics",
+                code="database_diagnostics_failed",
+            ) from exc
+
+    # ------------------------------------------------------------------
+    # Pool diagnostics
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _safe_pool_status(
+        engine: Engine,
+    ) -> dict[str, Any]:
+        """
+        Return pool diagnostics without allowing diagnostics failures to
+        break the primary health check.
+        """
+        try:
+            return get_pool_status(
+                engine
+            )
+
+        except Exception:
+            logger.exception(
+                "Unable to collect OSHA database pool diagnostics"
+            )
+
+            return {
+                "status": "unavailable",
+            }
 
 
-# ---------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Process-wide health service
+# ---------------------------------------------------------------------------
+
+database_health_service = DatabaseHealthService()
+
+
+# ---------------------------------------------------------------------------
+# Convenience functions
+# ---------------------------------------------------------------------------
+
+def check_database_health() -> DatabaseHealthResult:
+    """Run OSHA's default database health check."""
+    return database_health_service.check()
+
+
+def require_database_health() -> DatabaseHealthResult:
+    """Require OSHA's relational database to be healthy."""
+    return database_health_service.require_healthy()
+
+
+def database_readiness() -> DatabaseHealthResult:
+    """Return relational database readiness."""
+    return database_health_service.readiness()
+
+
+def database_liveness() -> dict[str, Any]:
+    """Return database subsystem liveness information."""
+    return database_health_service.liveness()
+
+
+def database_health_diagnostics() -> dict[str, Any]:
+    """Return safe relational database diagnostics."""
+    return database_health_service.diagnostics()
+
+
+# ---------------------------------------------------------------------------
 # Public API
-# ---------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 __all__ = [
-    "DatabaseHealthChecker",
+    "DatabaseHealthResult",
+    "DatabaseHealthService",
+    "DatabaseHealthStatus",
+    "check_database_health",
+    "database_health_diagnostics",
+    "database_health_service",
+    "database_liveness",
+    "database_readiness",
+    "require_database_health",
 ]

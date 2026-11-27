@@ -963,13 +963,13 @@ def test_data_implementation_is_separate_from_corpus_storage() -> None:
     """
     src/data contains implementation.
 
-    orchestration-ai-data contains datasets and
+    dataset contains datasets and
     generated corpus material.
     """
 
     assert DATA_ROOT.resolve() != (
         PROJECT_ROOT
-        / "orchestration-ai-data"
+        / "dataset"
     ).resolve()
 
 

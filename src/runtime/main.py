@@ -66,6 +66,7 @@ from src.runtime.services import (
     registry_from_config,
 )
 from src.database.runtime import create_database_pipeline
+from src.frameworks import FrameworkApplication
 
 
 LOGGER = logging.getLogger(
@@ -574,6 +575,30 @@ def build_registry(
     database_service.stop_hook = database.stop
     database_service.readiness_probe = lambda: database.ready
     database_service.attributes["backend"] = database.config.backend
+
+    frameworks = FrameworkApplication(process_role="runtime")
+    framework_service = registry.get("frameworks")
+    if framework_service is None:
+        framework_service = RuntimeService(
+            name="frameworks",
+            dependencies=["database"],
+            config=config.service("frameworks"),
+        )
+        registry.register(framework_service)
+    framework_service.start_hook = frameworks.start
+    framework_service.stop_hook = frameworks.close
+    framework_service.readiness_probe = lambda: frameworks.ready
+    framework_service.attributes["components"] = [
+        "telemetry",
+        "correlation",
+        "intelligence",
+        "memory",
+        "decision",
+        "integrations",
+        "observability",
+        "orchestration",
+        "self_healing",
+    ]
     registry.validate_dependencies()
     return registry
 

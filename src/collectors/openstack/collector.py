@@ -68,7 +68,7 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument(
         "--output",
-        default=("orchestration-ai-data/live/openstack/telemetry.jsonl"),
+        default=("dataset/live/openstack/telemetry.jsonl"),
     )
 
     parser.add_argument(

@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 import src.database as database_package
-from src.database.config import DatabaseConfig
+from src.database.config import DatabaseConfig, load_database_config
 from src.database.pipeline import DatabasePipeline
 
 
@@ -29,6 +29,33 @@ DATABASE_ROOT = (
     / "src"
     / "database"
 )
+
+
+def test_database_config_accepts_compose_environment_names(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for name in (
+        "OSHA_DB_HOST",
+        "OSHA_DB_PORT",
+        "OSHA_DB_NAME",
+        "OSHA_DB_USER",
+        "OSHA_DB_PASSWORD",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+    monkeypatch.setenv("OSHA_DATABASE_HOST", "127.0.0.1")
+    monkeypatch.setenv("OSHA_DATABASE_PORT", "5433")
+    monkeypatch.setenv("OSHA_DATABASE_NAME", "osha_test")
+    monkeypatch.setenv("OSHA_DATABASE_USERNAME", "osha_test_user")
+    monkeypatch.setenv("OSHA_DATABASE_PASSWORD", "test-password")
+
+    config = load_database_config()
+
+    assert config.host == "127.0.0.1"
+    assert config.port == 5433
+    assert config.database == "osha_test"
+    assert config.username == "osha_test_user"
+    assert config.password == "test-password"
 
 
 # -------------------------------------------------------------------

@@ -125,7 +125,8 @@ APPLICATION_DESCRIPTION = (
     "HTTP control plane for OSHA infrastructure "
     "intelligence, accelerator management, model "
     "serving, capacity forecasting, incident analysis, "
-    "decisions, and guarded remediation."
+    "decisions, guarded remediation, and integrated "
+    "telemetry analysis."
 )
 
 APPLICATION_VERSION = "1.0.0"
@@ -147,6 +148,8 @@ ROUTER_MODULES: Tuple[
     "src.api.routes.incidents",
     "src.api.routes.decisions",
     "src.api.routes.remediation",
+    "src.api.routes.frameworks",
+    "src.api.routes.otgh",
 )
 
 
@@ -505,6 +508,12 @@ def router_enabled(
             or config.features.remediation_approval_enabled
             or config.features.remediation_execution_enabled
         )
+
+    if module_name.endswith(".frameworks"):
+        return bool(config.features.inference_enabled)
+
+    if module_name.endswith(".otgh"):
+        return bool(config.features.inference_enabled)
 
     return False
 

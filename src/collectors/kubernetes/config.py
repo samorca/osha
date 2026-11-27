@@ -28,7 +28,7 @@ class KubernetesCollectorConfig:
 
     tail_lines: int = 200
 
-    output_path: str = "orchestration-ai-data/live/kubernetes/telemetry.jsonl"
+    output_path: str = "dataset/live/kubernetes/telemetry.jsonl"
 
     @classmethod
     def auto(
@@ -54,7 +54,7 @@ class KubernetesCollectorConfig:
             connection_mode="auto",
             tail_lines=tail_lines,
             output_path=(
-                output_path or ("orchestration-ai-data/live/kubernetes/telemetry.jsonl")
+                output_path or ("dataset/live/kubernetes/telemetry.jsonl")
             ),
         )
 

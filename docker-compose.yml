@@ -4,6 +4,8 @@ services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_DB: "osha"
       POSTGRES_USER: "osha"
@@ -61,6 +63,7 @@ services:
     environment:
       PYTHONUNBUFFERED: "1"
       PYTHONDONTWRITEBYTECODE: "1"
+      OSHA_PROCESS_ROLE: "api"
       OSHA_ENVIRONMENT_ID: "kubernetes"
       OSHA_DATABASE_BACKEND: "postgresql"
       OSHA_DATABASE_NAME: "osha"
@@ -154,6 +157,7 @@ services:
     environment:
       PYTHONUNBUFFERED: "1"
       PYTHONDONTWRITEBYTECODE: "1"
+      OSHA_PROCESS_ROLE: "runtime"
       OSHA_ENVIRONMENT_ID: "kubernetes"
       OSHA_DATABASE_BACKEND: "postgresql"
       OSHA_DATABASE_NAME: "osha"
@@ -248,6 +252,7 @@ services:
     environment:
       PYTHONUNBUFFERED: "1"
       PYTHONDONTWRITEBYTECODE: "1"
+      OSHA_PROCESS_ROLE: "worker"
       OSHA_ENVIRONMENT_ID: "kubernetes"
       OSHA_DATABASE_BACKEND: "postgresql"
       OSHA_DATABASE_NAME: "osha"

@@ -470,13 +470,13 @@ def main() -> None:
 
     parser.add_argument(
         "--data-root",
-        default="orchestration-ai-data",
+        default="dataset",
     )
 
     parser.add_argument(
         "--processed-root",
         default=(
-            "orchestration-ai-data/processed"
+            "dataset/processed"
         ),
     )
 

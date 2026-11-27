@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: otgh
+  namespace: otgh
+
+spec:
+  replicas: 1
+
+  strategy:
+    type: Recreate
+
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/environment: development
+
+    spec:
+      containers:
+        - name: otgh
+
+          imagePullPolicy: IfNotPresent
+
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+
+            limits:
+              cpu: "1"
+              memory: 512Mi
+
+          env:
+            - name: OTGH_NODE_ID
+              value: otgh-development
+
+            - name: OTGH_WORKERS
+              value: "2"

@@ -54,7 +54,7 @@ def parse_args():
 
     parser.add_argument(
         "--output",
-        default=("orchestration-ai-data/live/linux/telemetry.jsonl"),
+        default=("dataset/live/linux/telemetry.jsonl"),
     )
 
     parser.add_argument(

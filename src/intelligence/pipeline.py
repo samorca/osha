@@ -475,32 +475,32 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument(
         "--output",
-        default=("orchestration-ai-data/intelligence/result.json"),
+        default=("dataset/intelligence/result.json"),
     )
 
     parser.add_argument(
         "--incidents-output",
-        default=("orchestration-ai-data/intelligence/incidents.jsonl"),
+        default=("dataset/intelligence/incidents.jsonl"),
     )
 
     parser.add_argument(
         "--anomalies-output",
-        default=("orchestration-ai-data/intelligence/anomalies.jsonl"),
+        default=("dataset/intelligence/anomalies.jsonl"),
     )
 
     parser.add_argument(
         "--patterns-output",
-        default=("orchestration-ai-data/intelligence/patterns.jsonl"),
+        default=("dataset/intelligence/patterns.jsonl"),
     )
 
     parser.add_argument(
         "--explanations-output",
-        default=("orchestration-ai-data/intelligence/explanations.jsonl"),
+        default=("dataset/intelligence/explanations.jsonl"),
     )
 
     parser.add_argument(
         "--explanations-text",
-        default=("orchestration-ai-data/intelligence/explanations.txt"),
+        default=("dataset/intelligence/explanations.txt"),
     )
 
     parser.add_argument(

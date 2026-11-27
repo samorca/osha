@@ -1,0 +1,28 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+labels:
+  - pairs:
+      app.kubernetes.io/environment: production
+
+    includeSelectors: false
+
+# Replace this image repository/tag with the production OTGH image actually
+# published by your CI/CD system.
+#
+# Example future values:
+#
+#   ghcr.io/samorca/otgh:v1.0.0
+#
+# Do not use :latest for controlled production releases.
+images:
+  - name: otgh
+    newName: ghcr.io/samorca/otgh
+    newTag: v1.0.0
+
+patches:
+  - path: deployment-patch.yaml
+  - path: configmap-patch.yaml

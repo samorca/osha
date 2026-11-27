@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: otgh-ingest
+  namespace: otgh
+  labels:
+    app.kubernetes.io/name: otgh
+    app.kubernetes.io/part-of: osha
+    app.kubernetes.io/component: transporter
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: otgh
+      app.kubernetes.io/component: transporter
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: osha-system
+      ports:
+        - protocol: TCP
+          port: 8082

@@ -1,0 +1,315 @@
+# -----------------------------------------------------------------------------
+# OTGH Helm defaults
+# -----------------------------------------------------------------------------
+
+nameOverride: ""
+fullnameOverride: ""
+
+# -----------------------------------------------------------------------------
+# Namespace
+# -----------------------------------------------------------------------------
+
+namespace:
+  create: true
+  name: otgh
+  annotations: {}
+
+service:
+  type: ClusterIP
+  port: 8082
+
+osha:
+  endpoint: http://osha-api.osha-system.svc.cluster.local:8088/api/v1/otgh/batches
+
+# -----------------------------------------------------------------------------
+# Container image
+# -----------------------------------------------------------------------------
+
+image:
+  repository: ghcr.io/samorca/otgh
+  tag: "v1.0.0"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+# -----------------------------------------------------------------------------
+# Deployment
+# -----------------------------------------------------------------------------
+
+replicaCount: 1
+
+# OTGH currently assumes one process owns its durable spool.
+#
+# Keep Recreate while using one process-owned PVC.
+strategy:
+  type: Recreate
+
+revisionHistoryLimit: 5
+
+terminationGracePeriodSeconds: 60
+
+# -----------------------------------------------------------------------------
+# OTGH runtime
+# -----------------------------------------------------------------------------
+
+runtime:
+  nodeID: otgh
+  workers: 4
+  ingestAddress: ":8082"
+
+# -----------------------------------------------------------------------------
+# Service account
+# -----------------------------------------------------------------------------
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+  automountServiceAccountToken: false
+
+# -----------------------------------------------------------------------------
+# Pod
+# -----------------------------------------------------------------------------
+
+podAnnotations: {}
+
+podLabels: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  fsGroup: 65532
+  fsGroupChangePolicy: OnRootMismatch
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+# -----------------------------------------------------------------------------
+# Resources
+# -----------------------------------------------------------------------------
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+  limits:
+    cpu: "2"
+    memory: 1Gi
+
+# -----------------------------------------------------------------------------
+# Configuration
+# -----------------------------------------------------------------------------
+
+config:
+  version: 1
+  annotations: {}
+
+  shutdownTimeout: 30000000000
+
+  batching:
+    maxRecords: 256
+    maxPayloadBytes: 65536
+
+  queue:
+    capacity: 2048
+
+  retry:
+    maxAttempts: 5
+    initialDelay: 1000000000
+    maxDelay: 30000000000
+    multiplier: 2.0
+    jitter: 0.2
+    maxElapsedTime: 300000000000
+
+  spool:
+    directory: /var/lib/otgh/spool
+    directoryMode: 488
+    fileMode: 384
+    maxEntries: 100000
+    maxBytes: 10737418240
+    maxEntryBytes: 67108864
+    syncDirectory: true
+
+  protocol:
+    maxFrameSize: 67108864
+    maxPayloadSize: 33554432
+    maxBatchRecords: 1000
+    gzipLevel: -1
+    requireCapabilities: []
+
+    capabilities:
+      - telemetry
+      - resource_state
+      - resource_relationships
+      - topology
+      - security
+      - anomaly_detection
+      - forecasting
+      - situations
+      - blast_radius
+      - decisions
+      - remediation_results
+      - acknowledgements
+      - partial_acknowledgement
+      - sequencing
+      - batching
+
+  exporters:
+    http: []
+    grpc: []
+    objectStore: []
+    webhook: []
+
+  routes: []
+
+# -----------------------------------------------------------------------------
+# Persistence
+# -----------------------------------------------------------------------------
+
+persistence:
+  enabled: true
+
+  existingClaim: ""
+
+  storageClass: ""
+
+  accessModes:
+    - ReadWriteOnce
+
+  size: 20Gi
+
+  ephemeralSizeLimit: 64Mi
+
+  annotations: {}
+
+# -----------------------------------------------------------------------------
+# Secrets
+# -----------------------------------------------------------------------------
+#
+# Do not put production secret values in values.yaml.
+#
+# Use:
+#
+#   existingSecret
+#
+# or provision secrets through the deployment environment.
+# -----------------------------------------------------------------------------
+
+secrets:
+  create: false
+
+  existingSecret: otgh-secrets
+  annotations: {}
+
+  values:
+    httpBearerToken: ""
+    httpAPIKey: ""
+    httpBasicUsername: ""
+    httpBasicPassword: ""
+    ingestToken: ""
+    oshaToken: ""
+
+    grpcBearerToken: ""
+    grpcAPIKey: ""
+
+    awsAccessKeyID: ""
+    awsSecretAccessKey: ""
+    awsSessionToken: ""
+
+    webhookBearerToken: ""
+    webhookBasicUsername: ""
+    webhookBasicPassword: ""
+    webhookSigningSecret: ""
+    webhookSigningKeyID: ""
+
+    kmsKeyID: ""
+
+# -----------------------------------------------------------------------------
+# NetworkPolicy
+# -----------------------------------------------------------------------------
+
+networkPolicy:
+  enabled: true
+  annotations: {}
+
+  # Ingress is limited to the OSHA namespace; egress remains unrestricted so
+  # OTGH can reach OSHA and other configured destinations.
+  ingress:
+    enabled: true
+    rules:
+      - from:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: osha-system
+        ports:
+          - protocol: TCP
+            port: 8082
+
+  egress:
+    enabled: false
+    rules: []
+
+# -----------------------------------------------------------------------------
+# Temporary filesystem
+# -----------------------------------------------------------------------------
+
+tmp:
+  enabled: true
+  sizeLimit: 64Mi
+
+# -----------------------------------------------------------------------------
+# Scheduling
+# -----------------------------------------------------------------------------
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+topologySpreadConstraints: []
+
+priorityClassName: ""
+
+# -----------------------------------------------------------------------------
+# Health/readiness
+# -----------------------------------------------------------------------------
+#
+# OTGH exposes live and ready probes on its internal ingestion port.
+# -----------------------------------------------------------------------------
+
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /health/live
+    port: ingest
+  initialDelaySeconds: 10
+  periodSeconds: 20
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /health/ready
+    port: ingest
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+startupProbe:
+  enabled: true
+  httpGet:
+    path: /health/live
+    port: ingest
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 30

@@ -1,0 +1,438 @@
+OTGH has been deployed.
+
+Release information
+-------------------
+
+Release:       {{ .Release.Name }}
+Namespace:     {{ include "otgh.namespace" . }}
+Chart:         {{ .Chart.Name }}-{{ .Chart.Version }}
+Application:   {{ .Chart.AppVersion }}
+Image:         {{ include "otgh.image" . }}
+Replica count: {{ .Values.replicaCount }}
+
+
+1. Check the Helm release
+-------------------------
+
+  helm status {{ .Release.Name }} \
+    --namespace {{ include "otgh.namespace" . }}
+
+To inspect the values used by this release:
+
+  helm get values {{ .Release.Name }} \
+    --namespace {{ include "otgh.namespace" . }}
+
+To inspect the complete rendered release:
+
+  helm get manifest {{ .Release.Name }} \
+    --namespace {{ include "otgh.namespace" . }}
+
+
+2. Check the OTGH Deployment
+----------------------------
+
+  kubectl get deployment \
+    {{ include "otgh.fullname" . }} \
+    --namespace {{ include "otgh.namespace" . }}
+
+To inspect the Deployment:
+
+  kubectl describe deployment \
+    {{ include "otgh.fullname" . }} \
+    --namespace {{ include "otgh.namespace" . }}
+
+
+3. Check OTGH Pods
+------------------
+
+  kubectl get pods \
+    --namespace {{ include "otgh.namespace" . }} \
+    -l app.kubernetes.io/name={{ include "otgh.name" . }},app.kubernetes.io/instance={{ .Release.Name }}
+
+To watch Pod state:
+
+  kubectl get pods \
+    --namespace {{ include "otgh.namespace" . }} \
+    -l app.kubernetes.io/name={{ include "otgh.name" . }},app.kubernetes.io/instance={{ .Release.Name }} \
+    --watch
+
+
+4. View OTGH logs
+-----------------
+
+  kubectl logs \
+    --namespace {{ include "otgh.namespace" . }} \
+    -l app.kubernetes.io/name={{ include "otgh.name" . }},app.kubernetes.io/instance={{ .Release.Name }} \
+    --follow
+
+
+5. Application configuration
+----------------------------
+
+OTGH reads its runtime configuration from:
+
+  {{ include "otgh.configPath" . }}
+
+The configuration is supplied by ConfigMap:
+
+  {{ include "otgh.configMapName" . }}
+
+Inspect the ConfigMap:
+
+  kubectl get configmap \
+    {{ include "otgh.configMapName" . }} \
+    --namespace {{ include "otgh.namespace" . }} \
+    -o yaml
+
+To view only the generated otgh.json:
+
+  kubectl get configmap \
+    {{ include "otgh.configMapName" . }} \
+    --namespace {{ include "otgh.namespace" . }} \
+    -o jsonpath='{.data.otgh\.json}'
+
+
+6. ServiceAccount
+-----------------
+
+OTGH is configured to use:
+
+  {{ include "otgh.serviceAccountName" . }}
+
+{{- if .Values.serviceAccount.automountServiceAccountToken }}
+
+WARNING:
+
+The Kubernetes ServiceAccount token is configured to be automatically
+mounted into the OTGH Pod.
+
+If OTGH does not require Kubernetes API access, consider:
+
+  serviceAccount:
+    automountServiceAccountToken: false
+
+{{- else }}
+
+The Kubernetes API ServiceAccount token is NOT automatically mounted into
+the OTGH Pod.
+
+{{- end }}
+
+
+7. Durable delivery spool
+-------------------------
+
+OTGH spool path:
+
+  {{ include "otgh.spoolPath" . }}
+
+{{- if .Values.persistence.enabled }}
+
+Persistence is ENABLED.
+
+{{- if .Values.persistence.existingClaim }}
+
+Existing PersistentVolumeClaim:
+
+  {{ .Values.persistence.existingClaim }}
+
+{{- else }}
+
+Helm-managed PersistentVolumeClaim:
+
+  {{ include "otgh.pvcName" . }}
+
+Requested storage:
+
+  {{ .Values.persistence.size }}
+
+Access modes:
+
+{{- range .Values.persistence.accessModes }}
+  - {{ . }}
+{{- end }}
+
+{{- if .Values.persistence.storageClass }}
+
+StorageClass:
+
+  {{ .Values.persistence.storageClass }}
+
+{{- else }}
+
+StorageClass:
+
+  Not explicitly configured.
+  Kubernetes/default cluster storage selection applies.
+
+{{- end }}
+
+Inspect the claim:
+
+  kubectl get pvc \
+    {{ include "otgh.pvcName" . }} \
+    --namespace {{ include "otgh.namespace" . }}
+
+  kubectl describe pvc \
+    {{ include "otgh.pvcName" . }} \
+    --namespace {{ include "otgh.namespace" . }}
+
+{{- end }}
+
+Pending spool entries can represent deliveries that have not yet been
+acknowledged. Do not treat the spool as disposable cache storage.
+
+{{- else }}
+
+WARNING:
+
+Persistence is DISABLED.
+
+The OTGH spool uses ephemeral Pod storage. Pending delivery state can be lost
+when the Pod is removed, replaced, or rescheduled.
+
+This configuration should normally be restricted to temporary development or
+testing environments.
+
+{{- end }}
+
+
+8. Secrets
+----------
+
+{{- if .Values.secrets.existingSecret }}
+
+OTGH expects the externally managed Secret:
+
+  {{ include "otgh.secretName" . }}
+
+Check that it exists:
+
+  kubectl get secret \
+    {{ include "otgh.secretName" . }} \
+    --namespace {{ include "otgh.namespace" . }}
+
+Do not print or decode production Secret values unless intentionally
+performing an authorized diagnostic operation.
+
+{{- else if .Values.secrets.create }}
+
+The Helm release created Secret:
+
+  {{ include "otgh.secretName" . }}
+
+For production systems, consider supplying an externally managed Secret
+instead of embedding credentials in Helm values.
+
+{{- else }}
+
+No OTGH Secret is configured by this release.
+
+Exporters requiring credentials will need another supported credential source.
+
+{{- end }}
+
+
+9. Network policy
+-----------------
+
+{{- if .Values.networkPolicy.enabled }}
+
+NetworkPolicy is ENABLED.
+
+Policy:
+
+  {{ include "otgh.fullname" . }}
+
+{{- if .Values.networkPolicy.ingress.enabled }}
+
+Ingress isolation is enabled for OTGH.
+
+{{- if not .Values.networkPolicy.ingress.rules }}
+
+No ingress rules are configured by this policy.
+
+{{- end }}
+
+{{- else }}
+
+Ingress isolation is not enabled by this OTGH policy.
+
+{{- end }}
+
+{{- if .Values.networkPolicy.egress.enabled }}
+
+WARNING:
+
+Egress isolation is ENABLED.
+
+{{- if not .Values.networkPolicy.egress.rules }}
+
+No egress rules are configured in this policy.
+
+OTGH may be unable to reach DNS, HTTP endpoints, gRPC endpoints, object
+storage, or webhook destinations unless another applicable NetworkPolicy
+permits those connections.
+
+{{- else }}
+
+Explicit egress rules are configured.
+
+Verify they permit all DNS and exporter destinations required by OTGH.
+
+{{- end }}
+
+{{- else }}
+
+Egress isolation is not enabled by this OTGH policy.
+
+OTGH requires outbound connectivity to its configured export destinations.
+
+{{- end }}
+
+Inspect:
+
+  kubectl get networkpolicy \
+    {{ include "otgh.fullname" . }} \
+    --namespace {{ include "otgh.namespace" . }}
+
+{{- else }}
+
+OTGH NetworkPolicy creation is disabled.
+
+{{- end }}
+
+
+10. Health and readiness
+------------------------
+
+{{- if or .Values.livenessProbe.enabled .Values.readinessProbe.enabled .Values.startupProbe.enabled }}
+
+One or more Kubernetes probes are configured.
+
+Verify that every configured probe corresponds to behavior actually exposed by
+the OTGH container.
+
+{{- else }}
+
+OTGH application probes are currently disabled.
+
+The current OTGH runtime does not yet expose a dedicated operational HTTP
+server providing endpoints such as:
+
+  /healthz
+  /readyz
+  /metrics
+
+Do not configure HTTP probes against endpoints that the application does not
+actually expose.
+
+{{- end }}
+
+
+11. Development rendering
+-------------------------
+
+Render the development configuration without installing:
+
+  helm template {{ .Release.Name }} \
+    deploy/helm/otgh \
+    --namespace {{ include "otgh.namespace" . }} \
+    -f deploy/helm/otgh/values-development.yaml
+
+
+12. Production rendering
+------------------------
+
+Render the production configuration without installing:
+
+  helm template {{ .Release.Name }} \
+    deploy/helm/otgh \
+    --namespace {{ include "otgh.namespace" . }} \
+    -f deploy/helm/otgh/values-production.yaml
+
+Inspect the generated manifests before applying a production release.
+
+
+13. Upgrade
+-----------
+
+Development:
+
+  helm upgrade --install {{ .Release.Name }} \
+    deploy/helm/otgh \
+    --namespace {{ include "otgh.namespace" . }} \
+    --create-namespace \
+    -f deploy/helm/otgh/values-development.yaml
+
+Production:
+
+  helm upgrade --install {{ .Release.Name }} \
+    deploy/helm/otgh \
+    --namespace {{ include "otgh.namespace" . }} \
+    --create-namespace \
+    -f deploy/helm/otgh/values-production.yaml
+
+
+14. Uninstall
+-------------
+
+  helm uninstall {{ .Release.Name }} \
+    --namespace {{ include "otgh.namespace" . }}
+
+IMPORTANT:
+
+Before deleting persistent storage, verify that the OTGH spool does not contain
+delivery state that must be retained or recovered.
+
+
+15. Useful diagnostics
+----------------------
+
+Pods:
+
+  kubectl get pods \
+    --namespace {{ include "otgh.namespace" . }} \
+    -o wide
+
+Events:
+
+  kubectl get events \
+    --namespace {{ include "otgh.namespace" . }} \
+    --sort-by='.lastTimestamp'
+
+Deployment:
+
+  kubectl describe deployment \
+    {{ include "otgh.fullname" . }} \
+    --namespace {{ include "otgh.namespace" . }}
+
+Logs:
+
+  kubectl logs \
+    --namespace {{ include "otgh.namespace" . }} \
+    -l app.kubernetes.io/name={{ include "otgh.name" . }},app.kubernetes.io/instance={{ .Release.Name }} \
+    --tail=200
+
+PVC:
+
+{{- if .Values.persistence.enabled }}
+
+  kubectl get pvc \
+    --namespace {{ include "otgh.namespace" . }}
+
+{{- else }}
+
+  Persistence is disabled for this release.
+
+{{- end }}
+
+
+OTGH deployment summary
+-----------------------
+
+Node ID:       {{ .Values.runtime.nodeID }}
+Workers:       {{ .Values.runtime.workers }}
+Spool:         {{ include "otgh.spoolPath" . }}
+Persistence:   {{ ternary "enabled" "disabled" .Values.persistence.enabled }}
+NetworkPolicy: {{ ternary "enabled" "disabled" .Values.networkPolicy.enabled }}

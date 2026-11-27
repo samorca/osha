@@ -1,0 +1,132 @@
+{{/*
+OTGH application configuration.
+
+This ConfigMap creates:
+
+    /etc/otgh/otgh.json
+
+when mounted by deployment.yaml.
+
+Do not place credentials, signing secrets, private keys, API tokens, or
+passwords in this ConfigMap. Sensitive configuration belongs in a Kubernetes
+Secret or external secret provider.
+*/}}
+
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: {{ include "otgh.configMapName" . }}
+  namespace: {{ include "otgh.namespace" . }}
+
+  labels:
+    {{- include "otgh.labels" . | nindent 4 }}
+
+  {{- with .Values.config.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+data:
+  otgh.json: |
+    {
+      "version": {{ .Values.config.version }},
+
+      "application": {
+        "node_id": {{ .Values.runtime.nodeID | quote }},
+        "shutdown_timeout": {{ .Values.config.shutdownTimeout }},
+        "worker_count": {{ .Values.runtime.workers }}
+      },
+
+      "batching": {
+        "max_records": {{ .Values.config.batching.maxRecords }},
+        "max_payload_bytes": {{ .Values.config.batching.maxPayloadBytes }}
+      },
+
+      "queue": {
+        "capacity": {{ .Values.config.queue.capacity }}
+      },
+
+      "retry": {
+        "max_attempts": {{ .Values.config.retry.maxAttempts }},
+        "initial_delay": {{ .Values.config.retry.initialDelay }},
+        "max_delay": {{ .Values.config.retry.maxDelay }},
+        "multiplier": {{ .Values.config.retry.multiplier }},
+        "jitter": {{ .Values.config.retry.jitter }},
+        "max_elapsed_time": {{ .Values.config.retry.maxElapsedTime }}
+      },
+
+      "spool": {
+        "directory": {{ .Values.config.spool.directory | quote }},
+        "directory_mode": {{ .Values.config.spool.directoryMode }},
+        "file_mode": {{ .Values.config.spool.fileMode }},
+        "max_entries": {{ .Values.config.spool.maxEntries }},
+        "max_bytes": {{ .Values.config.spool.maxBytes }},
+        "max_entry_bytes": {{ .Values.config.spool.maxEntryBytes }},
+        "sync_directory": {{ .Values.config.spool.syncDirectory }}
+      },
+
+      "protocol": {
+        "node_id": {{ .Values.runtime.nodeID | quote }},
+
+        "handshake": {
+          "node_id": {{ .Values.runtime.nodeID | quote }},
+
+          "versions": [
+            {
+              "major": 1,
+              "minor": 0,
+              "patch": 0
+            }
+          ],
+
+          "encodings": [
+            "json"
+          ],
+
+          "compressions": [
+            "none",
+            "gzip"
+          ],
+
+          "capabilities": {{ .Values.config.protocol.capabilities | toJson }},
+
+          "max_frame_size": {{ .Values.config.protocol.maxFrameSize }},
+          "max_payload_size": {{ .Values.config.protocol.maxPayloadSize }},
+          "max_batch_records": {{ .Values.config.protocol.maxBatchRecords }},
+
+          "require_capabilities": {{ .Values.config.protocol.requireCapabilities | default (list) | toJson }},
+
+          "metadata": {
+            "deployment": "kubernetes",
+            "deployment_manager": "helm",
+            "helm_release": {{ .Release.Name | quote }},
+            "helm_namespace": {{ include "otgh.namespace" . | quote }}
+          }
+        },
+
+        "encoder": {
+          "max_frame_size": {{ .Values.config.protocol.maxFrameSize }},
+          "max_payload_size": {{ .Values.config.protocol.maxPayloadSize }},
+          "gzip_level": {{ .Values.config.protocol.gzipLevel }}
+        },
+
+        "decoder": {
+          "max_frame_size": {{ .Values.config.protocol.maxFrameSize }},
+          "max_payload_size": {{ .Values.config.protocol.maxPayloadSize }}
+        },
+
+        "compression": {
+          "gzip_level": {{ .Values.config.protocol.gzipLevel }}
+        }
+      },
+
+      "exporters": {
+        "http": {{ .Values.config.exporters.http | default (list) | toJson }},
+        "grpc": {{ .Values.config.exporters.grpc | default (list) | toJson }},
+        "object_store": {{ .Values.config.exporters.objectStore | default (list) | toJson }},
+        "webhook": {{ .Values.config.exporters.webhook | default (list) | toJson }}
+      },
+
+      "routes": {{ .Values.config.routes | default (list) | toJson }}
+    }

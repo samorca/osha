@@ -1,0 +1,414 @@
+{{/*
+OTGH Deployment.
+
+OTGH currently assumes one process owns a durable spool directory.
+
+Keep replicaCount at 1 when persistence is enabled unless durable delivery
+ownership has been redesigned for multiple independent replicas.
+*/}}
+
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: {{ include "otgh.fullname" . }}
+  namespace: {{ include "otgh.namespace" . }}
+
+  labels:
+    {{- include "otgh.labels" . | nindent 4 }}
+
+  {{- with .Values.deploymentAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+spec:
+  replicas: {{ .Values.replicaCount }}
+
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+
+  strategy:
+    type: {{ .Values.strategy.type }}
+
+  selector:
+    matchLabels:
+      {{- include "otgh.selectorLabels" . | nindent 6 }}
+
+  template:
+    metadata:
+      labels:
+        {{- include "otgh.podLabels" . | nindent 8 }}
+
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+    spec:
+      serviceAccountName: {{ include "otgh.serviceAccountName" . }}
+
+      automountServiceAccountToken: {{ .Values.serviceAccount.automountServiceAccountToken }}
+
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      containers:
+        - name: otgh
+
+          image: {{ include "otgh.image" . | quote }}
+
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          ports:
+            - name: ingest
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+
+          {{- with .Values.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+
+          {{- with .Values.args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+
+          env:
+            # ----------------------------------------------------------------
+            # OTGH runtime
+            # ----------------------------------------------------------------
+
+            - name: OTGH_CONFIG
+              value: {{ include "otgh.configPath" . | quote }}
+
+            - name: OTGH_NODE_ID
+              value: {{ .Values.runtime.nodeID | quote }}
+
+            - name: OTGH_WORKERS
+              value: {{ .Values.runtime.workers | quote }}
+
+            - name: OTGH_LISTEN_ADDR
+              value: {{ .Values.runtime.ingestAddress | quote }}
+
+            - name: OTGH_OSHA_ENDPOINT
+              value: {{ .Values.osha.endpoint | quote }}
+
+            - name: OTGH_SPOOL_DIR
+              value: {{ include "otgh.spoolPath" . | quote }}
+
+            {{- if .Values.secrets.existingSecret }}
+
+            - name: OTGH_INGEST_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "otgh.secretName" . }}
+                  key: OTGH_INGEST_TOKEN
+                  optional: true
+
+            - name: OTGH_OSHA_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "otgh.secretName" . }}
+                  key: OTGH_OSHA_TOKEN
+                  optional: true
+
+            # ----------------------------------------------------------------
+            # HTTP exporter credentials
+            # ----------------------------------------------------------------
+
+            - name: OTGH_HTTP_BEARER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "otgh.secretName" . }}
+                  key: OTGH_HTTP_BEARER_TOKEN
+                  optional: true
+
+            - name: OTGH_HTTP_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "otgh.secretName" . }}
+                  key: OTGH_HTTP_API_KEY
+                  optional: true
+
+            - name: OTGH_HTTP_BASIC_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "otgh.secretName" . }}
+                  key: OTGH_HTTP_BASIC_USERNAME
+                  optional: true
+
+            - name: OTGH_HTTP_BASIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "otgh.secretName" . }}
+                  key: OTGH_HTTP_BASIC_PASSWORD
+                  optional: true
+
+
+            # ----------------------------------------------------------------
+            # gRPC exporter credentials
+            # ----------------------------------------------------------------
+
+            - name: OTGH_GRPC_BEARER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "otgh.secretName" . }}
+                  key: OTGH_GRPC_BEARER_TOKEN
+                  optional: true
+
+            - name: OTGH_GRPC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "otgh.secretName" . }}
+                  key: OTGH_GRPC_API_KEY
+                  optional: true
+
+
+            # ----------------------------------------------------------------
+            # Object-store credentials
+            # ----------------------------------------------------------------
+
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "otgh.secretName" . }}
+                  key: AWS_ACCESS_KEY_ID
+                  optional: true
+
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "otgh.secretName" . }}
+                  key: AWS_SECRET_ACCESS_KEY
+                  optional: true
+
+            - name: AWS_SESSION_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "otgh.secretName" . }}
+                  key: AWS_SESSION_TOKEN
+                  optional: true
+
+
+            # ----------------------------------------------------------------
+            # Webhook credentials and HMAC signing
+            # ----------------------------------------------------------------
+
+            - name: OTGH_WEBHOOK_BEARER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "otgh.secretName" . }}
+                  key: OTGH_WEBHOOK_BEARER_TOKEN
+                  optional: true
+
+            - name: OTGH_WEBHOOK_BASIC_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "otgh.secretName" . }}
+                  key: OTGH_WEBHOOK_BASIC_USERNAME
+                  optional: true
+
+            - name: OTGH_WEBHOOK_BASIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "otgh.secretName" . }}
+                  key: OTGH_WEBHOOK_BASIC_PASSWORD
+                  optional: true
+
+            - name: OTGH_WEBHOOK_SIGNING_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "otgh.secretName" . }}
+                  key: OTGH_WEBHOOK_SIGNING_SECRET
+                  optional: true
+
+            - name: OTGH_WEBHOOK_SIGNING_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "otgh.secretName" . }}
+                  key: OTGH_WEBHOOK_SIGNING_KEY_ID
+                  optional: true
+
+
+            # ----------------------------------------------------------------
+            # Object-store KMS
+            # ----------------------------------------------------------------
+
+            - name: OTGH_OBJECTSTORE_KMS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "otgh.secretName" . }}
+                  key: OTGH_OBJECTSTORE_KMS_KEY_ID
+                  optional: true
+
+            {{- end }}
+
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+
+          volumeMounts:
+            # ----------------------------------------------------------------
+            # OTGH configuration
+            # ----------------------------------------------------------------
+
+            - name: config
+              mountPath: /etc/otgh
+              readOnly: true
+
+
+            # ----------------------------------------------------------------
+            # Durable delivery spool
+            # ----------------------------------------------------------------
+
+            - name: spool
+              mountPath: {{ include "otgh.spoolPath" . | quote }}
+
+
+            # ----------------------------------------------------------------
+            # Temporary writable filesystem
+            # ----------------------------------------------------------------
+
+            {{- if .Values.tmp.enabled }}
+            - name: tmp
+              mountPath: {{ include "otgh.tmpPath" . | quote }}
+            {{- end }}
+
+
+            # ----------------------------------------------------------------
+            # Additional mounts
+            # ----------------------------------------------------------------
+
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+
+
+          {{- if .Values.livenessProbe.enabled }}
+          livenessProbe:
+            {{- omit .Values.livenessProbe "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+
+          {{- if .Values.readinessProbe.enabled }}
+          readinessProbe:
+            {{- omit .Values.readinessProbe "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+
+          {{- if .Values.startupProbe.enabled }}
+          startupProbe:
+            {{- omit .Values.startupProbe "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+
+      volumes:
+        # --------------------------------------------------------------------
+        # Application configuration
+        # --------------------------------------------------------------------
+
+        - name: config
+          configMap:
+            name: {{ include "otgh.configMapName" . }}
+
+            items:
+              - key: otgh.json
+                path: otgh.json
+
+
+        # --------------------------------------------------------------------
+        # Delivery spool
+        # --------------------------------------------------------------------
+
+        - name: spool
+
+          {{- if .Values.persistence.enabled }}
+
+          persistentVolumeClaim:
+            claimName: {{ include "otgh.pvcName" . }}
+
+          {{- else }}
+
+          emptyDir:
+            {{- with .Values.persistence.ephemeralSizeLimit }}
+            sizeLimit: {{ . | quote }}
+            {{- end }}
+
+          {{- end }}
+
+
+        # --------------------------------------------------------------------
+        # Writable /tmp
+        # --------------------------------------------------------------------
+
+        {{- if .Values.tmp.enabled }}
+        - name: tmp
+          emptyDir:
+            {{- with .Values.tmp.sizeLimit }}
+            sizeLimit: {{ . | quote }}
+            {{- end }}
+        {{- end }}
+
+
+        # --------------------------------------------------------------------
+        # Additional arbitrary volumes
+        # --------------------------------------------------------------------
+
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+
+
+      # ----------------------------------------------------------------------
+      # Scheduling
+      # ----------------------------------------------------------------------
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      {{- with .Values.priorityClassName }}
+      priorityClassName: {{ . | quote }}
+      {{- end }}
+
+      {{- with .Values.dnsPolicy }}
+      dnsPolicy: {{ . }}
+      {{- end }}
+
+      {{- with .Values.dnsConfig }}
+      dnsConfig:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

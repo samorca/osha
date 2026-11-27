@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: otgh
+  namespace: otgh
+
+spec:
+  # Keep one replica while OTGH uses one shared process-owned spool.
+  #
+  # Do not increase this until:
+  #
+  #   - each replica has independent durable queue/spool ownership, or
+  #   - the spool is redesigned as a distributed/shared delivery store.
+  replicas: 1
+
+  strategy:
+    type: Recreate
+
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/environment: production
+
+    spec:
+      terminationGracePeriodSeconds: 60
+
+      containers:
+        - name: otgh
+
+          # Production should always attempt to retrieve the pinned release
+          # image configured by kustomization.yaml.
+          imagePullPolicy: Always
+
+          env:
+            - name: OTGH_NODE_ID
+              value: otgh-production
+
+            - name: OTGH_WORKERS
+              value: "8"
+
+            - name: OTGH_CONFIG
+              value: /etc/otgh/otgh.json
+
+            - name: OTGH_SPOOL_DIR
+              value: /var/lib/otgh/spool
+
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+
+            limits:
+              cpu: "2"
+              memory: 1Gi

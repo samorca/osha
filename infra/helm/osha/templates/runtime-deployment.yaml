@@ -203,6 +203,9 @@ spec:
           # ---------------------------------------------------------
 
           env:
+            - name: OSHA_PROCESS_ROLE
+              value: "runtime"
+
             - name: OSHA_STARTED_BY
               value: {{ .Values.runtime.startedBy | quote }}
 
@@ -301,11 +304,14 @@ spec:
 
             - name: osha-data
               mountPath: {{ .Values.paths.data }}
-              subPath: orchestration-ai-data
+              subPath: dataset
 
             {{- else }}
             - name: runtime-artifacts
               mountPath: /app/artifacts/runtime
+
+            - name: framework-data
+              mountPath: {{ .Values.paths.data }}
             {{- end }}
 
 
@@ -325,6 +331,9 @@ spec:
         {{- if .Values.persistence.enabled }}
         {{- else }}
         - name: runtime-artifacts
+          emptyDir: {}
+
+        - name: framework-data
           emptyDir: {}
         {{- end }}
 

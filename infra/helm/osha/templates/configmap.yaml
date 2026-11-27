@@ -193,6 +193,10 @@ data:
 
   OSHA_DATA_DIR: {{ .Values.paths.data | quote }}
 
+  OSHA_FRAMEWORKS_ENABLED: {{ .Values.frameworks.enabled | toString | quote }}
+
+  OSHA_FRAMEWORK_MAX_RECORDS: {{ .Values.frameworks.maximumRecords | toString | quote }}
+
 
   # =================================================================
   # Accelerator selection
@@ -219,6 +223,10 @@ data:
   OSHA_COLLECTORS_ENABLED: {{ .Values.collectors.enabled | toString | quote }}
 
   OSHA_COLLECTOR_INTERVAL_SECONDS: {{ .Values.collectors.intervalSeconds | toString | quote }}
+
+  OSHA_COLLECTOR_SOURCES: {{ .Values.collectors.sources | quote }}
+
+  OSHA_OPENSTACK_COLLECTOR_ENABLED: {{ .Values.collectors.openStackEnabled | toString | quote }}
 
 
   # =================================================================

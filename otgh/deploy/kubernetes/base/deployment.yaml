@@ -1,0 +1,296 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: otgh
+  namespace: otgh
+
+  labels:
+    app.kubernetes.io/name: otgh
+    app.kubernetes.io/part-of: osha
+    app.kubernetes.io/component: transporter
+    app.kubernetes.io/managed-by: kustomize
+
+spec:
+  # OTGH currently uses one durable spool directory owned by one process.
+  # Do not increase replicas until spool ownership is redesigned or each
+  # replica receives an independent spool volume.
+  replicas: 1
+
+  revisionHistoryLimit: 5
+
+  strategy:
+    type: Recreate
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: otgh
+      app.kubernetes.io/component: transporter
+
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: otgh
+        app.kubernetes.io/part-of: osha
+        app.kubernetes.io/component: transporter
+
+    spec:
+      serviceAccountName: otgh
+
+      # OTGH does not currently call the Kubernetes API directly.
+      automountServiceAccountToken: false
+
+      # Give OTGH enough time to stop accepting work, drain the queue,
+      # stop workers, close exporters, and preserve pending spool state.
+      terminationGracePeriodSeconds: 45
+
+      securityContext:
+        runAsNonRoot: true
+        fsGroup: 65532
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+        - name: otgh
+
+          # Kustomize overlays can replace this value for development and
+          # production deployments.
+          image: otgh:dev
+
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: ingest
+              containerPort: 8082
+              protocol: TCP
+
+          env:
+            # ----------------------------------------------------------------
+            # OTGH runtime
+            # ----------------------------------------------------------------
+
+            - name: OTGH_CONFIG
+              value: /etc/otgh/otgh.json
+
+            - name: OTGH_LISTEN_ADDR
+              value: ":8082"
+
+            - name: OTGH_OSHA_ENDPOINT
+              value: http://osha-api.osha-system.svc.cluster.local:8088/api/v1/otgh/batches
+
+            - name: OTGH_INGEST_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: otgh-secrets
+                  key: OTGH_INGEST_TOKEN
+                  optional: true
+
+            - name: OTGH_OSHA_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: otgh-secrets
+                  key: OTGH_OSHA_TOKEN
+                  optional: true
+
+            - name: OTGH_SPOOL_DIR
+              value: /var/lib/otgh/spool
+
+            # ----------------------------------------------------------------
+            # HTTP exporter secrets
+            # ----------------------------------------------------------------
+
+            - name: OTGH_HTTP_BEARER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: otgh-secrets
+                  key: OTGH_HTTP_BEARER_TOKEN
+                  optional: true
+
+            - name: OTGH_HTTP_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: otgh-secrets
+                  key: OTGH_HTTP_API_KEY
+                  optional: true
+
+            - name: OTGH_HTTP_BASIC_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: otgh-secrets
+                  key: OTGH_HTTP_BASIC_USERNAME
+                  optional: true
+
+            - name: OTGH_HTTP_BASIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: otgh-secrets
+                  key: OTGH_HTTP_BASIC_PASSWORD
+                  optional: true
+
+            # ----------------------------------------------------------------
+            # gRPC exporter secrets
+            # ----------------------------------------------------------------
+
+            - name: OTGH_GRPC_BEARER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: otgh-secrets
+                  key: OTGH_GRPC_BEARER_TOKEN
+                  optional: true
+
+            - name: OTGH_GRPC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: otgh-secrets
+                  key: OTGH_GRPC_API_KEY
+                  optional: true
+
+            # ----------------------------------------------------------------
+            # S3-compatible object-store credentials
+            # ----------------------------------------------------------------
+
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: otgh-secrets
+                  key: AWS_ACCESS_KEY_ID
+                  optional: true
+
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: otgh-secrets
+                  key: AWS_SECRET_ACCESS_KEY
+                  optional: true
+
+            - name: AWS_SESSION_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: otgh-secrets
+                  key: AWS_SESSION_TOKEN
+                  optional: true
+
+            # ----------------------------------------------------------------
+            # Webhook credentials and signing
+            # ----------------------------------------------------------------
+
+            - name: OTGH_WEBHOOK_BEARER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: otgh-secrets
+                  key: OTGH_WEBHOOK_BEARER_TOKEN
+                  optional: true
+
+            - name: OTGH_WEBHOOK_BASIC_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: otgh-secrets
+                  key: OTGH_WEBHOOK_BASIC_USERNAME
+                  optional: true
+
+            - name: OTGH_WEBHOOK_BASIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: otgh-secrets
+                  key: OTGH_WEBHOOK_BASIC_PASSWORD
+                  optional: true
+
+            - name: OTGH_WEBHOOK_SIGNING_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: otgh-secrets
+                  key: OTGH_WEBHOOK_SIGNING_SECRET
+                  optional: true
+
+            - name: OTGH_WEBHOOK_SIGNING_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: otgh-secrets
+                  key: OTGH_WEBHOOK_SIGNING_KEY_ID
+                  optional: true
+
+            - name: OTGH_OBJECTSTORE_KMS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: otgh-secrets
+                  key: OTGH_OBJECTSTORE_KMS_KEY_ID
+                  optional: true
+
+            - name: OTGH_OBJECTSTORE_KMS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: otgh-secrets
+                  key: OTGH_OBJECTSTORE_KMS_KEY_ID
+                  optional: true
+
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: ingest
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: ingest
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+
+            limits:
+              cpu: "2"
+              memory: 1Gi
+
+          securityContext:
+            allowPrivilegeEscalation: false
+
+            readOnlyRootFilesystem: true
+
+            capabilities:
+              drop:
+                - ALL
+
+          volumeMounts:
+            # ConfigMap:
+            #
+            # otgh.json
+            #     ↓
+            # /etc/otgh/otgh.json
+            - name: config
+              mountPath: /etc/otgh
+              readOnly: true
+
+            # Persistent durable delivery state.
+            - name: spool
+              mountPath: /var/lib/otgh/spool
+
+            # Scratch space for libraries/components that require /tmp.
+            - name: tmp
+              mountPath: /tmp
+
+      volumes:
+        - name: config
+          configMap:
+            name: otgh-config
+
+            items:
+              - key: otgh.json
+                path: otgh.json
+
+        - name: spool
+          persistentVolumeClaim:
+            claimName: otgh-spool
+
+        - name: tmp
+          emptyDir:
+            sizeLimit: 64Mi

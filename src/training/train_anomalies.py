@@ -121,7 +121,7 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument(
         "--data",
-        default=("orchestration-ai-data/processed/anomalies.jsonl"),
+        default=("dataset/processed/anomalies.jsonl"),
         help=("Input JSONL containing numeric anomaly records."),
     )
 

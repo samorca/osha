@@ -7,7 +7,7 @@ import zipfile
 from pathlib import Path
 
 
-ROOT = Path.home() / "osha" / "orchestration-ai-data"
+ROOT = Path.home() / "osha" / "dataset"
 RAW = ROOT / "raw"
 DOWNLOADS = ROOT / "downloads"
 

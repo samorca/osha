@@ -1,700 +1,334 @@
+"""
+OSHA Database Configuration.
+
+Centralises relational database configuration for OSHA.
+
+Configuration is loaded from environment variables so the same application
+code can run in:
+
+    - local development
+    - Docker / Docker Compose
+    - Kubernetes
+    - CI/CD
+    - production environments
+
+Secrets such as database passwords must not be hard-coded in source code.
+"""
+
 from __future__ import annotations
 
-"""
-Non-secret database configuration for OSHA
-persistence services.
-"""
-
 import os
+from dataclasses import dataclass
+from functools import lru_cache
 
-from dataclasses import (
-    dataclass,
-    field,
-)
-
-from typing import (
-    Any,
-    Dict,
-    Mapping,
-    Optional,
-)
-
-from src.core.validation import (
-    boolean,
-    environment_id,
-    integer,
-    number,
-    required_string,
-)
-
-from src.database.schema import (
-    DatabaseBackend,
-    DatabaseIdentity,
-)
-
-from src.security.schema import (
-    SecretReference,
-)
+from sqlalchemy.engine import URL
 
 
-# ---------------------------------------------------------------
-# Environment prefix
-# ---------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Environment helpers
+# ---------------------------------------------------------------------------
 
-DEFAULT_ENV_PREFIX = "OSHA_DATABASE_"
-
-
-# ---------------------------------------------------------------
-# Pool configuration
-# ---------------------------------------------------------------
+_TRUE_VALUES = {"1", "true", "yes", "on"}
+_FALSE_VALUES = {"0", "false", "no", "off"}
 
 
-@dataclass(frozen=True)
-class PoolConfig:
+def _get_env(name: str, default: str | None = None) -> str | None:
     """
-    Generic pool policy.
+    Read and normalise an environment variable.
 
-    A backend may map these settings onto its own
-    driver/pool implementation later.
+    Empty values are treated as unset.
     """
-
-    minimum_size: int = 1
-
-    maximum_size: int = 10
-
-    acquire_timeout_seconds: float = 10.0
-
-    idle_timeout_seconds: float = 300.0
-
-    def validate(
-        self,
-    ) -> None:
-        integer(
-            self.minimum_size,
-            name="minimum_size",
-            minimum=0,
-        )
-
-        integer(
-            self.maximum_size,
-            name="maximum_size",
-            minimum=1,
-        )
-
-        if self.minimum_size > self.maximum_size:
-            raise ValueError("minimum_size cannot exceed maximum_size")
-
-        number(
-            self.acquire_timeout_seconds,
-            name=("acquire_timeout_seconds"),
-            minimum=0.001,
-        )
-
-        number(
-            self.idle_timeout_seconds,
-            name=("idle_timeout_seconds"),
-            minimum=0.001,
-        )
-
-
-# ---------------------------------------------------------------
-# Migration configuration
-# ---------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class MigrationConfig:
-    enabled: bool = True
-
-    # Keep automatic migration disabled until the
-    # migration system is explicitly wired.
-    apply_on_startup: bool = False
-
-    validate_checksums: bool = True
-
-    target_version: Optional[int] = None
-
-    def validate(
-        self,
-    ) -> None:
-        if self.target_version is not None:
-            integer(
-                self.target_version,
-                name="target_version",
-                minimum=1,
-            )
-
-        if self.apply_on_startup and not self.enabled:
-            raise ValueError("apply_on_startup requires migrations to be enabled")
-
-
-# ---------------------------------------------------------------
-# Main database configuration
-# ---------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class DatabaseConfig:
-    """
-    Database configuration without embedded
-    credentials.
-
-    credential contains a SecretReference only,
-    never the actual database password/token.
-    """
-
-    backend: str = DatabaseBackend.MEMORY.value
-
-    database: str = "osha"
-
-    environment_id: str = "local-dev"
-
-    host: Optional[str] = None
-
-    port: Optional[int] = None
-
-    namespace: Optional[str] = None
-
-    username: Optional[str] = None
-
-    credential: Optional[SecretReference] = None
-
-    connect_timeout_seconds: float = 10.0
-
-    statement_timeout_seconds: float = 30.0
-
-    pool: PoolConfig = field(default_factory=PoolConfig)
-
-    migrations: MigrationConfig = field(default_factory=MigrationConfig)
-
-    attributes: Dict[
-        str,
-        Any,
-    ] = field(default_factory=dict)
-
-    def validate(
-        self,
-    ) -> None:
-        if self.backend not in {item.value for item in DatabaseBackend}:
-            raise ValueError(f"Unknown database backend: {self.backend}")
-
-        required_string(
-            self.database,
-            name="database",
-            maximum_length=256,
-        )
-
-        environment_id(self.environment_id)
-
-        if self.host is not None:
-            required_string(
-                self.host,
-                name="host",
-                maximum_length=512,
-            )
-
-        if self.port is not None:
-            integer(
-                self.port,
-                name="port",
-                minimum=1,
-                maximum=65535,
-            )
-
-        if self.username is not None:
-            required_string(
-                self.username,
-                name="username",
-                maximum_length=256,
-            )
-
-        if self.credential is not None:
-            self.credential.finalize()
-
-        number(
-            self.connect_timeout_seconds,
-            name=("connect_timeout_seconds"),
-            minimum=0.001,
-        )
-
-        number(
-            self.statement_timeout_seconds,
-            name=("statement_timeout_seconds"),
-            minimum=0.001,
-        )
-
-        self.pool.validate()
-
-        self.migrations.validate()
-
-    # ---------------------------------------------------------
-    # Non-secret identity
-    # ---------------------------------------------------------
-
-    def identity(
-        self,
-    ) -> DatabaseIdentity:
-        self.validate()
-
-        return DatabaseIdentity(
-            backend=self.backend,
-            database=self.database,
-            environment_id=(self.environment_id),
-            host=self.host,
-            port=self.port,
-            namespace=self.namespace,
-            attributes={
-                "configured_username": (self.username is not None),
-            },
-        ).finalize()
-
-    # ---------------------------------------------------------
-    # Serialization
-    # ---------------------------------------------------------
-
-    def to_dict(
-        self,
-    ) -> Dict[str, Any]:
-        """
-        Safe configuration representation.
-
-        credential serializes only its
-        SecretReference metadata.
-        """
-
-        self.validate()
-
-        return {
-            "backend": self.backend,
-            "database": self.database,
-            "environment_id": (self.environment_id),
-            "host": self.host,
-            "port": self.port,
-            "namespace": (self.namespace),
-            "username": (self.username),
-            "credential": (self.credential.to_dict() if self.credential else None),
-            "connect_timeout_seconds": (self.connect_timeout_seconds),
-            "statement_timeout_seconds": (self.statement_timeout_seconds),
-            "pool": {
-                "minimum_size": (self.pool.minimum_size),
-                "maximum_size": (self.pool.maximum_size),
-                "acquire_timeout_seconds": (self.pool.acquire_timeout_seconds),
-                "idle_timeout_seconds": (self.pool.idle_timeout_seconds),
-            },
-            "migrations": {
-                "enabled": (self.migrations.enabled),
-                "apply_on_startup": (self.migrations.apply_on_startup),
-                "validate_checksums": (self.migrations.validate_checksums),
-                "target_version": (self.migrations.target_version),
-            },
-            "attributes": dict(self.attributes),
-        }
-
-
-# ---------------------------------------------------------------
-# Parsing helpers
-# ---------------------------------------------------------------
-
-
-def _get(
-    values: Mapping[
-        str,
-        Any,
-    ],
-    prefix: str,
-    name: str,
-    default: Any = None,
-) -> Any:
-    return values.get(
-        prefix + name,
-        default,
-    )
-
-
-def _bool(
-    values: Mapping[
-        str,
-        Any,
-    ],
-    prefix: str,
-    name: str,
-    default: bool,
-) -> bool:
-    value = _get(
-        values,
-        prefix,
-        name,
-    )
-
-    if value is None or str(value).strip() == "":
-        return default
-
-    return boolean(
-        value,
-        name=prefix + name,
-    )
-
-
-def _int(
-    values: Mapping[
-        str,
-        Any,
-    ],
-    prefix: str,
-    name: str,
-    default: Optional[int],
-    *,
-    minimum: int = 1,
-) -> Optional[int]:
-    value = _get(
-        values,
-        prefix,
-        name,
-    )
-
-    if value is None or str(value).strip() == "":
-        return default
-
-    return integer(
-        value,
-        name=prefix + name,
-        minimum=minimum,
-    )
-
-
-def _float(
-    values: Mapping[
-        str,
-        Any,
-    ],
-    prefix: str,
-    name: str,
-    default: float,
-) -> float:
-    value = _get(
-        values,
-        prefix,
-        name,
-    )
-
-    if value is None or str(value).strip() == "":
-        return default
-
-    return number(
-        value,
-        name=prefix + name,
-        minimum=0.001,
-    )
-
-
-def _optional_text(
-    values: Mapping[
-        str,
-        Any,
-    ],
-    prefix: str,
-    name: str,
-) -> Optional[str]:
-    value = _get(
-        values,
-        prefix,
-        name,
-    )
+    value = os.getenv(name)
+
+    if value is None and name.startswith("OSHA_DB_"):
+        suffix = name.removeprefix("OSHA_DB_")
+        if suffix == "USER":
+            suffix = "USERNAME"
+        value = os.getenv(f"OSHA_DATABASE_{suffix}")
 
     if value is None:
-        return None
+        return default
 
-    text = str(value).strip()
+    value = value.strip()
 
-    return text or None
+    if not value:
+        return default
 
-
-# ---------------------------------------------------------------
-# Mapping loader
-# ---------------------------------------------------------------
+    return value
 
 
-def from_mapping(
-    values: Mapping[
-        str,
-        Any,
-    ],
+def _get_int(
+    name: str,
+    default: int,
     *,
-    prefix: str = DEFAULT_ENV_PREFIX,
-) -> DatabaseConfig:
-    """
-    Build database configuration from a mapping.
+    minimum: int | None = None,
+    maximum: int | None = None,
+) -> int:
+    """Read and validate an integer environment variable."""
+    raw = _get_env(name)
 
-    Note:
-    OSHA_DATABASE_SECRET_* describes where the
-    credential can be resolved. It does not
-    contain the credential itself.
-    """
+    if raw is None:
+        value = default
+    else:
+        try:
+            value = int(raw)
+        except ValueError as exc:
+            raise ValueError(
+                f"{name} must be an integer, got {raw!r}"
+            ) from exc
 
-    secret_name = _optional_text(
-        values,
-        prefix,
-        "SECRET_NAME",
-    )
-
-    secret_provider = (
-        _optional_text(
-            values,
-            prefix,
-            "SECRET_PROVIDER",
+    if minimum is not None and value < minimum:
+        raise ValueError(
+            f"{name} must be >= {minimum}, got {value}"
         )
-        or "environment"
-    )
 
-    secret_key = _optional_text(
-        values,
-        prefix,
-        "SECRET_KEY",
-    )
-
-    secret_version = _optional_text(
-        values,
-        prefix,
-        "SECRET_VERSION",
-    )
-
-    credential = None
-
-    if secret_name is not None or secret_key is not None:
-        credential = SecretReference(
-            name=(secret_name or ("database-credential")),
-            provider=(secret_provider),
-            key=secret_key,
-            version=(secret_version),
-        ).finalize()
-
-    config = DatabaseConfig(
-        backend=str(
-            _get(
-                values,
-                prefix,
-                "BACKEND",
-                DatabaseBackend.MEMORY.value,
-            )
+    if maximum is not None and value > maximum:
+        raise ValueError(
+            f"{name} must be <= {maximum}, got {value}"
         )
-        .strip()
-        .lower(),
-        database=str(
-            _get(
-                values,
-                prefix,
-                "NAME",
-                "osha",
-            )
-        ).strip(),
-        environment_id=str(
-            _get(
-                values,
-                prefix,
-                "ENVIRONMENT_ID",
-                "local-dev",
-            )
-        ).strip(),
-        host=_optional_text(
-            values,
-            prefix,
-            "HOST",
-        ),
-        port=_int(
-            values,
-            prefix,
-            "PORT",
-            None,
-        ),
-        namespace=_optional_text(
-            values,
-            prefix,
-            "NAMESPACE",
-        ),
-        username=_optional_text(
-            values,
-            prefix,
-            "USERNAME",
-        ),
-        credential=credential,
-        connect_timeout_seconds=(
-            _float(
-                values,
-                prefix,
-                "CONNECT_TIMEOUT_SECONDS",
-                10.0,
-            )
-        ),
-        statement_timeout_seconds=(
-            _float(
-                values,
-                prefix,
-                "STATEMENT_TIMEOUT_SECONDS",
-                30.0,
-            )
-        ),
-        pool=PoolConfig(
-            minimum_size=(
-                _int(
-                    values,
-                    prefix,
-                    "POOL_MIN_SIZE",
-                    1,
-                    minimum=0,
-                )
-                or 0
-            ),
-            maximum_size=(
-                _int(
-                    values,
-                    prefix,
-                    "POOL_MAX_SIZE",
-                    10,
-                )
-                or 10
-            ),
-            acquire_timeout_seconds=(
-                _float(
-                    values,
-                    prefix,
-                    "POOL_ACQUIRE_TIMEOUT_SECONDS",
-                    10.0,
-                )
-            ),
-            idle_timeout_seconds=(
-                _float(
-                    values,
-                    prefix,
-                    "POOL_IDLE_TIMEOUT_SECONDS",
-                    300.0,
-                )
-            ),
-        ),
-        migrations=MigrationConfig(
-            enabled=_bool(
-                values,
-                prefix,
-                "MIGRATIONS_ENABLED",
-                True,
-            ),
-            apply_on_startup=_bool(
-                values,
-                prefix,
-                "MIGRATIONS_APPLY_ON_STARTUP",
-                False,
-            ),
-            validate_checksums=_bool(
-                values,
-                prefix,
-                "MIGRATIONS_VALIDATE_CHECKSUMS",
-                True,
-            ),
-            target_version=_int(
-                values,
-                prefix,
-                "MIGRATIONS_TARGET_VERSION",
-                None,
-            ),
-        ),
-        attributes={
-            "config_source": ("mapping"),
-            "environment_prefix": (prefix),
-        },
+
+    return value
+
+
+def _get_bool(name: str, default: bool) -> bool:
+    """Read and validate a boolean environment variable."""
+    raw = _get_env(name)
+
+    if raw is None:
+        return default
+
+    value = raw.lower()
+
+    if value in _TRUE_VALUES:
+        return True
+
+    if value in _FALSE_VALUES:
+        return False
+
+    raise ValueError(
+        f"{name} must be one of "
+        f"{sorted(_TRUE_VALUES | _FALSE_VALUES)}, got {raw!r}"
     )
 
-    config.validate()
 
-    return config
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True, slots=True)
+class DatabaseConfig:
+    """
+    Immutable OSHA relational database configuration.
+
+    The configuration object deliberately contains configuration only.
+    Engine and Session creation belong to connection.py and session.py.
+    """
+
+    driver: str
+
+    host: str
+    port: int
+
+    database: str
+    username: str
+    password: str | None
+
+    pool_size: int
+    max_overflow: int
+    pool_timeout: int
+    pool_recycle: int
+
+    pool_pre_ping: bool
+
+    echo: bool
+    echo_pool: bool
+
+    connect_timeout: int
+
+    application_name: str
+
+    @property
+    def url(self) -> URL:
+        """
+        Build the SQLAlchemy database URL safely.
+
+        URL.create() is used rather than manually concatenating credentials
+        into a connection string.
+        """
+        return URL.create(
+            drivername=self.driver,
+            username=self.username,
+            password=self.password,
+            host=self.host,
+            port=self.port,
+            database=self.database,
+        )
+
+    @property
+    def safe_url(self) -> str:
+        """
+        Return a database URL with the password hidden.
+
+        Suitable for diagnostics and logging.
+        """
+        return self.url.render_as_string(hide_password=True)
+
+    def __repr__(self) -> str:
+        """Return configuration information without exposing credentials."""
+        return (
+            "DatabaseConfig("
+            f"url={self.safe_url!r}, "
+            f"pool_size={self.pool_size}, "
+            f"max_overflow={self.max_overflow}, "
+            f"pool_timeout={self.pool_timeout}, "
+            f"pool_recycle={self.pool_recycle}, "
+            f"pool_pre_ping={self.pool_pre_ping}"
+            ")"
+        )
 
 
-# ---------------------------------------------------------------
-# Environment loader
-# ---------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Configuration factory
+# ---------------------------------------------------------------------------
 
+def load_database_config() -> DatabaseConfig:
+    """
+    Load OSHA database configuration from environment variables.
 
-def from_environment(
-    *,
-    environ: Optional[
-        Mapping[
-            str,
-            str,
-        ]
-    ] = None,
-    prefix: str = DEFAULT_ENV_PREFIX,
-) -> DatabaseConfig:
-    source = os.environ if environ is None else environ
+    Supported environment variables use either the OSHA_DB_* or
+    OSHA_DATABASE_* prefix:
 
-    config = from_mapping(
-        source,
-        prefix=prefix,
-    )
+        OSHA_DB_DRIVER
+        OSHA_DB_HOST
+        OSHA_DB_PORT
+        OSHA_DB_NAME
+        OSHA_DB_USER
+        OSHA_DB_PASSWORD
+
+        OSHA_DB_POOL_SIZE
+        OSHA_DB_MAX_OVERFLOW
+        OSHA_DB_POOL_TIMEOUT
+        OSHA_DB_POOL_RECYCLE
+        OSHA_DB_POOL_PRE_PING
+
+        OSHA_DB_ECHO
+        OSHA_DB_ECHO_POOL
+
+        OSHA_DB_CONNECT_TIMEOUT
+        OSHA_DB_APPLICATION_NAME
+    """
 
     return DatabaseConfig(
-        backend=config.backend,
-        database=config.database,
-        environment_id=(config.environment_id),
-        host=config.host,
-        port=config.port,
-        namespace=config.namespace,
-        username=config.username,
-        credential=config.credential,
-        connect_timeout_seconds=(config.connect_timeout_seconds),
-        statement_timeout_seconds=(config.statement_timeout_seconds),
-        pool=config.pool,
-        migrations=config.migrations,
-        attributes={
-            **config.attributes,
-            "config_source": ("environment"),
-        },
+        driver=_get_env(
+            "OSHA_DB_DRIVER",
+            "postgresql+psycopg",
+        )
+        or "postgresql+psycopg",
+
+        host=_get_env(
+            "OSHA_DB_HOST",
+            "localhost",
+        )
+        or "localhost",
+
+        port=_get_int(
+            "OSHA_DB_PORT",
+            5432,
+            minimum=1,
+            maximum=65535,
+        ),
+
+        database=_get_env(
+            "OSHA_DB_NAME",
+            "osha",
+        )
+        or "osha",
+
+        username=_get_env(
+            "OSHA_DB_USER",
+            "osha",
+        )
+        or "osha",
+
+        password=_get_env(
+            "OSHA_DB_PASSWORD",
+        ),
+
+        pool_size=_get_int(
+            "OSHA_DB_POOL_SIZE",
+            10,
+            minimum=1,
+        ),
+
+        max_overflow=_get_int(
+            "OSHA_DB_MAX_OVERFLOW",
+            20,
+            minimum=0,
+        ),
+
+        pool_timeout=_get_int(
+            "OSHA_DB_POOL_TIMEOUT",
+            30,
+            minimum=1,
+        ),
+
+        pool_recycle=_get_int(
+            "OSHA_DB_POOL_RECYCLE",
+            1800,
+            minimum=1,
+        ),
+
+        pool_pre_ping=_get_bool(
+            "OSHA_DB_POOL_PRE_PING",
+            True,
+        ),
+
+        echo=_get_bool(
+            "OSHA_DB_ECHO",
+            False,
+        ),
+
+        echo_pool=_get_bool(
+            "OSHA_DB_ECHO_POOL",
+            False,
+        ),
+
+        connect_timeout=_get_int(
+            "OSHA_DB_CONNECT_TIMEOUT",
+            10,
+            minimum=1,
+        ),
+
+        application_name=_get_env(
+            "OSHA_DB_APPLICATION_NAME",
+            "osha",
+        )
+        or "osha",
     )
 
 
-# ---------------------------------------------------------------
-# Safe summary
-# ---------------------------------------------------------------
-
-
-def safe_config_summary(
-    config: DatabaseConfig,
-) -> Dict[str, Any]:
+@lru_cache(maxsize=1)
+def get_database_config() -> DatabaseConfig:
     """
-    Return database settings suitable for status
-    and diagnostics without exposing credentials.
+    Return the process-wide database configuration.
+
+    Environment variables are evaluated once per process.
     """
-
-    config.validate()
-
-    return {
-        "backend": config.backend,
-        "database": config.database,
-        "environment_id": (config.environment_id),
-        "host": config.host,
-        "port": config.port,
-        "namespace": (config.namespace),
-        "username_configured": (config.username is not None),
-        "credential_reference_configured": (config.credential is not None),
-        "credential_provider": (
-            config.credential.provider if config.credential else None
-        ),
-        "connect_timeout_seconds": (config.connect_timeout_seconds),
-        "statement_timeout_seconds": (config.statement_timeout_seconds),
-        "pool_minimum_size": (config.pool.minimum_size),
-        "pool_maximum_size": (config.pool.maximum_size),
-        "migrations_enabled": (config.migrations.enabled),
-        "migrations_apply_on_startup": (config.migrations.apply_on_startup),
-    }
+    return load_database_config()
 
 
-# ---------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------
+def reset_database_config() -> None:
+    """
+    Clear the cached configuration.
+
+    Primarily useful for tests that temporarily change environment variables.
+    """
+    get_database_config.cache_clear()
+
 
 __all__ = [
-    "DEFAULT_ENV_PREFIX",
-    "PoolConfig",
-    "MigrationConfig",
     "DatabaseConfig",
-    "from_mapping",
-    "from_environment",
-    "safe_config_summary",
+    "get_database_config",
+    "load_database_config",
+    "reset_database_config",
 ]

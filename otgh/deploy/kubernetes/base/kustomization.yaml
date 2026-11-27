@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Common OTGH Kubernetes resources.
+#
+# Environment-specific differences belong under:
+#
+#   ../overlays/development/
+#   ../overlays/production/
+#
+# Do not place production credentials directly in this file.
+
+resources:
+  - namespace.yaml
+  - serviceaccount.yaml
+  - configmap.yaml
+  - secret.yaml
+  - pvc.yaml
+  - service.yaml
+  - deployment.yaml
+  - networkpolicy.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: otgh
+      app.kubernetes.io/part-of: osha
+      app.kubernetes.io/component: transporter
+      app.kubernetes.io/managed-by: kustomize
+
+    includeSelectors: false

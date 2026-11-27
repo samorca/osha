@@ -191,6 +191,9 @@ spec:
           # ---------------------------------------------------------
 
           env:
+            - name: OSHA_PROCESS_ROLE
+              value: "api"
+
             - name: OSHA_DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -362,7 +365,10 @@ spec:
 
             - name: osha-data
               mountPath: {{ .Values.paths.data }}
-              subPath: orchestration-ai-data
+              subPath: dataset
+            {{- else }}
+            - name: framework-data
+              mountPath: {{ .Values.paths.data }}
             {{- end }}
 
 
@@ -378,5 +384,10 @@ spec:
           emptyDir: {}
 
         {{- include "osha.modelVolume" . | nindent 8 }}
+
+        {{- if not .Values.persistence.enabled }}
+        - name: framework-data
+          emptyDir: {}
+        {{- end }}
 
 {{- end }}

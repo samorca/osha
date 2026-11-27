@@ -60,6 +60,9 @@ spec:
             - name: OSHA_ENV
               value: {{ .Values.global.environment | default "production" | quote }}
 
+            - name: OSHA_PROCESS_ROLE
+              value: "worker"
+
             - name: PYTHONUNBUFFERED
               value: "1"
 
@@ -110,6 +113,13 @@ spec:
             - name: osha-data
               mountPath: {{ .Values.paths.artifacts }}
               subPath: artifacts
+
+            - name: osha-data
+              mountPath: {{ .Values.paths.data }}
+              subPath: dataset
+            {{- else }}
+            - name: framework-data
+              mountPath: {{ .Values.paths.data }}
             {{- end }}
 
       volumes:
@@ -121,6 +131,11 @@ spec:
         {{- end }}
 
         {{- include "osha.modelVolume" . | nindent 8 }}
+
+        {{- if not .Values.persistence.enabled }}
+        - name: framework-data
+          emptyDir: {}
+        {{- end }}
 
       {{- with .Values.worker.nodeSelector }}
       nodeSelector:

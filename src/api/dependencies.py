@@ -98,8 +98,7 @@ from src.api.errors import (
     ServiceUnavailableAPIError,
 )
 
-from src.database.pipeline import DatabasePipeline
-from src.database.runtime import create_database_pipeline
+from src.database.engine import DatabaseEngineManager
 
 
 # ------------------------------------------------------------------
@@ -208,7 +207,7 @@ class APIDependencies:
 
     ai_pipeline: AIPipeline
 
-    database_pipeline: Optional[DatabasePipeline] = None
+    database_pipeline: Optional[Any] = None
 
     services: Dict[
         str,
@@ -340,7 +339,13 @@ class APIDependencies:
         try:
             if self.database_pipeline is not None:
                 self.database_pipeline.start()
-                self.database_pipeline.telemetry_repository().ensure_schema()
+                telemetry_factory = getattr(
+                    self.database_pipeline,
+                    "telemetry_repository",
+                    None,
+                )
+                if callable(telemetry_factory):
+                    telemetry_factory().ensure_schema()
 
             try:
                 await _call_maybe_async(
@@ -357,7 +362,15 @@ class APIDependencies:
                     discover_existing=True,
                 )
 
+            framework_service = self.services.get("frameworks")
+            await _call_maybe_async(framework_service, "start")
+
         except Exception:
+            framework_service = self.services.get("frameworks")
+            try:
+                await _call_maybe_async(framework_service, "close")
+            except Exception:
+                logger.exception("OSHA framework service failed during startup cleanup")
             if self.database_pipeline is not None and self.database_pipeline.ready:
                 self.database_pipeline.stop()
             raise
@@ -615,6 +628,13 @@ class APIDependencies:
             return bool(
                 self.started
                 and not self.closed
+                and bool(
+                    getattr(
+                        self.services.get("frameworks"),
+                        "ready",
+                        True,
+                    )
+                )
                 and (
                     self.database_pipeline is None
                     or self.database_pipeline.ready
@@ -649,6 +669,13 @@ class APIDependencies:
                     self.database_pipeline is not None
                     and self.database_pipeline.ready
                 ),
+                "frameworks": bool(
+                    getattr(
+                        self.services.get("frameworks"),
+                        "ready",
+                        False,
+                    )
+                ),
             },
             "attributes": dict(self.attributes),
         }
@@ -662,6 +689,11 @@ class APIDependencies:
 def _register_default_api_services(
     dependencies: APIDependencies,
 ) -> None:
+    from src.api.persistence import (
+        SQLAlchemyDecisionRepository,
+        SQLAlchemyIncidentRepository,
+        SQLAlchemyRemediationRepository,
+    )
     from src.api.services.accelerators import (
         register_accelerator_service,
     )
@@ -677,6 +709,9 @@ def _register_default_api_services(
     from src.api.services.forecasting import (
         register_capacity_forecasting_service,
     )
+    from src.api.services.frameworks import (
+        register_framework_service,
+    )
     from src.api.services.models import (
         register_model_service,
     )
@@ -688,9 +723,19 @@ def _register_default_api_services(
     register_model_service(dependencies)
     register_inference_service(dependencies)
     register_capacity_forecasting_service(dependencies)
-    register_incident_service(dependencies)
-    register_decision_service(dependencies)
-    register_remediation_service(dependencies)
+    register_framework_service(dependencies)
+    register_incident_service(
+        dependencies,
+        repository=SQLAlchemyIncidentRepository(),
+    )
+    register_decision_service(
+        dependencies,
+        repository=SQLAlchemyDecisionRepository(),
+    )
+    register_remediation_service(
+        dependencies,
+        repository=SQLAlchemyRemediationRepository(),
+    )
 
 
 def create_api_dependencies(
@@ -702,7 +747,7 @@ def create_api_dependencies(
     model_registry: Optional[AIModelRegistry] = None,
     model_loader: Optional[AIModelLoader] = None,
     ai_pipeline: Optional[AIPipeline] = None,
-    database_pipeline: Optional[DatabasePipeline] = None,
+    database_pipeline: Optional[Any] = None,
 ) -> APIDependencies:
     """
     Construct the process-scoped dependency graph.
@@ -752,7 +797,7 @@ def create_api_dependencies(
         model_registry=(resolved_registry),
         model_loader=(resolved_loader),
         ai_pipeline=(resolved_pipeline),
-        database_pipeline=(database_pipeline or create_database_pipeline()),
+        database_pipeline=(database_pipeline or DatabaseEngineManager()),
         attributes={
             "scope": ("worker_process"),
         },

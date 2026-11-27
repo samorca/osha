@@ -15,6 +15,11 @@ from src.api.dependencies import (
 from src.api.services.inference import (
     InferenceService,
 )
+from src.api.persistence import (
+    SQLAlchemyDecisionRepository,
+    SQLAlchemyIncidentRepository,
+    SQLAlchemyRemediationRepository,
+)
 
 
 def test_create_api_dependencies_registers_route_services() -> None:
@@ -26,11 +31,25 @@ def test_create_api_dependencies_registers_route_services() -> None:
         "accelerators",
         "capacity_forecasting",
         "decisions",
+        "frameworks",
         "incidents",
         "inference",
         "models",
         "remediation",
     }
+
+    assert isinstance(
+        dependencies.services["incidents"].repository,
+        SQLAlchemyIncidentRepository,
+    )
+    assert isinstance(
+        dependencies.services["decisions"].repository,
+        SQLAlchemyDecisionRepository,
+    )
+    assert isinstance(
+        dependencies.services["remediation"].repository,
+        SQLAlchemyRemediationRepository,
+    )
 
 
 def test_create_api_dependencies_preserves_shared_empty_model_registry() -> None:
@@ -84,13 +103,16 @@ def test_api_lifecycle_initializes_and_closes_database() -> None:
         ai_pipeline=AIPipelineStub(),
         database_pipeline=database,
     )
+    framework_service = dependencies.services["frameworks"]
 
     asyncio.run(dependencies.start())
     assert database.ready
     assert dependencies.ready
+    assert framework_service.ready
 
     asyncio.run(dependencies.close())
     assert not database.ready
+    assert not framework_service.ready
 
 
 def test_inference_service_uses_pipeline_health_check() -> None:

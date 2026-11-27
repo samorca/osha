@@ -135,7 +135,7 @@ data:
 
   OSHA_LOGS_DIR: "/app/logs"
 
-  OSHA_DATA_DIR: "/app/orchestration-ai-data"
+  OSHA_DATA_DIR: "/app/dataset"
 
 
   # -----------------------------------------------------------------

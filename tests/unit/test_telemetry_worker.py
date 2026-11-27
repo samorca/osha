@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from src.frameworks import FrameworkApplication
+from src.memory.store import create_memory_store
 from src.workers import main as telemetry_worker
 
 
@@ -222,6 +224,67 @@ def test_collect_cycle_reports_persistence_failure(monkeypatch, tmp_path):
     assert result["sources"][0]["status"] == "failed"
     assert result["sources"][0]["persistence_error"] == "RuntimeError"
     assert persisted_offsets == {}
+
+
+def test_collect_cycle_processes_collected_records_with_frameworks(
+    monkeypatch, tmp_path
+):
+    def fake_run(command, **kwargs):
+        output_path = Path(command[command.index("--output") + 1])
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(
+            json.dumps(
+                {
+                    "record_type": "linux_telemetry",
+                    "provider": "linux",
+                    "signal_type": "metric",
+                    "timestamp": "2026-11-26T00:00:00Z",
+                    "environment_id": "test",
+                    "host_name": "node-1",
+                    "payload": {
+                        "name": "cpu_usage",
+                        "value": 92.0,
+                        "unit": "percent",
+                    },
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        return subprocess.CompletedProcess(
+            args=command,
+            returncode=0,
+            stdout="",
+            stderr="",
+        )
+
+    monkeypatch.setattr(telemetry_worker.subprocess, "run", fake_run)
+    application = FrameworkApplication(
+        process_role="test",
+        memory_store=create_memory_store(
+            backend="json",
+            path=tmp_path / "memory.json",
+        ),
+    )
+    try:
+        result = telemetry_worker.collect_cycle(
+            ("linux",),
+            output_directory=tmp_path,
+            worker_id="worker-1",
+            namespace="osha",
+            tail_lines=200,
+            include_pod_logs=True,
+            timeout_seconds=5,
+            emit_output=False,
+            environment_id="test",
+            framework_application=application,
+        )
+    finally:
+        application.close()
+
+    assert result["status"] == "success"
+    assert result["framework_processing"]["status"] == "completed"
+    assert result["framework_processing"]["summary"]["input_record_count"] == 1
 
 
 def test_parse_sources_rejects_unknown_sources():

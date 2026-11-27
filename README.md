@@ -76,6 +76,22 @@ collection archive. PostgreSQL is configured with `OSHA_DATABASE_*` variables;
 the password is resolved through the environment-backed secret provider and is
 not stored in the repository or emitted in application status.
 
+## Integrated telemetry frameworks
+
+The API, runtime, and telemetry worker compose the shared telemetry pipeline:
+normalization and redaction, correlation, intelligence, memory, decisions,
+orchestration, observability, and guarded self-healing. The API exposes
+`GET /api/v1/frameworks/status` and `POST /api/v1/frameworks/analyze`; the
+worker sends newly collected records through the same pipeline.
+
+Memory snapshots are stored under
+`$OSHA_DATA_DIR/memory/<process-role>.json`. Compose mounts this directory as
+persistent data. Helm stores it persistently when `persistence.enabled` is
+true and uses pod-local ephemeral storage otherwise. The integration framework
+does not connect provider adapters automatically, and remediation remains
+dry-run-only; registering integration code does not by itself make an external
+provider operational.
+
 ## Model environment configuration
 
 OSHA's six model families (`event`, `anomaly`, `incident_root_cause`,

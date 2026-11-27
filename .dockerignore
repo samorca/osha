@@ -16,7 +16,7 @@ docs
 tmp
 .cache
 data
-orchestration-ai-data
+dataset
 checkpoints
 logs
 artifacts/training-runs

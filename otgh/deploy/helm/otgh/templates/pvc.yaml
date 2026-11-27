@@ -1,0 +1,46 @@
+{{/*
+OTGH durable spool PersistentVolumeClaim.
+
+The chart creates this PVC only when:
+
+  persistence.enabled: true
+
+AND:
+
+  persistence.existingClaim: ""
+
+When existingClaim is supplied, deployment.yaml mounts that claim instead.
+
+The spool contains pending delivery state. Production deployments should use
+persistent storage and must not treat this volume as disposable cache data.
+*/}}
+
+{{- if eq (include "otgh.createPVC" .) "true" }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+
+metadata:
+  name: {{ include "otgh.pvcName" . }}
+  namespace: {{ include "otgh.namespace" . }}
+
+  labels:
+    {{- include "otgh.labels" . | nindent 4 }}
+
+  {{- with .Values.persistence.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+spec:
+
+  accessModes:
+    {{- toYaml .Values.persistence.accessModes | nindent 4 }}
+
+  {{- if .Values.persistence.storageClass }}
+  storageClassName: {{ .Values.persistence.storageClass | quote }}
+  {{- end }}
+
+  resources:
+    requests:
+      storage: {{ .Values.persistence.size | quote }}
+{{- end }}

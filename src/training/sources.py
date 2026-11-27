@@ -7,13 +7,13 @@ for OSHA.
 Training inputs may come from:
 
     data/prepared/
-    orchestration-ai-data/processed/
-    orchestration-ai-data/normalized/
-    orchestration-ai-data/correlated/
-    orchestration-ai-data/intelligence/
-    orchestration-ai-data/decision/
-    orchestration-ai-data/remediation/
-    orchestration-ai-data/memory/
+    dataset/processed/
+    dataset/normalized/
+    dataset/correlated/
+    dataset/intelligence/
+    dataset/decision/
+    dataset/remediation/
+    dataset/memory/
 
 Direct live and quarantine inputs are excluded
 from normal training discovery.
@@ -637,7 +637,7 @@ class TrainingSourceManager:
                 location=str(directory.resolve()),
                 source_id=("operational:" + directory_name),
                 attributes={
-                    "origin": ("orchestration-ai-data"),
+                    "origin": ("dataset"),
                     "directory": (directory_name),
                 },
             ).finalize()

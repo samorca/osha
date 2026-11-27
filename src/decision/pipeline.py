@@ -407,12 +407,12 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument(
         "--memory-store",
-        default=("orchestration-ai-data/memory/memory.json"),
+        default=("dataset/memory/memory.json"),
     )
 
     parser.add_argument(
         "--output",
-        default=("orchestration-ai-data/decision/result.json"),
+        default=("dataset/decision/result.json"),
     )
 
     parser.add_argument(

@@ -1,0 +1,103 @@
+{{/*
+OTGH NetworkPolicy.
+
+Default behavior:
+
+  ingress: limited to configured source namespaces
+  egress:  unrestricted
+
+OTGH is primarily an outbound transporter. It must reach configured HTTP,
+gRPC, object-store, and webhook destinations.
+
+Do not enable restrictive egress policy until the deployment knows exactly
+which DNS services and destination networks must remain reachable.
+
+NetworkPolicy enforcement also depends on the cluster network plugin
+supporting Kubernetes NetworkPolicy.
+*/}}
+
+{{- if .Values.networkPolicy.enabled }}
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+
+metadata:
+  name: {{ include "otgh.fullname" . }}
+  namespace: {{ include "otgh.namespace" . }}
+
+  labels:
+    {{- include "otgh.labels" . | nindent 4 }}
+
+  {{- with .Values.networkPolicy.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "otgh.selectorLabels" . | nindent 6 }}
+
+  policyTypes:
+
+    {{- if .Values.networkPolicy.ingress.enabled }}
+    - Ingress
+    {{- end }}
+
+    {{- if .Values.networkPolicy.egress.enabled }}
+    - Egress
+    {{- end }}
+
+
+  {{/*
+  ---------------------------------------------------------------------------
+  Ingress is limited to the configured source namespaces and ports.
+  */}}
+
+  {{- if .Values.networkPolicy.ingress.enabled }}
+
+  {{- if .Values.networkPolicy.ingress.rules }}
+  ingress:
+    {{- toYaml .Values.networkPolicy.ingress.rules | nindent 4 }}
+  {{- else }}
+  ingress: []
+  {{- end }}
+
+  {{- end }}
+
+
+  {{/*
+  ---------------------------------------------------------------------------
+  Egress
+  ---------------------------------------------------------------------------
+
+  IMPORTANT:
+
+  Merely including Egress in policyTypes isolates the selected Pod for egress.
+
+  Therefore egress is rendered only when:
+
+      networkPolicy.egress.enabled=true
+
+  When enabled with no rules:
+
+      egress: []
+
+  intentionally denies egress allowed by this policy.
+
+  Operators should normally provide explicit DNS and destination rules before
+  enabling egress isolation.
+  */}}
+
+  {{- if .Values.networkPolicy.egress.enabled }}
+
+  {{- if .Values.networkPolicy.egress.rules }}
+  egress:
+    {{- toYaml .Values.networkPolicy.egress.rules | nindent 4 }}
+  {{- else }}
+  egress: []
+  {{- end }}
+
+  {{- end }}
+
+{{- end }}

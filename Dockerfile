@@ -31,7 +31,7 @@ RUN mkdir -p \
         /app/checkpoints \
         /app/models \
         /app/logs \
-        /app/orchestration-ai-data \
+        /app/dataset \
         /opt/osha/model-seed \
     && addgroup --system osha \
     && adduser --system --ingroup osha --uid 10001 osha \

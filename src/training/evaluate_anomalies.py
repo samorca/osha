@@ -27,7 +27,7 @@ def parse_args():
 
     parser.add_argument(
         "--data",
-        default=("orchestration-ai-data/processed/anomalies/records.jsonl"),
+        default=("dataset/processed/anomalies/records.jsonl"),
     )
 
     parser.add_argument(

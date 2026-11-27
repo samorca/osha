@@ -1420,7 +1420,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--data-root",
-        default="orchestration-ai-data",
+        default="dataset",
     )
     parser.add_argument(
         "--output-root",

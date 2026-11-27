@@ -564,12 +564,12 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument(
         "--output",
-        default=("orchestration-ai-data/remediation/result.json"),
+        default=("dataset/remediation/result.json"),
     )
 
     parser.add_argument(
         "--audit",
-        default=("orchestration-ai-data/audit/remediation.jsonl"),
+        default=("dataset/audit/remediation.jsonl"),
     )
 
     return parser.parse_args()

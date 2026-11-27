@@ -381,12 +381,12 @@ def parse_args():
 
     parser.add_argument(
         "--input",
-        default=("orchestration-ai-data/processed/live/kubernetes/windows.jsonl"),
+        default=("dataset/processed/live/kubernetes/windows.jsonl"),
     )
 
     parser.add_argument(
         "--output",
-        default=("orchestration-ai-data/processed/live/kubernetes/predictions.jsonl"),
+        default=("dataset/processed/live/kubernetes/predictions.jsonl"),
     )
 
     parser.add_argument(

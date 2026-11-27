@@ -155,7 +155,7 @@ models:
 # -----------------------------------------------------------------------------
 
 data:
-  root: "./orchestration-ai-data"
+  root: "./dataset"
 
   validate_on_load: true
 

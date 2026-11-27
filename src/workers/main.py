@@ -14,9 +14,10 @@ from pathlib import Path
 from typing import Any, Optional, Sequence
 
 from src.database.runtime import create_database_pipeline
+from src.frameworks import FrameworkApplication
 
 
-SUPPORTED_SOURCES = ("linux", "kubernetes")
+SUPPORTED_SOURCES = ("linux", "kubernetes", "openstack")
 shutdown_requested = False
 
 
@@ -53,6 +54,8 @@ def default_sources() -> tuple[str, ...]:
         or default_kubeconfig.is_file()
     ):
         sources.append("kubernetes")
+    if _environment_bool("OSHA_OPENSTACK_COLLECTOR_ENABLED", default=False):
+        sources.append("openstack")
     return tuple(sources)
 
 
@@ -85,6 +88,7 @@ def build_command(
     *,
     output_directory: Path,
     worker_id: str,
+    environment_id: str = "local-dev",
     namespace: str,
     tail_lines: int,
     include_pod_logs: bool,
@@ -107,6 +111,8 @@ def build_command(
         command.extend(("--tail-lines", str(tail_lines)))
         if not include_pod_logs:
             command.append("--skip-logs")
+    elif source == "openstack":
+        command.extend(("--environment", environment_id))
 
     return command
 
@@ -152,13 +158,16 @@ def collect_cycle(
     telemetry_repository: Any = None,
     environment_id: str = "local-dev",
     persisted_offsets: Optional[dict[str, int]] = None,
+    framework_application: Optional[FrameworkApplication] = None,
 ) -> dict:
     results = []
+    collected_records: list[dict[str, Any]] = []
     for source in sources:
         command = build_command(
             source,
             output_directory=output_directory,
             worker_id=worker_id,
+            environment_id=environment_id,
             namespace=namespace,
             tail_lines=tail_lines,
             include_pod_logs=include_pod_logs,
@@ -253,6 +262,7 @@ def collect_cycle(
 
         records_persisted = 0
         persistence_error = None
+        collected_records.extend(records)
         if telemetry_repository is not None:
             try:
                 records_persisted = telemetry_repository.store_batch(
@@ -286,15 +296,42 @@ def collect_cycle(
             source_result["collector_errors"] = collector_errors
         results.append(source_result)
 
-    return {
+    framework_processing = None
+    framework_failed = False
+    if framework_application is not None and collected_records:
+        if not framework_application.enabled:
+            framework_processing = {"status": "disabled"}
+        else:
+            try:
+                framework_processing = framework_application.process_records(
+                    collected_records,
+                    environment_id=environment_id,
+                    trigger_type="worker",
+                )
+                framework_failed = framework_processing["status"] in {
+                    "failed",
+                    "partial",
+                }
+            except Exception as exc:
+                framework_processing = {
+                    "status": "failed",
+                    "error_type": type(exc).__name__,
+                }
+                framework_failed = True
+
+    cycle_result = {
         "worker_id": worker_id,
         "status": (
             "success"
             if all(item["status"] == "success" for item in results)
+            and not framework_failed
             else "degraded"
         ),
         "sources": results,
     }
+    if framework_processing is not None:
+        cycle_result["framework_processing"] = framework_processing
+    return cycle_result
 
 
 def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
@@ -312,12 +349,12 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
         default=os.getenv("OSHA_COLLECTOR_SOURCES") or None,
         help=(
             "Comma-separated sources: linux,kubernetes "
-            "(default: detect available Kubernetes credentials)"
+            "(OpenStack is opt-in with OSHA_OPENSTACK_COLLECTOR_ENABLED)"
         ),
     )
     parser.add_argument(
         "--data-dir",
-        default=os.getenv("OSHA_DATA_DIR", "orchestration-ai-data"),
+        default=os.getenv("OSHA_DATA_DIR", "dataset"),
     )
     parser.add_argument(
         "--worker-id",
@@ -387,16 +424,24 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     signal.signal(signal.SIGINT, request_shutdown)
 
     database = create_database_pipeline()
+    framework_application: Optional[FrameworkApplication] = None
     try:
         database.start()
         telemetry_repository = database.telemetry_repository()
         telemetry_repository.ensure_schema()
+        if _environment_bool("OSHA_FRAMEWORKS_ENABLED", default=True):
+            framework_application = FrameworkApplication(process_role="worker")
+            framework_application.start()
     except Exception as exc:
         print(
             json.dumps(
                 {
                     "status": "failed",
-                    "error": "database_start_failed",
+                    "error": (
+                        "framework_start_failed"
+                        if framework_application is not None
+                        else "database_start_failed"
+                    ),
                     "error_type": type(exc).__name__,
                 },
                 sort_keys=True,
@@ -425,6 +470,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 telemetry_repository=telemetry_repository,
                 environment_id=os.getenv("OSHA_ENVIRONMENT_ID", "local-dev"),
                 persisted_offsets=persisted_offsets,
+                framework_application=framework_application,
             )
             result["cycle"] = cycle
             print(json.dumps(result, sort_keys=True), flush=True)
@@ -438,7 +484,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
         return 0
     finally:
-        database.stop()
+        try:
+            if framework_application is not None:
+                framework_application.close()
+        finally:
+            database.stop()
 
 
 if __name__ == "__main__":

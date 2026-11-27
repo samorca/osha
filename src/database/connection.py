@@ -1,601 +1,221 @@
+"""
+OSHA Database Connection Management.
+
+Creates and manages the SQLAlchemy engine used by OSHA's relational
+persistence layer.
+
+Responsibilities:
+    - create the SQLAlchemy engine
+    - configure connection pooling
+    - configure PostgreSQL connection parameters
+    - expose database health checks
+    - expose safe pool diagnostics
+    - dispose database resources during shutdown
+
+Session creation and transaction boundaries belong in session.py.
+"""
+
 from __future__ import annotations
 
-"""
-Database backend/connection lifecycle for OSHA
-persistence.
-"""
+import logging
+from functools import lru_cache
+from typing import Any
 
-from abc import (
-    ABC,
-    abstractmethod,
-)
+from sqlalchemy import Engine, create_engine, text
+from sqlalchemy.exc import SQLAlchemyError
 
-from dataclasses import dataclass, field
-
-from threading import RLock
-
-from typing import (
-    Any,
-    Dict,
-    Optional,
-)
-
-from src.core.time import (
-    utc_now,
-)
-
-from src.database.config import (
-    DatabaseConfig,
-)
-
-from src.database.errors import (
-    DatabaseConnectionError,
-    DatabaseUnavailableError,
-    wrap_driver_error,
-)
-
-from src.database.schema import (
-    ConnectionState,
-    ConnectionStatus,
-    DatabaseBackend,
-)
-
-from src.security.secrets import (
-    SecretManager,
-    SecretValue,
-)
+from .config import DatabaseConfig, get_database_config
 
 
-# ---------------------------------------------------------------
-# Database adapter contract
-# ---------------------------------------------------------------
+logger = logging.getLogger(__name__)
 
 
-class DatabaseAdapter(ABC):
+class DatabaseConnectionError(RuntimeError):
+    """Raised when OSHA cannot communicate with its relational database."""
+
+
+def _build_connect_args(config: DatabaseConfig) -> dict[str, Any]:
     """
-    Backend adapter contract.
+    Build DBAPI connection arguments.
 
-    Raw driver objects should remain behind this
-    interface.
-
-    Future implementations might wrap:
-
-      SQLite
-      PostgreSQL
-      another supported persistence backend
+    PostgreSQL-specific options are applied only when a PostgreSQL driver
+    is configured.
     """
-
-    @abstractmethod
-    def connect(
-        self,
-        *,
-        config: DatabaseConfig,
-        credential: Optional[SecretValue],
-    ) -> Any:
-        raise NotImplementedError
-
-    @abstractmethod
-    def close(
-        self,
-        handle: Any,
-    ) -> None:
-        raise NotImplementedError
-
-    @abstractmethod
-    def ping(
-        self,
-        handle: Any,
-    ) -> bool:
-        raise NotImplementedError
-
-
-# ---------------------------------------------------------------
-# Development memory adapter
-# ---------------------------------------------------------------
-
-
-class MemoryDatabaseAdapter(DatabaseAdapter):
-    """
-    Development adapter providing a process-local
-    database handle.
-
-    It provides no durability and should not be
-    treated as a production persistence backend.
-    """
-
-    def connect(
-        self,
-        *,
-        config: DatabaseConfig,
-        credential: Optional[SecretValue],
-    ) -> Dict[str, Any]:
-        config.validate()
-
-        # credential is intentionally unused by
-        # the memory backend.
-
+    if config.driver.startswith("postgresql"):
         return {
-            "backend": (DatabaseBackend.MEMORY.value),
-            "database": (config.database),
-            "environment_id": (config.environment_id),
-            "open": True,
-            # repository.py can eventually use
-            # this process-local store.
-            "store": {},
+            "connect_timeout": config.connect_timeout,
+            "application_name": config.application_name,
         }
 
-    def close(
-        self,
-        handle: Dict[
-            str,
-            Any,
-        ],
-    ) -> None:
-        handle["open"] = False
-
-    def ping(
-        self,
-        handle: Dict[
-            str,
-            Any,
-        ],
-    ) -> bool:
-        return bool(
-            handle.get(
-                "open",
-                False,
-            )
-        )
+    return {}
 
 
-# ---------------------------------------------------------------
-# PostgreSQL adapter
-# ---------------------------------------------------------------
-
-
-@dataclass
-class PostgreSQLDatabaseHandle:
-    connection: Any
-    lock: RLock = field(default_factory=RLock, repr=False)
-
-
-class PostgreSQLDatabaseAdapter(DatabaseAdapter):
-    """PostgreSQL connection adapter using psycopg 3."""
-
-    def connect(
-        self,
-        *,
-        config: DatabaseConfig,
-        credential: Optional[SecretValue],
-    ) -> PostgreSQLDatabaseHandle:
-        config.validate()
-
-        if not config.host or not config.username or credential is None:
-            raise DatabaseConnectionError(
-                "PostgreSQL requires a host, username, and configured password reference."
-            )
-
-        try:
-            import psycopg
-        except ImportError as exc:
-            raise DatabaseConnectionError(
-                "The psycopg PostgreSQL driver is not installed."
-            ) from exc
-
-        connection = psycopg.connect(
-            host=config.host,
-            port=config.port or 5432,
-            dbname=config.database,
-            user=config.username,
-            password=credential.reveal(),
-            connect_timeout=max(1, round(config.connect_timeout_seconds)),
-            options=(
-                f"-c statement_timeout="
-                f"{max(1, round(config.statement_timeout_seconds * 1000))}"
-            ),
-            application_name="osha",
-            autocommit=True,
-        )
-        return PostgreSQLDatabaseHandle(connection=connection)
-
-    def close(self, handle: PostgreSQLDatabaseHandle) -> None:
-        with handle.lock:
-            handle.connection.close()
-
-    def ping(self, handle: PostgreSQLDatabaseHandle) -> bool:
-        with handle.lock:
-            return handle.connection.execute("SELECT 1").fetchone() == (1,)
-
-
-# ---------------------------------------------------------------
-# Database connection
-# ---------------------------------------------------------------
-
-
-class DatabaseConnection:
+def create_database_engine(
+    config: DatabaseConfig | None = None,
+) -> Engine:
     """
-    Own one backend handle and enforce its
-    application-level connection lifecycle.
+    Create a configured SQLAlchemy Engine.
 
-    Credential handling:
-
-        DatabaseConfig
-             ↓
-        SecretReference
-             ↓
-        SecretManager
-             ↓
-        SecretValue
-             ↓
-        DatabaseAdapter.connect()
-
-    The resolved SecretValue is not stored in
-    ConnectionStatus.
+    The function does not itself run migrations or create application tables.
+    Schema lifecycle belongs to the migration layer.
     """
+    settings = config or get_database_config()
 
-    def __init__(
-        self,
-        *,
-        config: Optional[DatabaseConfig] = None,
-        adapter: Optional[DatabaseAdapter] = None,
-        secrets: Optional[SecretManager] = None,
-    ) -> None:
-        self.config = config or DatabaseConfig()
+    logger.info(
+        "Creating OSHA database engine for %s",
+        settings.safe_url,
+    )
 
-        self.config.validate()
-
-        # -----------------------------------------------------
-        # Default adapter
-        # -----------------------------------------------------
-
-        if adapter is None:
-            if self.config.backend == DatabaseBackend.MEMORY.value:
-                adapter = MemoryDatabaseAdapter()
-            elif self.config.backend == DatabaseBackend.POSTGRESQL.value:
-                adapter = PostgreSQLDatabaseAdapter()
-
-            else:
-                raise (
-                    DatabaseConnectionError(
-                        "A database adapter "
-                        "must be provided for "
-                        "the configured "
-                        "backend."
-                    )
-                )
-
-        self.adapter = adapter
-
-        self.secrets = secrets
-
-        self.status = ConnectionStatus(identity=(self.config.identity())).finalize()
-
-        self._handle: Any = None
-
-        self._lock = RLock()
-
-    # ---------------------------------------------------------
-    # Handle
-    # ---------------------------------------------------------
-
-    @property
-    def handle(
-        self,
-    ) -> Any:
-        """
-        Return the raw backend handle only while
-        the connection is READY.
-
-        Domain code should generally use
-        repositories rather than accessing this
-        directly.
-        """
-
-        with self._lock:
-            if self.status.state != ConnectionState.READY.value or self._handle is None:
-                raise DatabaseUnavailableError("Database connection is not ready.")
-
-            return self._handle
-
-    # ---------------------------------------------------------
-    # Ready state
-    # ---------------------------------------------------------
-
-    @property
-    def ready(
-        self,
-    ) -> bool:
-        return bool(
-            self.status.state == ConnectionState.READY.value
-            and self._handle is not None
+    try:
+        engine = create_engine(
+            settings.url,
+            pool_size=settings.pool_size,
+            max_overflow=settings.max_overflow,
+            pool_timeout=settings.pool_timeout,
+            pool_recycle=settings.pool_recycle,
+            pool_pre_ping=settings.pool_pre_ping,
+            echo=settings.echo,
+            echo_pool=settings.echo_pool,
+            connect_args=_build_connect_args(settings),
+            hide_parameters=True,
         )
+    except (SQLAlchemyError, TypeError, ValueError) as exc:
+        logger.exception(
+            "Failed to create OSHA database engine for %s",
+            settings.safe_url,
+        )
+        raise DatabaseConnectionError(
+            "Failed to create OSHA database engine"
+        ) from exc
 
-    # ---------------------------------------------------------
-    # Credential resolution
-    # ---------------------------------------------------------
+    return engine
 
-    def _credential(
-        self,
-    ) -> Optional[SecretValue]:
-        """
-        Resolve credentials only when a reference
-        is configured.
 
-        The resolved value is returned directly
-        to the adapter and is not stored on
-        ConnectionStatus.
-        """
+@lru_cache(maxsize=1)
+def get_engine() -> Engine:
+    """
+    Return the process-wide OSHA SQLAlchemy Engine.
 
-        if self.config.credential is None:
-            return None
+    The engine is created lazily on first use and then reused.
+    """
+    return create_database_engine()
 
-        if self.secrets is None:
-            raise DatabaseConnectionError(
-                "Database credential "
-                "reference is configured "
-                "but no SecretManager is "
-                "available."
-            )
 
-        return self.secrets.resolve(self.config.credential)
+def check_database_connection(
+    engine: Engine | None = None,
+) -> bool:
+    """
+    Check whether the relational database is reachable.
 
-    # ---------------------------------------------------------
-    # Open
-    # ---------------------------------------------------------
+    Executes a minimal SELECT statement through SQLAlchemy.
 
-    def open(
-        self,
-    ) -> ConnectionStatus:
-        with self._lock:
-            if self.status.state == ConnectionState.READY.value:
-                return self.status
+    Returns:
+        True when the database responds successfully.
+        False when SQLAlchemy reports a database error.
+    """
+    database_engine = engine or get_engine()
 
-            if self.status.state not in {
-                ConnectionState.CREATED.value,
-                ConnectionState.CLOSED.value,
-                ConnectionState.FAILED.value,
-                ConnectionState.DEGRADED.value,
-            }:
-                raise (
-                    DatabaseConnectionError(
-                        "Database connection "
-                        "cannot open from "
-                        "state "
-                        f"{self.status.state}."
-                    )
-                )
+    try:
+        with database_engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
 
-            self.status.state = ConnectionState.CONNECTING.value
+        return True
 
-            self.status.last_error_type = None
-
-            self.status.finalize()
-
-        # -----------------------------------------------------
-        # Resolve credential and connect
-        # -----------------------------------------------------
-
-        try:
-            credential = self._credential()
-
-            handle = self.adapter.connect(
-                config=self.config,
-                credential=credential,
-            )
-
-            if handle is None:
-                raise (
-                    DatabaseConnectionError(
-                        "Database adapter returned no connection handle."
-                    )
-                )
-
-            # Initial readiness check.
-            if not self.adapter.ping(handle):
-                try:
-                    self.adapter.close(handle)
-                except Exception:
-                    pass
-
-                raise (
-                    DatabaseUnavailableError(
-                        "Database connection did not pass readiness ping."
-                    )
-                )
-
-        except DatabaseConnectionError as exc:
-            with self._lock:
-                self._handle = None
-
-                self.status.state = ConnectionState.FAILED.value
-
-                self.status.last_error_type = type(exc).__name__
-
-                self.status.finalize()
-
-            raise
-
-        except Exception as exc:
-            wrapped = wrap_driver_error(
-                exc,
-                message=("Database connection failed."),
-                retryable=True,
-                code=("database_connection_failed"),
-            )
-
-            with self._lock:
-                self._handle = None
-
-                self.status.state = ConnectionState.FAILED.value
-
-                self.status.last_error_type = type(exc).__name__
-
-                self.status.finalize()
-
-            raise wrapped from exc
-
-        # -----------------------------------------------------
-        # Ready
-        # -----------------------------------------------------
-
-        with self._lock:
-            self._handle = handle
-
-            self.status.state = ConnectionState.READY.value
-
-            self.status.opened_at = utc_now()
-
-            self.status.closed_at = None
-
-            self.status.last_error_type = None
-
-            self.status.finalize()
-
-            return self.status
-
-    # ---------------------------------------------------------
-    # Ping
-    # ---------------------------------------------------------
-
-    def ping(
-        self,
-    ) -> bool:
-        """
-        Perform a backend health/readiness check.
-
-        Driver exceptions are converted into a
-        degraded connection state rather than
-        leaking through this lightweight probe.
-        """
-
-        with self._lock:
-            if self._handle is None:
-                return False
-
-            handle = self._handle
-
-        try:
-            healthy = bool(self.adapter.ping(handle))
-
-        except Exception as exc:
-            with self._lock:
-                self.status.state = ConnectionState.DEGRADED.value
-
-                self.status.last_error_type = type(exc).__name__
-
-                self.status.finalize()
-
-            return False
-
-        with self._lock:
-            self.status.state = (
-                ConnectionState.READY.value
-                if healthy
-                else (ConnectionState.DEGRADED.value)
-            )
-
-            if healthy:
-                self.status.last_error_type = None
-
-            self.status.finalize()
-
-        return healthy
-
-    # ---------------------------------------------------------
-    # Close
-    # ---------------------------------------------------------
-
-    def close(
-        self,
-    ) -> ConnectionStatus:
-        with self._lock:
-            if self.status.state == ConnectionState.CLOSED.value:
-                return self.status
-
-            handle = self._handle
-
-            self.status.state = ConnectionState.CLOSING.value
-
-            self.status.finalize()
-
-        if handle is not None:
-            try:
-                self.adapter.close(handle)
-
-            except Exception as exc:
-                wrapped = wrap_driver_error(
-                    exc,
-                    message=("Database connection close failed."),
-                    retryable=False,
-                    code=("database_close_failed"),
-                )
-
-                with self._lock:
-                    self.status.state = ConnectionState.FAILED.value
-
-                    self.status.last_error_type = type(exc).__name__
-
-                    self.status.finalize()
-
-                raise wrapped from exc
-
-        with self._lock:
-            self._handle = None
-
-            self.status.state = ConnectionState.CLOSED.value
-
-            self.status.closed_at = utc_now()
-
-            self.status.finalize()
-
-            return self.status
-
-    # ---------------------------------------------------------
-    # Context manager
-    # ---------------------------------------------------------
-
-    def __enter__(
-        self,
-    ) -> "DatabaseConnection":
-        self.open()
-
-        return self
-
-    def __exit__(
-        self,
-        exc_type,
-        exc,
-        traceback,
-    ) -> bool:
-        self.close()
-
-        # Never suppress the caller's exception.
+    except SQLAlchemyError:
+        logger.exception("OSHA database health check failed")
         return False
 
-    # ---------------------------------------------------------
-    # Safe summary
-    # ---------------------------------------------------------
 
-    def summary(
-        self,
-    ) -> Dict[str, Any]:
-        return {
-            "connection": (self.status.to_dict()),
-            "ready": (self.ready),
-            "adapter": (type(self.adapter).__name__),
-            "credential_reference_configured": (self.config.credential is not None),
-            "credential_value_exposed": (False),
-        }
+def require_database_connection(
+    engine: Engine | None = None,
+) -> None:
+    """
+    Verify database connectivity and raise on failure.
+
+    Intended for startup checks where continuing without the database would
+    leave the service unable to operate correctly.
+    """
+    if not check_database_connection(engine):
+        raise DatabaseConnectionError(
+            "OSHA relational database is unavailable"
+        )
 
 
-# ---------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------
+def get_pool_status(
+    engine: Engine | None = None,
+) -> dict[str, Any]:
+    """
+    Return safe connection-pool diagnostics.
+
+    Exact numeric counters depend on the pool implementation. The textual
+    status remains available as a general diagnostic representation.
+    """
+    database_engine = engine or get_engine()
+    pool = database_engine.pool
+
+    result: dict[str, Any] = {
+        "status": pool.status(),
+    }
+
+    for attribute in (
+        "size",
+        "checkedin",
+        "checkedout",
+        "overflow",
+    ):
+        method = getattr(pool, attribute, None)
+
+        if callable(method):
+            try:
+                result[attribute] = method()
+            except (NotImplementedError, TypeError):
+                pass
+
+    return result
+
+
+def dispose_engine(
+    engine: Engine | None = None,
+) -> None:
+    """
+    Dispose an SQLAlchemy Engine and its pooled connections.
+
+    When disposing the process-wide cached engine, the cache is also cleared
+    so a later call to get_engine() creates a fresh Engine.
+    """
+    if engine is not None:
+        logger.info("Disposing OSHA database engine")
+        engine.dispose()
+        return
+
+    cached_engine: Engine | None = None
+
+    if get_engine.cache_info().currsize:
+        cached_engine = get_engine()
+
+    if cached_engine is not None:
+        logger.info("Disposing OSHA process-wide database engine")
+        cached_engine.dispose()
+
+    get_engine.cache_clear()
+
+
+def reset_engine() -> None:
+    """
+    Dispose and clear the cached process-wide Engine.
+
+    Primarily useful during controlled application reconfiguration and tests.
+    """
+    dispose_engine()
+
 
 __all__ = [
-    "DatabaseAdapter",
-    "MemoryDatabaseAdapter",
-    "PostgreSQLDatabaseAdapter",
-    "PostgreSQLDatabaseHandle",
-    "DatabaseConnection",
+    "DatabaseConnectionError",
+    "check_database_connection",
+    "create_database_engine",
+    "dispose_engine",
+    "get_engine",
+    "get_pool_status",
+    "require_database_connection",
+    "reset_engine",
 ]

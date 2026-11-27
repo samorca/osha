@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: otgh-config
+  namespace: otgh
+
+  annotations:
+    otgh.io/environment: development

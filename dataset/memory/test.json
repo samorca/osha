@@ -1,0 +1,46 @@
+{
+  "schema_version": "1",
+  "updated_at": "2026-11-25T22:39:40.627021+00:00",
+  "memories": [
+    {
+      "memory_type": "baseline",
+      "environment_id": "test",
+      "memory_id": "memory:baseline:190eb132e7e2a195a8cc1b591eb44f6d844694b3654e449612c5961752f31948",
+      "status": "active",
+      "verification_status": "unverified",
+      "created_at": "2026-11-25T22:31:23.745494+00:00",
+      "updated_at": "2026-11-25T22:39:40.626613+00:00",
+      "last_accessed_at": null,
+      "source_ids": [
+        "4f081605e44aa0522cc152c2cfc6919e299a5a2eb6c83dc1995068ae754da3ab"
+      ],
+      "resource_ids": [
+        "linux::test::host::cpu_usage"
+      ],
+      "tags": [
+        "metric_baseline",
+        "online_statistics"
+      ],
+      "attributes": {
+        "m2": 0.0,
+        "minimum_samples": 10,
+        "anomaly_z_score": 3.0,
+        "sample_variance": true
+      },
+      "schema_version": "1",
+      "baseline_key": "test::linux::test::host::cpu_usage::metric::percent",
+      "resource_id": "linux::test::host::cpu_usage",
+      "signal_name": "metric",
+      "metric_unit": "percent",
+      "sample_count": 12,
+      "minimum": 92.0,
+      "maximum": 92.0,
+      "mean": 92.0,
+      "variance": 0.0,
+      "standard_deviation": 0.0,
+      "first_sample_at": "2026-11-26T00:00:00Z",
+      "last_sample_at": "2026-11-26T00:00:00Z",
+      "model_type": "welford_sample"
+    }
+  ]
+}

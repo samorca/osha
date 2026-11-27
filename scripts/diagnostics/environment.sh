@@ -832,7 +832,7 @@ DIRECTORIES=(
     "artifacts"
     "configs"
     "tests"
-    "orchestration-ai-data"
+    "dataset"
 )
 
 
