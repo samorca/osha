@@ -1,0 +1,31 @@
+{{/*
+OTGH namespace.
+
+The namespace is created only when:
+
+  namespace.create: true
+
+When namespace creation is disabled, the rest of the chart can still target
+the namespace resolved by the otgh.namespace helper.
+
+This allows the chart to support both:
+
+  1. Helm-managed namespaces.
+  2. Namespaces managed externally by platform administrators or GitOps.
+*/}}
+
+{{- if .Values.namespace.create }}
+apiVersion: v1
+kind: Namespace
+
+metadata:
+  name: {{ include "otgh.namespace" . }}
+
+  labels:
+    {{- include "otgh.labels" . | nindent 4 }}
+
+  annotations:
+    {{- with .Values.namespace.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+{{- end }}

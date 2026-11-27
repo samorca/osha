@@ -1,0 +1,129 @@
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: otgh-config
+  namespace: otgh
+
+  labels:
+    app.kubernetes.io/name: otgh
+    app.kubernetes.io/part-of: osha
+    app.kubernetes.io/component: transporter
+    app.kubernetes.io/managed-by: kustomize
+
+data:
+  otgh.json: |
+    {
+      "version": 1,
+
+      "application": {
+        "node_id": "otgh",
+        "shutdown_timeout": 30000000000,
+        "worker_count": 4
+      },
+
+      "batching": {
+        "max_records": 256,
+        "max_payload_bytes": 65536
+      },
+
+      "queue": {
+        "capacity": 2048
+      },
+
+      "retry": {
+        "max_attempts": 5,
+        "initial_delay": 1000000000,
+        "max_delay": 30000000000,
+        "multiplier": 2.0,
+        "jitter": 0.2,
+        "max_elapsed_time": 300000000000
+      },
+
+      "spool": {
+        "directory": "/var/lib/otgh/spool",
+        "directory_mode": 488,
+        "file_mode": 384,
+        "max_entries": 100000,
+        "max_bytes": 10737418240,
+        "max_entry_bytes": 67108864,
+        "sync_directory": true
+      },
+
+      "protocol": {
+        "node_id": "otgh",
+
+        "handshake": {
+          "node_id": "otgh",
+
+          "versions": [
+            {
+              "major": 1,
+              "minor": 0,
+              "patch": 0
+            }
+          ],
+
+          "encodings": [
+            "json"
+          ],
+
+          "compressions": [
+            "none",
+            "gzip"
+          ],
+
+          "capabilities": [
+            "telemetry",
+            "resource_state",
+            "resource_relationships",
+            "topology",
+            "security",
+            "anomaly_detection",
+            "forecasting",
+            "situations",
+            "blast_radius",
+            "decisions",
+            "remediation_results",
+            "acknowledgements",
+            "partial_acknowledgement",
+            "sequencing",
+            "batching"
+          ],
+
+          "max_frame_size": 67108864,
+          "max_payload_size": 33554432,
+          "max_batch_records": 1000,
+
+          "require_capabilities": [],
+
+          "metadata": {
+            "deployment": "kubernetes"
+          }
+        },
+
+        "encoder": {
+          "max_frame_size": 67108864,
+          "max_payload_size": 33554432,
+          "gzip_level": -1
+        },
+
+        "decoder": {
+          "max_frame_size": 67108864,
+          "max_payload_size": 33554432
+        },
+
+        "compression": {
+          "gzip_level": -1
+        }
+      },
+
+      "exporters": {
+        "http": [],
+        "grpc": [],
+        "object_store": [],
+        "webhook": []
+      },
+
+      "routes": []
+    }

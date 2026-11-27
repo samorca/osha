@@ -1,0 +1,44 @@
+services:
+  otgh:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        GO_VERSION: ${GO_VERSION:-1.27.1}
+        VERSION: ${OTGH_VERSION:-dev}
+        COMMIT: ${OTGH_COMMIT:-unknown}
+        BUILD_DATE: ${OTGH_BUILD_DATE:-unknown}
+
+    image: ${OTGH_IMAGE:-otgh:dev}
+
+    container_name: ${OTGH_CONTAINER_NAME:-otgh}
+
+    restart: unless-stopped
+
+    environment:
+      OTGH_CONFIG: /etc/otgh/otgh.json
+      OTGH_SPOOL_DIR: /var/lib/otgh/spool
+
+    volumes:
+      - ./config/otgh.json:/etc/otgh/otgh.json:ro
+      - ./data/spool:/var/lib/otgh/spool
+
+    security_opt:
+      - no-new-privileges:true
+
+    cap_drop:
+      - ALL
+
+    read_only: true
+
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+
+    stop_grace_period: 45s
+
+    networks:
+      - otgh-network
+
+networks:
+  otgh-network:
+    driver: bridge

@@ -1,0 +1,27 @@
+image:
+  repository: otgh
+  tag: dev
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+runtime:
+  nodeID: otgh-development
+  workers: 2
+
+terminationGracePeriodSeconds: 45
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+  limits:
+    cpu: "1"
+    memory: 512Mi
+
+persistence:
+  size: 10Gi
+
+podLabels:
+  app.kubernetes.io/environment: development

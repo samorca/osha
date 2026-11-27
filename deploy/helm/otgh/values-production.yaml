@@ -1,0 +1,37 @@
+image:
+  repository: ghcr.io/samorca/otgh
+  tag: "v1.0.0"
+  pullPolicy: Always
+
+replicaCount: 1
+
+runtime:
+  nodeID: otgh-production
+  workers: 8
+
+terminationGracePeriodSeconds: 60
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+  limits:
+    cpu: "2"
+    memory: 1Gi
+
+persistence:
+  enabled: true
+  size: 20Gi
+
+podLabels:
+  app.kubernetes.io/environment: production
+
+networkPolicy:
+  enabled: true
+
+  ingress:
+    enabled: true
+
+  egress:
+    enabled: false
